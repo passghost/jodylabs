@@ -844,7 +844,6 @@
                         'Accept': 'application/json',
                         'Prefer': 'return=representation'
                     },
-                    pagePath: 'MaskFill', // Hardcoded for reliability
                     theme: 'jody',
                     animated: true,
                     showCounter: true
@@ -892,12 +891,16 @@
             constructor(options = {}) {
                 this.apiUrl = options.apiUrl;
                 this.headers = options.headers || {};
-                this.pagePath = options.pagePath || 'MaskFill'; // Hardcoded for reliability
+                this.pagePath = options.pagePath || this.getCurrentPagePath(); // Use dynamic pagePath
                 this.showCounter = options.showCounter !== false;
                 this.animated = options.animated !== false;
                 this.theme = options.theme || 'jody';
-                this.targetId = 17; // Ensure we use id 17
                 this.init();
+            }
+            getCurrentPagePath() {
+                let path = window.location.pathname;
+                if (path === '/') path = 'index';
+                return path.replace(/^\//, '').replace(/\.html$/, '') || 'index';
             }
             async init() {
                 try {
@@ -915,9 +918,9 @@
             }
             async recordHit() {
                 try {
-                    // Use id=eq.17 for all requests
-                    console.log('HitCounter: GET', `${this.apiUrl}/rest/v1/page_hits?id=eq.${this.targetId}&select=id,hit_count`, this.headers);
-                    const getResponse = await fetch(`${this.apiUrl}/rest/v1/page_hits?id=eq.${this.targetId}&select=id,hit_count`, {
+                    // Use page_path for all requests
+                    console.log('HitCounter: GET', `${this.apiUrl}/rest/v1/page_hits?page_path=eq.${this.pagePath}&select=id,hit_count`, this.headers);
+                    const getResponse = await fetch(`${this.apiUrl}/rest/v1/page_hits?page_path=eq.${this.pagePath}&select=id,hit_count`, {
                         method: 'GET',
                         headers: this.headers
                     });
@@ -946,13 +949,12 @@
                                 throw new Error('PATCH failed: ' + updateResponse.status);
                             }
                         } else {
-                            // Only POST if id=17 does not exist
-                            console.log('HitCounter: POST', `${this.apiUrl}/rest/v1/page_hits`, {id: this.targetId, page_path: this.pagePath});
+                            // Only POST if page_path does not exist
+                            console.log('HitCounter: POST', `${this.apiUrl}/rest/v1/page_hits`, {page_path: this.pagePath});
                             const createResponse = await fetch(`${this.apiUrl}/rest/v1/page_hits`, {
                                 method: 'POST',
                                 headers: this.headers,
                                 body: JSON.stringify({
-                                    id: this.targetId,
                                     page_path: this.pagePath,
                                     hit_count: 1,
                                     first_hit: new Date().toISOString(),
