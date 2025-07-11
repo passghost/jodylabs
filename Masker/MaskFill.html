@@ -4,7 +4,98 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Image Masking Tool with Hue Variations</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Rajdhani', 'Orbitron', sans-serif;
+            background: linear-gradient(135deg, #232526 0%, #414345 100%),
+                radial-gradient(circle at 20% 50%, #e63946 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, #ff6b7a 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, #e63946 0%, transparent 50%);
+            color: #fff;
+            margin: 0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            pointer-events: none;
+            z-index: 0;
+            background: repeating-linear-gradient(135deg, rgba(230,57,70,0.08) 0 2px, transparent 2px 40px);
+            animation: bgmove 20s linear infinite;
+        }
+        @keyframes bgmove {
+            0% { background-position: 0 0; }
+            100% { background-position: 200px 200px; }
+        }
+        .container {
+            max-width: 1200px;
+            margin: 48px auto;
+            padding: 2.5rem;
+            background: rgba(30,30,30,0.85);
+            border-radius: 32px;
+            box-shadow: 0 12px 48px 0 #e63946a0, 0 2px 24px 0 #fff2;
+            backdrop-filter: blur(12px);
+            position: relative;
+            overflow: hidden;
+        }
+        .container::after {
+            content: '';
+            position: absolute;
+            top: -80px; right: -80px;
+            width: 200px; height: 200px;
+            background: radial-gradient(circle, #e63946 0%, transparent 70%);
+            opacity: 0.18;
+            z-index: 1;
+        }
+        h1 {
+            font-family: 'Orbitron', monospace;
+            font-size: 2.5rem;
+            margin-bottom: 1.2rem;
+            text-align: center;
+            color: #fff;
+            text-shadow: 0 0 32px #e63946, 0 2px 12px #fff2;
+            letter-spacing: 2px;
+            background: linear-gradient(90deg, #e63946, #ff6b7a, #fff, #e63946);
+            background-size: 400% 400%;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: gradientShift 8s ease-in-out infinite;
+        }
+        @keyframes gradientShift {
+            0%,100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        .instructions-card {
+            background: rgba(255,255,255,0.08);
+            border-radius: 20px;
+            box-shadow: 0 4px 24px #e63946a0, 0 2px 12px #fff2;
+            padding: 1.5rem 2rem;
+            margin-bottom: 2rem;
+            color: #fff;
+            font-size: 1.15rem;
+            backdrop-filter: blur(8px);
+            border: 2px solid #e63946;
+        }
+        .instructions-card h2 {
+            font-size: 1.4rem;
+            margin-bottom: 0.7rem;
+            color: #ff6b7a;
+            text-shadow: 0 0 8px #e63946;
+        }
+        .instructions-card ul {
+            margin: 0 0 0 1.2rem;
+            padding: 0;
+        }
+        .instructions-card li {
+            margin-bottom: 0.5rem;
+        }
         body {
             margin: 0;
             padding: 0;
@@ -16,32 +107,12 @@
             align-items: center;
         }
         
-        .container {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            padding: 30px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            backdrop-filter: blur(10px);
-            max-width: 900px;
-            width: 90%;
-        }
-        
-        h1 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 30px;
-            font-size: 2.5em;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        
-        .input-section {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 25px;
+        .input-section, .controls-section, .hue-toggles {
+            background: rgba(255,255,255,0.08);
+            border-radius: 16px;
+            box-shadow: 0 2px 12px #e63946a0, 0 1px 6px #fff2;
+            padding: 1.2rem;
+            margin-bottom: 1.5rem;
         }
         
         .file-input-container {
@@ -56,21 +127,18 @@
             left: -9999px;
         }
         
-        .file-label {
-            display: block;
-            padding: 12px 20px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
+        .file-label, .process-button {
+            background: linear-gradient(135deg, #e63946, #ff6b7a);
+            color: #fff;
             border-radius: 10px;
-            cursor: pointer;
-            text-align: center;
-            transition: all 0.3s ease;
             font-weight: bold;
+            box-shadow: 0 2px 8px #e63946a0;
+            transition: all 0.3s;
         }
         
-        .file-label:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        .file-label:hover, .process-button:hover {
+            box-shadow: 0 6px 18px #ff6b7a99;
+            transform: scale(1.04);
         }
         
         .controls-section {
@@ -145,14 +213,6 @@
             margin-right: 10px;
         }
         
-        .hue-toggles {
-            background: rgba(255, 255, 255, 0.8);
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 25px;
-            border: 1px solid rgba(102, 126, 234, 0.2);
-        }
-        
         .hue-toggles h3 {
             margin-top: 0;
             color: #333;
@@ -185,44 +245,12 @@
         }
         
         .progress-bar {
-            width: 100%;
-            height: 20px;
-            background: #f0f0f0;
-            border-radius: 10px;
-            overflow: hidden;
-            border: 1px solid #ddd;
+            background: #232526;
+            border: 1px solid #e63946;
         }
         
         .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #667eea, #764ba2);
-            width: 0%;
-            transition: width 0.3s ease;
-            border-radius: 10px;
-        }
-        
-        .process-button {
-            width: 100%;
-            padding: 15px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .process-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-        }
-        
-        .process-button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
+            background: linear-gradient(90deg, #e63946, #ff6b7a);
         }
         
         .status-message {
@@ -233,28 +261,30 @@
             font-weight: bold;
         }
         
-        .success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+        .status-message.success {
+            background: #e63946;
+            color: #fff;
+            border: 1px solid #ff6b7a;
         }
         
-        .error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+        .status-message.error {
+            background: #ff6b7a;
+            color: #fff;
+            border: 1px solid #e63946;
         }
         
         .canvas-container {
-            text-align: center;
-            margin-top: 20px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 16px;
+            box-shadow: 0 2px 12px #e63946a0, 0 1px 6px #fff2;
+            padding: 1.2rem;
+            margin-top: 2rem;
         }
         
         .preview-canvas {
-            max-width: 100%;
-            border: 2px solid #667eea;
+            border: 2px solid #e63946;
             border-radius: 10px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 20px #e63946a0;
         }
         
         .value-display {
@@ -262,10 +292,31 @@
             color: #667eea;
             margin-left: 10px;
         }
+        
+        @media (max-width: 900px) {
+            .container { padding: 1.2rem; }
+            h1 { font-size: 2.2rem; }
+        }
+        @media (max-width: 600px) {
+            .container { padding: 0.5rem; }
+            h1 { font-size: 1.3rem; }
+        }
     </style>
 </head>
 <body>
     <div class="container">
+        <div class="instructions-card">
+            <h2><i class="fas fa-info-circle"></i> How to Use the Masking Tool</h2>
+            <ul>
+                <li><b>Select up to 3 input images</b> (these will be used for masking).</li>
+                <li><b>Select a mask image</b> (white or black pixels determine placement).</li>
+                <li><b>Set output file name</b> and adjust <b>image size</b> and <b>frequency</b> using sliders.</li>
+                <li>Toggle <b>masking options</b> (white pixels, random sizes, random rotation).</li>
+                <li>Enable/disable <b>hue shifts</b> for color variation.</li>
+                <li>Click <b>Process Images</b> to generate and download the masked image.</li>
+                <li>Preview will appear below after processing.</li>
+            </ul>
+        </div>
         <h1>Image Masking Tool with Hue Variations</h1>
         
         <div class="input-section">
