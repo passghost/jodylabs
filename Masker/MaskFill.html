@@ -954,16 +954,11 @@
             constructor(options = {}) {
                 this.apiUrl = options.apiUrl;
                 this.headers = options.headers || {};
-                this.pagePath = options.pagePath || this.getCurrentPagePath();
+                this.pagePath = options.pagePath || 'MaskFill'; // Hardcoded for reliability
                 this.showCounter = options.showCounter !== false;
                 this.animated = options.animated !== false;
                 this.theme = options.theme || 'jody';
                 this.init();
-            }
-            getCurrentPagePath() {
-                let path = window.location.pathname;
-                if (path === '/') path = 'index';
-                return path.replace(/^\/|\.html$/g, '') || 'index';
             }
             async init() {
                 try {
@@ -972,23 +967,28 @@
                         await this.displayCounter();
                     }
                 } catch (error) {
-                    this.currentHits = Math.floor(Math.random() * 100) + 50;
+                    console.error('HitCounter error:', error);
+                    this.currentHits = null;
                     if (this.showCounter) {
-                        this.displayCounter();
+                        this.displayCounterError(error);
                     }
                 }
             }
             async recordHit() {
                 try {
+                    console.log('HitCounter: GET', `${this.apiUrl}/rest/v1/page_hits?page_path=eq.${this.pagePath}&select=id,hit_count`, this.headers);
                     const getResponse = await fetch(`${this.apiUrl}/rest/v1/page_hits?page_path=eq.${this.pagePath}&select=id,hit_count`, {
                         method: 'GET',
                         headers: this.headers
                     });
+                    console.log('HitCounter: GET response', getResponse);
                     if (getResponse.ok) {
                         const existingData = await getResponse.json();
+                        console.log('HitCounter: GET data', existingData);
                         if (existingData.length > 0) {
                             const record = existingData[0];
                             const newCount = record.hit_count + 1;
+                            console.log('HitCounter: PATCH', `${this.apiUrl}/rest/v1/page_hits?id=eq.${record.id}`, {hit_count: newCount});
                             const updateResponse = await fetch(`${this.apiUrl}/rest/v1/page_hits?id=eq.${record.id}`, {
                                 method: 'PATCH',
                                 headers: this.headers,
@@ -998,11 +998,15 @@
                                     updated_at: new Date().toISOString()
                                 })
                             });
+                            console.log('HitCounter: PATCH response', updateResponse);
                             if (updateResponse.ok) {
                                 this.currentHits = newCount;
                                 return;
+                            } else {
+                                throw new Error('PATCH failed: ' + updateResponse.status);
                             }
                         } else {
+                            console.log('HitCounter: POST', `${this.apiUrl}/rest/v1/page_hits`, {page_path: this.pagePath});
                             const createResponse = await fetch(`${this.apiUrl}/rest/v1/page_hits`, {
                                 method: 'POST',
                                 headers: this.headers,
@@ -1014,19 +1018,22 @@
                                     last_ip_hash: 'browser-' + Math.random().toString(36).substring(7)
                                 })
                             });
+                            console.log('HitCounter: POST response', createResponse);
                             if (createResponse.ok) {
                                 this.currentHits = 1;
                                 return;
+                            } else {
+                                throw new Error('POST failed: ' + createResponse.status);
                             }
                         }
                     }
-                    throw new Error('Failed to record hit');
+                    throw new Error('GET failed: ' + getResponse.status);
                 } catch (error) {
+                    console.error('HitCounter: recordHit error', error);
                     throw error;
                 }
             }
             displayCounter() {
-                if (!this.currentHits) return;
                 this.counterElement = document.createElement('div');
                 this.counterElement.style.cssText = `
                     position: fixed;
@@ -1067,6 +1074,28 @@
                 } else {
                     this.counterElement.textContent = `Visitors: ${this.currentHits}`;
                 }
+            }
+            displayCounterError(error) {
+                this.counterElement = document.createElement('div');
+                this.counterElement.style.cssText = `
+                    position: fixed;
+                    bottom: 20px;
+                    right: 20px;
+                    background: rgba(20, 20, 20, 0.9);
+                    color: #e63946;
+                    padding: 10px 16px;
+                    border-radius: 12px;
+                    font-family: 'Orbitron', monospace;
+                    font-size: 14px;
+                    z-index: 1000;
+                    backdrop-filter: blur(5px);
+                    border: 1px solid rgba(230, 57, 70, 0.4);
+                    box-shadow: 0 0 20px rgba(230, 57, 70, 0.3);
+                    transition: all 0.3s ease;
+                    cursor: pointer;
+                `;
+                this.counterElement.textContent = `Visitors: Error loading`;
+                document.body.appendChild(this.counterElement);
             }
         }
     </script>
