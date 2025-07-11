@@ -1,0 +1,4 @@
+# Surge.sh redirects configuration
+# This ensures all 404 errors use our custom art gallery page
+
+/*    /404.html   404

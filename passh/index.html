@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArtConnect - Share Your Creative Vision</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+
+        header {
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            padding: 1rem;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        nav {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem;
+        }
+
+        .logo {
+            color: white;
+            font-size: 1.8rem;
+            font-weight: bold;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: opacity 0.3s;
+        }
+
+        .nav-links a:hover {
+            opacity: 0.8;
+        }
+
+        .hero {
+            margin-top: 80px;
+            padding: 4rem 2rem;
+            text-align: center;
+            background: white;
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            color: #666;
+            max-width: 600px;
+            margin: 0 auto 2rem;
+        }
+
+        .cta-button {
+            display: inline-block;
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 30px;
+            font-weight: bold;
+            transition: transform 0.3s;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+        }
+
+        .gallery {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .art-card {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+
+        .art-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .art-card img {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+        }
+
+        .art-info {
+            padding: 1.5rem;
+        }
+
+        .art-info h3 {
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+
+        .art-info p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .features {
+            background: white;
+            padding: 4rem 2rem;
+            margin-top: 2rem;
+        }
+
+        .features-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            text-align: center;
+        }
+
+        .feature {
+            padding: 2rem;
+        }
+
+        .feature i {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: #6366f1;
+        }
+
+        footer {
+            background: #333;
+            color: white;
+            padding: 2rem;
+            text-align: center;
+            margin-top: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .gallery {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <a href="#" class="logo">ArtConnect</a>
+            <div class="nav-links">
+                <a href="#discover">Discover</a>
+                <a href="#artists">Artists</a>
+                <a href="#collections">Collections</a>
+                <a href="#about">About</a>
+            </div>
+        </nav>
+    </header>
+
+    <section class="hero">
+        <h1>Share Your Creative Vision</h1>
+        <p>Join a community of artists, collectors, and art enthusiasts. Showcase your work, discover amazing artists, and connect with creative minds worldwide.</p>
+        <a href="#" class="cta-button">Join Now</a>
+    </section>
+
+    <section class="gallery">
+        <div class="art-card">
+            <img src="https://source.unsplash.com/random/400x300?art,painting" alt="Artwork">
+            <div class="art-info">
+                <h3>Abstract Dreams</h3>
+                <p>by Sarah Chen</p>
+            </div>
+        </div>
+        <div class="art-card">
+            <img src="https://source.unsplash.com/random/400x300?sculpture" alt="Artwork">
+            <div class="art-info">
+                <h3>Urban Perspectives</h3>
+                <p>by Michael Torres</p>
+            </div>
+        </div>
+        <div class="art-card">
+            <img src="https://source.unsplash.com/random/400x300?digital-art" alt="Artwork">
+            <div class="art-info">
+                <h3>Digital Horizons</h3>
+                <p>by Emma Wright</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="features">
+        <div class="features-grid">
+            <div class="feature">
+                <i class="fas fa-paint-brush"></i>
+                <h3>Showcase Your Art</h3>
+                <p>Create your portfolio and share your artwork with the world.</p>
+            </div>
+            <div class="feature">
+                <i class="fas fa-users"></i>
+                <h3>Connect with Artists</h3>
+                <p>Build relationships with fellow artists and art enthusiasts.</p>
+            </div>
+            <div class="feature">
+                <i class="fas fa-star"></i>
+                <h3>Get Discovered</h3>
+                <p>Reach new audiences and grow your artistic career.</p>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2023 ArtConnect. All rights reserved.</p>
+    </footer>
+</body>
+</html>

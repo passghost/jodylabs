@@ -1,0 +1,30 @@
+<!-- Social Media Preview Card Template -->
+<!-- This is a template for creating social media preview images -->
+<!-- Each game/tool should have a 1200x630 image for optimal social sharing -->
+
+Social Media Image Specifications:
+- Facebook Open Graph: 1200x630px
+- Twitter Large Image: 1200x630px  
+- LinkedIn: 1200x627px
+- Recommended format: PNG or JPG
+- File size: Under 8MB (ideally under 1MB)
+
+Suggested images to create:
+1. flowerfall-preview.png - Screenshot of FlowerFall game
+2. neonpang-preview.png - Screenshot of NeonPang game  
+3. prinko-preview.png - Screenshot of Prinko game
+4. gif-creator-preview.png - Screenshot of GIF Creator interface
+5. jodylabs-general.png - General JodyLabs branding image
+
+For now, using existing game assets as fallbacks:
+- FlowerFall: SF.png (flower image)
+- Other games: Will use the main site image or game screenshots
+
+These images will appear when someone shares your game links on:
+- Facebook
+- Twitter
+- LinkedIn
+- Discord
+- Slack
+- WhatsApp
+- And other social platforms

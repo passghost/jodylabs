@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# Sitemap locations
+Sitemap: https://jodylabs.surge.sh/sitemap.xml
+Sitemap: https://jodylabs.surge.sh/EKYTrade/sitemap.xml
+
+# Optimize crawling
+Crawl-delay: 10

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitemeMTG - Online Card Game</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="app">
+        <!-- Login/Lobby Screen -->
+        <div id="lobby-screen" class="screen active">
+            <div class="lobby-container">
+                <h1>FitemeMTG</h1>
+                <div class="lobby-form">
+                    <input type="text" id="player-name" placeholder="Enter your name" maxlength="20">
+                    <div class="lobby-options">
+                        <button id="create-room-btn" class="btn primary">Create Room</button>
+                        <button id="join-room-btn" class="btn secondary">Join Room</button>
+                    </div>
+                    <div id="join-room-form" class="hidden">
+                        <input type="text" id="room-code" placeholder="Enter room code" maxlength="6">
+                        <button id="join-btn" class="btn primary">Join</button>
+                    </div>
+                </div>
+                <div id="room-info" class="hidden">
+                    <h3>Room Code: <span id="current-room-code"></span></h3>
+                    <p>Waiting for opponent...</p>
+                    <div id="connection-status">Connecting...</div>
+                    <!-- Debug info -->
+                    <div style="margin-top: 10px;">
+                        <button id="show-stats-btn" style="font-size: 12px; padding: 2px 6px; margin-bottom: 5px;">Show Connection Stats</button>
+                        <button id="clear-debug-btn" style="font-size: 12px; padding: 2px 6px; margin-bottom: 5px; margin-left: 5px;">Clear Debug</button>
+                    </div>
+                    <div id="debug-info" style="margin-top: 10px; font-size: 12px; opacity: 0.7; max-height: 200px; overflow-y: auto; border: 1px solid #ccc; padding: 5px;">
+                        <div>Debug info will appear here...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card Creator Screen -->
+        <div id="card-creator-screen" class="screen">
+            <div class="creator-container">
+                <h2>Create Your Deck</h2>
+                <div class="creator-content">
+                    <div class="card-preview-section">
+                        <div class="card-preview" id="card-preview">
+                            <div class="card-front" id="card-front">
+                                <div class="card-image-container">
+                                    <img id="preview-image" alt="Card preview">
+                                    <div class="upload-placeholder">
+                                        <i class="upload-icon">📁</i>
+                                        <p>Upload Image</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-back" id="card-back">
+                                <div class="card-back-pattern"></div>
+                            </div>
+                        </div>
+                        <div class="card-controls">
+                            <input type="file" id="image-upload" accept="image/*" class="hidden">
+                            <button id="upload-btn" class="btn secondary">Upload Image</button>
+                            <button id="flip-card-btn" class="btn secondary">Flip Card</button>
+                            <button id="add-to-deck-btn" class="btn primary">Add to Deck</button>
+                        </div>
+                    </div>
+                    
+                    <div class="deck-builder-section">
+                        <h3>Your Deck (<span id="deck-count">0</span> cards)</h3>
+                        <div class="deck-grid" id="deck-grid"></div>
+                        <div class="deck-actions">
+                            <button id="clear-deck-btn" class="btn danger">Clear Deck</button>
+                            <button id="start-game-btn" class="btn primary">Start Game</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="screen">
+            <div class="game-header">
+                <div class="player-info">
+                    <span id="player-name-display"></span>
+                    <span id="player-hand-count">Hand: 0</span>
+                </div>
+                <div class="game-info">
+                    <span id="room-code-display"></span>
+                    <button id="leave-game-btn" class="btn danger small">Leave Game</button>
+                </div>
+                <div class="opponent-info">
+                    <span id="opponent-name-display">Opponent</span>
+                    <span id="opponent-hand-count">Hand: 0</span>
+                </div>
+            </div>
+
+            <div class="game-board" id="game-board">
+                <canvas id="game-canvas" width="1200" height="800"></canvas>
+                
+                <!-- UI Overlays -->
+                <div class="game-ui">
+                    <div class="player-area">
+                        <div class="hand-area" id="player-hand"></div>
+                        <div class="deck-area">
+                            <div class="deck-pile" id="player-deck">
+                                <div class="deck-count" id="player-deck-count">0</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="play-area" id="play-area"></div>
+                    
+                    <div class="opponent-area">
+                        <div class="hand-area opponent-hand" id="opponent-hand"></div>
+                        <div class="deck-area">
+                            <div class="deck-pile opponent-deck" id="opponent-deck">
+                                <div class="deck-count" id="opponent-deck-count">0</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Context Menu -->
+            <div id="context-menu" class="context-menu hidden">
+                <div class="context-item" data-action="draw">Draw Card</div>
+                <div class="context-item" data-action="shuffle">Shuffle Deck</div>
+                <div class="context-item" data-action="flip">Flip Card</div>
+                <div class="context-item" data-action="return">Return to Deck</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/utils.js"></script>
+    <script src="js/card.js"></script>
+    <script src="js/deck.js"></script>
+    <script src="js/game.js"></script>
+    <script src="js/networking.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

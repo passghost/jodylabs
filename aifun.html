@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Fun Projects - Interactive Games, Tools & Simulations | AI-Powered Web Applications</title>
+    
+    <!-- SE        .project::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(230, 57, 70, 0.1), transparent);
+            transition: left 0.6s ease;
+        }
+
+        .project:hover::before {
+            left: 100%;
+        }
+
+        .project:hover {
+            transform: translateY(-12px) scale(1.02);
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.6),
+                0 0 40px rgba(230, 57, 70, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            border-color: #e63946;
+            background: linear-gradient(145deg, #2a2a2a, #3a3a3a);
+        } <meta name="description" content="Explore innovative AI-powered web games, interactive tools, and simulations. Play FlowerFall, NeonPang, GalacticBrow space combat, create GIFs, and more free online games and AI applications.">
+    <meta name="keywords" content="AI games, web games, interactive games, browser games, AI tools, web applications, online games, HTML5 games, JavaScript games, AI simulations, card games, space games, arcade games, puzzle games, creative tools, GIF creator, photo enhancement, AI projects">
+    <meta name="author" content="JodyLabs">
+    <meta name="robots" content="index, follow">
+    <meta name="language" content="English">
+    <meta name="revisit-after" content="7 days">
+    
+    <!-- Open Graph Meta Tags for Social Media -->
+    <meta property="og:title" content="AI Fun Projects - Interactive Games & Tools">
+    <meta property="og:description" content="Play innovative AI-powered web games including FlowerFall skiing game, NeonPang, space combat, and use creative tools like GIF creator and photo enhancement.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://jodylabs.surge.sh/aifun.html">
+    <meta property="og:site_name" content="JodyLabs AI Fun Projects">
+    <meta property="og:locale" content="en_US">
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="AI Fun Projects - Interactive Games & Tools">
+    <meta name="twitter:description" content="Play innovative AI-powered web games and use creative AI tools. Free browser games and applications.">
+    <meta name="twitter:site" content="@jodylabs">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://jodylabs.surge.sh/aifun.html">
+    
+    <!-- Structured Data for Search Engines -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "AI Fun Projects",
+      "description": "Collection of AI-powered interactive games, tools, and simulations",
+      "url": "https://jodylabs.surge.sh/aifun.html",
+      "author": {
+        "@type": "Organization",
+        "name": "JodyLabs"
+      },
+      "mainEntity": [
+        {
+          "@type": "VideoGame",
+          "name": "FlowerFall",
+          "description": "Skiing game where you navigate through flower paths while avoiding obstacles",
+          "genre": "Action, Arcade",
+          "playMode": "SinglePlayer",
+          "applicationCategory": "Game"
+        },
+        {
+          "@type": "VideoGame", 
+          "name": "NeonPang",
+          "description": "Colorful version of Pong with AI opponent and glowing effects",
+          "genre": "Arcade, Sports",
+          "playMode": "SinglePlayer",
+          "applicationCategory": "Game"
+        },
+        {
+          "@type": "VideoGame",
+          "name": "GalacticBrow",
+          "description": "Space combat game with scrolling starfield and dynamic enemy ships",
+          "genre": "Action, Shooter",
+          "playMode": "SinglePlayer", 
+          "applicationCategory": "Game"
+        },
+        {
+          "@type": "SoftwareApplication",
+          "name": "GIF Creator",
+          "description": "Web-based tool to create custom animated GIFs",
+          "applicationCategory": "MultimediaApplication",
+          "operatingSystem": "Web Browser"
+        }
+      ]
+    }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Rajdhani', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(230, 57, 70, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(230, 57, 70, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, rgba(230, 57, 70, 0.06) 0%, transparent 50%),
+                linear-gradient(135deg, #000000 0%, #0d0d0d 25%, #1a0a0a 50%, #000000 100%);
+            color: #ffffff;
+            overflow-x: hidden;
+            position: relative;
+            min-height: 100vh;
+        }
+
+        /* Animated background particles */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(2px 2px at 20px 30px, rgba(230, 57, 70, 0.3), transparent),
+                radial-gradient(2px 2px at 40px 70px, rgba(255, 255, 255, 0.1), transparent),
+                radial-gradient(1px 1px at 90px 40px, rgba(230, 57, 70, 0.2), transparent),
+                radial-gradient(1px 1px at 130px 80px, rgba(255, 255, 255, 0.05), transparent),
+                radial-gradient(2px 2px at 160px 30px, rgba(230, 57, 70, 0.1), transparent);
+            background-repeat: repeat;
+            background-size: 200px 100px;
+            animation: sparkle 20s linear infinite;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        @keyframes sparkle {
+            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 1; }
+            50% { transform: translateY(-10px) rotate(180deg); opacity: 0.8; }
+        }
+
+        /* Animated background particles */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .particle {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 15s infinite linear;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: linear-gradient(145deg, #1e1e1e, #2a2a2a);
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(230, 57, 70, 0.3);
+            transition: all 0.3s ease;
+            z-index: 1000;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 600;
+        }
+        
+        .back-btn:hover {
+            background-color: #E63946;
+            transform: translateY(-2px);
+        }
+        
+        .support-button {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 1000;
+        }
+
+        .support-button a {
+            display: inline-block;
+            background-color: #3E98D3;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .support-button a:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .header {
+            text-align: center;
+            padding: 60px 0;
+            position: relative;
+        }
+
+        .header h1 {
+            font-family: 'Orbitron', monospace;
+            font-weight: 900;
+            font-size: 4rem;
+            background: linear-gradient(45deg, #ffffff, #e63946, #ffffff);
+            background-size: 400% 400%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 4s ease-in-out infinite;
+            margin-bottom: 20px;
+            text-shadow: 
+                0 0 20px rgba(230, 57, 70, 0.4),
+                0 0 40px rgba(230, 57, 70, 0.4),
+                0 0 60px rgba(230, 57, 70, 0.3);
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .header p {
+            font-size: 1.3rem;
+            opacity: 0.8;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+            padding: 40px 0;
+        }
+
+        .project {
+            background: linear-gradient(145deg, #1e1e1e, #2a2a2a);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(230, 57, 70, 0.2);
+            border-radius: 20px;
+            padding: 30px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            animation: slideInUp 0.6s ease-out forwards;
+            opacity: 0;
+            transform: translateY(50px);
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.4),
+                0 0 0 1px rgba(255, 255, 255, 0.05),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .project:nth-child(odd) {
+            animation-delay: 0.1s;
+        }
+
+        .project:nth-child(even) {
+            animation-delay: 0.2s;
+        }
+
+        @keyframes slideInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .project::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.6s;
+        }
+
+        .project:hover::before {
+            left: 100%;
+        }
+
+        .project:hover {
+            transform: translateY(-10px) scale(1.02);
+            border-color: rgba(0, 212, 255, 0.4);
+            box-shadow: 0 20px 40px rgba(0, 212, 255, 0.1);
+        }
+
+        .project-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 212, 255, 0.2);
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            transition: all 0.3s ease;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .project-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .project:hover .project-icon {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(230, 57, 70, 0.4);
+        }
+
+        .project:hover .project-icon img {
+            transform: scale(1.1);
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .project h2 {
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            color: #e63946;
+            transition: color 0.3s ease;
+        }
+
+        .project:hover h2 {
+            color: #ff4757;
+        }
+
+        .project p {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 25px;
+            opacity: 0.9;
+        }
+
+        .project-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: linear-gradient(45deg, #e63946, #ff4757);
+            color: white;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            font-family: 'Rajdhani', sans-serif;
+            box-shadow: 0 4px 15px rgba(230, 57, 70, 0.3);
+        }
+
+        .project-link::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, #ff4757, #e63946);
+            transition: left 0.3s ease;
+            z-index: -1;
+        }
+
+        .project-link:hover::before {
+            left: 0;
+        }
+
+        .project-link:hover {
+            transform: translateX(5px);
+            box-shadow: 
+                0 8px 25px rgba(230, 57, 70, 0.4),
+                0 0 40px rgba(230, 57, 70, 0.3);
+        }
+
+        .footer-links {
+            text-align: center;
+            padding: 60px 0 40px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 60px;
+        }
+
+        .footer-links a {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: linear-gradient(145deg, #1e1e1e, #2a2a2a);
+            color: #e63946;
+            text-decoration: none;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border: 2px solid rgba(230, 57, 70, 0.3);
+            font-family: 'Rajdhani', sans-serif;
+        }
+
+        .footer-links a:hover {
+            background: linear-gradient(145deg, #2a2a2a, #3a3a3a);
+            border-color: #e63946;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(230, 57, 70, 0.3);
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2.5rem;
+            }
+            
+            .projects-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .project {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-btn">← Back to Home</a>
+    
+    <div class="support-button">
+        <a href="https://www.paypal.com/donate/?business=TE5MW5QV6RRCS&no_recurring=1&item_name=Donations+encouraged%2C+but+of+course+not+expected.+Thanks+for+visiting!&currency_code=USD" target="_blank">Support Me</a>
+    </div>
+    
+    <!-- Animated background particles -->
+    <div class="particles" id="particles"></div>
+
+    <div class="container">
+        <div class="header">
+            <h1>AI Fun Projects</h1>
+            <p>Applications you might find fun, entertaining or useful.</p>
+        </div>
+        
+        <div class="projects-grid">
+            <div class="project">
+                <div class="project-icon"><img src="Images/emrald.png" alt="Project Icon"></div>
+                <h2>Card Cake - Fiteme Card Arena</h2>
+                <p>Experience our latest online multiplayer card game! Build custom decks with your own images, play against friends in real-time matches, and master strategic card battles. Features include life counters, deck builder, custom card creation, and competitive multiplayer gameplay.</p>
+                <a href="CardCake/index.html" class="project-link">
+                    <span>Play Card Game</span>
+                    <span>→</span>
+                </a>
+            </div>
+            
+            <div class="project">
+                <div class="project-icon"><img src="Images/gem2.png" alt="Project Icon"></div>
+                <h2>Galaxy Animation Simulation</h2>
+                <p>Explore our mesmerizing space simulation featuring realistic galaxy animations. Watch as stars and planets move in beautiful orbital dances across the screen with physics-based movements and stunning visual effects perfect for relaxation and education.</p>
+                <a href="Galaxy/galaxy.html" class="project-link">
+                    <span>Explore Galaxy Simulation</span>
+                    <span>→</span>
+                </a>
+            </div>
+            
+            <div class="project">
+                <div class="project-icon"><img src="Images/emrald2.png" alt="Project Icon"></div>
+                <h2>Bad Fortune Teller - Funny Predictions</h2>
+                <p>Get hilariously inaccurate fortune readings from our quirky AI fortune teller! Perfect for entertainment and laughs, this fortune teller gives you wonderfully wrong predictions about your future. Great party game and conversation starter.</p>
+                <a href="BadFortune/fortune.html" class="project-link">
+                    <span>Get Fortune Reading</span>
+                    <span>→</span>
+                </a>
+            </div>
+            
+            <div class="project">
+                <div class="project-icon"><img src="Images/gem3.png" alt="Project Icon"></div>
+                <h2>Stoner Homepage - Relaxation Hub</h2>
+                <p>Visit our chill homepage featuring live news feeds, weather widgets, relaxing content, and peaceful digital spaces. Perfect for unwinding with curated content designed for relaxation and mindfulness.</p>
+                <a href="StonerHome/stonerhome.html" class="project-link">
+                    <span>Enter Relaxation Mode</span>
+                    <span>→</span>
+                </a>
+            </div>
+
+            <div class="project">
+                <div class="project-icon"><img src="Images/emrald3.png" alt="Project Icon"></div>
+                <h2>FlowerFall - Skiing Adventure Game</h2>
+                <p>Play our exciting skiing adventure game where you navigate through beautiful flower-filled mountain paths! Avoid obstacles, collect hearts for points, and test your reflexes in this colorful arcade-style game with smooth controls and engaging gameplay.</p>
+                <a href="FlowerFall/flowerfall.html" class="project-link">
+                    <span>Play Skiing Game</span>
+                    <span>→</span>
+                </a>
+            </div>
+
+            <div class="project">
+                <div class="project-icon"><img src="Images/gem4.png" alt="Project Icon"></div>
+                <h2>GIF Creator - Animated GIF Maker</h2>
+                <p>Create custom animated GIFs with our free web-based GIF maker tool. Upload multiple images, adjust timing and effects, and generate high-quality animated GIFs perfect for social media, presentations, memes, and digital marketing.</p>
+                <a href="sandbox.html" class="project-link">
+                    <span>Create Animated GIFs</span>
+                    <span>→</span>
+                </a>
+            </div>
+
+            <div class="project">
+                <div class="project-icon"><img src="Images/gem5.png" alt="Project Icon"></div>
+                <h2>Jody'sList - Community Marketplace</h2>
+                <p>A community-driven trading platform specifically for Eastern Kentucky residents. Buy, sell, and trade items with your neighbors. Keep commerce local and build community connections with this simple, effective marketplace.</p>
+                <a href="EKYTrade/index.html" class="project-link">
+                    <span>Visit Jody'sList</span>
+                    <span>→</span>
+                </a>
+            </div>
+
+            <div class="project">
+                <div class="project-icon"><img src="Images/emrald.png" alt="Project Icon"></div>
+                <h2>NeonPang - AI Pong Game</h2>
+                <p>Play our vibrant neon-styled Pong game featuring an intelligent AI opponent, spectacular glowing visual effects, and modern gameplay mechanics. This classic arcade game gets a futuristic makeover with smooth animations and challenging AI.</p>
+                <a href="NeonPang/NeonPang.html" class="project-link">
+                    <span>Play Neon Pong</span>
+                    <span>→</span>
+                </a>
+            </div>
+
+            <div class="project">
+                <div class="project-icon"><img src="Images/gem5.png" alt="Project Icon"></div>
+                <h2>GalacticBrow - Space Combat Game</h2>
+                <p>Engage in epic space battles in our scrolling space shooter! Fight dynamic enemy ships, navigate through asteroid fields, and experience thrilling interstellar combat with smooth controls, power-ups, and challenging boss battles.</p>
+                <a href="GalacticBrow/GB.html" class="project-link">
+                    <span>Launch Space Combat</span>
+                    <span>→</span>
+                </a>
+            </div>
+
+            <div class="project">
+                <div class="project-icon"><img src="Images/emrald2.png" alt="Project Icon"></div>
+                <h2>Prinko - Ball Drop Physics Game</h2>
+                <p>Experience the satisfying physics of ball-dropping in Prinko! Drop balls through a pin-filled board, aim for multiplier slots, and watch mesmerizing ball physics in action. Features realistic physics simulation and addictive gameplay mechanics.</p>
+                <a href="Prinko/Prinko.html" class="project-link">
+                    <span>Play Physics Game</span>
+                    <span>→</span>
+                </a>
+            </div>
+
+            <div class="project">
+                <div class="project-icon"><img src="Images/gem3.png" alt="Project Icon"></div>
+                <h2>Dad's Web Counter - Retro Counter</h2>
+                <p>Relive web nostalgia with our retro-style web counter featuring rapid number increments, bouncing ball animations, and classic 90s web aesthetic. A fun throwback to early internet culture and vintage web design.</p>
+                <a href="/DadSim/DadSim.html" class="project-link">
+                    <span>View Retro Counter</span>
+                    <span>→</span>
+                </a>
+            </div>
+
+            <div class="project">
+                <div class="project-icon"><img src="Images/emrald.png" alt="Project Icon"></div>
+                <h2>Germ Sim - Microorganism Simulation</h2>
+                <p>Explore the fascinating microscopic world with our educational germ simulation! Observe germs growing, reproducing, and evolving in real-time. Perfect for education, featuring realistic biological behaviors and interactive controls.</p>
+                <a href="GermSim/GermSim.html" class="project-link">
+                    <span>Study Microorganisms</span>
+                    <span>→</span>
+                </a>
+            </div>
+
+            <div class="project">
+                <div class="project-icon"><img src="Images/emrald.png" alt="Project Icon"></div>
+                <h2>AI Photobooth - Photo Enhancement</h2>
+                <p>Transform your photos with AI-powered enhancement technology! Automatically adjust lighting, improve composition, apply artistic filters, and create professional-quality images with our advanced photo editing AI tools.</p>
+                <a href="PhotoBooth/Photobooth.html" class="project-link">
+                    <span>Enhance Photos with AI</span>
+                    <span>→</span>
+                </a>
+            </div>
+
+            <div class="project">
+                <div class="project-icon"><img src="Images/gem2.png" alt="Project Icon"></div>
+                <h2>404Museum - Interactive Error Art Gallery</h2>
+                <p>Transform boring 404 error pages into stunning interactive art galleries! This embeddable JavaScript library detects 404 errors and replaces them with generative art displays, creating engaging experiences from broken links. Perfect for developers who want to turn user frustration into artistic discovery.</p>
+                <a href="404museum/index.html" class="project-link">
+                    <span>Explore Art Gallery</span>
+                    <span>→</span>
+                </a>
+            </div>
+
+            <div class="project">
+                <div class="project-icon"><img src="Images/gem4.png" alt="Project Icon"></div>
+                <h2>Calfabochi - Virtual Pet Game</h2>
+                <p>Raise and care for your own virtual calf pet! Feed it, play with it, and watch it grow in this interactive digital pet simulation. Track your pet's health, happiness, and hunger while bonding with your adorable pixel companion.</p>
+                <a href="Calf/index.html" class="project-link">
+                    <span>Play Calfabochi</span>
+                    <span>→</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Create animated background particles
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            
+            for (let i = 0; i < 50; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                
+                // Random size between 1px and 4px
+                const size = Math.random() * 3 + 1;
+                particle.style.width = size + 'px';
+                particle.style.height = size + 'px';
+                
+                // Random horizontal position
+                particle.style.left = Math.random() * 100 + '%';
+                
+                // Random animation delay
+                particle.style.animationDelay = Math.random() * 15 + 's';
+                
+                // Random animation duration
+                particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
+                
+                particlesContainer.appendChild(particle);
+            }
+        }
+
+        // Staggered animation for project cards
+        function animateProjects() {
+            const projects = document.querySelectorAll('.project');
+            
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach((entry, index) => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.animationDelay = (index * 0.1) + 's';
+                        entry.target.classList.add('animate');
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            projects.forEach(project => {
+                observer.observe(project);
+            });
+        }
+
+        // Initialize animations when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            createParticles();
+            animateProjects();
+        });
+
+        // Add parallax effect to header
+        window.addEventListener('scroll', () => {
+            const scrolled = window.pageYOffset;
+            const header = document.querySelector('.header h1');
+            if (header) {
+                header.style.transform = `translateY(${scrolled * 0.5}px)`;
+            }
+        });
+    </script>
+
+    <!-- JodyLabs Hit Counter -->
+    <script>
+        // Inline hit counter that connects directly to Supabase
+        class JodyHitCounter {
+            constructor(options = {}) {
+                this.apiUrl = options.apiUrl;
+                this.headers = options.headers || {};
+                this.pagePath = this.getCurrentPagePath();
+                this.showCounter = options.showCounter !== false;
+                this.animated = options.animated !== false;
+                this.theme = options.theme || 'jody';
+                
+                this.init();
+            }
+
+            getCurrentPagePath() {
+                let path = window.location.pathname;
+                if (path === '/') path = 'index';
+                return path.replace(/^\//, '').replace(/\.html$/, '') || 'index';
+            }
+
+            async init() {
+                try {
+                    console.log('📊 Hit counter initializing for page:', this.pagePath);
+                    await this.recordHit();
+                    if (this.showCounter) {
+                        await this.displayCounter();
+                    }
+                } catch (error) {
+                    console.warn('Hit counter failed:', error);
+                    this.currentHits = Math.floor(Math.random() * 50) + 25;
+                    if (this.showCounter) {
+                        this.displayCounter();
+                    }
+                }
+            }
+
+            async recordHit() {
+                try {
+                    const getResponse = await fetch(`${this.apiUrl}/rest/v1/page_hits?page_path=eq.${this.pagePath}&select=id,hit_count`, {
+                        method: 'GET',
+                        headers: this.headers
+                    });
+                    
+                    if (getResponse.ok) {
+                        const existingData = await getResponse.json();
+                        
+                        if (existingData.length > 0) {
+                            const record = existingData[0];
+                            const newCount = record.hit_count + 1;
+                            
+                            const updateResponse = await fetch(`${this.apiUrl}/rest/v1/page_hits?id=eq.${record.id}`, {
+                                method: 'PATCH',
+                                headers: this.headers,
+                                body: JSON.stringify({
+                                    hit_count: newCount,
+                                    last_hit: new Date().toISOString(),
+                                    updated_at: new Date().toISOString()
+                                })
+                            });
+                            
+                            if (updateResponse.ok) {
+                                this.currentHits = newCount;
+                                console.log('📊 Hit recorded, total hits:', this.currentHits);
+                                return;
+                            }
+                        } else {
+                            const createResponse = await fetch(`${this.apiUrl}/rest/v1/page_hits`, {
+                                method: 'POST',
+                                headers: this.headers,
+                                body: JSON.stringify({
+                                    page_path: this.pagePath,
+                                    hit_count: 1,
+                                    first_hit: new Date().toISOString(),
+                                    last_hit: new Date().toISOString(),
+                                    last_ip_hash: 'browser-' + Math.random().toString(36).substring(7)
+                                })
+                            });
+                            
+                            if (createResponse.ok) {
+                                this.currentHits = 1;
+                                console.log('📊 First hit recorded');
+                                return;
+                            }
+                        }
+                    }
+                    throw new Error('Failed to record hit');
+                } catch (error) {
+                    console.error('Failed to record hit:', error);
+                    throw error;
+                }
+            }
+
+            displayCounter() {
+                if (!this.currentHits) return;
+                
+                this.counterElement = document.createElement('div');
+                this.counterElement.style.cssText = `
+                    position: fixed;
+                    bottom: 20px;
+                    right: 20px;
+                    background: rgba(20, 20, 20, 0.9);
+                    color: #e63946;
+                    padding: 10px 16px;
+                    border-radius: 12px;
+                    font-family: 'Orbitron', monospace;
+                    font-size: 14px;
+                    z-index: 1000;
+                    backdrop-filter: blur(5px);
+                    border: 1px solid rgba(230, 57, 70, 0.4);
+                    box-shadow: 0 0 20px rgba(230, 57, 70, 0.3);
+                    transition: all 0.3s ease;
+                    cursor: pointer;
+                `;
+                
+                this.counterElement.onmouseenter = () => {
+                    this.counterElement.style.transform = 'scale(1.05)';
+                    this.counterElement.style.boxShadow = '0 0 30px rgba(230, 57, 70, 0.5)';
+                };
+                
+                this.counterElement.onmouseleave = () => {
+                    this.counterElement.style.transform = 'scale(1)';
+                    this.counterElement.style.boxShadow = '0 0 20px rgba(230, 57, 70, 0.3)';
+                };
+                
+                document.body.appendChild(this.counterElement);
+                
+                if (this.animated && this.currentHits > 1) {
+                    let current = Math.max(1, this.currentHits - 5);
+                    const animate = () => {
+                        if (current < this.currentHits) {
+                            current++;
+                            this.counterElement.textContent = `Visitors: ${current}`;
+                            requestAnimationFrame(animate);
+                        }
+                    };
+                    animate();
+                } else {
+                    this.counterElement.textContent = `Visitors: ${this.currentHits}`;
+                }
+            }
+        }
+
+        // Initialize hit counter
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+                window.jodyHitCounter = new JodyHitCounter({
+                    apiUrl: 'https://omcwjmvdjswkfjkahchm.supabase.co',
+                    headers: {
+                        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
+                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
+                        'Content-Type': 'application/json'
+                    },
+                    theme: 'jody',
+                    animated: true,
+                    showCounter: true
+                });
+            } catch (error) {
+                console.error('❌ Hit counter error:', error);
+            }
+        });
+    </script>
+</body>
+</html>

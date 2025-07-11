@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Gallery</title>
+    <style>
+        body {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: 0;
+            padding: 20px;
+            background-color: #000; /* Black background */
+            color: #fff; /* White text for contrast */
+            font-family: Arial, sans-serif; /* Font style */
+            border: 10px solid #00f; /* Blue border */
+            box-shadow: 0 0 20px rgba(0, 0, 255, 0.5); /* Blue shadow around the border */
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            padding: 20px;
+            background-color: #000; /* Inner black background */
+            border-radius: 15px; /* Rounded corners for the inner container */
+        }
+        img {
+            margin: 10px;
+            max-width: 200px; /* Adjust as needed */
+            max-height: 200px; /* Adjust as needed */
+            border: 2px solid rgba(0, 0, 255, 0.8); /* Semi-transparent blue border */
+            border-radius: 15px; /* Curved edges */
+            box-shadow: 2px 2px 10px rgba(0, 0, 255, 0.5); /* Blue shadow */
+            animation: float 4s ease-in-out infinite; /* Floating effect */
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); /* Diamond shape */
+        }
+
+        /* Keyframes for floating effect */
+        @keyframes float {
+            0% { transform: translate(0, 0); }
+            25% { transform: translate(-5px, -5px); } /* Move up-left */
+            50% { transform: translate(5px, 5px); } /* Move down-right */
+            75% { transform: translate(-5px, 5px); } /* Move up-right */
+            100% { transform: translate(5px, -5px); } /* Move down-left */
+        }
+
+        /* Add different animation delays for each image */
+        img:nth-child(1) { animation-delay: 0s; }
+        img:nth-child(2) { animation-delay: 0.2s; }
+        img:nth-child(3) { animation-delay: 0.4s; }
+        img:nth-child(4) { animation-delay: 0.6s; }
+        img:nth-child(5) { animation-delay: 0.8s; }
+        img:nth-child(6) { animation-delay: 1s; }
+        img:nth-child(7) { animation-delay: 1.2s; }
+        img:nth-child(8) { animation-delay: 1.4s; }
+        img:nth-child(9) { animation-delay: 1.6s; }
+        img:nth-child(10) { animation-delay: 1.8s; }
+        img:nth-child(11) { animation-delay: 2s; }
+        img:nth-child(12) { animation-delay: 2.2s; }
+        img:nth-child(13) { animation-delay: 2.4s; }
+        img:nth-child(14) { animation-delay: 2.6s; }
+        img:nth-child(15) { animation-delay: 2.8s; }
+        img:nth-child(16) { animation-delay: 3s; }
+        img:nth-child(17) { animation-delay: 3.2s; }
+        img:nth-child(18) { animation-delay: 3.4s; }
+        img:nth-child(19) { animation-delay: 3.6s; }
+        img:nth-child(20) { animation-delay: 3.8s; }
+        img:nth-child(21) { animation-delay: 4s; }
+        img:nth-child(22) { animation-delay: 4.2s; }
+        img:nth-child(23) { animation-delay: 4.4s; }
+        img:nth-child(24) { animation-delay: 4.6s; }
+        img:nth-child(25) { animation-delay: 4.8s; }
+        img:nth-child(26) { animation-delay: 5s; }
+        img:nth-child(27) { animation-delay: 5.2s; }
+        img:nth-child(28) { animation-delay: 5.4s; }
+        img:nth-child(29) { animation-delay: 5.6s; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Images from file_ 1 to file_29 in the pics directory -->
+        <img src="pics/file_1.png" alt="Image 1">
+        <img src="pics/file_2.png" alt="Image 2">
+        <img src="pics/file_3.png" alt="Image 3">
+        <img src="pics/file_4.png" alt="Image 4">
+        <img src="pics/file_5.png" alt="Image 5">
+        <img src="pics/file_6.png" alt="Image 6">
+        <img src="pics/file_7.png" alt="Image 7">
+        <img src="pics/file_8.png" alt="Image 8">
+        <img src="pics/file_9.png" alt="Image 9">
+        <img src="pics/file_10.png" alt="Image 10">
+        <img src="pics/file_11.png" alt="Image 11">
+        <img src="pics/file_12.png" alt="Image 12">
+        <img src="pics/file_13.png" alt="Image 13">
+        <img src="pics/file_14.png" alt="Image 14">
+        <img src="pics/file_15.png" alt="Image 15">
+        <img src="pics/file_16.png" alt="Image 16">
+        <img src="pics/file_17.png" alt="Image 17">
+        <img src="pics/file_18.png" alt="Image 18">
+        <img src="pics/file_19.png" alt="Image 19">
+        <img src="pics/file_20.png" alt="Image 20">
+        <img src="pics/file_21.png" alt="Image 21">
+        <img src="pics/file_22.png" alt="Image 22">
+        <img src="pics/file_23.png" alt="Image 23">
+        <img src="pics/file_24.png" alt="Image 24">
+        <img src="pics/file_25.png" alt="Image 25">
+        <img src="pics/file_26.png" alt="Image 26">
+        <img src="pics/file_27.png" alt="Image 27">
+        <img src="pics/file_28.png" alt="Image 28">
+        <img src="pics/file_29.png" alt="Image 29">
+    </div>
+
+</body>
+</html>

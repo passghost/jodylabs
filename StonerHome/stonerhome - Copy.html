@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Wake'n'bake Homepage</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap');
+
+        body {
+            font-family: 'Great Vibes', cursive;
+            background-color: #121212;
+            background-image: url('https://cdn.discordapp.com/attachments/1129507157809823824/1269396053711392879/LeatherPadedwp.png?ex=66afe8b3&is=66ae9733&hm=1f9f922df90a0d9034caf94340a0e41b9f7ff8d5ff76d1d28ded406bd7d10f32&');
+            background-repeat: repeat;
+            filter: brightness(0.7);
+            color: #00ff00;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            width: 100%;
+            max-width: 1600px; /* Increased width */
+        }
+        .widget {
+            background-color: #1e1e1e;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            border: 3px solid #006400; /* Thicker border */
+            transition: transform 0.3s ease, z-index 0.3s ease;
+        }
+        .widget:hover {
+            transform: scale(1.2);
+            z-index: 10;
+        }
+        .retro-tv, .adult-swim {
+            grid-column: span 4;
+            grid-row: span 4;
+        }
+        iframe {
+            width: 100%;
+            border: none;
+        }
+        .title-container {
+            background-color: #000000;
+            border: 3px solid #00ff00;
+            border-radius: 15px;
+            padding: 10px 20px;
+            display: inline-block;
+            margin-bottom: 20px; /* Added padding */
+        }
+        h1 {
+            font-size: 400%; /* 200% larger */
+            color: #00ff00;
+            text-shadow: 2px 2px 4px #000000; /* Thicker shadow */
+            margin: 0;
+        }
+        h2 {
+            color: #00ff00;
+            text-shadow: 1px 1px 2px #000000;
+        }
+        form input[type="text"] {
+            width: 80%;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            background-color: #333;
+            color: #fff;
+        }
+        form button {
+            padding: 10px;
+            border-radius: 4px;
+            background-color: #00ff00;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        form button:hover {
+            background-color: #00cc00;
+        }
+        .clock {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 24px;
+            color: #00ff00;
+            text-shadow: 1px 1px 2px #000000;
+        }
+    </style>
+</head>
+<body>
+    <div class="title-container">
+        <h1>The Wake'n'bake Homepage</h1>
+    </div>
+    <div class="clock" id="clock"></div>
+    <div class="container">
+        <!-- News Widget -->
+        <div class="widget">
+            <h2>Latest News</h2>
+            <iframe src="https://ground.news/embed" height="400"></iframe>
+        </div>
+
+        <!-- Weather Widget -->
+        <div class="widget">
+            <h2>Weather</h2>
+            <a class="weatherwidget-io" href="https://forecast7.com/en/38d04n84d50/lexington/" data-label_1="LEXINGTON" data-label_2="WEATHER" data-theme="ruby">LEXINGTON WEATHER</a>
+            <script>
+                !function(d,s,id){
+                    var js,fjs=d.getElementsByTagName(s)[0];
+                    if(!d.getElementById(id)){
+                        js=d.createElement(s);
+                        js.id=id;
+                        js.src='https://weatherwidget.io/js/widget.min.js';
+                        fjs.parentNode.insertBefore(js,fjs);
+                    }
+                }(document,'script','weatherwidget-io-js');
+            </script>
+        </div>
+
+        <!-- Search Engine Widget -->
+        <div class="widget">
+            <h2>Search the Web</h2>
+            <form method="GET" action="https://duckduckgo.com/">
+                <input type="text" name="q" maxlength="255" placeholder="Search DuckDuckGo">
+                <button type="submit">Search</button>
+            </form>
+        </div>
+
+        <!-- Kaspa Crypto Tracker Widget -->
+        <div class="widget">
+            <h2>Kaspa Crypto Tracker</h2>
+            <script src="https://widget.coinlore.com/widgets/new-widget.js"></script>
+            <div class="coinlore-coin-widget" data-mcap="1" data-mcurrency="usd" data-d7="1" data-cwidth="100%" data-rank="1" data-vol="1" data-id="kaspa" data-bcolor="#1e1e1e" data-tcolor="#00ff00" data-ccolor="#00ff00" data-pcolor="#00ff00"></div>
+        </div>
+
+        <!-- Retro TV Widget -->
+        <div class="widget retro-tv">
+            <h2>Retro TV</h2>
+            <iframe src="https://00s.myretrotvs.com/#ZMe8-AjHWsY" height="800"></iframe>
+        </div>
+
+        <!-- Adult Swim Widget -->
+        <div class="widget adult-swim">
+            <h2>Adult Swim</h2>
+            <iframe src="https://www.adultswim.com/streams/" height="800"></iframe>
+        </div>
+    </div>
+    <script>
+        function updateClock() {
+            const now = new Date();
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const seconds = now.getSeconds().toString().padStart(2, '0');
+            document.getElementById('clock').textContent = `${hours}:${minutes}:${seconds}`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+    </script>
+</body>
+</html>

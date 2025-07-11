@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArtConnect - Share Your Creative Vision</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+
+        header {
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            padding: 1rem;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        nav {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem;
+        }
+
+        .logo {
+            color: white;
+            font-size: 1.8rem;
+            font-weight: bold;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: opacity 0.3s;
+            cursor: pointer;
+        }
+
+        .nav-links a:hover {
+            opacity: 0.8;
+        }
+
+        .auth-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .user-menu {
+            display: none;
+        }
+
+        body.logged-in .auth-buttons {
+            display: none;
+        }
+
+        body.logged-in .user-menu {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .hero {
+            margin-top: 80px;
+            padding: 4rem 2rem;
+            text-align: center;
+            background: white;
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            color: #666;
+            max-width: 600px;
+            margin: 0 auto 2rem;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 0.8rem 1.5rem;
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: transform 0.3s;
+            text-decoration: none;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .gallery {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .art-card {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+
+        .art-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .art-card img {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+            background: #f0f0f0;
+        }
+
+        .art-info {
+            padding: 1.5rem;
+        }
+
+        .art-info h3 {
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+
+        .art-info p {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .like-button {
+            background: none;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 0.5rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .like-button.liked {
+            color: #e74c3c;
+        }
+
+        .like-button:hover {
+            transform: scale(1.1);
+        }
+
+        .heart-icon {
+            display: inline-block;
+            color: currentColor;
+            font-size: 1.2em;
+        }
+
+        .heart-icon::before {
+            content: '♥';
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+            position: relative;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            cursor: pointer;
+            font-size: 1.5rem;
+            color: #666;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #666;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .error-message {
+            color: #e74c3c;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .gallery {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <a href="#" class="logo">ArtConnect</a>
+            <div class="nav-links">
+                <a href="#discover">Discover</a>
+                <a href="#artists">Artists</a>
+                <a href="#collections">Collections</a>
+                <a href="#about">About</a>
+            </div>
+            <div class="auth-buttons">
+                <button class="btn" onclick="showLoginModal()">Login</button>
+                <button class="btn" onclick="showRegisterModal()">Register</button>
+            </div>
+            <div class="user-menu">
+                <button class="btn" onclick="showUploadForm()">Upload Art</button>
+                <button class="btn" onclick="logout()">Logout</button>
+            </div>
+        </nav>
+    </header>
+
+    <section class="hero">
+        <h1>Share Your Creative Vision</h1>
+        <p>Join a community of artists, collectors, and art enthusiasts. Showcase your work, discover amazing artists, and connect with creative minds worldwide.</p>
+        <button class="btn" onclick="showRegisterModal()">Join Now</button>
+    </section>
+
+    <div id="gallery" class="gallery">
+        <!-- Artwork cards will be dynamically added here -->
+    </div>
+
+    <!-- Login Modal -->
+    <div id="login-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('login-modal')">&times;</span>
+            <h2>Login</h2>
+            <form id="login-form" onsubmit="login(event)">
+                <div class="form-group">
+                    <label for="login-username">Username</label>
+                    <input type="text" id="login-username" required autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" required autocomplete="current-password">
+                </div>
+                <button type="submit" class="btn">Login</button>
+                <p class="error-message" id="login-error"></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div id="register-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('register-modal')">&times;</span>
+            <h2>Register</h2>
+            <form id="register-form" onsubmit="register(event)">
+                <div class="form-group">
+                    <label for="register-username">Username</label>
+                    <input type="text" id="register-username" required autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label for="register-email">Email</label>
+                    <input type="email" id="register-email" required autocomplete="email">
+                </div>
+                <div class="form-group">
+                    <label for="register-password">Password</label>
+                    <input type="password" id="register-password" required autocomplete="new-password">
+                </div>
+                <button type="submit" class="btn">Register</button>
+                <p class="error-message" id="register-error"></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Upload Form -->
+    <div id="upload-form" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('upload-form')">&times;</span>
+            <h2>Upload Artwork</h2>
+            <form onsubmit="uploadArtwork(event)">
+                <div class="form-group">
+                    <label for="artwork-title">Title</label>
+                    <input type="text" id="artwork-title" required>
+                </div>
+                <div class="form-group">
+                    <label for="artwork-image">Image URL</label>
+                    <input type="url" id="artwork-image" required>
+                </div>
+                <div class="form-group">
+                    <label for="artwork-description">Description</label>
+                    <textarea id="artwork-description"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="artwork-tags">Tags (comma-separated)</label>
+                    <input type="text" id="artwork-tags">
+                </div>
+                <button type="submit" class="btn">Upload</button>
+                <p class="error-message" id="upload-error"></p>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Check authentication status on page load
+        checkAuth();
+
+        function checkAuth() {
+            fetch('/api/check-auth')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.authenticated) {
+                        document.body.classList.add('logged-in');
+                    } else {
+                        document.body.classList.remove('logged-in');
+                    }
+                    loadArtworks();
+                });
+        }
+
+        function showLoginModal() {
+            document.getElementById('login-modal').style.display = 'flex';
+        }
+
+        function showRegisterModal() {
+            document.getElementById('register-modal').style.display = 'flex';
+        }
+
+        function showUploadForm() {
+            document.getElementById('upload-form').style.display = 'flex';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        function login(event) {
+            event.preventDefault();
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+
+            fetch('/api/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username, password }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    document.getElementById('login-error').textContent = data.error;
+                } else {
+                    closeModal('login-modal');
+                    document.body.classList.add('logged-in');
+                    loadArtworks();
+                }
+            });
+        }
+
+        function register(event) {
+            event.preventDefault();
+            const username = document.getElementById('register-username').value;
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+
+            fetch('/api/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username, email, password }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    document.getElementById('register-error').textContent = data.error;
+                } else {
+                    closeModal('register-modal');
+                    document.body.classList.add('logged-in');
+                    loadArtworks();
+                }
+            });
+        }
+
+        function logout() {
+            fetch('/api/logout')
+                .then(() => {
+                    document.body.classList.remove('logged-in');
+                    loadArtworks();
+                });
+        }
+
+        function loadArtworks() {
+            fetch('/api/artwork')
+                .then(response => response.json())
+                .then(data => {
+                    const gallery = document.getElementById('gallery');
+                    gallery.innerHTML = '';
+
+                    data.artworks.forEach(artwork => {
+                        const card = createArtworkCard(artwork);
+                        gallery.appendChild(card);
+                    });
+                });
+        }
+
+        function createArtworkCard(artwork) {
+            const card = document.createElement('div');
+            card.className = 'art-card';
+            card.innerHTML = `
+                <img src="${artwork.image_url}" alt="${artwork.title}" 
+                     onerror="this.src='https://via.placeholder.com/400x300?text=No+Image+Available'">
+                <div class="art-info">
+                    <h3>${artwork.title}</h3>
+                    <p>${artwork.description || ''}</p>
+                    <p>By ${artwork.display_name || artwork.username}</p>
+                    <button class="like-button ${artwork.liked ? 'liked' : ''}" 
+                            onclick="toggleLike(${artwork.artwork_id})">
+                        <span class="heart-icon"></span>
+                        <span>${artwork.likes_count || 0}</span>
+                    </button>
+                </div>
+            `;
+            return card;
+        }
+
+        function toggleLike(artworkId) {
+            fetch(`/api/artwork/${artworkId}/like`, {
+                method: 'POST',
+            })
+            .then(response => {
+                if (response.status === 401) {
+                    showLoginModal();
+                    return;
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data) {
+                    loadArtworks();
+                }
+            });
+        }
+
+        function uploadArtwork(event) {
+            event.preventDefault();
+            const title = document.getElementById('artwork-title').value;
+            const imageUrl = document.getElementById('artwork-image').value;
+            const description = document.getElementById('artwork-description').value;
+            const tags = document.getElementById('artwork-tags').value.split(',').map(tag => tag.trim());
+
+            fetch('/api/artwork', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    title,
+                    image_url: imageUrl,
+                    description,
+                    tags,
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    document.getElementById('upload-error').textContent = data.error;
+                } else {
+                    closeModal('upload-form');
+                    loadArtworks();
+                    // Reset form
+                    event.target.reset();
+                }
+            });
+        }
+
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+        }
+
+        // Load artworks on page load
+        loadArtworks();
+    </script>
+</body>
+</html>

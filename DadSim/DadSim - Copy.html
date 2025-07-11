@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dad's Web Counter</title>
+    <style>
+        @font-face {
+            font-family: 'Bravo';
+            src: url('/fonts/bravo.ttf') format('truetype');
+        }
+        body {
+            display: flex;
+            flex-wrap: wrap;
+            font-family: 'Bravo', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        .number {
+            flex: 1 0 auto;
+            padding: 10px;
+            box-sizing: border-box;
+            text-align: center;
+            border: 1px solid #000;
+            color: #fff;
+            font-size: 1.5em;
+            background-color: blue;
+            text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px #ff00ff, 0 0 20px #ff00ff, 0 0 25px #ff00ff, 0 0 30px #ff00ff, 0 0 35px #ff00ff;
+        }
+        .ball {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: blue;
+            border: 3px solid green;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 10px blue, 0 0 20px blue, 0 0 30px blue;
+            z-index: 10;
+        }
+        .center-box {
+            position: absolute;
+            top: 0;
+            left: 0;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            font-size: 2em;
+            border: 2px solid #fff;
+            box-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #fff;
+            padding: 10px;
+            z-index: 5;
+            text-shadow: 0 0 5px green, 0 0 10px green, 0 0 15px blue, 0 0 20px blue;
+        }
+    </style>
+</head>
+<body>
+    <div class="center-box">Dad's Web Counter</div>
+    <div class="ball"></div>
+    <script>
+        const maxRows = 20;
+        const maxColumns = 20;
+        const maxNumbers = maxRows * maxColumns;
+        const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
+        let currentColorIndex = 0;
+
+        function changeColor() {
+            currentColorIndex = (currentColorIndex + 1) % colors.length;
+            setTimeout(changeColor, 5000);
+        }
+        changeColor();
+
+        function createNumbers() {
+            for (let i = 0; i < maxNumbers; i++) {
+                const numberDiv = document.createElement('div');
+                numberDiv.className = 'number';
+                numberDiv.textContent = Math.floor(Math.random() * 100);
+                document.body.appendChild(numberDiv);
+            }
+        }
+        createNumbers();
+
+        function updateNumbers() {
+            const numberDivs = document.querySelectorAll('.number');
+            numberDivs.forEach(div => {
+                div.textContent = parseInt(div.textContent) + 100;
+                div.style.fontSize = div.textContent.length < 2 ? '1.5em' : '1em';
+            });
+            requestAnimationFrame(updateNumbers);
+        }
+        updateNumbers();
+
+        const ball = document.querySelector('.ball');
+        let ballX = Math.random() * window.innerWidth;
+        let ballY = Math.random() * window.innerHeight;
+        let ballSpeedX = 4;
+        let ballSpeedY = 4;
+
+        function moveBall() {
+            ballX += ballSpeedX;
+            ballY += ballSpeedY;
+
+            if (ballX <= 0 || ballX >= window.innerWidth - ball.offsetWidth) {
+                ballSpeedX *= -1;
+            }
+            if (ballY <= 0 || ballY >= window.innerHeight - ball.offsetHeight) {
+                ballSpeedY *= -1;
+            }
+
+            const centerBox = document.querySelector('.center-box');
+            const centerBoxRect = centerBox.getBoundingClientRect();
+            if (ballX >= centerBoxRect.left && ballX <= centerBoxRect.right && ballY >= centerBoxRect.top && ballY <= centerBoxRect.bottom) {
+                if (ballX <= centerBoxRect.left || ballX >= centerBoxRect.right) {
+                    ballSpeedX *= -1;
+                }
+                if (ballY <= centerBoxRect.top || ballY >= centerBoxRect.bottom) {
+                    ballSpeedY *= -1;
+                }
+            }
+
+            if (ballX < 0 || ballX > window.innerWidth || ballY < 0 || ballY > window.innerHeight) {
+                ballX = window.innerWidth / 2;
+                ballY = window.innerHeight / 2;
+            }
+
+            ball.style.left = ballX + 'px';
+            ball.style.top = ballY + 'px';
+
+            const numberDivs = document.querySelectorAll('.number');
+            numberDivs.forEach(div => {
+                const rect = div.getBoundingClientRect();
+                if (ballX >= rect.left && ballX <= rect.right && ballY >= rect.top && ballY <= rect.bottom) {
+                    div.textContent = '0';
+                    div.style.textShadow = `0 0 5px ${colors[currentColorIndex]}, 0 0 10px ${colors[currentColorIndex]}, 0 0 15px ${colors[currentColorIndex]}, 0 0 20px ${colors[currentColorIndex]}, 0 0 25px ${colors[currentColorIndex]}, 0 0 30px ${colors[currentColorIndex]}, 0 0 35px ${colors[currentColorIndex]}`;
+                }
+            });
+
+            requestAnimationFrame(moveBall);
+        }
+
+        moveBall();
+    </script>
+</body>
+</html>

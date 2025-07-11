@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Wake'n'bake Homepage</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            background-image: url('../Images/LeatherPadedwp.png');
+            background-size: 200px;
+            background-repeat: repeat;
+            background-attachment: fixed;
+            min-height: 100vh;
+            color: #00ff88;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px;
+            background: rgba(0, 0, 0, 0.9);
+            border-radius: 20px;
+            border: 2px solid #00ff88;
+            box-shadow: 0 20px 40px rgba(0, 255, 136, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            animation: glow 3s infinite ease-in-out;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        @keyframes glow {
+            0%, 100% { 
+                filter: drop-shadow(0 0 20px #00ff88) brightness(1.2);
+                transform: scale(1);
+            }
+            50% { 
+                filter: drop-shadow(0 0 30px #00ffaa) brightness(1.4);
+                transform: scale(1.05);
+            }
+        }
+
+        h1 {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 700;
+            background: linear-gradient(45deg, #00ff88, #00ffaa, #44ff99);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px rgba(0, 255, 136, 0.5);
+            margin: 0;
+        }
+
+        .clock {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #00ff88;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px 20px;
+            border-radius: 15px;
+            border: 1px solid #00ff88;
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+        }
+
+        .hit-counter {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #00ff88;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 8px 15px;
+            border-radius: 15px;
+            border: 1px solid #00ff88;
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            text-align: center;
+            min-width: 120px;
+        }
+
+        .hit-counter .counter-label {
+            display: block;
+            font-size: 0.7rem;
+            opacity: 0.8;
+            margin-bottom: 2px;
+        }
+
+        .hit-counter .counter-value {
+            display: block;
+            font-weight: 600;
+            color: #44ff99;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            grid-template-rows: auto auto auto;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .widgets-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .adult-swim-widget {
+            grid-column: 2;
+            grid-row: 1 / span 2;
+            min-height: 600px;
+        }
+
+        .adult-swim-widget iframe {
+            height: 500px;
+        }
+
+        .left-widgets {
+            grid-column: 1;
+            display: grid;
+            gap: 25px;
+        }
+
+        .right-widgets {
+            grid-column: 3;
+            display: grid;
+            gap: 25px;
+        }
+
+        .bottom-widgets {
+            grid-column: 1 / span 3;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+        }
+
+        .widget {
+            background: rgba(0, 0, 0, 0.9);
+            border-radius: 20px;
+            padding: 25px;
+            border: 2px solid #00ff88;
+            box-shadow: 0 10px 30px rgba(0, 255, 136, 0.1);
+            backdrop-filter: blur(10px);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .widget::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 136, 0.1), transparent);
+            transition: left 0.6s;
+        }
+
+        .widget:hover::before {
+            left: 100%;
+        }
+
+        .widget:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 255, 136, 0.2);
+            border-color: #00ffaa;
+        }
+
+        .widget h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #00ff88;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .widget-icon {
+            width: 24px;
+            height: 24px;
+            filter: hue-rotate(120deg) brightness(1.2);
+        }
+
+        iframe {
+            width: 100%;
+            border: none;
+            border-radius: 10px;
+            background: #000;
+        }
+
+        .search-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .search-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(0, 255, 136, 0.1);
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid #00ff88;
+        }
+
+        .search-group img {
+            width: 20px;
+            height: 20px;
+        }
+
+        .search-group form {
+            display: flex;
+            flex: 1;
+            gap: 10px;
+        }
+
+        .search-group input[type="text"] {
+            flex: 1;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 1px solid #00ff88;
+            background: rgba(0, 0, 0, 0.8);
+            color: #00ff88;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .search-group input[type="text"]:focus {
+            border-color: #00ffaa;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+        }
+
+        .search-group button {
+            padding: 12px 20px;
+            border-radius: 8px;
+            background: linear-gradient(45deg, #00ff88, #00ffaa);
+            color: #000;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .search-group button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 255, 136, 0.4);
+        }
+
+        .widget-button {
+            display: block;
+            width: 100%;
+            padding: 12px 20px;
+            margin-top: 15px;
+            background: linear-gradient(45deg, #00ff88, #00ffaa);
+            color: #000;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+        }
+
+        .widget-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 255, 136, 0.4);
+            background: linear-gradient(45deg, #00ffaa, #44ff99);
+        }
+
+        .entertainment-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .large-widget {
+            min-height: 500px;
+        }
+
+        .large-widget iframe {
+            height: 400px;
+        }
+
+        .menu-section {
+            background: rgba(0, 0, 0, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            border: 2px solid #00ff88;
+            box-shadow: 0 15px 35px rgba(0, 255, 136, 0.15);
+            backdrop-filter: blur(15px);
+        }
+
+        .menu-section h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #00ff88;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .menu-widget {
+            margin-bottom: 30px;
+            background: rgba(0, 255, 136, 0.05);
+            border-radius: 15px;
+            padding: 25px;
+            border: 1px solid #00ff88;
+            text-align: center;
+        }
+
+        .menu-widget h3 {
+            color: #00ffaa;
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .menu-widget p {
+            color: #cccccc;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .shop-button {
+            display: inline-block;
+            padding: 15px 30px;
+            background: linear-gradient(45deg, #00ff88, #00ffaa);
+            color: #000;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 255, 136, 0.3);
+        }
+
+        .shop-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0, 255, 136, 0.5);
+            background: linear-gradient(45deg, #00ffaa, #44ff99);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            .main-grid {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto;
+            }
+
+            .adult-swim-widget {
+                grid-column: 1;
+                grid-row: auto;
+            }
+
+            .left-widgets,
+            .right-widgets,
+            .bottom-widgets {
+                grid-column: 1;
+            }
+
+            .widgets-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .entertainment-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .clock {
+                position: relative;
+                top: auto;
+                right: auto;
+                margin-bottom: 20px;
+                display: inline-block;
+            }
+
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            h1 {
+                font-size: 2.5rem;
+            }
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(45deg, #00ff88, #00ffaa);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(45deg, #00ffaa, #44ff99);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <img src="WeedTred.png" alt="Logo" class="logo">
+                <h1>The Wake'n'bake Homepage</h1>
+            </div>
+        </div>
+        
+        <div class="clock" id="clock"></div>
+        <div class="hit-counter" id="hit-counter">
+            <span class="counter-label">Page Hits</span>
+            <span class="counter-value" id="hit-count">0</span>
+        </div>
+
+        <!-- Main Grid with Adult Swim Centerpiece -->
+        <div class="main-grid">
+            <!-- Left Column Widgets -->
+            <div class="left-widgets">
+                <!-- Weather Widget -->
+                <div class="widget">
+                    <h2>
+                        <img src="../Images/gem2.png" alt="Weather" class="widget-icon">
+                        Weather
+                    </h2>
+                    <a class="weatherwidget-io" href="https://forecast7.com/en/38d04n84d50/lexington/" data-label_1="LEXINGTON" data-label_2="WEATHER" data-theme="ruby">LEXINGTON WEATHER</a>
+                    <script>
+                        !function(d,s,id){
+                            var js,fjs=d.getElementsByTagName(s)[0];
+                            if(!d.getElementById(id)){
+                                js=d.createElement(s);
+                                js.id=id;
+                                js.src='https://weatherwidget.io/js/widget.min.js';
+                                fjs.parentNode.insertBefore(js,fjs);
+                            }
+                        }(document,'script','weatherwidget-io-js');
+                    </script>
+                    <a href="https://forecast7.com/en/38d04n84d50/lexington/" target="_blank" class="widget-button">Open Weather</a>
+                </div>
+
+                <!-- Discord Widget -->
+                <div class="widget">
+                    <h2>
+                        <img src="../Images/gem4.png" alt="Discord" class="widget-icon">
+                        Discord Chat
+                    </h2>
+                    <iframe src="https://discord.com/widget?id=1129507156585041920&theme=dark" 
+                            height="400" 
+                            allowtransparency="true" 
+                            frameborder="0" 
+                            sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"></iframe>
+                    <a href="https://discord.gg/your-invite-link" target="_blank" class="widget-button">Join Discord Server</a>
+                </div>
+            </div>
+
+            <!-- Center - Adult Swim (Large Widget) -->
+            <div class="widget adult-swim-widget">
+                <h2>
+                    <img src="../Images/gem3.png" alt="Adult Swim" class="widget-icon">
+                    [adult swim] Live Streams
+                </h2>
+                <iframe src="https://www.adultswim.com/streams/"
+                        sandbox="allow-scripts allow-same-origin allow-forms"
+                        referrerpolicy="no-referrer"></iframe>
+                <a href="https://www.adultswim.com/streams/" target="_blank" class="widget-button">Open Adult Swim</a>
+            </div>
+
+            <!-- Right Column Widgets -->
+            <div class="right-widgets">
+                <!-- Kaspa Crypto Widget -->
+                <div class="widget">
+                    <h2>
+                        <img src="../Images/emrald.png" alt="Crypto" class="widget-icon">
+                        Kaspa Crypto
+                    </h2>
+                    <script src="https://widget.coinlore.com/widgets/new-widget.js"></script>
+                    <div class="coinlore-coin-widget" data-mcap="1" data-mcurrency="usd" data-d7="1" data-cwidth="100%" data-rank="1" data-vol="1" data-id="kaspa" data-bcolor="#1e1e1e" data-tcolor="#00ff00" data-ccolor="#00ff00" data-pcolor="#00ff00"></div>
+                    <a href="https://coinlore.com/coin/kaspa" target="_blank" class="widget-button">Open Kaspa Stats</a>
+                </div>
+
+                <!-- Broadcastify Widget -->
+                <div class="widget">
+                    <h2>
+                        <img src="../Images/gem5.png" alt="Scanner" class="widget-icon">
+                        Live Scanner Feeds
+                    </h2>
+                    <iframe src="https://www.broadcastify.com/listen/?rl=rr" height="400"></iframe>
+                    <a href="https://www.broadcastify.com/listen/?rl=rr" target="_blank" class="widget-button">Open Broadcastify</a>
+                </div>
+            </div>
+
+            <!-- Bottom Row - Search and Comics -->
+            <div class="bottom-widgets">
+                <!-- Search Engine Widget -->
+                <div class="widget">
+                    <h2>
+                        <img src="../Images/gem3.png" alt="Search" class="widget-icon">
+                        Search the Web
+                    </h2>
+                    <div class="search-container">
+                        <div class="search-group">
+                            <img src="https://www.google.com/favicon.ico" alt="Google">
+                            <form method="GET" action="https://www.google.com/search">
+                                <input type="text" name="q" maxlength="255" placeholder="Search Google">
+                                <button type="submit">Search</button>
+                            </form>
+                        </div>
+                        <div class="search-group">
+                            <img src="https://duckduckgo.com/favicon.ico" alt="DuckDuckGo">
+                            <form method="GET" action="https://duckduckgo.com/">
+                                <input type="text" name="q" maxlength="255" placeholder="Search DuckDuckGo">
+                                <button type="submit">Search</button>
+                            </form>
+                        </div>
+                        <div class="search-group">
+                            <img src="https://you.com/favicon.ico" alt="You.com">
+                            <form method="GET" action="https://you.com/search">
+                                <input type="text" name="q" maxlength="255" placeholder="Search You.com">
+                                <button type="submit">Search</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comics Widget -->
+                <div class="widget large-widget">
+                    <h2>
+                        <img src="../Images/gem2.png" alt="Comics" class="widget-icon">
+                        Read Comics Online
+                    </h2>
+                    <iframe src="https://readcomiconline.li/" 
+                            sandbox="allow-scripts allow-same-origin allow-forms"
+                            referrerpolicy="no-referrer"></iframe>
+                    <a href="https://readcomiconline.li/" target="_blank" class="widget-button">Open Comics Site</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hemp Store Directory (No Embeds - Links Only) -->
+        <div class="menu-section">
+            <h2>Hemp Store Directory</h2>
+            <div class="menu-widget">
+                <h3>🌿 THCa Flower</h3>
+                <p>Premium THCa flower products and affordable ounce deals. High-quality hemp with lab testing and fast shipping.</p>
+                <a href="https://www.thcaflower.online/product/cheap-thca-flower-ounces/15" target="_blank" class="shop-button">Visit THCa Store</a>
+            </div>
+            <div class="menu-widget">
+                <h3>📦 Wholesale Hemp</h3>
+                <p>Bulk THCa flower pounds for retailers and distributors. Competitive wholesale pricing with quality assurance.</p>
+                <a href="https://discountpharms.com/wholesale/hemp-flower/thca-flower-pounds/" target="_blank" class="shop-button">Visit Wholesale Store</a>
+            </div>
+            <div class="menu-widget">
+                <h3>💎 Premium Hemp Wholesale</h3>
+                <p>Top-tier THCa flower wholesale with premium genetics and exceptional potency for discerning customers.</p>
+                <a href="https://highthcahempflower.com/thca-flower-wholesale/" target="_blank" class="shop-button">Visit Premium Store</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function updateClock() {
+            const now = new Date();
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const seconds = now.getSeconds().toString().padStart(2, '0');
+            document.getElementById('clock').textContent = `${hours}:${minutes}:${seconds}`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Hit Counter with Supabase
+        (function() {
+            const apiUrl = 'https://omcwjmvdjswkfjkahchm.supabase.co';
+            const headers = {
+                'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
+                'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
+                'Content-Type': 'application/json'
+            };
+            const pagePath = 'stonerhome';
+
+            async function recordHit() {
+                try {
+                    // Get existing record
+                    const getResponse = await fetch(`${apiUrl}/rest/v1/page_hits?page_path=eq.${pagePath}&select=id,hit_count`, {
+                        method: 'GET',
+                        headers: headers
+                    });
+                    
+                    if (getResponse.ok) {
+                        const existingData = await getResponse.json();
+                        
+                        if (existingData.length > 0) {
+                            // Update existing
+                            const record = existingData[0];
+                            const newCount = record.hit_count + 1;
+                            
+                            const updateResponse = await fetch(`${apiUrl}/rest/v1/page_hits?id=eq.${record.id}`, {
+                                method: 'PATCH',
+                                headers: headers,
+                                body: JSON.stringify({
+                                    hit_count: newCount,
+                                    last_hit: new Date().toISOString(),
+                                    updated_at: new Date().toISOString()
+                                })
+                            });
+                            
+                            if (updateResponse.ok) {
+                                document.getElementById('hit-count').textContent = newCount.toLocaleString();
+                                return;
+                            }
+                        } else {
+                            // Create new record
+                            const createResponse = await fetch(`${apiUrl}/rest/v1/page_hits`, {
+                                method: 'POST',
+                                headers: headers,
+                                body: JSON.stringify({
+                                    page_path: pagePath,
+                                    hit_count: 1,
+                                    first_hit: new Date().toISOString(),
+                                    last_hit: new Date().toISOString(),
+                                    last_ip_hash: 'browser-' + Math.random().toString(36).substring(7)
+                                })
+                            });
+                            
+                            if (createResponse.ok) {
+                                document.getElementById('hit-count').textContent = '1';
+                                return;
+                            }
+                        }
+                    }
+                    throw new Error('Failed to record hit');
+                } catch (error) {
+                    console.error('Hit counter error:', error);
+                    document.getElementById('hit-count').textContent = '---';
+                }
+            }
+
+            // Initialize on page load
+            recordHit();
+        })();
+    </script>
+</body>
+</html>

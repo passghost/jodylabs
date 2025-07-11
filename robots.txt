@@ -1,0 +1,25 @@
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://jodylabs.surge.sh/sitemap.xml
+
+# Crawl-delay (optional, helps prevent overwhelming the server)
+Crawl-delay: 1
+
+# Block access to sensitive or admin areas if any
+# Disallow: /admin/
+# Disallow: /private/
+
+# Allow all bots to access important pages
+Allow: /aifun.html
+Allow: /CardCake/
+Allow: /Galaxy/
+Allow: /BadFortune/
+Allow: /FlowerFall/
+Allow: /NeonPang/
+Allow: /GalacticBrow/
+Allow: /Prinko/
+Allow: /GermSim/
+Allow: /PhotoBooth/
+Allow: /Journal/

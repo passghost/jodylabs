@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glass Effect Circle with Buttons and Balls</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+            margin: 0;
+            position: relative;
+        }
+        .glass-circle {
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: visible; /* Allow buttons to be visible outside the circle */
+        }
+        .button {
+            position: absolute;
+            padding: 15px 30px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 10px rgba(64, 224, 208, 0.5);
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            z-index: 10; /* Ensure buttons are on top */
+        }
+        .button.top {
+            top: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        .button.bottom {
+            bottom: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        .button.left {
+            left: -80px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        .button.right {
+            right: -80px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        .button.reset {
+            top: 10px;
+            right: 10px;
+        }
+        .ball {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            position: absolute;
+            background: linear-gradient(145deg, #d4d4d4, #f0f0f0);
+            box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.2), inset -2px -2px 5px rgba(255, 255, 255, 0.5);
+        }
+        .ball.breeder {
+            background: linear-gradient(145deg, #ff9999, #ffcccc);
+        }
+        .ball.parasite {
+            background: linear-gradient(145deg, #00ff00, #00cc00); /* Green glow */
+            width: 6px; /* 80% smaller */
+            height: 6px; /* 80% smaller */
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5); /* Green glow */
+        }
+        .ball.hunter {
+            background: linear-gradient(145deg, #808080, #a9a9a9); /* Grey color */
+            width: 45px; /* 50% larger */
+            height: 45px; /* 50% larger */
+        }
+        .ball.clone {
+            background: linear-gradient(145deg, #ffff99, #ffffcc);
+        }
+        .dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: green;
+            position: absolute;
+            box-shadow: 0 0 5px rgba(0, 255, 0, 0.5); /* Green glow */
+        }
+        .cooldown {
+            box-shadow: 0 0 10px rgba(0, 0, 255, 0.5); /* Blue glow */
+        }
+        .bar-graph {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 200px;
+            height: 300px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+        }
+        .bar {
+            height: 20px;
+            background: rgba(64, 224, 208, 0.5);
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="glass-circle">
+        <button class="button top" onclick="spawnBall('breeder')">Breeder</button>
+        <button class="button bottom" onclick="spawnBall('parasite')">Parasite</button>
+        <button class="button left" onclick="spawnBall('hunter')">Hunter</button>
+        <button class="button right" onclick="spawnBall('clone')">Clone</button>
+        <button class="button reset" onclick="resetSimulation()">Reset</button>
+    </div>
+    <div class="bar-graph">
+        <div>Breeders: <div class="bar" id="breeder-bar"></div></div>
+        <div>Parasites: <div class="bar" id="parasite-bar"></div></div>
+        <div>Hunters: <div class="bar" id="hunter-bar"></div></div>
+        <div>Clones: <div class="bar" id="clone-bar"></div></div>
+    </div>
+
+    <script>
+        function spawnBall(type) {
+            const circle = document.querySelector('.glass-circle');
+            const ball = document.createElement('div');
+            ball.classList.add('ball', type);
+            ball.dataset.parasites = '0'; // Initialize parasite counter
+            ball.dataset.eaten = '0'; // Initialize eaten counter for hunters
+            ball.dataset.cooldown = 'false'; // Initialize cooldown state for hunters
+            ball.dataset.parasiteContacts = '0'; // Initialize parasite contact counter for clones
+            const radius = circle.clientWidth / 2;
+            const ballRadius = ball.clientWidth / 2;
+            const x = radius - ballRadius;
+            const y = radius - ballRadius;
+            ball.style.left = `${x}px`;
+            ball.style.top = `${y}px`;
+            circle.appendChild(ball);
+            moveBall(ball, circle);
+            updateBarGraph();
+
+            if (type === 'breeder') {
+                setInterval(() => {
+                    const newBall = document.createElement('div');
+                    newBall.classList.add('ball', 'breeder');
+                    newBall.style.width = '15px'; // Half the size
+                    newBall.style.height = '15px'; // Half the size
+                    newBall.style.left = `${x}px`;
+                    newBall.style.top = `${y}px`;
+                    circle.appendChild(newBall);
+                    moveBall(newBall, circle);
+                    updateBarGraph();
+
+                    // Grow the ball to regular size after 30 seconds
+                    setTimeout(() => {
+                        newBall.style.width = '30px';
+                        newBall.style.height = '30px';
+                    }, 30000);
+                }, 20000); // Reproduce every 20 seconds
+            }
+        }
+
+        function moveBall(ball, container) {
+            let dx = (Math.random() * 4 - 2) * 1.5; // Increase speed
+            let dy = (Math.random() * 4 - 2) * 1.5; // Increase speed
+
+            function animate() {
+                let ballRect = ball.getBoundingClientRect();
+                let containerRect = container.getBoundingClientRect();
+                let centerX = containerRect.left + containerRect.width / 2;
+                let centerY = containerRect.top + containerRect.height / 2;
+                let ballX = ballRect.left + ballRect.width / 2;
+                let ballY = ballRect.top + ballRect.height / 2;
+                let distance = Math.sqrt((ballX - centerX) ** 2 + (ballY - centerY) ** 2);
+
+                                if (distance + ballRect.width / 2 >= containerRect.width / 2 - 1) { // Add a small buffer
+                    let angle = Math.atan2(ballY - centerY, ballX - centerX);
+                    dx = -Math.cos(angle) * Math.abs(dx);
+                    dy = -Math.sin(angle) * Math.abs(dy);
+                }
+
+                // Ensure dx and dy are never 0
+                if (dx === 0) dx = (Math.random() * 2 - 1) * 1.5;
+                if (dy === 0) dy = (Math.random() * 2 - 1) * 1.5;
+
+                // Add curvature to the movement
+                let angleChange = (Math.random() - 0.5) * 0.1; // Small random angle change
+                let speed = Math.sqrt(dx * dx + dy * dy);
+                let angle = Math.atan2(dy, dx) + angleChange;
+                dx = Math.cos(angle) * speed;
+                dy = Math.sin(angle) * speed;
+
+                ball.style.left = `${ball.offsetLeft + dx}px`;
+                ball.style.top = `${ball.offsetTop + dy}px`;
+
+                // Change direction at random times
+                if (Math.random() < 0.01) { // 1% chance to change direction each frame
+                    dx = (Math.random() * 4 - 2) * 1.5;
+                    dy = (Math.random() * 4 - 2) * 1.5;
+                }
+
+                // Parasite ball sticks to other balls on contact
+                if (ball.classList.contains('parasite')) {
+                    const otherBalls = document.querySelectorAll('.ball:not(.parasite)');
+                    otherBalls.forEach(otherBall => {
+                        let otherBallRect = otherBall.getBoundingClientRect();
+                        if (ballRect.left < otherBallRect.right &&
+                            ballRect.right > otherBallRect.left &&
+                            ballRect.top < otherBallRect.bottom &&
+                            ballRect.bottom > otherBallRect.top) {
+                            ball.remove();
+                            let parasiteCount = parseInt(otherBall.dataset.parasites) + 1;
+                            otherBall.dataset.parasites = parasiteCount;
+
+                            // Add a green dot to the ball
+                            const dot = document.createElement('div');
+                            dot.classList.add('dot');
+                            dot.style.left = `${Math.random() * (otherBall.clientWidth - 5)}px`;
+                            dot.style.top = `${Math.random() * (otherBall.clientHeight - 5)}px`;
+                            otherBall.appendChild(dot);
+
+                            // Check if the attached ball has more than 10 parasites
+                            if (parasiteCount >= 10 && !otherBall.classList.contains('clone')) {
+                                otherBall.remove();
+                                for (let i = 0; i < 15; i++) { // Spawn 15 parasites instead of 10
+                                    spawnBall('parasite');
+                                }
+                            }
+
+                            // Check if the parasite count is above 2 for longer than 10 seconds
+                            if (parasiteCount > 2 && !otherBall.classList.contains('clone')) {
+                                setTimeout(() => {
+                                    if (parseInt(otherBall.dataset.parasites) > 2) {
+                                        spawnBallAtCenter('parasite');
+                                    }
+                                }, 10000); // 10 seconds
+                            }
+
+                            // Spawn a parasite every 10 seconds if parasite count is higher than 2
+                            if (parasiteCount > 2 && (otherBall.classList.contains('breeder') || otherBall.classList.contains('hunter'))) {
+                                if (!otherBall.dataset.spawnInterval) {
+                                    otherBall.dataset.spawnInterval = setInterval(() => {
+                                        if (parseInt(otherBall.dataset.parasites) > 2) {
+                                            spawnBallAtCenter('parasite');
+                                        }
+                                    }, 10000); // Every 10 seconds
+                                }
+                            }
+                        }
+                    });
+                }
+
+                // Hunter ball destroys breeder and clone balls on contact
+                if (ball.classList.contains('hunter') && ball.dataset.cooldown === 'false') {
+                    const targets = document.querySelectorAll('.ball.breeder, .ball.clone');
+                    targets.forEach(target => {
+                        let targetRect = target.getBoundingClientRect();
+                        if (ballRect.left < targetRect.right &&
+                            ballRect.right > targetRect.left &&
+                            ballRect.top < targetRect.bottom &&
+                            ballRect.bottom > targetRect.top) {
+                            target.remove();
+                            ball.dataset.eaten = parseInt(ball.dataset.eaten) + 1;
+                            ball.dataset.cooldown = 'true';
+                            ball.classList.add('cooldown'); // Add blue glow during cooldown
+                            setTimeout(() => {
+                                ball.dataset.cooldown = 'false';
+                                ball.classList.remove('cooldown'); // Remove blue glow after cooldown
+                            }, target.classList.contains('clone') ? 60000 : 20000); // 60 seconds for clones, 20 seconds for breeders
+
+                            // Reproduce if eaten 10 breeders
+                            if (parseInt(ball.dataset.eaten) >= 10) {
+                                ball.dataset.eaten = '0'; // Reset eaten counter
+                                const newHunter = document.createElement('div');
+                                newHunter.classList.add('ball', 'hunter');
+                                newHunter.style.width = '22.5px'; // Half the size
+                                newHunter.style.height = '22.5px'; // Half the size
+                                newHunter.dataset.cooldown = 'true'; // Young hunters cannot destroy cells
+                                newHunter.dataset.eaten = '0'; // Initialize eaten counter
+                                newHunter.style.left = `${ball.offsetLeft}px`;
+                                newHunter.style.top = `${ball.offsetTop}px`;
+                                container.appendChild(newHunter);
+                                moveBall(newHunter, container);
+
+                                // Grow the new hunter to regular size after 1 minute
+                                setTimeout(() => {
+                                    newHunter.style.width = '45px';
+                                    newHunter.style.height = '45px';
+                                    newHunter.dataset.cooldown = 'false'; // Allow it to destroy cells
+                                }, 60000); // 1 minute
+                            }
+                        }
+                    });
+                }
+
+                // Clone ball collects parasites
+                if (ball.classList.contains('clone')) {
+                    const parasites = document.querySelectorAll('.ball.parasite');
+                    parasites.forEach(parasite => {
+                        let parasiteRect = parasite.getBoundingClientRect();
+                        if (ballRect.left < parasiteRect.right &&
+                            ballRect.right > parasiteRect.left &&
+                            ballRect.top < parasiteRect.bottom &&
+                            ballRect.bottom > parasiteRect.top) {
+                            parasite.remove();
+                            let parasiteContacts = parseInt(ball.dataset.parasiteContacts) + 1;
+                            ball.dataset.parasiteContacts = parasiteContacts;
+
+                            // Remove green dots and reset parasite count after 3 contacts
+                            if (parasiteContacts >= 3) {
+                                ball.dataset.parasiteContacts = '0'; // Reset contact counter
+                                const dots = ball.querySelectorAll('.dot');
+                                dots.forEach(dot => dot.remove());
+
+                                // Reproduce twice
+                                for (let i = 0; i < 2; i++) {
+                                    const newClone = document.createElement('div');
+                                    newClone.classList.add('ball', 'clone');
+                                    newClone.style.width = '15px'; // Half the size
+                                    newClone.style.height = '15px'; // Half the size
+                                    newClone.style.left = `${ball.offsetLeft}px`;
+                                    newClone.style.top = `${ball.offsetTop}px`;
+                                    newClone.dataset.parasiteContacts = '0'; // Reset counter for baby clones
+                                    container.appendChild(newClone);
+                                    moveBall(newClone, container);
+
+                                    // Grow the new clone to regular size after 30 seconds
+                                    setTimeout(() => {
+                                        newClone.style.width = '30px';
+                                        newClone.style.height = '30px';
+                                    }, 30000);
+                                }
+                            }
+                        }
+                    });
+                }
+
+                requestAnimationFrame(animate);
+            }
+
+            animate();
+        }
+
+        function spawnBallAtCenter(type) {
+            const circle = document.querySelector('.glass-circle');
+            const ball = document.createElement('div');
+            ball.classList.add('ball', type);
+            ball.dataset.parasites = '0'; // Initialize parasite counter
+            ball.dataset.eaten = '0'; // Initialize eaten counter for hunters
+            ball.dataset.cooldown = 'false'; // Initialize cooldown state for hunters
+            ball.dataset.parasiteContacts = '0'; // Initialize parasite contact counter for clones
+            const radius = circle.clientWidth / 2;
+            const ballRadius = ball.clientWidth / 2;
+            const x = radius - ballRadius;
+            const y = radius - ballRadius;
+            ball.style.left = `${x}px`;
+            ball.style.top = `${y}px`;
+            circle.appendChild(ball);
+            moveBall(ball, circle);
+            updateBarGraph();
+        }
+
+        function resetSimulation() {
+            const balls = document.querySelectorAll('.ball');
+            balls.forEach(ball => ball.remove());
+            updateBarGraph();
+        }
+
+        function updateBarGraph() {
+            const breederCount = document.querySelectorAll('.ball.breeder').length;
+            const parasiteCount = document.querySelectorAll('.ball.parasite').length;
+            const hunterCount = document.querySelectorAll('.ball.hunter').length;
+            const cloneCount = document.querySelectorAll('.ball.clone').length;
+
+            document.getElementById('breeder-bar').style.width = `${breederCount * 10}px`;
+            document.getElementById('parasite-bar').style.width = `${parasiteCount * 10}px`;
+            document.getElementById('hunter-bar').style.width = `${hunterCount * 10}px`;
+                        document.getElementById('clone-bar').style.width = `${cloneCount * 10}px`;
+        }
+
+        // Spawn a parasite every 120 seconds if no clones are on the board
+        setInterval(() => {
+            const clones = document.querySelectorAll('.ball.clone');
+            if (clones.length === 0) {
+                spawnBallAtCenter('parasite');
+            }
+        }, 120000); // Every 120 seconds
+    </script>
+</body>
+</html>

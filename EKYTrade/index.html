@@ -1,0 +1,1342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jody'sList - Eastern Kentucky Community Marketplace</title>
+    <link rel="icon" type="image/png" href="../Images/gem5.png">
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Jody'sList - Eastern Kentucky's free online marketplace for buying, selling, and trading locally. Find cars, furniture, electronics, tools, clothing, and more in Eastern Kentucky.">
+    <meta name="keywords" content="Eastern Kentucky, Kentucky marketplace, buy sell trade, local market, used items, Jody'sList, JodyLabs, Eastern KY, Appalachia, community marketplace, free classifieds, Kentucky classifieds">
+    <meta name="author" content="JodyLabs">
+    <meta name="robots" content="index, follow">
+    
+    <!-- Open Graph Meta Tags for Social Sharing -->
+    <meta property="og:title" content="Jody'sList - Eastern Kentucky Community Marketplace">
+    <meta property="og:description" content="Buy, sell, and trade with your Eastern Kentucky neighbors. Local community marketplace for cars, furniture, electronics, tools, and more.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://jodylabs.surge.sh/EKYTrade/index.html">
+    <meta property="og:image" content="https://jodylabs.surge.sh/Images/gem5.png">
+    <meta property="og:site_name" content="Jody'sList">
+    
+    <!-- Twitter Card data -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Jody'sList - Eastern Kentucky Community Marketplace">
+    <meta name="twitter:description" content="Buy, sell, and trade with your Eastern Kentucky neighbors. Free local marketplace.">
+    <meta name="twitter:image" content="https://jodylabs.surge.sh/Images/gem5.png">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://jodylabs.surge.sh/EKYTrade/index.html">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Orbitron:wght@400;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary-color: #1a4d3a;
+            --secondary-color: #2d5a47;
+            --accent-color: #4ade80;
+            --accent-hover: #22c55e;
+            --background: #0f1419;
+            --card-bg: #1a2332;
+            --text-color: #ffffff;
+            --text-secondary: #a1a1aa;
+            --border-color: #374151;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, var(--background) 0%, #0a0f14 100%);
+            color: var(--text-color);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(26, 77, 58, 0.9);
+            backdrop-filter: blur(10px);
+            border-bottom: 2px solid var(--accent-color);
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 4px 20px rgba(74, 222, 128, 0.1);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logo h1 {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-color);
+            text-shadow: 0 0 10px rgba(74, 222, 128, 0.3);
+        }
+
+        .logo .location {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary {
+            background: var(--accent-color);
+            color: var(--background);
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(74, 222, 128, 0.3);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--accent-color);
+            border: 2px solid var(--accent-color);
+        }
+
+        .btn-outline:hover {
+            background: var(--accent-color);
+            color: var(--background);
+        }
+
+        /* Main Content */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .welcome-section {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding: 2rem;
+            background: rgba(26, 35, 50, 0.5);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        .welcome-section h2 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: var(--accent-color);
+        }
+
+        .welcome-section p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent-color);
+            font-family: 'Orbitron', monospace;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        /* Listings Grid */
+        .listings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .listings-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 0.5rem 1rem;
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .filter-btn.active,
+        .filter-btn:hover {
+            background: var(--accent-color);
+            color: var(--background);
+            border-color: var(--accent-color);
+        }
+
+        .listings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .listing-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .listing-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--accent-color);
+            box-shadow: 0 12px 30px rgba(74, 222, 128, 0.1);
+        }
+
+        .listing-image {
+            width: 100%;
+            height: 200px;
+            background: var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .listing-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .listing-image.no-image::before {
+            content: "📷 No Image";
+            font-size: 1rem;
+        }
+
+        .listing-content {
+            padding: 1.5rem;
+        }
+
+        .listing-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-color);
+        }
+
+        .listing-price {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--accent-color);
+            margin-bottom: 1rem;
+        }
+
+        .listing-description {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .listing-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            border-top: 1px solid var(--border-color);
+            padding-top: 1rem;
+        }
+
+        .listing-category {
+            background: rgba(74, 222, 128, 0.1);
+            color: var(--accent-color);
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-secondary);
+        }
+
+        .empty-state .icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state h3 {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-color);
+        }
+
+        /* Loading State */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 3rem;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border-color);
+            border-top: 3px solid var(--accent-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Animated Eye Component */
+        .eye-container {
+            position: absolute;
+            top: 50%;
+            left: 50px;
+            transform: translateY(-50%);
+            width: 80px;
+            height: 80px;
+            z-index: 99;
+            pointer-events: none;
+        }
+
+        .eye-socket {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: radial-gradient(circle at center, #1a1a1a 0%, #000 100%);
+            box-shadow: 
+                inset 0 0 20px rgba(0, 0, 0, 0.8),
+                0 0 20px rgba(74, 222, 128, 0.3);
+            overflow: hidden;
+            border: 2px solid rgba(74, 222, 128, 0.4);
+        }
+
+        .eyeball {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-color: #333;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            transition: all 0.3s ease-out;
+            filter: drop-shadow(0 0 10px rgba(74, 222, 128, 0.4));
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .eyelid-top, .eyelid-bottom {
+            position: absolute;
+            width: 100%;
+            height: 50%;
+            background: linear-gradient(145deg, #123024, #1a4d3a);
+            border-radius: 60px;
+            transition: all 0.15s ease-out;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+            z-index: 10;
+        }
+
+        .eyelid-top {
+            top: -20%;
+            border-bottom-left-radius: 10px;
+            border-bottom-right-radius: 10px;
+            transform-origin: bottom center;
+            transform: rotate(-2deg);
+        }
+
+        .eyelid-bottom {
+            bottom: -20%;
+            border-top-left-radius: 10px;
+            border-top-right-radius: 10px;
+            transform-origin: top center;
+        }
+
+        .eye-container.blinking .eyelid-top {
+            transform: translateY(70%) scaleY(1.2) rotate(-2deg);
+        }
+
+        .eye-container.blinking .eyelid-bottom {
+            transform: translateY(-70%) scaleY(1.2);
+        }
+
+        /* Eye glow animation */
+        @keyframes eyeGlow {
+            0%, 100% { 
+                box-shadow: 
+                    inset 0 0 20px rgba(0, 0, 0, 0.8),
+                    0 0 20px rgba(74, 222, 128, 0.3);
+            }
+            50% { 
+                box-shadow: 
+                    inset 0 0 20px rgba(0, 0, 0, 0.8),
+                    0 0 30px rgba(74, 222, 128, 0.6);
+            }
+        }
+
+        .eye-socket {
+            animation: eyeGlow 4s ease-in-out infinite;
+        }
+
+        /* Responsive adjustments for eye positioning */
+        @media (max-width: 768px) {
+            .eye-container {
+                position: static;
+                margin: 20px auto;
+                transform: none;
+                width: 60px;
+                height: 60px;
+            }
+            
+            .eyeball {
+                width: 45px;
+                height: 45px;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .container {
+                padding: 1rem;
+            }
+
+            .listings-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .filter-buttons {
+                justify-content: center;
+            }
+
+            .listings-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .welcome-section h2 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <!-- Animated Eye Component -->
+            <div class="eye-container" id="eyeContainer">
+                <div class="eye-socket">
+                    <div class="eyeball" id="eyeball"></div>
+                    <div class="eyelid-top"></div>
+                    <div class="eyelid-bottom"></div>
+                </div>
+            </div>
+            
+            <div class="logo">
+                <div>
+                    <h1>Jody'sList</h1>
+                    <div class="location">Eastern Kentucky Community</div>
+                </div>
+            </div>
+            <div class="nav-buttons">
+                <a href="../aifun.html" class="btn btn-outline">← Back to AI Fun</a>
+                <a href="post.html" class="btn btn-primary">📝 Post Item</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="welcome-section">
+            <h2>Welcome to Jody'sList</h2>
+            <p>A community marketplace for Eastern Kentucky residents. Buy, sell, and trade items with your neighbors. Keep commerce local and build community connections.</p>
+        </section>
+
+        <section class="stats-bar">
+            <div class="stat-card">
+                <div class="stat-number" id="total-listings">0</div>
+                <div class="stat-label">Active Listings</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="total-categories">6</div>
+                <div class="stat-label">Categories</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="recent-posts">0</div>
+                <div class="stat-label">Posts Today</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="visitor-count">Loading...</div>
+                <div class="stat-label">Site Visitors</div>
+            </div>
+        </section>
+
+        <section class="listings-section">
+            <div class="listings-header">
+                <h2 class="listings-title">Latest Listings</h2>
+                <div class="filter-buttons">
+                    <button class="filter-btn active" data-category="all">All Items</button>
+                    <button class="filter-btn" data-category="electronics">Electronics</button>
+                    <button class="filter-btn" data-category="furniture">Furniture</button>
+                    <button class="filter-btn" data-category="vehicles">Vehicles</button>
+                    <button class="filter-btn" data-category="tools">Tools</button>
+                    <button class="filter-btn" data-category="clothing">Clothing</button>
+                    <button class="filter-btn" data-category="other">Other</button>
+                </div>
+            </div>
+
+            <div id="listings-container">
+                <div class="loading">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // Sample data for demonstration
+        let listings = [];
+        let currentFilter = 'all';
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', () => {
+            loadListings();
+            setupEventListeners();
+        });
+
+        function setupEventListeners() {
+            // Filter buttons
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    currentFilter = e.target.dataset.category;
+                    displayListings();
+                });
+            });
+        }
+
+        function loadListings() {
+            // Load from localStorage only (no sample data)
+            const storedListings = localStorage.getItem('jodys-list-listings');
+            if (storedListings) {
+                try {
+                    // Try parsing the data - handle errors gracefully
+                    listings = JSON.parse(storedListings);
+                    if (!Array.isArray(listings)) {
+                        console.warn('⚠️ Listings data was not an array - resetting');
+                        listings = [];
+                        localStorage.setItem('jodys-list-listings', '[]');
+                        return;
+                    }
+                } catch (error) {
+                    console.error('❌ Failed to parse listings data:', error);
+                    listings = [];
+                    localStorage.setItem('jodys-list-listings', '[]');
+                    return;
+                }
+                
+                // Clean up any old placeholder data
+                const cleanListings = listings.filter(listing => {
+                    // Validate listing structure first
+                    if (!listing || typeof listing !== 'object') return false;
+                    
+                    // Remove specific placeholder items by title
+                    const placeholderTitles = [
+                        'Antique Oak Dining Table',
+                        'iPhone 12 - Unlocked', 
+                        '2015 Ford F-150',
+                        'Used MacBook Pro 2019',
+                        'Vintage Record Player',
+                        'Mountain Bike - Like New'
+                    ];
+                    
+                    // Also remove items with generic placeholder descriptions
+                    const placeholderPhrases = [
+                        'This is a sample listing',
+                        'placeholder',
+                        'example item',
+                        'demo listing'
+                    ];
+                    
+                    // Check if title matches any placeholder title
+                    if (placeholderTitles.includes(listing.title)) {
+                        return false;
+                    }
+                    
+                    // Check if description contains placeholder phrases
+                    if (listing.description) {
+                        for (const phrase of placeholderPhrases) {
+                            if (listing.description.toLowerCase().includes(phrase.toLowerCase())) {
+                                return false;
+                            }
+                        }
+                    }
+                    
+                    // Remove blob URLs that can cause security errors
+                    if (listing.image && (
+                        listing.image.startsWith('blob:') || 
+                        listing.image.includes('undefined')
+                    )) {
+                        console.log('🧹 Removing listing with unsafe blob URL:', listing.title);
+                        return false;
+                    }
+                    
+                    return true;
+                });
+                
+                // Update localStorage if we removed placeholders
+                if (cleanListings.length !== listings.length) {
+                    listings = cleanListings;
+                    localStorage.setItem('jodys-list-listings', JSON.stringify(listings));
+                    console.log('🧹 Cleaned up placeholder listings');
+                }
+            }
+
+            displayListings();
+            updateStats();
+        }
+
+        function displayListings() {
+            const container = document.getElementById('listings-container');
+            
+            // Filter listings
+            const filteredListings = currentFilter === 'all' 
+                ? listings 
+                : listings.filter(listing => listing.category === currentFilter);
+
+            // Sort by newest first
+            filteredListings.sort((a, b) => new Date(b.postedDate) - new Date(a.postedDate));
+
+            if (filteredListings.length === 0) {
+                const message = currentFilter === 'all' 
+                    ? `<div class="empty-state">
+                        <div class="icon">🏪</div>
+                        <h3>Welcome to Jody'sList!</h3>
+                        <p>No listings yet. Be the first to post something for your community!</p>
+                        <a href="post.html" class="btn btn-primary" style="margin-top: 1rem;">📝 Post the First Item</a>
+                    </div>`
+                    : `<div class="empty-state">
+                        <div class="icon">📦</div>
+                        <h3>No ${currentFilter} listings found</h3>
+                        <p>Be the first to post an item in this category!</p>
+                        <a href="post.html" class="btn btn-primary" style="margin-top: 1rem;">📝 Post an Item</a>
+                    </div>`;
+                
+                container.innerHTML = message;
+                return;
+            }
+
+            const listingsHTML = filteredListings.map(listing => {
+                // Safely check if image is valid (not a blob URL that could cause security errors)
+                const hasValidImage = listing.image && 
+                    typeof listing.image === 'string' && 
+                    !listing.image.startsWith('blob:') && 
+                    !listing.image.includes('undefined');
+                
+                // Create safe HTML with fallback for invalid images
+                return `
+                <div class="listing-card" onclick="viewListing('${listing.id}')">
+                    <div class="listing-image ${hasValidImage ? '' : 'no-image'}">
+                        ${hasValidImage ? 
+                            `<img src="${listing.image}" alt="${listing.title}" onerror="this.parentElement.classList.add('no-image'); this.remove();">` : 
+                            ''}
+                    </div>
+                    <div class="listing-content">
+                        <h3 class="listing-title">${listing.title}</h3>
+                        <div class="listing-price">${listing.price}</div>
+                        <p class="listing-description">${listing.description}</p>
+                        <div class="listing-meta">
+                            <span class="listing-category">${listing.category}</span>
+                            <span>${formatDate(listing.postedDate)}</span>
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+
+            container.innerHTML = `<div class="listings-grid">${listingsHTML}</div>`;
+        }
+
+        function updateStats() {
+            document.getElementById('total-listings').textContent = listings.length;
+            
+            const today = new Date().toDateString();
+            const todayPosts = listings.filter(listing => 
+                new Date(listing.postedDate).toDateString() === today
+            ).length;
+            document.getElementById('recent-posts').textContent = todayPosts;
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+            if (diffDays === 0) return 'Today';
+            if (diffDays === 1) return 'Yesterday';
+            if (diffDays < 7) return `${diffDays} days ago`;
+            return date.toLocaleDateString();
+        }
+
+        function viewListing(id) {
+            // For now, just show an alert
+            const listing = listings.find(l => l.id == id);
+            if (listing) {
+                alert(`${listing.title}\n\nPrice: ${listing.price}\n\nDescription: ${listing.description}\n\nLocation: ${listing.location}\n\nContact: Email or phone number would go here`);
+            }
+        }
+
+        // Auto-refresh listings every 30 seconds
+        setInterval(() => {
+            loadListings();
+        }, 30000);
+
+        // Jody'sList Hit Counter Integration
+        class JodyListHitCounter {
+            constructor() {
+                this.apiUrl = 'https://omcwjmvdjswkfjkahchm.supabase.co';
+                this.headers = {
+                    'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
+                    'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
+                    'Content-Type': 'application/json'
+                };
+                this.pagePath = 'jodys-list';
+                this.init();
+            }
+
+            async init() {
+                try {
+                    console.log('📊 Jody\'sList hit counter initializing...');
+                    await this.recordHit();
+                    await this.displayCounter();
+                } catch (error) {
+                    console.warn('Hit counter failed:', error);
+                    this.showFallbackCounter();
+                }
+            }
+
+            async recordHit() {
+                try {
+                    // Get existing record
+                    const getResponse = await fetch(`${this.apiUrl}/rest/v1/page_hits?page_path=eq.${this.pagePath}&select=id,hit_count`, {
+                        method: 'GET',
+                        headers: this.headers
+                    });
+                    
+                    if (getResponse.ok) {
+                        const existingData = await getResponse.json();
+                        
+                        if (existingData.length > 0) {
+                            // Update existing
+                            const record = existingData[0];
+                            const newCount = record.hit_count + 1;
+                            
+                            const updateResponse = await fetch(`${this.apiUrl}/rest/v1/page_hits?id=eq.${record.id}`, {
+                                method: 'PATCH',
+                                headers: this.headers,
+                                body: JSON.stringify({
+                                    hit_count: newCount,
+                                    last_hit: new Date().toISOString(),
+                                    updated_at: new Date().toISOString()
+                                })
+                            });
+                            
+                            if (updateResponse.ok) {
+                                this.currentHits = newCount;
+                                console.log('📊 Hit recorded, total hits:', this.currentHits);
+                                return;
+                            }
+                        } else {
+                            // Create new record
+                            const createResponse = await fetch(`${this.apiUrl}/rest/v1/page_hits`, {
+                                method: 'POST',
+                                headers: this.headers,
+                                body: JSON.stringify({
+                                    page_path: this.pagePath,
+                                    hit_count: 1,
+                                    first_hit: new Date().toISOString(),
+                                    last_hit: new Date().toISOString(),
+                                    last_ip_hash: 'jodys-list-' + Math.random().toString(36).substring(7)
+                                })
+                            });
+                            
+                            if (createResponse.ok) {
+                                this.currentHits = 1;
+                                console.log('📊 First hit recorded for Jody\'sList');
+                                return;
+                            }
+                        }
+                    }
+                    throw new Error('Failed to record hit');
+                } catch (error) {
+                    console.error('Failed to record hit:', error);
+                    throw error;
+                }
+            }
+
+            async displayCounter() {
+                if (!this.currentHits) return;
+                
+                // Create counter element to match site-wide style
+                const counterElement = document.createElement('div');
+                counterElement.style.cssText = `
+                    position: fixed;
+                    bottom: 20px;
+                    right: 20px;
+                    background: rgba(20, 20, 20, 0.9);
+                    color: #e63946;
+                    padding: 10px 16px;
+                    border-radius: 12px;
+                    font-family: 'Orbitron', monospace;
+                    font-size: 14px;
+                    z-index: 1000;
+                    backdrop-filter: blur(5px);
+                    border: 1px solid rgba(230, 57, 70, 0.4);
+                    box-shadow: 0 0 20px rgba(230, 57, 70, 0.3);
+                    transition: all 0.3s ease;
+                    cursor: pointer;
+                `;
+                
+                counterElement.onmouseenter = () => {
+                    counterElement.style.transform = 'scale(1.05)';
+                    counterElement.style.boxShadow = '0 0 30px rgba(230, 57, 70, 0.5)';
+                };
+                
+                counterElement.onmouseleave = () => {
+                    counterElement.style.transform = 'scale(1)';
+                    counterElement.style.boxShadow = '0 0 20px rgba(230, 57, 70, 0.3)';
+                };
+                
+                document.body.appendChild(counterElement);
+                
+                // Animate counter (exactly matching main site)
+                let current = Math.max(1, this.currentHits - 20);
+                const animationSpeed = Math.min(20, Math.max(5, Math.floor(this.currentHits / 100)));
+                
+                const animate = () => {
+                    if (current < this.currentHits) {
+                        // Speed up animation for larger numbers
+                        current += (current < this.currentHits - 10) ? animationSpeed : 1;
+                        current = Math.min(current, this.currentHits);
+                        counterElement.textContent = `Visitors: ${current.toLocaleString()}`;
+                        
+                        if (current < this.currentHits) {
+                            requestAnimationFrame(animate);
+                        }
+                    }
+                };
+                animate();
+                
+                // Also update the stats bar counter (remove "Loading...")
+                const statsCounter = document.getElementById('visitor-count');
+                if (statsCounter) {
+                    statsCounter.textContent = this.currentHits.toLocaleString();
+                }
+            }
+
+            showFallbackCounter() {
+                // Create fallback counter element to match site-wide style
+                const counterElement = document.createElement('div');
+                counterElement.style.cssText = `
+                    position: fixed;
+                    bottom: 20px;
+                    right: 20px;
+                    background: rgba(20, 20, 20, 0.9);
+                    color: #e63946;
+                    padding: 10px 16px;
+                    border-radius: 12px;
+                    font-family: 'Orbitron', monospace;
+                    font-size: 14px;
+                    z-index: 1000;
+                    backdrop-filter: blur(5px);
+                    border: 1px solid rgba(230, 57, 70, 0.4);
+                    box-shadow: 0 0 20px rgba(230, 57, 70, 0.3);
+                    transition: all 0.3s ease;
+                    cursor: pointer;
+                `;
+                
+                // Generate a reasonable fallback count and animate it
+                const fallbackCount = Math.floor(Math.random() * 150) + 150;
+                document.body.appendChild(counterElement);
+                
+                // Animate the counter the same way as the real counter
+                let current = Math.max(1, fallbackCount - 20);
+                const animationSpeed = Math.min(20, Math.max(5, Math.floor(fallbackCount / 100)));
+                
+                const animate = () => {
+                    if (current < fallbackCount) {
+                        current += (current < fallbackCount - 10) ? animationSpeed : 1;
+                        current = Math.min(current, fallbackCount);
+                        counterElement.textContent = `Visitors: ${current.toLocaleString()}`;
+                        
+                        if (current < fallbackCount) {
+                            requestAnimationFrame(animate);
+                        }
+                    }
+                };
+                animate();
+                
+                // Also update stats bar
+                const statsCounter = document.getElementById('visitor-count');
+                if (statsCounter) {
+                    statsCounter.textContent = fallbackCount.toLocaleString();
+                }
+            }
+        }
+
+        // Developer utility functions to manage listings
+        window.clearPlaceholders = function() {
+            const stored = localStorage.getItem('jodys-list-listings');
+            if (!stored) {
+                console.log('No listings found in localStorage.');
+                return;
+            }
+            
+            try {
+                const existingListings = JSON.parse(stored);
+                const originalCount = existingListings.length;
+                
+                const placeholderTitles = [
+                    'Antique Oak Dining Table',
+                    'iPhone 12 - Unlocked', 
+                    '2015 Ford F-150',
+                    'Used MacBook Pro 2019',
+                    'Vintage Record Player',
+                    'Mountain Bike - Like New'
+                ];
+                
+                const placeholderPhrases = [
+                    'This is a sample listing',
+                    'placeholder',
+                    'example item',
+                    'demo listing'
+                ];
+                
+                const cleanListings = existingListings.filter(listing => {
+                    // Check if title matches any placeholder title
+                    if (placeholderTitles.includes(listing.title)) {
+                        return false;
+                    }
+                    
+                    // Check if description contains placeholder phrases
+                    if (listing.description) {
+                        for (const phrase of placeholderPhrases) {
+                            if (listing.description.toLowerCase().includes(phrase.toLowerCase())) {
+                                return false;
+                            }
+                        }
+                    }
+                    
+                    return true;
+                });
+                
+                const removedCount = originalCount - cleanListings.length;
+                
+                if (removedCount > 0) {
+                    localStorage.setItem('jodys-list-listings', JSON.stringify(cleanListings));
+                    console.log(`🧹 Removed ${removedCount} placeholder listings. ${cleanListings.length} listings remaining.`);
+                } else {
+                    console.log('No placeholder listings found.');
+                }
+                
+                location.reload();
+            } catch (error) {
+                console.error('Error processing listings:', error);
+                localStorage.removeItem('jodys-list-listings');
+                console.log('🧹 Removed all listings due to error.');
+                location.reload();
+            }
+        };
+        
+        // Force clear ALL listings (for development use)
+        window.clearAllListings = function() {
+            try {
+                // Use a strong approach to ensure all listings are gone
+                
+                // 1. First clear the main listings storage
+                localStorage.removeItem('jodys-list-listings');
+                
+                // 2. Clear any other keys that might contain listings or image data
+                const keysToCheck = [
+                    'jody-list-listings', // Alternate spelling
+                    'jodys_list_listings', 
+                    'ekytradeListings',    // Old name
+                    'eky-trade-listings',  // Old name
+                    'listings',
+                    'tempImages',
+                    'jodys-list-images',
+                    'imageCache'
+                ];
+                
+                keysToCheck.forEach(key => localStorage.removeItem(key));
+                
+                // 3. Look for any keys that might be related to listings or images
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && (
+                        key.includes('list') || 
+                        key.includes('image') || 
+                        key.includes('eky') || 
+                        key.includes('jody')
+                    )) {
+                        console.log(`Removing potentially related key: ${key}`);
+                        localStorage.removeItem(key);
+                    }
+                }
+                
+                console.log('🗑️ ALL listings and related data have been completely removed from localStorage.');
+                
+                // 4. Display clear success message on screen
+                const listingsContainer = document.getElementById('listings-container');
+                if (listingsContainer) {
+                    listingsContainer.innerHTML = `
+                        <div class="empty-state">
+                            <div class="icon">✅</div>
+                            <h3>All listings cleared successfully!</h3>
+                            <p>The page will refresh in 2 seconds...</p>
+                        </div>
+                    `;
+                }
+                
+                // 5. Delay reload slightly to show the message
+                setTimeout(() => location.reload(), 2000);
+                
+                return true; // Success
+            } catch (error) {
+                console.error('Error while clearing listings:', error);
+                alert('Failed to clear all listings. Please try again or check the console for errors.');
+                return false; // Failure
+            }
+        };
+
+        // Auto-cleanup on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            // Force cleanup of any existing placeholders immediately
+            const stored = localStorage.getItem('jodys-list-listings');
+            if (stored) {
+                try {
+                    let existingListings;
+                    try {
+                        existingListings = JSON.parse(stored);
+                        if (!Array.isArray(existingListings)) {
+                            throw new Error('Listings data is not an array');
+                        }
+                    } catch (parseError) {
+                        // If we can't parse the data, just remove it entirely
+                        console.log('🧹 Clearing corrupted listing data');
+                        localStorage.removeItem('jodys-list-listings');
+                        new JodyListHitCounter(); // Initialize counter
+                        return; // Exit early
+                    }
+                    
+                    // Expanded list of placeholder titles
+                    const placeholderTitles = [
+                        'Antique Oak Dining Table',
+                        'iPhone 12 - Unlocked', 
+                        '2015 Ford F-150',
+                        'Used MacBook Pro 2019',
+                        'Vintage Record Player',
+                        'Mountain Bike - Like New',
+                        'Sony PlayStation 5',
+                        'IKEA Desk Chair',
+                        'Laptop for Sale',
+                        'Sample Item'
+                    ];
+                    
+                    // Expanded list of placeholder phrases
+                    const placeholderPhrases = [
+                        'this is a sample',
+                        'placeholder',
+                        'example',
+                        'demo',
+                        'test listing',
+                        'sample image',
+                        'blob:',
+                        'undefined'
+                    ];
+                    
+                    const cleanListings = existingListings.filter(listing => {
+                        // Check if title matches any placeholder title
+                        if (placeholderTitles.includes(listing.title)) {
+                            return false;
+                        }
+                        
+                        // Check if description contains placeholder phrases
+                        if (listing.description) {
+                            for (const phrase of placeholderPhrases) {
+                                if (listing.description.toLowerCase().includes(phrase.toLowerCase())) {
+                                    return false;
+                                }
+                            }
+                        }
+                        
+                        return true;
+                    });
+                    
+                    if (cleanListings.length !== existingListings.length) {
+                        localStorage.setItem('jodys-list-listings', JSON.stringify(cleanListings));
+                        console.log('🧹 Automatically removed placeholder listings on page load');
+                    }
+                } catch (error) {
+                    console.log('🧹 Clearing corrupted listing data');
+                    localStorage.removeItem('jodys-list-listings');
+                }
+            }
+            
+            new JodyListHitCounter();
+            
+            // Initialize the animated eye
+            new AnimatedEye();
+        });
+        
+        // Animated Eye Implementation
+        class AnimatedEye {
+            constructor() {
+                this.eyeball = document.getElementById('eyeball');
+                this.eyeContainer = document.getElementById('eyeContainer');
+                this.isBlinking = false;
+                this.lastMouseMove = Date.now();
+                this.lookAroundInterval = null;
+                
+                this.init();
+            }
+
+            init() {
+                // Set random eyeball image based on green theme
+                this.setRandomEyeball();
+                
+                // Mouse tracking
+                document.addEventListener('mousemove', (e) => this.trackMouse(e));
+                
+                // Random blinking
+                this.startBlinking();
+                
+                // Random looking around when mouse is idle
+                this.startLookingAround();
+                
+                // Change eyeball occasionally
+                setInterval(() => this.setRandomEyeball(), 30000); // Change every 30 seconds
+            }
+
+            setRandomEyeball() {
+                // Green-themed eyeball gradient as fallback
+                const generateRandomGreenEye = () => {
+                    this.eyeball.style.backgroundImage = '';
+                    this.eyeball.style.background = `
+                        radial-gradient(circle at 35% 35%, 
+                            rgba(255, 255, 255, 0.9) 8%, 
+                            rgba(200, 255, 220, 0.7) 15%,
+                            rgba(100, 255, 150, 0.8) 25%,
+                            rgba(50, 200, 100, 0.9) 40%,
+                            rgba(20, 150, 50, 0.95) 60%,
+                            rgba(0, 100, 20, 1) 80%,
+                            rgba(0, 0, 0, 1) 100%
+                        )
+                    `;
+                };
+                
+                // Either use images from the main site or fallback to gradient
+                const eyeballImages = [
+                    '../Images/Snip/eye6.png',
+                    '../Images/Snip/eye7.png',
+                    '../Images/Snip/EyeballHueshift.png',
+                    '../Images/Snip/EyeballM1.png',
+                    '../Images/Snip/EyeballM2.png'
+                ];
+                
+                const randomIndex = Math.floor(Math.random() * eyeballImages.length);
+                const selectedImage = eyeballImages[randomIndex];
+                
+                // Test if the image loads properly
+                const img = new Image();
+                img.onload = () => {
+                    this.eyeball.style.backgroundImage = `url('${selectedImage}')`;
+                    this.eyeball.style.backgroundColor = 'transparent';
+                };
+                img.onerror = () => {
+                    console.log('Using gradient fallback for eye');
+                    generateRandomGreenEye();
+                };
+                img.src = selectedImage;
+                
+                // Set fallback if image doesn't load within 2 seconds
+                setTimeout(() => {
+                    if (!this.eyeball.style.backgroundImage) {
+                        generateRandomGreenEye();
+                    }
+                }, 2000);
+            }
+
+            trackMouse(e) {
+                if (this.isBlinking) return;
+                
+                this.lastMouseMove = Date.now();
+                
+                const eyeRect = this.eyeContainer.getBoundingClientRect();
+                const eyeCenterX = eyeRect.left + eyeRect.width / 2;
+                const eyeCenterY = eyeRect.top + eyeRect.height / 2;
+                
+                const mouseX = e.clientX;
+                const mouseY = e.clientY;
+                
+                const deltaX = mouseX - eyeCenterX;
+                const deltaY = mouseY - eyeCenterY;
+                
+                // Calculate distance and angle
+                const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                const maxDistance = 15; // Maximum movement range
+                
+                // Limit the movement
+                const limitedDistance = Math.min(distance, maxDistance);
+                const angle = Math.atan2(deltaY, deltaX);
+                
+                const moveX = Math.cos(angle) * (limitedDistance / maxDistance) * 15;
+                const moveY = Math.sin(angle) * (limitedDistance / maxDistance) * 15;
+                
+                this.eyeball.style.transform = `translate(calc(-50% + ${moveX}px), calc(-50% + ${moveY}px))`;
+            }
+
+            startBlinking() {
+                const blink = () => {
+                    if (Math.random() < 0.4) { // 40% chance to blink
+                        this.isBlinking = true;
+                        this.eyeContainer.classList.add('blinking');
+                        
+                        setTimeout(() => {
+                            this.eyeContainer.classList.remove('blinking');
+                            this.isBlinking = false;
+                        }, 120); // Shorter, more natural blink duration
+                    }
+                };
+                
+                // Random blinking interval between 3-8 seconds (more realistic)
+                const scheduleNextBlink = () => {
+                    const delay = 3000 + Math.random() * 5000;
+                    setTimeout(() => {
+                        blink();
+                        scheduleNextBlink();
+                    }, delay);
+                };
+                
+                scheduleNextBlink();
+            }
+
+            startLookingAround() {
+                setInterval(() => {
+                    // If mouse hasn't moved in 3 seconds, look around randomly
+                    if (Date.now() - this.lastMouseMove > 3000 && !this.isBlinking) {
+                        const randomX = (Math.random() - 0.5) * 20;
+                        const randomY = (Math.random() - 0.5) * 20;
+                        
+                        this.eyeball.style.transform = `translate(calc(-50% + ${randomX}px), calc(-50% + ${randomY}px))`;
+                        
+                        // Return to center after a moment
+                        setTimeout(() => {
+                            if (Date.now() - this.lastMouseMove > 2000) {
+                                this.eyeball.style.transform = 'translate(-50%, -50%)';
+                            }
+                        }, 1000 + Math.random() * 2000);
+                    }
+                }, 2000);
+            }
+        }
+    </script>
+</body>
+</html>
