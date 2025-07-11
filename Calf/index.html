@@ -1,52 +1,48 @@
 <!DOCTYPE html>
-<html lang="en"><head>
-<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<html lang="en">
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calfagotchi</title>
-    <link rel="stylesheet" href="Calfagotchi_files/style.css">
+    <title>Pixel Tamagotchi</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="calfagotchi-container">
-        <div class="support-button">
-            <a href="https://www.paypal.com/donate/?business=TE5MW5QV6RRCS&amp;no_recurring=1&amp;item_name=Donations+encouraged%2C+but+of+course+not+expected.+Thanks+for+visiting!&amp;currency_code=USD" target="_blank">Support Me</a>
-        </div>
-        <div class="calfagotchi-shell">
+    <div class="tamagotchi-container">
+        <div class="tamagotchi-shell">
             <div class="screen">
                 <div class="status-bar">
                     <div class="stat">
                         <span class="stat-label">❤️</span>
                         <div class="stat-bar">
-                            <div class="stat-fill" id="health-bar" style="width: 96.9716%;"></div>
+                            <div class="stat-fill" id="health-bar"></div>
                         </div>
                     </div>
                     <div class="stat">
                         <span class="stat-label">�️</span>
                         <div class="stat-bar">
-                            <div class="stat-fill" id="hunger-bar" style="width: 90.9148%;"></div>
+                            <div class="stat-fill" id="hunger-bar"></div>
                         </div>
                     </div>
                     <div class="stat">
                         <span class="stat-label">�</span>
                         <div class="stat-bar">
-                            <div class="stat-fill" id="happiness-bar" style="width: 93.9432%;"></div>
+                            <div class="stat-fill" id="happiness-bar"></div>
                         </div>
                     </div>
                     <div class="stat">
                         <span class="stat-label">�️</span>
                         <div class="stat-bar">
-                            <div class="stat-fill" id="temp-bar" style="width: 70%;"></div>
+                            <div class="stat-fill" id="temp-bar"></div>
                         </div>
                     </div>
                 </div>
                 
                 <div class="pet-area">
-                    <div class="pet-sprite" id="pet-sprite" style="animation: 2s ease-in-out infinite blink;"></div>
+                    <div class="pet-sprite" id="pet-sprite"></div>
                     <div class="food-item" id="food-item"></div>
                     <div class="toy-item" id="toy-item"></div>
                     <div class="poop-item" id="poop-item"></div>
-                    <div class="pee-puddle" id="pee-puddle"></div>
-                    <div class="mood-indicator" id="mood-indicator">�</div>
+                    <div class="mood-indicator" id="mood-indicator">:)</div>
                     <div class="sleep-bubble" id="sleep-bubble">�</div>
                 </div>
                 
@@ -57,7 +53,7 @@
                 <div id="menu-screen" class="menu-screen" style="display: none;">
                     <h4>Menu</h4>
                     <div class="menu-buttons">
-                        <button class="menu-item selected" id="feed-menu-btn">
+                        <button class="menu-item" id="feed-menu-btn">
                             <span class="menu-icon">�</span>
                             <span class="menu-label">Feed</span>
                         </button>
@@ -89,25 +85,13 @@
                             <span class="menu-icon">�</span>
                             <span class="menu-label">Mini-Game</span>
                         </button>
-                        <button class="menu-item" id="screen-color-btn">
-                            <span class="menu-icon">�</span>
-                            <span class="menu-label">Screen Color</span>
-                        </button>
                         <button class="menu-item" id="skin-menu-btn">
                             <span class="menu-icon">�</span>
-                            <span class="menu-label">Case Color</span>
+                            <span class="menu-label">Color</span>
                         </button>
                         <button class="menu-item" id="god-menu-btn">
                             <span class="menu-icon">⚡</span>
                             <span class="menu-label">God Power</span>
-                        </button>
-                        <button class="menu-item" id="jodylabs-menu-btn">
-                            <span class="menu-icon">�</span>
-                            <span class="menu-label">JodyLabs</span>
-                        </button>
-                        <button class="menu-item" id="support-menu-btn">
-                            <span class="menu-icon">❤️</span>
-                            <span class="menu-label">Support Me</span>
                         </button>
                     </div>
                     <div class="menu-navigation">
@@ -155,7 +139,6 @@
         </div>
     </div>
     
-    <script src="Calfagotchi_files/script.js"></script>
-
-
-<div id="buffer-extension-hover-container" style="font-family: &quot;Roboto&quot;, sans-serif; display: none; position: absolute; z-index: 8675309; cursor: pointer; width: 67px;"><div id="buffer-extension-button-hover-container" style="position: relative; z-index: 8675309; width: 67px; height: 24px;"><span id="buffer-extension-hover-button" style="width: 67px; height: 24px; background-image: url(&quot;moz-extension://19cdb6c6-1ddd-4b87-a9b1-48004a74cf19/buffer-hover-button.svg&quot;); background-size: 67px 24px; cursor: pointer; opacity: 0.9; display: block; position: relative; z-index: 8675309;"></span><div id="buffer-extension-button-menu" style="position: relative; z-index: 8675308; width: 140px; height: 94px; display: none; bottom: 94px; right: 75px;"><div style="font-size: 14px; width: 140px; display: block; cursor: pointer; padding: 0px 4px; color: rgb(61, 61, 61); line-height: 28px; background-color: rgba(255, 255, 255, 0.8); border-top-left-radius: 4px; border-top-right-radius: 4px; height: 4px;"></div><div id="buffer-extension-create" class="buffer-extension-hover-button" style="font-size: 14px; width: 140px; height: 28px; display: block; cursor: pointer; padding: 0px 4px; color: rgb(61, 61, 61); line-height: 28px;"><span>Create Post</span></div><div id="buffer-extension-save" class="buffer-extension-hover-button" style="font-size: 14px; width: 140px; height: 28px; display: block; cursor: pointer; padding: 0px 4px; color: rgb(61, 61, 61); line-height: 28px;"><span>Save Idea</span></div><div style="font-size: 14px; width: 140px; display: block; cursor: pointer; padding: 0px 4px; color: rgb(61, 61, 61); line-height: 28px; background-color: rgba(255, 255, 255, 0.8); border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; height: 4px;"></div><style>.buffer-extension-hover-button { background-color:rgba(255, 255, 255, 0.8); } .buffer-extension-hover-button span { display:block; padding: 0 4px; border-radius: 4px 4px 4px 4px; -webkit-border-radius: 4px 4px 4px 4px; -moz-border-radius: 4px 4px 4px 4px; } .buffer-extension-hover-button:hover span { background-color:#F5F5F5; }</style></div></div></div></body></html>
+    <script src="script.js"></script>
+</body>
+</html>
