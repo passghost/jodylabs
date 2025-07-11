@@ -230,14 +230,19 @@
             display: flex;
             align-items: center;
             padding: 5px;
-            background: rgba(255, 255, 255, 0.6);
+            background: rgba(255, 255, 255, 0.12);
             border-radius: 5px;
-            font-size: 12px;
+            font-size: 13px;
+            gap: 6px;
         }
         
-        .hue-item input {
-            margin-right: 5px;
-            width: auto;
+        .hue-sample {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 2px solid #fff2;
+            box-shadow: 0 0 8px #e63946a0;
+            margin-right: 4px;
         }
         
         .progress-container {
@@ -301,6 +306,28 @@
             .container { padding: 0.5rem; }
             h1 { font-size: 1.3rem; }
         }
+        .file-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #e63946, #ff6b7a);
+            color: white;
+            border-radius: 10px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-bottom: 8px;
+        }
+        .file-label i {
+            margin-right: 8px;
+        }
+        .file-label:hover {
+            transform: scale(1.04);
+            box-shadow: 0 5px 15px #e63946a0;
+        }
     </style>
 </head>
 <body>
@@ -322,19 +349,19 @@
         <div class="input-section">
             <div class="file-input-container">
                 <input type="file" id="input1" class="file-input" accept="image/*">
-                <label for="input1" class="file-label">Select Input Image 1</label>
+                <label for="input1" class="file-label"><i class="fas fa-image"></i> Browse Input Image 1</label>
             </div>
             <div class="file-input-container">
                 <input type="file" id="input2" class="file-input" accept="image/*">
-                <label for="input2" class="file-label">Select Input Image 2</label>
+                <label for="input2" class="file-label"><i class="fas fa-image"></i> Browse Input Image 2</label>
             </div>
             <div class="file-input-container">
                 <input type="file" id="input3" class="file-input" accept="image/*">
-                <label for="input3" class="file-label">Select Input Image 3</label>
+                <label for="input3" class="file-label"><i class="fas fa-image"></i> Browse Input Image 3</label>
             </div>
             <div class="file-input-container">
                 <input type="file" id="mask" class="file-input" accept="image/*">
-                <label for="mask" class="file-label">Select Mask Image</label>
+                <label for="mask" class="file-label"><i class="fas fa-layer-group"></i> Browse Mask Image</label>
             </div>
         </div>
         
@@ -417,7 +444,13 @@
                 for (let i = 0; i < 24; i++) {
                     const hueItem = document.createElement('div');
                     hueItem.className = 'hue-item';
-                    
+
+                    // Hue sample swatch
+                    const hueSample = document.createElement('span');
+                    hueSample.className = 'hue-sample';
+                    hueSample.style.background = `hsl(${i*15}, 80%, 60%)`;
+                    hueItem.appendChild(hueSample);
+
                     const checkbox = document.createElement('input');
                     checkbox.type = 'checkbox';
                     checkbox.id = `hue${i}`;
@@ -425,11 +458,11 @@
                     checkbox.addEventListener('change', (e) => {
                         this.hueToggles[i] = e.target.checked;
                     });
-                    
+
                     const label = document.createElement('label');
                     label.htmlFor = `hue${i}`;
                     label.textContent = `${i * 15}°`;
-                    
+
                     hueItem.appendChild(checkbox);
                     hueItem.appendChild(label);
                     hueGrid.appendChild(hueItem);
