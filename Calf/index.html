@@ -1,364 +1,161 @@
 <!DOCTYPE html>
-import tkinter as tk
-from tkinter import ttk
-import threading
-import time
-from PIL import Image, ImageTk, ImageSequence
-import os
-
-class TamagotchiDevice:
-    def __init__(self):
-        self.root = tk.Tk()
-        self.root.title("Tamagotchi Device")
-        self.root.configure(bg='#1f2937')
-        self.root.geometry("600x800")
-        self.root.resizable(False, False)
-
-        # --- PET STATS ---
-        self.pet_stats = {
-            'hunger': 80,
-            'happiness': 70,
-            'health': 90,
-            'age': 1,
-            'name': 'Tama',
-        }
-
-        # --- STATE ---
-        self.current_menu = 'main'
-        self.selected_index = 0
-        self.show_pet = True
-        self.message = ''
-        self.message_timer = None
-        self.coordinate_mode = False
-        self.sleeping = False
-        self.screen_color = '#064e3b'  # Default screen bg
-        self.menu_options = {
-            'main': ['Feed', 'Play', 'Status', 'Settings', 'Coords'],
-            'feed': ['Bread', 'Candy', 'Medicine', 'Back'],
-            'play': ['Ball Game', 'Dance', 'Walk', 'Back'],
-            'status': ['View Stats', 'Back'],
-            'settings': ['Sound On/Off', 'Reset', 'Screen Color', 'Sleep', 'Back'],
-        }
-
-        # Load graphics
-        self.pet_frames = []
-        self.pet_frame_index = 0
-        self.load_pet_animation()
-
-        # --- UI Setup ---
-        self.setup_ui()
-
-        # Start stat decay thread
-        self.start_stat_decay()
-
-        # Start pet animation if loaded
-        if self.pet_frames:
-            self.root.after(100, self.update_pet_animation)
-
-    def load_pet_animation(self):
-        try:
-            script_dir = os.path.dirname(os.path.abspath(__file__))
-            pet_path = os.path.join(script_dir, "moo.gif")
-            if os.path.exists(pet_path):
-                pet_img = Image.open(pet_path)
-                for frame in ImageSequence.Iterator(pet_img):
-                    frame = frame.convert("RGBA")
-                    frame.thumbnail((90, 60), Image.Resampling.LANCZOS)
-                    self.pet_frames.append(ImageTk.PhotoImage(frame))
-                print("Loaded pet animation frames:", len(self.pet_frames))
-        except Exception as e:
-            print("Error loading pet animation:", e)
-
-    def setup_ui(self):
-        # Device background placeholder (you can load your flip1.png here if you want)
-        self.device_frame = tk.Frame(self.root, bg='#111827', width=600, height=800)
-        self.device_frame.place(x=0, y=0)
-
-        # SCREEN FRAME fixed at (300, 226) with fixed size (180x112)
-        self.screen_frame = tk.Frame(self.device_frame, bg=self.screen_color, width=180, height=112, relief='sunken', bd=4)
-        self.screen_frame.place(x=300, y=226)
-        self.screen_frame.pack_propagate(False)
-
-        # Header - Pet name and age
-        self.header_label = tk.Label(
-            self.screen_frame,
-            text=f"{self.pet_stats['name']} - Age {self.pet_stats['age']}",
-            font=('Courier', 10, 'bold'),
-            fg='#10b981',
-            bg=self.screen_color
-        )
-        self.header_label.pack(pady=(4,2))
-
-        # Status bar container (icons + bars)
-        self.status_bar = tk.Frame(self.screen_frame, bg=self.screen_color)
-        self.status_bar.pack(fill='x', padx=10, pady=(0,6))
-
-        # Create 3 status bars: health, hunger, happiness
-        self.status_bars = {}
-        for stat, icon in [('health', '❤️'), ('hunger', '🍽️'), ('happiness', '😊')]:
-            frame = tk.Frame(self.status_bar, bg=self.screen_color)
-            frame.pack(side='left', expand=True, fill='x', padx=4)
-
-            label = tk.Label(frame, text=icon, font=('Courier', 12), bg=self.screen_color, fg='#10b981')
-            label.pack(side='left')
-
-            bar_bg = tk.Frame(frame, bg='#064e3b', relief='sunken', bd=1, width=40, height=12)
-            bar_bg.pack(side='left', padx=(4,0))
-            bar_bg.pack_propagate(False)
-
-            fill = tk.Frame(bar_bg, bg='#22c55e', width=40, height=12)
-            fill.pack(side='left', fill='y')
-            self.status_bars[stat] = fill
-
-        # Pet display area (for animation or messages)
-        self.pet_display = tk.Frame(self.screen_frame, bg=self.screen_color, width=160, height=60)
-        self.pet_display.pack(pady=(0, 6))
-        self.pet_display.pack_propagate(False)
-
-        self.pet_label = tk.Label(self.pet_display, bg=self.screen_color)
-        self.pet_label.place(relx=0.5, rely=0.5, anchor='center')
-
-        # Message label below pet
-        self.message_label = tk.Label(self.screen_frame, text='', font=('Courier', 8), fg='#a7f3d0', bg=self.screen_color)
-        self.message_label.pack()
-
-        # Menu text display area for menu options
-        self.menu_text = tk.Text(
-            self.screen_frame,
-            bg=self.screen_color,
-            fg='#10b981',
-            font=('Courier', 9),
-            height=6,
-            width=22,
-            borderwidth=0,
-            highlightthickness=0,
-            state='disabled'
-        )
-        self.menu_text.pack(pady=4)
-
-        # Buttons: Up, Down (circle), Select (large rectangle)
-        # Use place with fixed coords (relative to root window)
-        btn_bg = '#374151'
-        btn_fg = 'white'
-        btn_font = ('Arial', 12, 'bold')
-
-        # UP Button (circle)
-        self.up_button = tk.Canvas(self.device_frame, width=40, height=40, bg=btn_bg, highlightthickness=0)
-        self.up_button.place(x=58, y=350)
-        self.up_button.create_oval(2, 2, 38, 38, fill=btn_bg, outline=btn_fg, width=2)
-        self.up_button.create_text(20, 20, text='▲', fill=btn_fg, font=btn_font)
-        self.up_button.bind('<Button-1>', lambda e: self.handle_up())
-
-        # DOWN Button (circle)
-        self.down_button = tk.Canvas(self.device_frame, width=40, height=40, bg=btn_bg, highlightthickness=0)
-        self.down_button.place(x=80, y=415)
-        self.down_button.create_oval(2, 2, 38, 38, fill=btn_bg, outline=btn_fg, width=2)
-        self.down_button.create_text(20, 20, text='▼', fill=btn_fg, font=btn_font)
-        self.down_button.bind('<Button-1>', lambda e: self.handle_down())
-
-        # SELECT Button (rectangle bigger)
-        self.select_button = tk.Button(
-            self.device_frame,
-            text='SELECT',
-            bg=btn_bg,
-            fg=btn_fg,
-            font=('Arial', 14, 'bold'),
-            width=10,
-            height=2,
-            relief='raised',
-            bd=3,
-            command=self.handle_select
-        )
-        self.select_button.place(x=273, y=401)
-
-        # Key bindings
-        self.root.bind('<Up>', lambda e: self.handle_up())
-        self.root.bind('<Down>', lambda e: self.handle_down())
-        self.root.bind('<Return>', lambda e: self.handle_select())
-        self.root.bind('<space>', lambda e: self.handle_select())
-        self.root.bind('<c>', lambda e: self.toggle_coordinate_mode())
-        self.root.bind('<C>', lambda e: self.toggle_coordinate_mode())
-        self.root.focus_set()
-
-        # Initial display update
-        self.update_display()
-
-    def update_pet_animation(self):
-        if not self.pet_frames or self.sleeping:
-            return  # no animation if sleeping or no frames
-        self.pet_frame_index = (self.pet_frame_index + 1) % len(self.pet_frames)
-        frame = self.pet_frames[self.pet_frame_index]
-        self.pet_label.config(image=frame)
-        self.pet_label.image = frame
-        self.root.after(100, self.update_pet_animation)
-
-    def update_status_bars(self):
-        # Update width of each status bar fill based on stat (max width 40)
-        for stat in ['health', 'hunger', 'happiness']:
-            val = self.pet_stats[stat]
-            width = int(40 * val / 100)
-            self.status_bars[stat].config(width=width)
-
-    def update_display(self):
-        # Update header
-        self.header_label.config(text=f"{self.pet_stats['name']} - Age {self.pet_stats['age']}")
-        # Update screen background (in case changed)
-        self.screen_frame.config(bg=self.screen_color)
-        self.header_label.config(bg=self.screen_color)
-        self.status_bar.config(bg=self.screen_color)
-        self.message_label.config(bg=self.screen_color)
-        self.pet_display.config(bg=self.screen_color)
-        self.menu_text.config(bg=self.screen_color)
-
-        # Update status bars
-        self.update_status_bars()
-
-        # Clear message label and set new
-        self.message_label.config(text=self.message)
-
-        # If sleeping, darken screen and show sleep bubble instead of pet
-        if self.sleeping:
-            self.pet_label.config(image='')
-            self.message_label.config(text="💤 Sleeping...")
-            self.screen_frame.config(bg='#022c22')
-            self.header_label.config(bg='#022c22')
-            self.status_bar.config(bg='#022c22')
-            self.pet_display.config(bg='#022c22')
-            self.menu_text.config(bg='#022c22')
-            return
-
-        # Show pet image or menu or status text
-        if self.show_pet:
-            # Hide menu text, show pet animation
-            self.menu_text.config(state='normal')
-            self.menu_text.delete('1.0', tk.END)
-            self.menu_text.config(state='disabled')
-            if self.pet_frames:
-                # Pet animation label visible
-                self.pet_label.place(relx=0.5, rely=0.5, anchor='center')
-            else:
-                self.pet_label.config(text="No pet image", font=('Courier', 10), fg='#10b981')
-                self.pet_label.place(relx=0.5, rely=0.5, anchor='center')
-        else:
-            # Show menu text
-            self.pet_label.config(image='')
-            self.menu_text.config(state='normal')
-            self.menu_text.delete('1.0', tk.END)
-            menu_list = self.menu_options[self.current_menu]
-            self.menu_text.insert(tk.END, f"   {self.current_menu.upper()} MENU\n\n")
-            for i, option in enumerate(menu_list):
-                prefix = '>' if i == self.selected_index else ' '
-                if i == self.selected_index:
-                    self.menu_text.insert(tk.END, f"{prefix} {option}\n", 'highlight')
-                else:
-                    self.menu_text.insert(tk.END, f"{prefix} {option}\n")
-            self.menu_text.tag_config('highlight', background='#10b981', foreground='#064e3b')
-            self.menu_text.config(state='disabled')
-
-        self.message = ''  # Clear message after display update to avoid repeated showing
-
-    def show_message(self, msg, duration=2000):
-        self.message = msg
-        self.update_display()
-        if self.message_timer:
-            self.root.after_cancel(self.message_timer)
-        self.message_timer = self.root.after(duration, self.clear_message)
-
-    def clear_message(self):
-        self.message = ''
-        self.update_display()
-
-    # --- Button Handlers ---
-
-    def handle_up(self):
-        if self.show_pet:
-            self.show_pet = False
-            self.current_menu = 'main'
-            self.selected_index = 0
-        else:
-            count = len(self.menu_options[self.current_menu])
-            self.selected_index = (self.selected_index - 1) % count
-        self.update_display()
-
-    def handle_down(self):
-        if self.show_pet:
-            self.show_pet = False
-            self.current_menu = 'main'
-            self.selected_index = 0
-        else:
-            count = len(self.menu_options[self.current_menu])
-            self.selected_index = (self.selected_index + 1) % count
-        self.update_display()
-
-    def handle_select(self):
-        if self.show_pet:
-            self.show_pet = False
-            self.current_menu = 'main'
-            self.selected_index = 0
-            self.update_display()
-            return
-
-        option = self.menu_options[self.current_menu][self.selected_index]
-
-        # Handle menus
-        if option in ['Feed', 'Play', 'Status', 'Settings', 'Coords']:
-            if option == 'Coords':
-                self.toggle_coordinate_mode()
-                # Stay on main menu
-            else:
-                self.current_menu = option.lower()
-                self.selected_index = 0
-
-        elif option == 'Back':
-            self.current_menu = 'main'
-            self.selected_index = 0
-
-        elif option == 'Screen Color':
-            # Cycle through a few screen colors
-            colors = ['#064e3b', '#0f766e', '#134e4a', '#0f172a']
-            current_index = colors.index(self.screen_color) if self.screen_color in colors else 0
-            self.screen_color = colors[(current_index + 1) % len(colors)]
-            self.show_message(f"Screen color changed", 1500)
-
-        elif option == 'Sleep':
-            self.sleeping = not self.sleeping
-            self.show_message("Sleeping..." if self.sleeping else "Awake", 1500)
-
-        elif option == 'Reset':
-            # Reset pet stats
-            self.pet_stats = {'hunger': 80, 'happiness': 70, 'health': 90, 'age': 1, 'name': 'Tama'}
-            self.show_message("Pet Reset", 1500)
-
-        else:
-            self.show_message(f"Selected: {option}", 1500)
-
-        self.update_display()
-
-    def toggle_coordinate_mode(self):
-        self.coordinate_mode = not self.coordinate_mode
-        self.show_message(f"Coordinate Mode {'ON' if self.coordinate_mode else 'OFF'}", 2000)
-
-    def start_stat_decay(self):
-        def decay_loop():
-            while True:
-                time.sleep(10)
-                if not self.sleeping:
-                    # Simple decay
-                    self.pet_stats['hunger'] = max(0, self.pet_stats['hunger'] - 1)
-                    self.pet_stats['happiness'] = max(0, self.pet_stats['happiness'] - 1)
-                    self.pet_stats['health'] = max(0, self.pet_stats['health'] - 1)
-
-                self.pet_stats['age'] += 1 / (60 * 6)  # age grows slowly (1 day ~ 6 min)
-
-                # Update UI safely in main thread
-                self.root.after(0, self.update_display)
-
-        threading.Thread(target=decay_loop, daemon=True).start()
-
-    def run(self):
-        self.root.mainloop()
+<html lang="en"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calfagotchi</title>
+    <link rel="stylesheet" href="Calfagotchi_files/style.css">
+</head>
+<body>
+    <div class="calfagotchi-container">
+        <div class="support-button">
+            <a href="https://www.paypal.com/donate/?business=TE5MW5QV6RRCS&amp;no_recurring=1&amp;item_name=Donations+encouraged%2C+but+of+course+not+expected.+Thanks+for+visiting!&amp;currency_code=USD" target="_blank">Support Me</a>
+        </div>
+        <div class="calfagotchi-shell">
+            <div class="screen">
+                <div class="status-bar">
+                    <div class="stat">
+                        <span class="stat-label">❤️</span>
+                        <div class="stat-bar">
+                            <div class="stat-fill" id="health-bar" style="width: 96.9716%;"></div>
+                        </div>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">�️</span>
+                        <div class="stat-bar">
+                            <div class="stat-fill" id="hunger-bar" style="width: 90.9148%;"></div>
+                        </div>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">�</span>
+                        <div class="stat-bar">
+                            <div class="stat-fill" id="happiness-bar" style="width: 93.9432%;"></div>
+                        </div>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">�️</span>
+                        <div class="stat-bar">
+                            <div class="stat-fill" id="temp-bar" style="width: 70%;"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="pet-area">
+                    <div class="pet-sprite" id="pet-sprite" style="animation: 2s ease-in-out infinite blink;"></div>
+                    <div class="food-item" id="food-item"></div>
+                    <div class="toy-item" id="toy-item"></div>
+                    <div class="poop-item" id="poop-item"></div>
+                    <div class="pee-puddle" id="pee-puddle"></div>
+                    <div class="mood-indicator" id="mood-indicator">�</div>
+                    <div class="sleep-bubble" id="sleep-bubble">�</div>
+                </div>
+                
+                <div class="age-display">
+                    Age: <span id="age">0</span> days | Weight: <span id="weight">5</span>kg
+                </div>
+                
+                <div id="menu-screen" class="menu-screen" style="display: none;">
+                    <h4>Menu</h4>
+                    <div class="menu-buttons">
+                        <button class="menu-item selected" id="feed-menu-btn">
+                            <span class="menu-icon">�</span>
+                            <span class="menu-label">Feed</span>
+                        </button>
+                        <button class="menu-item" id="play-menu-btn">
+                            <span class="menu-icon">�</span>
+                            <span class="menu-label">Play</span>
+                        </button>
+                        <button class="menu-item" id="clean-menu-btn">
+                            <span class="menu-icon">�</span>
+                            <span class="menu-label">Clean</span>
+                        </button>
+                        <button class="menu-item" id="medicine-menu-btn">
+                            <span class="menu-icon">�</span>
+                            <span class="menu-label">Medicine</span>
+                        </button>
+                        <button class="menu-item" id="discipline-menu-btn">
+                            <span class="menu-icon">�</span>
+                            <span class="menu-label">Discipline</span>
+                        </button>
+                        <button class="menu-item" id="light-menu-btn">
+                            <span class="menu-icon">�</span>
+                            <span class="menu-label">Light</span>
+                        </button>
+                        <button class="menu-item" id="status-menu-btn">
+                            <span class="menu-icon">�</span>
+                            <span class="menu-label">Status</span>
+                        </button>
+                        <button class="menu-item" id="game-menu-btn">
+                            <span class="menu-icon">�</span>
+                            <span class="menu-label">Mini-Game</span>
+                        </button>
+                        <button class="menu-item" id="screen-color-btn">
+                            <span class="menu-icon">�</span>
+                            <span class="menu-label">Screen Color</span>
+                        </button>
+                        <button class="menu-item" id="skin-menu-btn">
+                            <span class="menu-icon">�</span>
+                            <span class="menu-label">Case Color</span>
+                        </button>
+                        <button class="menu-item" id="god-menu-btn">
+                            <span class="menu-icon">⚡</span>
+                            <span class="menu-label">God Power</span>
+                        </button>
+                        <button class="menu-item" id="jodylabs-menu-btn">
+                            <span class="menu-icon">�</span>
+                            <span class="menu-label">JodyLabs</span>
+                        </button>
+                        <button class="menu-item" id="support-menu-btn">
+                            <span class="menu-icon">❤️</span>
+                            <span class="menu-label">Support Me</span>
+                        </button>
+                    </div>
+                    <div class="menu-navigation">
+                        <div id="menu-selector">▶</div>
+                    </div>
+                </div>
+                
+                <div id="status-screen" class="status-screen" style="display: none;">
+                    <h4>Status Details</h4>
+                    <div class="status-details">
+                        <div>Evolution: <span id="evolution-level">Baby</span></div>
+                        <div>Discipline: <span id="discipline-level">0</span>/100</div>
+                        <div>Energy: <span id="energy-level">100</span>%</div>
+                        <div>Lifespan: <span id="max-age">30</span> days</div>
+                    </div>
+                </div>
+                
+                <div id="mini-game" class="mini-game" style="display: none;">
+                    <h3>Memory Game</h3>
+                    <div class="game-grid" id="game-grid"></div>
+                    <button id="close-game" class="close-button">Close</button>
+                </div>
+            </div>
+            
+            <div class="buttons">
+                <button class="game-button" id="feed-btn">
+                    <span class="button-icon">⬆️</span>
+                    <span class="button-label">UP</span>
+                </button>
+                <button class="game-button" id="play-btn">
+                    <span class="button-icon">⭕</span>
+                    <span class="button-label">SELECT</span>
+                </button>
+                <button class="game-button" id="clean-btn">
+                    <span class="button-icon">⬇️</span>
+                    <span class="button-label">DOWN</span>
+                </button>
+            </div>
+        </div>
+        
+        <div class="game-over" id="game-over" style="display: none;">
+            <h2>� Game Over �</h2>
+            <p>Your pet has died...</p>
+            <button id="restart-btn">Start New Pet</button>
+        </div>
+    </div>
+    
+    <script src="Calfagotchi_files/script.js"></script>
 
 
-if __name__ == "__main__":
-    app = TamagotchiDevice()
-    app.run()
+<div id="buffer-extension-hover-container" style="font-family: &quot;Roboto&quot;, sans-serif; display: none; position: absolute; z-index: 8675309; cursor: pointer; width: 67px;"><div id="buffer-extension-button-hover-container" style="position: relative; z-index: 8675309; width: 67px; height: 24px;"><span id="buffer-extension-hover-button" style="width: 67px; height: 24px; background-image: url(&quot;moz-extension://19cdb6c6-1ddd-4b87-a9b1-48004a74cf19/buffer-hover-button.svg&quot;); background-size: 67px 24px; cursor: pointer; opacity: 0.9; display: block; position: relative; z-index: 8675309;"></span><div id="buffer-extension-button-menu" style="position: relative; z-index: 8675308; width: 140px; height: 94px; display: none; bottom: 94px; right: 75px;"><div style="font-size: 14px; width: 140px; display: block; cursor: pointer; padding: 0px 4px; color: rgb(61, 61, 61); line-height: 28px; background-color: rgba(255, 255, 255, 0.8); border-top-left-radius: 4px; border-top-right-radius: 4px; height: 4px;"></div><div id="buffer-extension-create" class="buffer-extension-hover-button" style="font-size: 14px; width: 140px; height: 28px; display: block; cursor: pointer; padding: 0px 4px; color: rgb(61, 61, 61); line-height: 28px;"><span>Create Post</span></div><div id="buffer-extension-save" class="buffer-extension-hover-button" style="font-size: 14px; width: 140px; height: 28px; display: block; cursor: pointer; padding: 0px 4px; color: rgb(61, 61, 61); line-height: 28px;"><span>Save Idea</span></div><div style="font-size: 14px; width: 140px; display: block; cursor: pointer; padding: 0px 4px; color: rgb(61, 61, 61); line-height: 28px; background-color: rgba(255, 255, 255, 0.8); border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; height: 4px;"></div><style>.buffer-extension-hover-button { background-color:rgba(255, 255, 255, 0.8); } .buffer-extension-hover-button span { display:block; padding: 0 4px; border-radius: 4px 4px 4px 4px; -webkit-border-radius: 4px 4px 4px 4px; -moz-border-radius: 4px 4px 4px 4px; } .buffer-extension-hover-button:hover span { background-color:#F5F5F5; }</style></div></div></div></body></html>
