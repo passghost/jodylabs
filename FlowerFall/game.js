@@ -1,4 +1,4 @@
--- const canvas = document.getElementById('gameCanvas');
+const canvas = document.getElementById('gameCanvas');
 canvas.width = 1920; // Set canvas width to 1920 for 1080p experience
 canvas.height = 1080; // Set canvas height to 1080 for 1080p experience
 const ctx = canvas.getContext('2d');
@@ -15,13 +15,13 @@ const skier = {
 };
 
 const snow = new Image();
-snow.src = 'grass.png'; // Use the local grass.png as background
+snow.src = '/jodylabs/FlowerFall/grass.png'; // Use the correct path for GitHub Pages
 
 const flowerImage = new Image();
-flowerImage.src = 'SF.png';
+flowerImage.src = '/jodylabs/FlowerFall/SF.png';
 
 const flowerImage2 = new Image();
-flowerImage2.src = 'F2.png';
+flowerImage2.src = '/jodylabs/FlowerFall/F2.png';
 
 const heartImage = null; // We'll draw simple hearts instead
 
