@@ -906,6 +906,7 @@
                         'Accept': 'application/json',
                         'Prefer': 'return=representation'
                     },
+                    pagePath: 'MaskFill', // Hardcoded for reliability
                     theme: 'jody',
                     animated: true,
                     showCounter: true
@@ -953,7 +954,7 @@
             constructor(options = {}) {
                 this.apiUrl = options.apiUrl;
                 this.headers = options.headers || {};
-                this.pagePath = this.getCurrentPagePath();
+                this.pagePath = options.pagePath || this.getCurrentPagePath();
                 this.showCounter = options.showCounter !== false;
                 this.animated = options.animated !== false;
                 this.theme = options.theme || 'jody';
