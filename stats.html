@@ -193,11 +193,15 @@
             };
             try {
                 const res = await fetch(apiUrl, { headers });
+                if (!res.ok) {
+                    throw new Error('HTTP ' + res.status + ': ' + await res.text());
+                }
                 const data = await res.json();
                 renderStats(data);
                 plotHitsOnMap(data);
             } catch (err) {
                 document.getElementById('statsList').innerHTML = '<div style="color:#e63946">Failed to load stats.</div>';
+                console.error('Stats fetch error:', err);
             }
         }
         function renderStats(data) {
