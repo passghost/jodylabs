@@ -10,7 +10,7 @@
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
         body {
             font-family: 'Rajdhani', 'Orbitron', sans-serif;
-            background: linear-gradient(135deg, #232526 0%, #414345 100%),
+            background: url('../Images/retro.png') center center/cover no-repeat, linear-gradient(135deg, #232526 0%, #414345 100%),
                 radial-gradient(circle at 20% 50%, #e63946 0%, transparent 50%),
                 radial-gradient(circle at 80% 20%, #ff6b7a 0%, transparent 50%),
                 radial-gradient(circle at 40% 80%, #e63946 0%, transparent 50%);
@@ -683,15 +683,26 @@
                 // Show result
                 canvas.style.display = 'block';
                 
-                // Create download link
-                canvas.toBlob((blob) => {
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = this.outputFileName;
-                    a.click();
-                    URL.revokeObjectURL(url);
-                });
+                // Remove auto-download, show download button
+                let dlBtn = document.getElementById('downloadBtn');
+                if (!dlBtn) {
+                    dlBtn = document.createElement('button');
+                    dlBtn.id = 'downloadBtn';
+                    dlBtn.className = 'process-button';
+                    dlBtn.textContent = 'Download Masked Image';
+                    dlBtn.style.marginTop = '1.2rem';
+                    dlBtn.onclick = function() {
+                        canvas.toBlob((blob) => {
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = this.outputFileName;
+                            a.click();
+                            URL.revokeObjectURL(url);
+                        });
+                    }.bind(this);
+                    canvas.parentNode.appendChild(dlBtn);
+                }
             }
             
             isValidPlacement(maskData, x, y) {
