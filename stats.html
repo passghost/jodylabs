@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JodyLabs Stats & World Map</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Rajdhani', 'Orbitron', sans-serif;
+            background: linear-gradient(135deg, #232526 0%, #414345 100%);
+            color: #fff;
+            margin: 0;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 40px auto;
+            padding: 2rem;
+            background: rgba(30,30,30,0.95);
+            border-radius: 24px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        }
+        h1 {
+            font-family: 'Orbitron', monospace;
+            font-size: 2.5rem;
+            margin-bottom: 1.2rem;
+            text-align: center;
+            color: #e63946;
+        }
+        .stats-list {
+            margin: 2rem 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+        .stat-card {
+            background: linear-gradient(145deg, #2a2a2a, #3a3a3a);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .stat-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 0.5rem;
+        }
+        .stat-count {
+            font-size: 2rem;
+            color: #e63946;
+            font-family: 'Orbitron', monospace;
+            margin-bottom: 0.5rem;
+        }
+        #map {
+            width: 100%;
+            height: 400px;
+            border-radius: 16px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+        }
+        @media (max-width: 700px) {
+            .container { padding: 1rem; }
+            h1 { font-size: 2rem; }
+            #map { height: 250px; }
+        }
+    </style>
+    <!-- Leaflet.js for world map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+</head>
+<body>
+    <div class="container">
+        <h1><i class="fas fa-globe"></i> JodyLabs Stats & World Map</h1>
+        <div id="map"></div>
+        <div class="stats-list" id="statsList">
+            <!-- Stats will be injected here -->
+        </div>
+    </div>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+    // --- World Map ---
+    var map = L.map('map').setView([20, 0], 2);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 18,
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+    // --- Stats Fetch ---
+    async function fetchStats() {
+        const apiUrl = 'https://omcwjmvdjswkfjkahchm.supabase.co/rest/v1/page_hits';
+        const headers = {
+            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
+            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
+            'Content-Type': 'application/json'
+        };
+        try {
+            const res = await fetch(apiUrl, { headers });
+            const data = await res.json();
+            renderStats(data);
+            plotHitsOnMap(data);
+        } catch (err) {
+            document.getElementById('statsList').innerHTML = '<div style="color:#e63946">Failed to load stats.</div>';
+        }
+    }
+    function renderStats(data) {
+        const statsList = document.getElementById('statsList');
+        statsList.innerHTML = '';
+        data.forEach(page => {
+            const card = document.createElement('div');
+            card.className = 'stat-card';
+            card.innerHTML = `<div class="stat-title"><i class="fas fa-file-alt"></i> ${page.page_path}</div>
+                <div class="stat-count">${page.hit_count}</div>
+                <div style="font-size:0.95rem;color:#ccc;">Last hit: ${page.last_hit ? new Date(page.last_hit).toLocaleString() : 'N/A'}</div>`;
+            statsList.appendChild(card);
+        });
+    }
+    // --- Plot hits on map (demo: random locations) ---
+    function plotHitsOnMap(data) {
+        // Demo: randomize locations for each page
+        data.forEach(page => {
+            const lat = 20 + Math.random()*40 - 20;
+            const lng = Math.random()*360 - 180;
+            L.circleMarker([lat, lng], {
+                radius: Math.min(8, 4 + Math.log(page.hit_count)),
+                color: '#e63946',
+                fillColor: '#e63946',
+                fillOpacity: 0.7
+            }).addTo(map).bindPopup(`<b>${page.page_path}</b><br>Hits: ${page.hit_count}`);
+        });
+    }
+    fetchStats();
+    </script>
+</body>
+</html>
