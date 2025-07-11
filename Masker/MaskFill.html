@@ -924,10 +924,11 @@
                         method: 'GET',
                         headers: this.headers
                     });
-                    console.log('HitCounter: GET response', getResponse);
+                    const getText = await getResponse.text();
+                    let existingData = [];
+                    try { existingData = JSON.parse(getText); } catch (e) { existingData = []; }
+                    console.log('HitCounter: GET response', getResponse.status, getText);
                     if (getResponse.ok) {
-                        const existingData = await getResponse.json();
-                        console.log('HitCounter: GET data', existingData);
                         if (existingData.length > 0) {
                             const record = existingData[0];
                             const newCount = record.hit_count + 1;
@@ -941,12 +942,13 @@
                                     updated_at: new Date().toISOString()
                                 })
                             });
-                            console.log('HitCounter: PATCH response', updateResponse);
+                            const updateText = await updateResponse.text();
+                            console.log('HitCounter: PATCH response', updateResponse.status, updateText);
                             if (updateResponse.ok) {
                                 this.currentHits = newCount;
                                 return;
                             } else {
-                                throw new Error('PATCH failed: ' + updateResponse.status);
+                                throw new Error('PATCH failed: ' + updateResponse.status + ' ' + updateText);
                             }
                         } else {
                             // Only POST if page_path does not exist
@@ -962,18 +964,20 @@
                                     last_ip_hash: 'browser-' + Math.random().toString(36).substring(7)
                                 })
                             });
-                            console.log('HitCounter: POST response', createResponse);
+                            const createText = await createResponse.text();
+                            console.log('HitCounter: POST response', createResponse.status, createText);
                             if (createResponse.ok) {
                                 this.currentHits = 1;
                                 return;
                             } else {
-                                throw new Error('POST failed: ' + createResponse.status);
+                                throw new Error('POST failed: ' + createResponse.status + ' ' + createText);
                             }
                         }
                     }
-                    throw new Error('GET failed: ' + getResponse.status);
+                    throw new Error('GET failed: ' + getResponse.status + ' ' + getText);
                 } catch (error) {
                     console.error('HitCounter: recordHit error', error);
+                    this.lastError = error;
                     throw error;
                 }
             }
@@ -1038,7 +1042,7 @@
                     transition: all 0.3s ease;
                     cursor: pointer;
                 `;
-                this.counterElement.textContent = `Visitors: Error loading`;
+                this.counterElement.textContent = `Visitors: Error loading (${error && error.message ? error.message : 'Unknown error'})`;
                 document.body.appendChild(this.counterElement);
             }
         }
