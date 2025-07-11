@@ -414,71 +414,7 @@
         <div class="canvas-container">
             <canvas id="previewCanvas" class="preview-canvas" style="display: none;"></canvas>
         </div>
-        
-        <div id="map" style="height: 400px; width: 100%; margin-bottom: 2rem; border-radius: 16px; box-shadow: 0 2px 12px #e63946a0, 0 1px 6px #fff2;"></div>
     </div>
-
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <script>
-    window.addEventListener('load', function() {
-        // --- World Map ---
-        var map = L.map('map').setView([20, 0], 2);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 18,
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
-        // --- Stats Fetch ---
-        async function fetchStats() {
-            const apiUrl = 'https://omcwjmvdjswkfjkahchm.supabase.co/rest/v1/page_hits';
-            const headers = {
-                'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9zZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MTQ0NTUwNywiZXhwIjoyMDY3MDIxNTA3fQ.2nha7JB1C_PFYOM_4C-UJpJwRWC22PslM5UUEEAJgzw',
-                'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9zZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MTQ0NTUwNywiZXhwIjoyMDY3MDIxNTA3fQ.2nha7JB1C_PFYOM_4C-UJpJwRWC22PslM5UUEEAJgzw',
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'Prefer': 'return=representation'
-            };
-            try {
-                const res = await fetch(apiUrl, { headers });
-                if (!res.ok) {
-                    throw new Error('HTTP ' + res.status + ': ' + await res.text());
-                }
-                const data = await res.json();
-                renderStats(data);
-                plotHitsOnMap(data);
-            } catch (err) {
-                document.getElementById('statsList').innerHTML = '<div style="color:#e63946">Failed to load stats.</div>';
-                console.error('Stats fetch error:', err);
-            }
-        }
-        function renderStats(data) {
-            const statsList = document.getElementById('statsList');
-            statsList.innerHTML = '';
-            data.forEach(page => {
-                const card = document.createElement('div');
-                card.className = 'stat-card';
-                card.innerHTML = `<div class="stat-title"><i class="fas fa-file-alt"></i> ${page.page_path}</div>
-                    <div class="stat-count">${page.hit_count}</div>
-                    <div class="stat-meta">Last hit: ${page.last_hit ? new Date(page.last_hit).toLocaleString() : 'N/A'}</div>`;
-                statsList.appendChild(card);
-            });
-        }
-        // --- Plot hits on map (demo: random locations) ---
-        function plotHitsOnMap(data) {
-            data.forEach(page => {
-                const lat = 20 + Math.random()*40 - 20;
-                const lng = Math.random()*360 - 180;
-                L.circleMarker([lat, lng], {
-                    radius: Math.min(10, 5 + Math.log(page.hit_count)),
-                    color: '#ff6b7a',
-                    fillColor: '#e63946',
-                    fillOpacity: 0.8,
-                    weight: 2
-                }).addTo(map).bindPopup(`<b>${page.page_path}</b><br>Hits: ${page.hit_count}`);
-            });
-        }
-        fetchStats();
-    });
-    </script>
 
     <script>
         class ImageMaskerApp {
