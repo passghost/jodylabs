@@ -731,7 +731,9 @@
 
             getCurrentPagePath() {
                 let path = window.location.pathname;
-                if (path === '/') path = 'index';
+                if (path.endsWith('aifun.html')) return 'aifun';
+                if (path.endsWith('MaskFill.html')) return 'MaskFill';
+                if (path === '/') return 'index';
                 return path.replace(/^\//, '').replace(/\.html$/, '') || 'index';
             }
 
