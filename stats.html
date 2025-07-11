@@ -176,56 +176,58 @@
     </div>
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
-    // --- World Map ---
-    var map = L.map('map').setView([20, 0], 2);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 18,
-        attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
-    // --- Stats Fetch ---
-    async function fetchStats() {
-        const apiUrl = 'https://omcwjmvdjswkfjkahchm.supabase.co/rest/v1/page_hits';
-        const headers = {
-            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
-            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9zZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
-            'Content-Type': 'application/json'
-        };
-        try {
-            const res = await fetch(apiUrl, { headers });
-            const data = await res.json();
-            renderStats(data);
-            plotHitsOnMap(data);
-        } catch (err) {
-            document.getElementById('statsList').innerHTML = '<div style="color:#e63946">Failed to load stats.</div>';
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- World Map ---
+        var map = L.map('map').setView([20, 0], 2);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+        // --- Stats Fetch ---
+        async function fetchStats() {
+            const apiUrl = 'https://omcwjmvdjswkfjkahchm.supabase.co/rest/v1/page_hits';
+            const headers = {
+                'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
+                'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9zZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
+                'Content-Type': 'application/json'
+            };
+            try {
+                const res = await fetch(apiUrl, { headers });
+                const data = await res.json();
+                renderStats(data);
+                plotHitsOnMap(data);
+            } catch (err) {
+                document.getElementById('statsList').innerHTML = '<div style="color:#e63946">Failed to load stats.</div>';
+            }
         }
-    }
-    function renderStats(data) {
-        const statsList = document.getElementById('statsList');
-        statsList.innerHTML = '';
-        data.forEach(page => {
-            const card = document.createElement('div');
-            card.className = 'stat-card';
-            card.innerHTML = `<div class="stat-title"><i class="fas fa-file-alt"></i> ${page.page_path}</div>
-                <div class="stat-count">${page.hit_count}</div>
-                <div class="stat-meta">Last hit: ${page.last_hit ? new Date(page.last_hit).toLocaleString() : 'N/A'}</div>`;
-            statsList.appendChild(card);
-        });
-    }
-    // --- Plot hits on map (demo: random locations) ---
-    function plotHitsOnMap(data) {
-        data.forEach(page => {
-            const lat = 20 + Math.random()*40 - 20;
-            const lng = Math.random()*360 - 180;
-            L.circleMarker([lat, lng], {
-                radius: Math.min(10, 5 + Math.log(page.hit_count)),
-                color: '#ff6b7a',
-                fillColor: '#e63946',
-                fillOpacity: 0.8,
-                weight: 2
-            }).addTo(map).bindPopup(`<b>${page.page_path}</b><br>Hits: ${page.hit_count}`);
-        });
-    }
-    fetchStats();
+        function renderStats(data) {
+            const statsList = document.getElementById('statsList');
+            statsList.innerHTML = '';
+            data.forEach(page => {
+                const card = document.createElement('div');
+                card.className = 'stat-card';
+                card.innerHTML = `<div class="stat-title"><i class="fas fa-file-alt"></i> ${page.page_path}</div>
+                    <div class="stat-count">${page.hit_count}</div>
+                    <div class="stat-meta">Last hit: ${page.last_hit ? new Date(page.last_hit).toLocaleString() : 'N/A'}</div>`;
+                statsList.appendChild(card);
+            });
+        }
+        // --- Plot hits on map (demo: random locations) ---
+        function plotHitsOnMap(data) {
+            data.forEach(page => {
+                const lat = 20 + Math.random()*40 - 20;
+                const lng = Math.random()*360 - 180;
+                L.circleMarker([lat, lng], {
+                    radius: Math.min(10, 5 + Math.log(page.hit_count)),
+                    color: '#ff6b7a',
+                    fillColor: '#e63946',
+                    fillOpacity: 0.8,
+                    weight: 2
+                }).addTo(map).bindPopup(`<b>${page.page_path}</b><br>Hits: ${page.hit_count}`);
+            });
+        }
+        fetchStats();
+    });
     </script>
 </body>
 </html>
