@@ -4,7 +4,89 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Wake'n'bake Homepage</title>
+    <meta name="description" content="The Wake'n'bake Homepage - Search, chat, weather, crypto, comics, and hemp store directory.">
+    <meta name="theme-color" content="#145c2a">
     <style>
+        /* Spinner fix: force perfect circle */
+        #spinner-container {
+            width: 90px !important;
+            height: 90px !important;
+            min-width: 90px !important;
+            min-height: 90px !important;
+            max-width: 90px !important;
+            max-height: 90px !important;
+            aspect-ratio: 1 / 1 !important;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        #spinner-img-container {
+            width: 90px !important;
+            height: 90px !important;
+            min-width: 90px !important;
+            min-height: 90px !important;
+            max-width: 90px !important;
+            max-height: 90px !important;
+            aspect-ratio: 1 / 1 !important;
+            border-radius: 50% !important;
+            box-shadow: 0 4px 16px 0 rgba(31,38,135,0.18),0 1px 4px 0 #a5b4fc;
+            background: linear-gradient(145deg,#f1f5f9 60%,#e0e7ff 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+        #spinner-img {
+            width: 100% !important;
+            height: 100% !important;
+            min-width: 0 !important;
+            min-height: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            min-width: 0 !important;
+            min-height: 0 !important;
+            max-width: 100% !important;
+            max-height: 100% !important;
+            aspect-ratio: 1 / 1 !important;
+            object-fit: cover !important;
+            border-radius: 50% !important;
+            background: #fff;
+            box-shadow: 0 0 0 3px #fff,0 0 0 6px #e0e7ff;
+            display: block;
+        }
+        /* Spinner controls green theme */
+        .spinner-controls button {
+            background: #1ec16b !important;
+            color: #fff !important;
+            box-shadow: 0 1px 4px 0 #145c2a !important;
+            border: none !important;
+        }
+
+        .spinner-controls button:hover {
+            background: #00ff88 !important;
+            color: #145c2a !important;
+        }
+
+        #img-upload-btn {
+            background: #1ec16b !important;
+            color: #fff !important;
+            box-shadow: 0 1px 4px 0 #145c2a !important;
+            border: none !important;
+        }
+
+        #img-upload-btn:hover {
+            background: #00ff88 !important;
+            color: #145c2a !important;
+        }
+
+        #img-upload-btn svg path,
+        #img-upload-btn svg rect {
+            stroke: #fff !important;
+            fill: #fff !important;
+        }
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
         * {
@@ -15,21 +97,46 @@
 
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
-            background-image: url('../Images/LeatherPadedwp.png');
-            background-size: 200px;
-            background-repeat: repeat;
-            background-attachment: fixed;
+            background: #000;
             min-height: 100vh;
-            color: #00ff88;
+            color: #1ec16b;
             line-height: 1.6;
             overflow-x: hidden;
+            position: relative;
+        }
+        body::before {
+            content: "";
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            -webkit-mask-image: url('https://i.imgur.com/WeedTred.png');
+            mask-image: url('https://i.imgur.com/WeedTred.png');
+            -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
+            -webkit-mask-position: center;
+            mask-position: center;
+            -webkit-mask-size: 80vmin;
+            mask-size: 80vmin;
+            z-index: 100;
+            pointer-events: none;
+            filter: drop-shadow(0 0 20px #00ff88);
+            opacity: 0.8;
+        }
+        :focus {
+            outline: 2px solid #00ff88;
+            outline-offset: 2px;
         }
 
         .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
+            width: 100vw;
+            max-width: 100vw;
+            margin: 0;
+            padding: 20px 0;
+            position: relative;
+            z-index: 1;
         }
 
         .header {
@@ -87,26 +194,26 @@
             right: 20px;
             font-size: 1.5rem;
             font-weight: 600;
-            color: #00ff88;
-            background: rgba(0, 0, 0, 0.8);
+            color: #1ec16b;
+            background: rgba(20, 60, 30, 0.85);
             padding: 10px 20px;
             border-radius: 15px;
-            border: 1px solid #00ff88;
+            border: 1px solid #145c2a;
             backdrop-filter: blur(10px);
             z-index: 1000;
         }
 
         .hit-counter {
             position: fixed;
-            top: 20px;
-            left: 20px;
+            bottom: 20px;
+            right: 20px;
             font-size: 0.9rem;
             font-weight: 500;
-            color: #00ff88;
-            background: rgba(0, 0, 0, 0.8);
+            color: #1ec16b;
+            background: rgba(20, 60, 30, 0.85);
             padding: 8px 15px;
             border-radius: 15px;
-            border: 1px solid #00ff88;
+            border: 1px solid #145c2a;
             backdrop-filter: blur(10px);
             z-index: 1000;
             text-align: center;
@@ -123,27 +230,27 @@
         .hit-counter .counter-value {
             display: block;
             font-weight: 600;
-            color: #44ff99;
+            color: #145c2a;
         }
 
         .main-grid {
             display: grid;
             grid-template-columns: 1fr 2fr 1fr;
             grid-template-rows: auto auto auto;
-            gap: 25px;
-            margin-bottom: 30px;
+            gap: 2vw;
+            margin-bottom: 2vw;
+            width: 100vw;
         }
 
         .widgets-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 25px;
-            margin-bottom: 30px;
+            gap: 2vw;
+            margin-bottom: 2vw;
+            width: 100vw;
         }
 
         .adult-swim-widget {
-            grid-column: 2;
-            grid-row: 1 / span 2;
             min-height: 600px;
         }
 
@@ -171,11 +278,11 @@
         }
 
         .widget {
-            background: rgba(0, 0, 0, 0.9);
+            background: rgba(20, 60, 30, 0.92);
             border-radius: 20px;
             padding: 25px;
-            border: 2px solid #00ff88;
-            box-shadow: 0 10px 30px rgba(0, 255, 136, 0.1);
+            border: 2px solid #145c2a;
+            box-shadow: 0 10px 30px rgba(20, 92, 60, 0.18);
             backdrop-filter: blur(10px);
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
@@ -199,14 +306,14 @@
 
         .widget:hover {
             transform: translateY(-5px);
-            box-shadow: 0 20px 40px rgba(0, 255, 136, 0.2);
-            border-color: #00ffaa;
+            box-shadow: 0 20px 40px rgba(20, 92, 60, 0.28);
+            border-color: #1ec16b;
         }
 
         .widget h2 {
             font-size: 1.5rem;
             font-weight: 600;
-            color: #00ff88;
+            color: #1ec16b;
             margin-bottom: 20px;
             display: flex;
             align-items: center;
@@ -216,7 +323,7 @@
         .widget-icon {
             width: 24px;
             height: 24px;
-            filter: hue-rotate(120deg) brightness(1.2);
+            filter: hue-rotate(80deg) brightness(1.1);
         }
 
         iframe {
@@ -236,10 +343,10 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            background: rgba(0, 255, 136, 0.1);
+            background: rgba(20, 92, 60, 0.13);
             padding: 15px;
             border-radius: 12px;
-            border: 1px solid #00ff88;
+            border: 1px solid #145c2a;
         }
 
         .search-group img {
@@ -257,24 +364,24 @@
             flex: 1;
             padding: 12px 16px;
             border-radius: 8px;
-            border: 1px solid #00ff88;
-            background: rgba(0, 0, 0, 0.8);
-            color: #00ff88;
+            border: 1px solid #145c2a;
+            background: rgba(20, 60, 30, 0.85);
+            color: #1ec16b;
             font-size: 14px;
             outline: none;
             transition: all 0.3s ease;
         }
 
         .search-group input[type="text"]:focus {
-            border-color: #00ffaa;
-            box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+            border-color: #1ec16b;
+            box-shadow: 0 0 10px rgba(20, 92, 60, 0.22);
         }
 
         .search-group button {
             padding: 12px 20px;
             border-radius: 8px;
-            background: linear-gradient(45deg, #00ff88, #00ffaa);
-            color: #000;
+            background: linear-gradient(45deg, #145c2a, #1ec16b);
+            color: #fff;
             border: none;
             font-weight: 600;
             cursor: pointer;
@@ -283,7 +390,7 @@
 
         .search-group button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 255, 136, 0.4);
+            box-shadow: 0 5px 15px rgba(20, 92, 60, 0.28);
         }
 
         .widget-button {
@@ -291,8 +398,8 @@
             width: 100%;
             padding: 12px 20px;
             margin-top: 15px;
-            background: linear-gradient(45deg, #00ff88, #00ffaa);
-            color: #000;
+            background: linear-gradient(45deg, #145c2a, #1ec16b);
+            color: #fff;
             text-align: center;
             text-decoration: none;
             border-radius: 10px;
@@ -303,8 +410,8 @@
 
         .widget-button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0, 255, 136, 0.4);
-            background: linear-gradient(45deg, #00ffaa, #44ff99);
+            box-shadow: 0 8px 25px rgba(20, 92, 60, 0.28);
+            background: linear-gradient(45deg, #1ec16b, #145c2a);
         }
 
         .entertainment-grid {
@@ -323,33 +430,33 @@
         }
 
         .menu-section {
-            background: rgba(0, 0, 0, 0.95);
+            background: rgba(20, 60, 30, 0.97);
             border-radius: 20px;
             padding: 30px;
-            border: 2px solid #00ff88;
-            box-shadow: 0 15px 35px rgba(0, 255, 136, 0.15);
+            border: 2px solid #145c2a;
+            box-shadow: 0 15px 35px rgba(20, 92, 60, 0.22);
             backdrop-filter: blur(15px);
         }
 
         .menu-section h2 {
-            font-size: 2rem;
+            font-size: 2.8rem;
             font-weight: 700;
-            color: #00ff88;
+            color: #1ec16b;
             margin-bottom: 25px;
             text-align: center;
         }
 
         .menu-widget {
             margin-bottom: 30px;
-            background: rgba(0, 255, 136, 0.05);
+            background: rgba(20, 92, 60, 0.09);
             border-radius: 15px;
             padding: 25px;
-            border: 1px solid #00ff88;
+            border: 1px solid #145c2a;
             text-align: center;
         }
 
         .menu-widget h3 {
-            color: #00ffaa;
+            color: #145c2a;
             font-size: 1.4rem;
             margin-bottom: 15px;
             font-weight: 600;
@@ -364,20 +471,20 @@
         .shop-button {
             display: inline-block;
             padding: 15px 30px;
-            background: linear-gradient(45deg, #00ff88, #00ffaa);
-            color: #000;
+            background: linear-gradient(45deg, #145c2a, #1ec16b);
+            color: #fff;
             text-decoration: none;
             border-radius: 12px;
             font-weight: 700;
             font-size: 1.1rem;
             transition: all 0.3s ease;
-            box-shadow: 0 5px 15px rgba(0, 255, 136, 0.3);
+            box-shadow: 0 5px 15px rgba(20, 92, 60, 0.22);
         }
 
         .shop-button:hover {
             transform: translateY(-3px);
-            box-shadow: 0 10px 25px rgba(0, 255, 136, 0.5);
-            background: linear-gradient(45deg, #00ffaa, #44ff99);
+            box-shadow: 0 10px 25px rgba(20, 92, 60, 0.32);
+            background: linear-gradient(45deg, #1ec16b, #145c2a);
         }
 
         @media (max-width: 768px) {
@@ -438,12 +545,12 @@
         }
 
         ::-webkit-scrollbar-thumb {
-            background: linear-gradient(45deg, #00ff88, #00ffaa);
+            background: linear-gradient(45deg, #145c2a, #1ec16b);
             border-radius: 4px;
         }
 
         ::-webkit-scrollbar-thumb:hover {
-            background: linear-gradient(45deg, #00ffaa, #44ff99);
+            background: linear-gradient(45deg, #1ec16b, #145c2a);
         }
     </style>
 </head>
@@ -451,9 +558,84 @@
     <div class="container">
         <div class="header">
             <div class="header-content">
-                <img src="WeedTred.png" alt="Logo" class="logo">
-                <h1>The Wake'n'bake Homepage</h1>
+                <div style="display: flex; align-items: center; gap: 18px;">
+                  <div id="spinner-container" style="margin-top:22px;">
+                    <div id="spinner-img-container" style="width:90px;height:90px;position:relative;border-radius:50%;box-shadow:0 4px 16px 0 rgba(31,38,135,0.18),0 1px 4px 0 #a5b4fc;background:linear-gradient(145deg,#f1f5f9 60%,#e0e7ff 100%);display:flex;align-items:center;justify-content:center;overflow:hidden;">
+                        <img id="spinner-img" src="https://i.imgur.com/WeedTred.png" alt="Profile Spinner">
+                    </div>
+                    <input type="file" id="img-upload" accept="image/*" style="display:none;">
+                    <div style="height:18px;"></div>
+                    <div class="spinner-controls" style="display:flex;flex-direction:row;align-items:center;justify-content:center;gap:6px;margin-top:0;">
+                      <button id="spin-btn" title="Speed up" style="padding:0 0;font-size:1.1rem;border-radius:50%;border:none;background:#e0e7ff;color:#6366f1;cursor:pointer;width:24px;height:24px;box-shadow:0 1px 4px 0 #c7d2fe;display:flex;align-items:center;justify-content:center;">+</button>
+                      <button id="slow-btn" title="Slow down" style="padding:0 0;font-size:1.1rem;border-radius:50%;border:none;background:#e0e7ff;color:#6366f1;cursor:pointer;width:24px;height:24px;box-shadow:0 1px 4px 0 #c7d2fe;display:flex;align-items:center;justify-content:center;">-</button>
+                    </div>
+                    <button id="img-upload-btn" title="Upload Image" style="margin-top:4px;padding:0;border-radius:50%;border:none;background:#e0e7ff;color:#6366f1;cursor:pointer;width:22px;height:22px;box-shadow:0 1px 4px 0 #c7d2fe;display:flex;align-items:center;justify-content:center;font-size:1rem;">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 16 16"><path d="M8 1v10M8 11l-3-3m3 3l3-3" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><rect x="2" y="13" width="12" height="2" rx="1" fill="#fff"/></svg>
+                    </button>
+                  </div>
+                </div>
+                <!-- Replace title with GIF -->
+                <img src="jodylabsgif.gif" alt="JodyLabs GIF" style="display:block;margin:0 auto;max-width:100%;height:auto;">
             </div>
+        <script>
+        // Fidget spinner logic for header with tiny controls and upload button
+        (function() {
+            const spinnerImgContainer = document.getElementById('spinner-img-container');
+            const spinnerImg = document.getElementById('spinner-img');
+            const imgUpload = document.getElementById('img-upload');
+            const imgUploadBtn = document.getElementById('img-upload-btn');
+            const spinBtn = document.getElementById('spin-btn');
+            const slowBtn = document.getElementById('slow-btn');
+            let angle = 0;
+            let speed = 0.5;
+            let animationFrame;
+            let spinInterval = null;
+            let slowInterval = null;
+            function animate() {
+                angle = (angle + speed) % 360;
+                spinnerImgContainer.style.transform = `rotate(${angle}deg)`;
+                animationFrame = requestAnimationFrame(animate);
+            }
+            animate();
+            spinnerImgContainer.onclick = function() {
+                speed += 1;
+            };
+            spinnerImgContainer.oncontextmenu = function(e) {
+                e.preventDefault();
+                speed = Math.max(0, speed - 0.5);
+            };
+            imgUploadBtn.onclick = function() {
+                imgUpload.click();
+            };
+            imgUpload.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(ev) {
+                        spinnerImg.src = ev.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+            // Controls
+            spinBtn.onclick = () => { speed += 1; };
+            slowBtn.onclick = () => { speed = Math.max(0, speed - 0.5); };
+            spinBtn.onmousedown = () => {
+                if (spinInterval) return;
+                spinInterval = setInterval(() => { speed += 0.2; }, 50);
+            };
+            spinBtn.onmouseup = spinBtn.onmouseleave = () => {
+                clearInterval(spinInterval); spinInterval = null;
+            };
+            slowBtn.onmousedown = () => {
+                if (slowInterval) return;
+                slowInterval = setInterval(() => { speed = Math.max(0, speed - 0.15); }, 50);
+            };
+            slowBtn.onmouseup = slowBtn.onmouseleave = () => {
+                clearInterval(slowInterval); slowInterval = null;
+            };
+        })();
+        </script>
         </div>
         
         <div class="clock" id="clock"></div>
@@ -462,128 +644,104 @@
             <span class="counter-value" id="hit-count">0</span>
         </div>
 
-        <!-- Main Grid with Adult Swim Centerpiece -->
-        <div class="main-grid">
-            <!-- Left Column Widgets -->
+        <!-- 3-Row Grid Layout -->
+        <main id="main-content" tabindex="-1">
+          <div class="main-grid">
+            <!-- Row 1: Search Engines (full width) -->
+            <section aria-label="Search Engines" class="widget wide-widget" style="grid-column: 1 / span 3;">
+              <h2>
+                <img src="../Images/gem3.png" alt="Search" class="widget-icon">
+                Search Engines
+              </h2>
+              <div class="search-container">
+                <div class="search-group">
+                  <img src="https://www.google.com/favicon.ico" alt="Google">
+                  <form method="GET" action="https://www.google.com/search" aria-label="Google Search">
+                    <input type="text" name="q" maxlength="255" placeholder="Search Google" aria-label="Search Google">
+                    <button type="submit">Search</button>
+                  </form>
+                </div>
+                <div class="search-group">
+                  <img src="https://duckduckgo.com/favicon.ico" alt="DuckDuckGo">
+                  <form method="GET" action="https://duckduckgo.com/" aria-label="DuckDuckGo Search">
+                    <input type="text" name="q" maxlength="255" placeholder="Search DuckDuckGo" aria-label="Search DuckDuckGo">
+                    <button type="submit">Search</button>
+                  </form>
+                </div>
+                <div class="search-group">
+                  <img src="https://you.com/favicon.ico" alt="You.com">
+                  <form method="GET" action="https://you.com/search" aria-label="You.com Search">
+                    <input type="text" name="q" maxlength="255" placeholder="Search You.com" aria-label="Search You.com">
+                    <button type="submit">Search</button>
+                  </form>
+                </div>
+              </div>
+            </section>
+
             <div class="left-widgets">
-                <!-- Weather Widget -->
-                <div class="widget">
-                    <h2>
-                        <img src="../Images/gem2.png" alt="Weather" class="widget-icon">
-                        Weather
-                    </h2>
-                    <a class="weatherwidget-io" href="https://forecast7.com/en/38d04n84d50/lexington/" data-label_1="LEXINGTON" data-label_2="WEATHER" data-theme="ruby">LEXINGTON WEATHER</a>
-                    <script>
-                        !function(d,s,id){
-                            var js,fjs=d.getElementsByTagName(s)[0];
-                            if(!d.getElementById(id)){
-                                js=d.createElement(s);
-                                js.id=id;
-                                js.src='https://weatherwidget.io/js/widget.min.js';
-                                fjs.parentNode.insertBefore(js,fjs);
-                            }
-                        }(document,'script','weatherwidget-io-js');
-                    </script>
-                    <a href="https://forecast7.com/en/38d04n84d50/lexington/" target="_blank" class="widget-button">Open Weather</a>
-                </div>
-
-                <!-- Discord Widget -->
-                <div class="widget">
-                    <h2>
-                        <img src="../Images/gem4.png" alt="Discord" class="widget-icon">
-                        Discord Chat
-                    </h2>
-                    <iframe src="https://discord.com/widget?id=1129507156585041920&theme=dark" 
-                            height="400" 
-                            allowtransparency="true" 
-                            frameborder="0" 
-                            sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"></iframe>
-                    <a href="https://discord.gg/your-invite-link" target="_blank" class="widget-button">Join Discord Server</a>
-                </div>
-            </div>
-
-            <!-- Center - Adult Swim (Large Widget) -->
-            <div class="widget adult-swim-widget">
-                <h2>
-                    <img src="../Images/gem3.png" alt="Adult Swim" class="widget-icon">
-                    [adult swim] Live Streams
+              <article class="widget" style="min-height:220px;" aria-label="Discord Chat">
+                <h2 style="margin-bottom:10px;">
+                  <img src="../Images/gem4.png" alt="Discord" class="widget-icon" style="width:32px;height:32px;filter:drop-shadow(0 0 8px #00ff88);margin-right:8px;">
+                  <span style="font-size:1.2rem;font-family:'Inter',sans-serif;background:linear-gradient(90deg,#00ff88 10%,#44ff99 90%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Discord</span>
                 </h2>
-                <iframe src="https://www.adultswim.com/streams/"
-                        sandbox="allow-scripts allow-same-origin allow-forms"
-                        referrerpolicy="no-referrer"></iframe>
-                <a href="https://www.adultswim.com/streams/" target="_blank" class="widget-button">Open Adult Swim</a>
+                <iframe src="https://discord.com/widget?id=1129507156585041920&theme=dark" title="Discord Chat" height="180" allowtransparency="true" frameborder="0" sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"></iframe>
+                <a href="https://discord.gg/nFn9S6ydDr" target="_blank" class="widget-button" style="margin-top:0;font-size:1.1rem;">Open Discord</a>
+              </article>
+              <article class="widget" style="min-height:220px;" aria-label="Weather">
+                <h2>
+                  <img src="../Images/gem2.png" alt="Weather" class="widget-icon">
+                  Lexington Weather
+                </h2>
+                <a class="weatherwidget-io" href="https://forecast7.com/en/38d04n84d50/lexington/" data-label_1="LEXINGTON" data-label_2="WEATHER" data-theme="ruby">LEXINGTON WEATHER</a>
+                <script>
+                  !function(d,s,id){
+                    var js,fjs=d.getElementsByTagName(s)[0];
+                    if(!d.getElementById(id)){
+                      js=d.createElement(s);
+                      js.id=id;
+                      js.src='https://weatherwidget.io/js/widget.min.js';
+                      fjs.parentNode.insertBefore(js,fjs);
+                    }
+                  }(document,'script','weatherwidget-io-js');
+                </script>
+                <a href="https://forecast7.com/en/38d04n84d50/lexington/" target="_blank" class="widget-button">View Forecast</a>
+              </article>
             </div>
 
-            <!-- Right Column Widgets -->
+            <!-- Adult Swim between left and right widgets -->
+            <section aria-label="Adult Swim Streams" class="widget adult-swim-widget wide-widget" style="grid-column: 2;min-height:480px;">
+              <h2>
+                <img src="../Images/gem3.png" alt="Adult Swim" class="widget-icon">
+                <span style="font-size:1.6rem;font-family:'Inter',sans-serif;background:linear-gradient(90deg,#00ff88 10%,#44ff99 90%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Adult Swim Streams</span>
+              </h2>
+              <iframe src="https://www.adultswim.com/streams/" title="Adult Swim Live Streams" style="height:380px;margin-bottom:10px;border-radius:14px;border:2px solid #1ec16b;box-shadow:0 4px 24px 0 #1ec16b40;" sandbox="allow-scripts allow-same-origin allow-forms" referrerpolicy="no-referrer"></iframe>
+              <a href="https://www.adultswim.com/streams/" target="_blank" class="widget-button" style="margin-top:0;font-size:1.1rem;">Watch Adult Swim</a>
+            </section>
+
             <div class="right-widgets">
-                <!-- Kaspa Crypto Widget -->
-                <div class="widget">
-                    <h2>
-                        <img src="../Images/emrald.png" alt="Crypto" class="widget-icon">
-                        Kaspa Crypto
-                    </h2>
-                    <script src="https://widget.coinlore.com/widgets/new-widget.js"></script>
-                    <div class="coinlore-coin-widget" data-mcap="1" data-mcurrency="usd" data-d7="1" data-cwidth="100%" data-rank="1" data-vol="1" data-id="kaspa" data-bcolor="#1e1e1e" data-tcolor="#00ff00" data-ccolor="#00ff00" data-pcolor="#00ff00"></div>
-                    <a href="https://coinlore.com/coin/kaspa" target="_blank" class="widget-button">Open Kaspa Stats</a>
-                </div>
-
-                <!-- Broadcastify Widget -->
-                <div class="widget">
-                    <h2>
-                        <img src="../Images/gem5.png" alt="Scanner" class="widget-icon">
-                        Live Scanner Feeds
-                    </h2>
-                    <iframe src="https://www.broadcastify.com/listen/?rl=rr" height="400"></iframe>
-                    <a href="https://www.broadcastify.com/listen/?rl=rr" target="_blank" class="widget-button">Open Broadcastify</a>
-                </div>
+              <div class="widget" style="min-height:220px;" aria-label="Kaspa Crypto">
+                <h2>
+                  <img src="../Images/emrald.png" alt="Crypto" class="widget-icon">
+                  Kaspa
+                </h2>
+                <script src="https://widget.coinlore.com/widgets/new-widget.js"></script>
+                <div class="coinlore-coin-widget" data-mcap="1" data-mcurrency="usd" data-d7="1" data-cwidth="100%" data-rank="1" data-vol="1" data-id="kaspa" data-bcolor="#1e1e1e" data-tcolor="#00ff00" data-ccolor="#00ff00" data-pcolor="#00ff00"></div>
+                <a href="https://coinlore.com/coin/kaspa" target="_blank" class="widget-button">Kaspa Stats</a>
+              </div>
+              <div class="widget" style="min-height:220px;" aria-label="Comics">
+                <h2>
+                  <img src="../Images/gem2.png" alt="Comics" class="widget-icon">
+                  Comics
+                </h2>
+                <iframe src="https://readcomiconline.li/" title="Read Comics Online" sandbox="allow-scripts allow-same-origin allow-forms" referrerpolicy="no-referrer" style="height:120px;"></iframe>
+                <a href="https://readcomiconline.li/" target="_blank" class="widget-button">Read Comics</a>
+              </div>
             </div>
+          </div>
 
-            <!-- Bottom Row - Search and Comics -->
-            <div class="bottom-widgets">
-                <!-- Search Engine Widget -->
-                <div class="widget">
-                    <h2>
-                        <img src="../Images/gem3.png" alt="Search" class="widget-icon">
-                        Search the Web
-                    </h2>
-                    <div class="search-container">
-                        <div class="search-group">
-                            <img src="https://www.google.com/favicon.ico" alt="Google">
-                            <form method="GET" action="https://www.google.com/search">
-                                <input type="text" name="q" maxlength="255" placeholder="Search Google">
-                                <button type="submit">Search</button>
-                            </form>
-                        </div>
-                        <div class="search-group">
-                            <img src="https://duckduckgo.com/favicon.ico" alt="DuckDuckGo">
-                            <form method="GET" action="https://duckduckgo.com/">
-                                <input type="text" name="q" maxlength="255" placeholder="Search DuckDuckGo">
-                                <button type="submit">Search</button>
-                            </form>
-                        </div>
-                        <div class="search-group">
-                            <img src="https://you.com/favicon.ico" alt="You.com">
-                            <form method="GET" action="https://you.com/search">
-                                <input type="text" name="q" maxlength="255" placeholder="Search You.com">
-                                <button type="submit">Search</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Comics Widget -->
-                <div class="widget large-widget">
-                    <h2>
-                        <img src="../Images/gem2.png" alt="Comics" class="widget-icon">
-                        Read Comics Online
-                    </h2>
-                    <iframe src="https://readcomiconline.li/" 
-                            sandbox="allow-scripts allow-same-origin allow-forms"
-                            referrerpolicy="no-referrer"></iframe>
-                    <a href="https://readcomiconline.li/" target="_blank" class="widget-button">Open Comics Site</a>
-                </div>
-            </div>
-        </div>
+          <!-- Bottom Row: Empty for spacing or future widgets -->
+          <div class="bottom-widgets" style="grid-column: 1 / span 3;"></div>
+        </main>
 
         <!-- Hemp Store Directory (No Embeds - Links Only) -->
         <div class="menu-section">
