@@ -435,6 +435,39 @@
             initializeUI() {
                 // Create hue toggles
                 const hueGrid = document.getElementById('hueGrid');
+
+                // Add check/uncheck all buttons
+                const controlsDiv = document.createElement('div');
+                controlsDiv.style.textAlign = 'center';
+                controlsDiv.style.marginBottom = '8px';
+
+                const checkAllBtn = document.createElement('button');
+                checkAllBtn.textContent = 'Check All';
+                checkAllBtn.className = 'process-button';
+                checkAllBtn.style.marginRight = '8px';
+                checkAllBtn.onclick = () => {
+                    for (let i = 0; i < 24; i++) {
+                        document.getElementById(`hue${i}`).checked = true;
+                        this.hueToggles[i] = true;
+                    }
+                };
+
+                const uncheckAllBtn = document.createElement('button');
+                uncheckAllBtn.textContent = 'Uncheck All';
+                uncheckAllBtn.className = 'process-button';
+                uncheckAllBtn.onclick = () => {
+                    for (let i = 0; i < 24; i++) {
+                        document.getElementById(`hue${i}`).checked = false;
+                        this.hueToggles[i] = false;
+                    }
+                };
+
+                controlsDiv.appendChild(checkAllBtn);
+                controlsDiv.appendChild(uncheckAllBtn);
+
+                // Insert controls above hueGrid
+                hueGrid.parentNode.insertBefore(controlsDiv, hueGrid);
+
                 for (let i = 0; i < 24; i++) {
                     const hueItem = document.createElement('div');
                     hueItem.className = 'hue-item';
@@ -461,7 +494,7 @@
                     hueItem.appendChild(label);
                     hueGrid.appendChild(hueItem);
                 }
-                
+
                 // Update slider values
                 this.updateSliderValues();
             }
@@ -850,8 +883,8 @@
                     window.jodyHitCounter = new JodyHitCounter({
                         apiUrl: 'https://omcwjmvdjswkfjkahchm.supabase.co',
                         headers: {
-                            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9zZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
-                            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9zZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
+                            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
+                            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
                             'Content-Type': 'application/json',
                             'Accept': 'application/json',
                             'Prefer': 'return=representation'
@@ -905,7 +938,7 @@
             constructor(options = {}) {
                 this.apiUrl = options.apiUrl;
                 this.headers = options.headers || {};
-                this.pagePath = options.pagePath || this.getCurrentPagePath(); // Use dynamic pagePath
+                this.pagePath = 'maskfill'; // Hardcoded for consistent hit counting
                 this.showCounter = options.showCounter !== false;
                 this.animated = options.animated !== false;
                 this.theme = options.theme || 'jody';
@@ -920,7 +953,7 @@
                 try {
                     await this.recordHit();
                     if (this.showCounter) {
-                        await this.displayCounter();
+                        this.displayCounter();
                     }
                 } catch (error) {
                     console.error('HitCounter error:', error);
@@ -933,7 +966,6 @@
             async recordHit() {
                 try {
                     // Use page_path for all requests
-                    console.log('HitCounter: GET', `${this.apiUrl}/rest/v1/page_hits?page_path=eq.${this.pagePath}&select=id,hit_count`, this.headers);
                     const getResponse = await fetch(`${this.apiUrl}/rest/v1/page_hits?page_path=eq.${this.pagePath}&select=id,hit_count`, {
                         method: 'GET',
                         headers: this.headers
@@ -941,12 +973,13 @@
                     const getText = await getResponse.text();
                     let existingData = [];
                     try { existingData = JSON.parse(getText); } catch (e) { existingData = []; }
-                    console.log('HitCounter: GET response', getResponse.status, getText);
                     if (getResponse.ok) {
                         if (existingData.length > 0) {
                             const record = existingData[0];
                             const newCount = record.hit_count + 1;
-                            console.log('HitCounter: PATCH', `${this.apiUrl}/rest/v1/page_hits?id=eq.${record.id}`, {hit_count: newCount});
+                            // Update counter immediately after GET
+                            this.currentHits = newCount;
+                            this.displayCounter();
                             const updateResponse = await fetch(`${this.apiUrl}/rest/v1/page_hits?id=eq.${record.id}`, {
                                 method: 'PATCH',
                                 headers: this.headers,
@@ -957,18 +990,14 @@
                                 })
                             });
                             const updateText = await updateResponse.text();
-                            console.log('HitCounter: PATCH response', updateResponse.status, updateText);
-                            if (updateResponse.ok) {
-                                this.currentHits = newCount;
-                                return;
-                            } else {
+                            if (!updateResponse.ok) {
                                 console.error('PATCH failed: ' + updateResponse.status + ' ' + updateText);
-                                this.currentHits = record.hit_count;
-                                return;
                             }
+                            return;
                         } else {
                             // Only POST if page_path does not exist
-                            console.log('HitCounter: POST', `${this.apiUrl}/rest/v1/page_hits`, {page_path: this.pagePath});
+                            this.currentHits = 1;
+                            this.displayCounter();
                             const createResponse = await fetch(`${this.apiUrl}/rest/v1/page_hits`, {
                                 method: 'POST',
                                 headers: this.headers,
@@ -981,55 +1010,62 @@
                                 })
                             });
                             const createText = await createResponse.text();
-                            console.log('HitCounter: POST response', createResponse.status, createText);
-                            if (createResponse.ok) {
-                                this.currentHits = 1;
-                                return;
-                            } else {
+                            if (!createResponse.ok) {
                                 console.error('POST failed: ' + createResponse.status + ' ' + createText);
-                                this.currentHits = 1;
-                                return;
                             }
+                            return;
                         }
                     }
                     console.error('GET failed: ' + getResponse.status + ' ' + getText);
                     this.currentHits = 1;
+                    this.displayCounter();
                     return;
                 } catch (error) {
                     console.error('HitCounter: recordHit error', error);
                     this.lastError = error;
                     this.currentHits = 1;
+                    this.displayCounterError(error);
                     return;
                 }
             }
             displayCounter() {
-                this.counterElement = document.createElement('div');
-                this.counterElement.style.cssText = `
-                    position: fixed;
-                    bottom: 20px;
-                    right: 20px;
-                    background: rgba(20, 20, 20, 0.9);
-                    color: #e63946;
-                    padding: 10px 16px;
-                    border-radius: 12px;
-                    font-family: 'Orbitron', monospace;
-                    font-size: 14px;
-                    z-index: 1000;
-                    backdrop-filter: blur(5px);
-                    border: 1px solid rgba(230, 57, 70, 0.4);
-                    box-shadow: 0 0 20px rgba(230, 57, 70, 0.3);
-                    transition: all 0.3s ease;
-                    cursor: pointer;
-                `;
-                this.counterElement.onmouseenter = () => {
-                    this.counterElement.style.transform = 'scale(1.05)';
-                    this.counterElement.style.boxShadow = '0 0 30px rgba(230, 57, 70, 0.5)';
-                };
-                this.counterElement.onmouseleave = () => {
-                    this.counterElement.style.transform = 'scale(1)';
-                    this.counterElement.style.boxShadow = '0 0 20px rgba(230, 57, 70, 0.3)';
-                };
-                document.body.appendChild(this.counterElement);
+                // Reuse the counter element if it exists, else create it
+                if (!this.counterElement) {
+                    let counterContainer = document.getElementById('hit-counter-container');
+                    if (!counterContainer) {
+                        counterContainer = document.createElement('div');
+                        counterContainer.id = 'hit-counter-container';
+                        document.body.appendChild(counterContainer);
+                    }
+                    this.counterElement = document.createElement('div');
+                    this.counterElement.style.cssText = `
+                        position: fixed;
+                        bottom: 20px;
+                        right: 20px;
+                        background: rgba(20, 20, 20, 0.9);
+                        color: #e63946;
+                        padding: 10px 16px;
+                        border-radius: 12px;
+                        font-family: 'Orbitron', monospace;
+                        font-size: 14px;
+                        z-index: 1000;
+                        backdrop-filter: blur(5px);
+                        border: 1px solid rgba(230, 57, 70, 0.4);
+                        box-shadow: 0 0 20px rgba(230, 57, 70, 0.3);
+                        transition: all 0.3s ease;
+                        cursor: pointer;
+                    `;
+                    this.counterElement.onmouseenter = () => {
+                        this.counterElement.style.transform = 'scale(1.05)';
+                        this.counterElement.style.boxShadow = '0 0 30px rgba(230, 57, 70, 0.5)';
+                    };
+                    this.counterElement.onmouseleave = () => {
+                        this.counterElement.style.transform = 'scale(1)';
+                        this.counterElement.style.boxShadow = '0 0 20px rgba(230, 57, 70, 0.3)';
+                    };
+                    counterContainer.appendChild(this.counterElement);
+                }
+                // Always update the text content
                 if (this.animated && this.currentHits > 1) {
                     let current = Math.max(1, this.currentHits - 10);
                     const animate = () => {
@@ -1045,26 +1081,34 @@
                 }
             }
             displayCounterError(error) {
-                this.counterElement = document.createElement('div');
-                this.counterElement.style.cssText = `
-                    position: fixed;
-                    bottom: 20px;
-                    right: 20px;
-                    background: rgba(20, 20, 20, 0.9);
-                    color: #e63946;
-                    padding: 10px 16px;
-                    border-radius: 12px;
-                    font-family: 'Orbitron', monospace;
-                    font-size: 14px;
-                    z-index: 1000;
-                    backdrop-filter: blur(5px);
-                    border: 1px solid rgba(230, 57, 70, 0.4);
-                    box-shadow: 0 0 20px rgba(230, 57, 70, 0.3);
-                    transition: all 0.3s ease;
-                    cursor: pointer;
-                `;
+                if (!this.counterElement) {
+                    let counterContainer = document.getElementById('hit-counter-container');
+                    if (!counterContainer) {
+                        counterContainer = document.createElement('div');
+                        counterContainer.id = 'hit-counter-container';
+                        document.body.appendChild(counterContainer);
+                    }
+                    this.counterElement = document.createElement('div');
+                    this.counterElement.style.cssText = `
+                        position: fixed;
+                        bottom: 20px;
+                        right: 20px;
+                        background: rgba(20, 20, 20, 0.9);
+                        color: #e63946;
+                        padding: 10px 16px;
+                        border-radius: 12px;
+                        font-family: 'Orbitron', monospace;
+                        font-size: 14px;
+                        z-index: 1000;
+                        backdrop-filter: blur(5px);
+                        border: 1px solid rgba(230, 57, 70, 0.4);
+                        box-shadow: 0 0 20px rgba(230, 57, 70, 0.3);
+                        transition: all 0.3s ease;
+                        cursor: pointer;
+                    `;
+                    counterContainer.appendChild(this.counterElement);
+                }
                 this.counterElement.textContent = `Visitors: Error loading (${error && error.message ? error.message : 'Unknown error'})`;
-                document.body.appendChild(this.counterElement);
             }
         }
     </script>
