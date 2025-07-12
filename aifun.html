@@ -721,11 +721,13 @@
             constructor(options = {}) {
                 this.apiUrl = options.apiUrl;
                 this.headers = {
-                    'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9zZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
-                    'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9zZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
+                    'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
+                    'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
                     'Content-Type': 'application/json'
                 };
-                this.pagePath = 'aifun'; // Match MaskFill.html and likely DB record
+                // Try both 'aifun' and 'aifun.html' for pagePath
+                this.pagePath = 'aifun';
+                this.pagePathAlt = 'aifun.html';
                 this.showCounter = options.showCounter !== false;
                 this.animated = options.animated !== false;
                 this.theme = options.theme || 'jody';
@@ -750,26 +752,39 @@
 
             async recordHit() {
                 try {
-                    const getResponse = await fetch(`${this.apiUrl}/rest/v1/page_hits?page_path=eq.${this.pagePath}&select=id,hit_count`, {
+                    // Try main pagePath first
+                    let getResponse = await fetch(`${this.apiUrl}/rest/v1/page_hits?page_path=eq.${this.pagePath}&select=id,hit_count`, {
                         method: 'GET',
                         headers: this.headers
                     });
-                    const getText = await getResponse.text();
+                    let getText = await getResponse.text();
                     let existingData = [];
                     try { existingData = JSON.parse(getText); } catch (e) { existingData = []; }
+                    // If not found, try alternate pagePath
+                    if ((!getResponse.ok || existingData.length === 0) && this.pagePathAlt) {
+                        getResponse = await fetch(`${this.apiUrl}/rest/v1/page_hits?page_path=eq.${this.pagePathAlt}&select=id,hit_count`, {
+                            method: 'GET',
+                            headers: this.headers
+                        });
+                        getText = await getResponse.text();
+                        try { existingData = JSON.parse(getText); } catch (e) { existingData = []; }
+                        if (existingData.length > 0) {
+                            this.pagePath = this.pagePathAlt;
+                        }
+                    }
                     if (getResponse.ok) {
                         if (existingData.length > 0) {
                             const record = existingData[0];
                             const newCount = record.hit_count + 1;
                             this.currentHits = newCount;
                             this.displayCounter();
+                            // PATCH body: only update hit_count and last_hit
                             const updateResponse = await fetch(`${this.apiUrl}/rest/v1/page_hits?id=eq.${record.id}`, {
                                 method: 'PATCH',
                                 headers: this.headers,
                                 body: JSON.stringify({
                                     hit_count: newCount,
-                                    last_hit: new Date().toISOString(),
-                                    updated_at: new Date().toISOString()
+                                    last_hit: new Date().toISOString()
                                 })
                             });
                             const updateText = await updateResponse.text();
@@ -780,6 +795,7 @@
                         } else {
                             this.currentHits = 1;
                             this.displayCounter();
+                            // POST body: only required fields
                             const createResponse = await fetch(`${this.apiUrl}/rest/v1/page_hits`, {
                                 method: 'POST',
                                 headers: this.headers,
@@ -787,8 +803,7 @@
                                     page_path: this.pagePath,
                                     hit_count: 1,
                                     first_hit: new Date().toISOString(),
-                                    last_hit: new Date().toISOString(),
-                                    last_ip_hash: 'browser-' + Math.random().toString(36).substring(7)
+                                    last_hit: new Date().toISOString()
                                 })
                             });
                             const createText = await createResponse.text();
