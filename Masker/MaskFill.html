@@ -340,86 +340,666 @@
         </div>
         <h1>Image Masking Tool with Hue Variations</h1>
         
-    <!-- Hit Counter (StonerHome style) -->
-    <div class="hit-counter" id="hit-counter" style="position:fixed;bottom:20px;right:20px;background:rgba(20,20,20,0.9);color:#e63946;padding:10px 16px;border-radius:12px;font-family:'Orbitron',monospace;font-size:14px;z-index:1000;backdrop-filter:blur(5px);border:1px solid rgba(230,57,70,0.4);box-shadow:0 0 20px rgba(230,57,70,0.3);transition:all 0.3s ease;cursor:pointer;">
-        <span class="counter-label">Page Hits</span>
-        <span class="counter-value" id="hit-count">0</span>
+        <div class="input-section">
+            <div class="file-input-container">
+                <input type="file" id="input1" class="file-input" accept="image/*">
+                <label for="input1" class="file-label"><i class="fas fa-image"></i> Browse Input Image 1</label>
+            </div>
+            <div class="file-input-container">
+                <input type="file" id="input2" class="file-input" accept="image/*">
+                <label for="input2" class="file-label"><i class="fas fa-image"></i> Browse Input Image 2</label>
+            </div>
+            <div class="file-input-container">
+                <input type="file" id="input3" class="file-input" accept="image/*">
+                <label for="input3" class="file-label"><i class="fas fa-image"></i> Browse Input Image 3</label>
+            </div>
+            <div class="file-input-container">
+                <input type="file" id="mask" class="file-input" accept="image/*">
+                <label for="mask" class="file-label"><i class="fas fa-layer-group"></i> Browse Mask Image</label>
+            </div>
+        </div>
+        
+        <div class="controls-section">
+            <div class="control-group">
+                <label for="filename">Output File Name:</label>
+                <input type="text" id="filename" value="masked_image.png">
+            </div>
+            
+            <div class="control-group">
+                <label for="sizeSlider">Image Size (Percentage): <span class="value-display" id="sizeValue">25%</span></label>
+                <div class="slider-container">
+                    <input type="range" id="sizeSlider" class="slider" min="10" max="100" value="25">
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <label for="frequencySlider">Frequency (1/<span id="freqValue">10000</span>): <span class="value-display" id="frequencyValue">0.0001</span></label>
+                <div class="slider-container">
+                    <input type="range" id="frequencySlider" class="slider" min="1" max="10000" value="10000">
+                </div>
+            </div>
+        </div>
+        
+        <div class="controls-section">
+            <div class="control-group">
+                <div class="checkbox-container">
+                    <input type="checkbox" id="useWhitePixels" checked>
+                    <label for="useWhitePixels">Use White Pixels for Masking</label>
+                </div>
+                <div class="checkbox-container">
+                    <input type="checkbox" id="randomizeSizes">
+                    <label for="randomizeSizes">Randomize Sizes Within %</label>
+                </div>
+                <div class="checkbox-container">
+                    <input type="checkbox" id="randomizeRotation">
+                    <label for="randomizeRotation">Randomize Rotation</label>
+                </div>
+            </div>
+        </div>
+        
+        <div class="hue-toggles">
+            <h3>Enabled Hue Shifts (°)</h3>
+            <div class="hue-grid" id="hueGrid"></div>
+        </div>
+        
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
+        
+        <button class="process-button" id="processButton">Process Images</button>
+        
+        <div id="statusMessage" class="status-message" style="display: none;"></div>
+        
+        <div class="canvas-container">
+            <canvas id="previewCanvas" class="preview-canvas" style="display: none;"></canvas>
+        </div>
     </div>
-    <script>
-    // Hit Counter with Supabase (StonerHome logic)
-    (function() {
-        const apiUrl = 'https://omcwjmvdjswkfjkahchm.supabase.co';
-        const headers = {
-            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
-            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
-            'Content-Type': 'application/json'
-        };
-        // Use page name for path
-        let pagePath = window.location.pathname;
-        if (pagePath === '/') pagePath = 'index';
-        pagePath = pagePath.replace(/^\//, '').replace(/\.html$/, '') || 'index';
 
-        async function recordHit() {
-            try {
-                // Get existing record
-                const getResponse = await fetch(`${apiUrl}/rest/v1/page_hits?page_path=eq.${pagePath}&select=id,hit_count`, {
-                    method: 'GET',
-                    headers: headers
+    <script>
+        class ImageMaskerApp {
+            constructor() {
+                this.inputImages = [null, null, null];
+                this.maskImage = null;
+                this.outputFileName = 'masked_image.png';
+                this.useWhitePixels = true;
+                this.randomizeSizes = false;
+                this.randomizeRotation = false;
+                this.hueToggles = new Array(24).fill(true);
+                
+                this.initializeUI();
+                this.setupEventListeners();
+            }
+            
+            initializeUI() {
+                // Create hue toggles
+                const hueGrid = document.getElementById('hueGrid');
+                for (let i = 0; i < 24; i++) {
+                    const hueItem = document.createElement('div');
+                    hueItem.className = 'hue-item';
+
+                    // Hue sample swatch
+                    const hueSample = document.createElement('span');
+                    hueSample.className = 'hue-sample';
+                    hueSample.style.background = `hsl(${i*15}, 80%, 60%)`;
+                    hueItem.appendChild(hueSample);
+
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.id = `hue${i}`;
+                    checkbox.checked = true;
+                    checkbox.addEventListener('change', (e) => {
+                        this.hueToggles[i] = e.target.checked;
+                    });
+
+                    const label = document.createElement('label');
+                    label.htmlFor = `hue${i}`;
+                    label.textContent = `${i * 15}°`;
+
+                    hueItem.appendChild(checkbox);
+                    hueItem.appendChild(label);
+                    hueGrid.appendChild(hueItem);
+                }
+                
+                // Update slider values
+                this.updateSliderValues();
+            }
+            
+            setupEventListeners() {
+                // File inputs
+                for (let i = 0; i < 3; i++) {
+                    document.getElementById(`input${i + 1}`).addEventListener('change', (e) => {
+                        this.loadImage(e.target.files[0], i);
+                    });
+                }
+                
+                document.getElementById('mask').addEventListener('change', (e) => {
+                    this.loadMaskImage(e.target.files[0]);
                 });
-                if (getResponse.ok) {
-                    const existingData = await getResponse.json();
-                    if (existingData.length > 0) {
-                        // Update existing
-                        const record = existingData[0];
-                        const newCount = record.hit_count + 1;
-                        const updateResponse = await fetch(`${apiUrl}/rest/v1/page_hits?id=eq.${record.id}`, {
-                            method: 'PATCH',
-                            headers: headers,
-                            body: JSON.stringify({
-                                hit_count: newCount,
-                                last_hit: new Date().toISOString(),
-                                updated_at: new Date().toISOString()
-                            })
-                        });
-                        if (updateResponse.ok) {
-                            document.getElementById('hit-count').textContent = newCount.toLocaleString();
-                            return;
-                        }
-                    } else {
-                        // Create new record
-                        const createResponse = await fetch(`${apiUrl}/rest/v1/page_hits`, {
-                            method: 'POST',
-                            headers: headers,
-                            body: JSON.stringify({
-                                page_path: pagePath,
-                                hit_count: 1,
-                                first_hit: new Date().toISOString(),
-                                last_hit: new Date().toISOString(),
-                                last_ip_hash: 'browser-' + Math.random().toString(36).substring(7)
-                            })
-                        });
-                        if (createResponse.ok) {
-                            document.getElementById('hit-count').textContent = '1';
-                            return;
-                        }
+                
+                // Sliders
+                document.getElementById('sizeSlider').addEventListener('input', this.updateSliderValues.bind(this));
+                document.getElementById('frequencySlider').addEventListener('input', this.updateSliderValues.bind(this));
+                
+                // Checkboxes
+                document.getElementById('useWhitePixels').addEventListener('change', (e) => {
+                    this.useWhitePixels = e.target.checked;
+                });
+                
+                document.getElementById('randomizeSizes').addEventListener('change', (e) => {
+                    this.randomizeSizes = e.target.checked;
+                });
+                
+                document.getElementById('randomizeRotation').addEventListener('change', (e) => {
+                    this.randomizeRotation = e.target.checked;
+                });
+                
+                // Process button
+                document.getElementById('processButton').addEventListener('click', this.processImages.bind(this));
+                
+                // Filename input
+                document.getElementById('filename').addEventListener('input', (e) => {
+                    this.outputFileName = e.target.value || 'masked_image.png';
+                });
+            }
+            
+            updateSliderValues() {
+                const sizeSlider = document.getElementById('sizeSlider');
+                const frequencySlider = document.getElementById('frequencySlider');
+                
+                document.getElementById('sizeValue').textContent = sizeSlider.value + '%';
+                document.getElementById('freqValue').textContent = frequencySlider.value;
+                document.getElementById('frequencyValue').textContent = (1 / frequencySlider.value).toFixed(6);
+            }
+            
+            loadImage(file, index) {
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        this.inputImages[index] = img;
+                        this.showStatus(`Input image ${index + 1} loaded successfully`, 'success');
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+            
+            loadMaskImage(file) {
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        this.maskImage = img;
+                        this.showStatus('Mask image loaded successfully', 'success');
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+            
+            showStatus(message, type) {
+                const statusElement = document.getElementById('statusMessage');
+                statusElement.textContent = message;
+                statusElement.className = `status-message ${type}`;
+                statusElement.style.display = 'block';
+                
+                setTimeout(() => {
+                    statusElement.style.display = 'none';
+                }, 5000);
+            }
+            
+            async processImages() {
+                const validImages = this.inputImages.filter(img => img !== null);
+                
+                if (validImages.length === 0 || !this.maskImage) {
+                    this.showStatus('Please select at least one input image and a mask image', 'error');
+                    return;
+                }
+                
+                const enabledHues = this.hueToggles.map((enabled, index) => enabled ? index * 15 : null).filter(h => h !== null);
+                if (enabledHues.length === 0) {
+                    this.showStatus('Please enable at least one hue shift', 'error');
+                    return;
+                }
+                
+                const processButton = document.getElementById('processButton');
+                processButton.disabled = true;
+                processButton.textContent = 'Processing...';
+                
+                try {
+                    await this.createMaskedImage(validImages, enabledHues);
+                    this.showStatus('Masked image created successfully!', 'success');
+                } catch (error) {
+                    this.showStatus(`Error: ${error.message}`, 'error');
+                } finally {
+                    processButton.disabled = false;
+                    processButton.textContent = 'Process Images';
+                    this.updateProgress(0);
+                }
+            }
+            
+            async createMaskedImage(validImages, enabledHues) {
+                const canvas = document.getElementById('previewCanvas');
+                const ctx = canvas.getContext('2d');
+                
+                // Set canvas size to 4K
+                canvas.width = 3840;
+                canvas.height = 2160;
+                
+                // Clear canvas with transparent background
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Create mask canvas
+                const maskCanvas = document.createElement('canvas');
+                const maskCtx = maskCanvas.getContext('2d');
+                maskCanvas.width = 3840;
+                maskCanvas.height = 2160;
+                
+                // Draw and analyze mask
+                maskCtx.drawImage(this.maskImage, 0, 0, 3840, 2160);
+                const maskData = maskCtx.getImageData(0, 0, 3840, 2160);
+                
+                // Get parameters
+                const sizePercentage = document.getElementById('sizeSlider').value / 100;
+                const frequency = 1 / document.getElementById('frequencySlider').value;
+                
+                // Calculate placements
+                let totalPixels = 0;
+                for (let i = 0; i < maskData.data.length; i += 4) {
+                    const gray = (maskData.data[i] + maskData.data[i + 1] + maskData.data[i + 2]) / 3;
+                    if (this.useWhitePixels ? gray > 128 : gray <= 128) {
+                        totalPixels++;
                     }
                 }
-            } catch (error) {
-                document.getElementById('hit-count').textContent = 'Error';
+                
+                const placements = Math.floor(totalPixels * frequency);
+                
+                // Resize input images
+                const resizedImages = await Promise.all(validImages.map(img => this.resizeImage(img, sizePercentage)));
+                
+                // Place images
+                for (let i = 0; i < placements; i++) {
+                    // Find valid placement position
+                    let attempts = 0;
+                    let x, y;
+                    
+                    do {
+                        x = Math.floor(Math.random() * 3840);
+                        y = Math.floor(Math.random() * 2160);
+                        attempts++;
+                    } while (attempts < 1000 && !this.isValidPlacement(maskData, x, y));
+                    
+                    if (attempts >= 1000) continue;
+                    
+                    // Select random image
+                    const baseImg = resizedImages[Math.floor(Math.random() * resizedImages.length)];
+                    
+                    // Apply transformations
+                    let processedImg = baseImg;
+                    
+                    if (this.randomizeSizes) {
+                        const scale = Math.random() * 1.0 + 0.5; // 0.5 to 1.5
+                        processedImg = await this.scaleImage(processedImg, scale);
+                    }
+                    
+                    // Apply hue shift
+                    const hue = enabledHues[Math.floor(Math.random() * enabledHues.length)];
+                    processedImg = await this.applyHueShift(processedImg, hue);
+                    
+                    if (this.randomizeRotation) {
+                        const angle = Math.random() * 360;
+                        processedImg = await this.rotateImage(processedImg, angle);
+                    }
+                    
+                    // Draw on main canvas
+                    const drawX = x - processedImg.width / 2;
+                    const drawY = y - processedImg.height / 2;
+                    
+                    if (drawX >= 0 && drawY >= 0 && drawX + processedImg.width <= 3840 && drawY + processedImg.height <= 2160) {
+                        ctx.drawImage(processedImg, drawX, drawY);
+                    }
+                    
+                    // Update progress
+                    this.updateProgress((i + 1) / placements * 100);
+                    
+                    // Yield control to prevent blocking
+                    if (i % 10 === 0) {
+                        await new Promise(resolve => setTimeout(resolve, 1));
+                    }
+                }
+                
+                // Show result
+                canvas.style.display = 'block';
+                
+                // Remove auto-download, show download button
+                let dlBtn = document.getElementById('downloadBtn');
+                if (!dlBtn) {
+                    dlBtn = document.createElement('button');
+                    dlBtn.id = 'downloadBtn';
+                    dlBtn.className = 'process-button';
+                    dlBtn.textContent = 'Download Masked Image';
+                    dlBtn.style.marginTop = '1.2rem';
+                    dlBtn.onclick = function() {
+                        canvas.toBlob((blob) => {
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = this.outputFileName;
+                            a.click();
+                            URL.revokeObjectURL(url);
+                        });
+                    }.bind(this);
+                    canvas.parentNode.appendChild(dlBtn);
+                }
+            }
+            
+            isValidPlacement(maskData, x, y) {
+                const index = (y * 3840 + x) * 4;
+                const gray = (maskData.data[index] + maskData.data[index + 1] + maskData.data[index + 2]) / 3;
+                return this.useWhitePixels ? gray > 128 : gray <= 128;
+            }
+            
+            async resizeImage(img, scale) {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                canvas.width = Math.floor(img.width * scale);
+                canvas.height = Math.floor(img.height * scale);
+                
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                
+                return new Promise(resolve => {
+                    canvas.toBlob(blob => {
+                        const newImg = new Image();
+                        newImg.onload = () => resolve(newImg);
+                        newImg.src = URL.createObjectURL(blob);
+                    });
+                });
+            }
+            
+            async scaleImage(img, scale) {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                canvas.width = Math.floor(img.width * scale);
+                canvas.height = Math.floor(img.height * scale);
+                
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                
+                return canvas;
+            }
+            
+            async applyHueShift(img, hueShift) {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                canvas.width = img.width;
+                canvas.height = img.height;
+                
+                ctx.drawImage(img, 0, 0);
+                
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const data = imageData.data;
+                
+                for (let i = 0; i < data.length; i += 4) {
+                    const [h, s, v] = this.rgbToHsv(data[i], data[i + 1], data[i + 2]);
+                    const newH = (h + hueShift) % 360;
+                    const newS = Math.min(s * 1.5, 1.0);
+                    const newV = Math.min(v * 1.5, 1.0);
+                    const [r, g, b] = this.hsvToRgb(newH, newS, newV);
+                    
+                    data[i] = r;
+                    data[i + 1] = g;
+                    data[i + 2] = b;
+                }
+                
+                ctx.putImageData(imageData, 0, 0);
+                return canvas;
+            }
+            
+            async rotateImage(img, angle) {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                const rad = angle * Math.PI / 180;
+                const cos = Math.abs(Math.cos(rad));
+                const sin = Math.abs(Math.sin(rad));
+                
+                canvas.width = img.width * cos + img.height * sin;
+                canvas.height = img.width * sin + img.height * cos;
+                
+                ctx.translate(canvas.width / 2, canvas.height / 2);
+                ctx.rotate(rad);
+                ctx.drawImage(img, -img.width / 2, -img.height / 2);
+                
+                return canvas;
+            }
+            
+            rgbToHsv(r, g, b) {
+                r /= 255;
+                g /= 255;
+                b /= 255;
+                
+                const max = Math.max(r, g, b);
+                const min = Math.min(r, g, b);
+                const diff = max - min;
+                
+                let h = 0;
+                if (diff !== 0) {
+                    if (max === r) h = ((g - b) / diff) % 6;
+                    else if (max === g) h = (b - r) / diff + 2;
+                    else h = (r - g) / diff + 4;
+                }
+                h = Math.round(h * 60);
+                if (h < 0) h += 360;
+                
+                const s = max === 0 ? 0 : diff / max;
+                const v = max;
+                
+                return [h, s, v];
+            }
+            
+            hsvToRgb(h, s, v) {
+                const c = v * s;
+                const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+                const m = v - c;
+                
+                let r, g, b;
+                if (h < 60) [r, g, b] = [c, x, 0];
+                else if (h < 120) [r, g, b] = [x, c, 0];
+                else if (h < 180) [r, g, b] = [0, c, x];
+                else if (h < 240) [r, g, b] = [0, x, c];
+                else if (h < 300) [r, g, b] = [x, 0, c];
+                else [r, g, b] = [c, 0, x];
+                
+                return [
+                    Math.round((r + m) * 255),
+                    Math.round((g + m) * 255),
+                    Math.round((b + m) * 255)
+                ];
+            }
+            
+            updateProgress(percentage) {
+                const progressFill = document.getElementById('progressFill');
+                progressFill.style.width = percentage + '%';
             }
         }
-        document.addEventListener('DOMContentLoaded', recordHit);
-    })();
+        
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', () => {
+            new ImageMaskerApp();
+        });
+
+        // --- Hit Counter ---
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                try {
+                    // Create a container for the hit counter outside the main tool
+                    let counterContainer = document.getElementById('hit-counter-container');
+                    if (!counterContainer) {
+                        counterContainer = document.createElement('div');
+                        counterContainer.id = 'hit-counter-container';
+                        document.body.appendChild(counterContainer);
+                    }
+                    window.jodyHitCounter = new JodyHitCounter({
+                        apiUrl: 'https://omcwjmvdjswkfjkahchm.supabase.co',
+                        headers: {
+                            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9zZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
+                            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9zZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'Prefer': 'return=representation'
+                        },
+                        theme: 'jody',
+                        animated: true,
+                        showCounter: true,
+                        container: counterContainer
+                    });
+                    console.log('✅ Inline JodyHitCounter initialized');
+                } catch (error) {
+                    console.error('❌ Error initializing hit counter:', error);
+                    // Fallback counter
+                    new SimpleHitCounter();
+                }
+            }, 100);
+        });
     </script>
-                                throw new Error('POST failed: ' + createResponse.status + ' ' + createText);
+
+    <!-- Hit Counter Classes -->
+    <script>
+        class SimpleHitCounter {
+            constructor() {
+                this.showSimpleCounter();
+            }
+            showSimpleCounter() {
+                const counter = document.createElement('div');
+                counter.style.cssText = `
+                    position: fixed;
+                    bottom: 20px;
+                    right: 20px;
+                    background: rgba(20, 20, 20, 0.8);
+                    color: #e63946;
+                    padding: 8px 15px;
+                    border-radius: 10px;
+                    font-family: 'Orbitron', monospace;
+                    font-size: 14px;
+                    z-index: 1000;
+                    backdrop-filter: blur(5px);
+                    border: 1px solid rgba(230, 57, 70, 0.3);
+                    box-shadow: 0 0 20px rgba(230, 57, 70, 0.2);
+                `;
+                counter.textContent = 'Visitors: Loading...';
+                document.body.appendChild(counter);
+                setTimeout(() => {
+                    counter.textContent = 'Visitors: 1337';
+                }, 1000);
+            }
+        }
+        class JodyHitCounter {
+            constructor(options = {}) {
+                this.apiUrl = options.apiUrl;
+                this.headers = options.headers || {};
+                this.pagePath = options.pagePath || this.getCurrentPagePath(); // Use dynamic pagePath
+                this.showCounter = options.showCounter !== false;
+                this.animated = options.animated !== false;
+                this.theme = options.theme || 'jody';
+                this.init();
+            }
+            getCurrentPagePath() {
+                let path = window.location.pathname;
+                if (path === '/') path = 'index';
+                return path.replace(/^\//, '').replace(/\.html$/, '') || 'index';
+            }
+            async init() {
+                try {
+                    await this.recordHit();
+                    if (this.showCounter) {
+                        await this.displayCounter();
+                    }
+                } catch (error) {
+                    console.error('HitCounter error:', error);
+                    this.currentHits = null;
+                    if (this.showCounter) {
+                        this.displayCounterError(error);
+                    }
+                }
+            }
+            async recordHit() {
+                try {
+                    // Use page_path for all requests
+                    console.log('HitCounter: GET', `${this.apiUrl}/rest/v1/page_hits?page_path=eq.${this.pagePath}&select=id,hit_count`, this.headers);
+                    const getResponse = await fetch(`${this.apiUrl}/rest/v1/page_hits?page_path=eq.${this.pagePath}&select=id,hit_count`, {
+                        method: 'GET',
+                        headers: this.headers
+                    });
+                    const getText = await getResponse.text();
+                    let existingData = [];
+                    try { existingData = JSON.parse(getText); } catch (e) { existingData = []; }
+                    console.log('HitCounter: GET response', getResponse.status, getText);
+                    if (getResponse.ok) {
+                        if (existingData.length > 0) {
+                            const record = existingData[0];
+                            const newCount = record.hit_count + 1;
+                            console.log('HitCounter: PATCH', `${this.apiUrl}/rest/v1/page_hits?id=eq.${record.id}`, {hit_count: newCount});
+                            const updateResponse = await fetch(`${this.apiUrl}/rest/v1/page_hits?id=eq.${record.id}`, {
+                                method: 'PATCH',
+                                headers: this.headers,
+                                body: JSON.stringify({
+                                    hit_count: newCount,
+                                    last_hit: new Date().toISOString(),
+                                    updated_at: new Date().toISOString()
+                                })
+                            });
+                            const updateText = await updateResponse.text();
+                            console.log('HitCounter: PATCH response', updateResponse.status, updateText);
+                            if (updateResponse.ok) {
+                                this.currentHits = newCount;
+                                return;
+                            } else {
+                                console.error('PATCH failed: ' + updateResponse.status + ' ' + updateText);
+                                this.currentHits = record.hit_count;
+                                return;
+                            }
+                        } else {
+                            // Only POST if page_path does not exist
+                            console.log('HitCounter: POST', `${this.apiUrl}/rest/v1/page_hits`, {page_path: this.pagePath});
+                            const createResponse = await fetch(`${this.apiUrl}/rest/v1/page_hits`, {
+                                method: 'POST',
+                                headers: this.headers,
+                                body: JSON.stringify({
+                                    page_path: this.pagePath,
+                                    hit_count: 1,
+                                    first_hit: new Date().toISOString(),
+                                    last_hit: new Date().toISOString(),
+                                    last_ip_hash: 'browser-' + Math.random().toString(36).substring(7)
+                                })
+                            });
+                            const createText = await createResponse.text();
+                            console.log('HitCounter: POST response', createResponse.status, createText);
+                            if (createResponse.ok) {
+                                this.currentHits = 1;
+                                return;
+                            } else {
+                                console.error('POST failed: ' + createResponse.status + ' ' + createText);
+                                this.currentHits = 1;
+                                return;
                             }
                         }
                     }
-                    throw new Error('GET failed: ' + getResponse.status + ' ' + getText);
+                    console.error('GET failed: ' + getResponse.status + ' ' + getText);
+                    this.currentHits = 1;
+                    return;
                 } catch (error) {
                     console.error('HitCounter: recordHit error', error);
                     this.lastError = error;
-                    throw error;
+                    this.currentHits = 1;
+                    return;
                 }
             }
             displayCounter() {
