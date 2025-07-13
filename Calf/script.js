@@ -128,7 +128,12 @@ class Calfagotchi {
     init() {
         // Set up button event listeners for menu navigation
         this.setupEventHandlers();
-        
+
+        // Ensure pet sprite does not start dead
+        if (this.elements.petSprite.classList.contains('dead')) {
+            this.elements.petSprite.classList.remove('dead');
+        }
+
         // Start the game loop
         this.gameLoop();
         this.ageTimer();
@@ -1164,37 +1169,203 @@ class Calfagotchi {
     initMemoryGame() {
         const gameGrid = document.getElementById('game-grid');
         if (!gameGrid) return;
-        
         gameGrid.innerHTML = '';
         gameGrid.style.display = 'grid';
         gameGrid.style.gridTemplateColumns = 'repeat(2, 1fr)';
         gameGrid.style.gap = '10px';
-        
-        // Simple memory game with 4 buttons
-        const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00'];
+
+        // Simon game setup
+        this.simonColors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00'];
+        this.simonSequence = [];
+        this.simonPlayerInput = [];
+        this.simonStage = 1;
+        this.simonMaxStage = 5;
+        this.simonButtons = [];
+
         for (let i = 0; i < 4; i++) {
             const button = document.createElement('button');
             button.className = 'game-button-mini';
-            button.textContent = i + 1;
-            button.style.backgroundColor = colors[i];
+            button.textContent = '';
+            button.style.backgroundColor = this.simonColors[i];
             button.style.color = 'white';
             button.style.border = 'none';
-            button.style.padding = '20px';
-            button.style.borderRadius = '5px';
+            button.style.padding = '40px';
+            button.style.borderRadius = '50%';
             button.style.cursor = 'pointer';
-            button.addEventListener('click', () => this.playMemoryGame(i));
+            button.disabled = true;
+            button.addEventListener('click', () => this.handleSimonInput(i));
             gameGrid.appendChild(button);
+            this.simonButtons.push(button);
+        }
+        this.showSimonStage();
+    }
+
+    showSimonStage() {
+        // Show current stage and start sequence
+        const gameGrid = document.getElementById('game-grid');
+        const stageMsg = document.createElement('div');
+        stageMsg.id = 'simon-stage-msg';
+        stageMsg.textContent = `Stage ${this.simonStage} of ${this.simonMaxStage}`;
+        stageMsg.style.gridColumn = 'span 2';
+        stageMsg.style.textAlign = 'center';
+        stageMsg.style.fontWeight = 'bold';
+        stageMsg.style.marginBottom = '10px';
+        gameGrid.prepend(stageMsg);
+
+        // Generate next sequence
+        this.simonSequence = [];
+        for (let i = 0; i < this.simonStage; i++) {
+            this.simonSequence.push(Math.floor(Math.random() * 4));
+        }
+        this.simonPlayerInput = [];
+        this.playSimonSequence(0);
+    }
+
+    playSimonSequence(idx) {
+        // Disable buttons during sequence
+        this.simonButtons.forEach(btn => btn.disabled = true);
+        if (idx < this.simonSequence.length) {
+            const btnIdx = this.simonSequence[idx];
+            const btn = this.simonButtons[btnIdx];
+            // Flash button
+            btn.style.opacity = '0.5';
+            setTimeout(() => {
+                btn.style.opacity = '1';
+                setTimeout(() => {
+                    this.playSimonSequence(idx + 1);
+                }, 350);
+            }, 350);
+        } else {
+            // Enable buttons for player input
+            this.simonButtons.forEach(btn => btn.disabled = false);
+        }
+    }
+
+    handleSimonInput(btnIdx) {
+        this.simonPlayerInput.push(btnIdx);
+        const currentStep = this.simonPlayerInput.length - 1;
+        if (btnIdx !== this.simonSequence[currentStep]) {
+            // Incorrect input, reset game
+            this.simonButtons.forEach(btn => btn.disabled = true);
+            this.showCustomMessage('Wrong! Try again from Stage 1.', '#ff0000');
+            setTimeout(() => {
+                this.simonStage = 1;
+                this.initMemoryGame();
+            }, 1200);
+            return;
+        }
+        if (this.simonPlayerInput.length === this.simonSequence.length) {
+            // Completed stage
+            this.simonButtons.forEach(btn => btn.disabled = true);
+            if (this.simonStage === this.simonMaxStage) {
+                // Win!
+                this.stats.happiness = Math.min(100, this.stats.happiness + 30);
+                this.stats.energy = Math.max(0, this.stats.energy - 20);
+                this.updateDisplay();
+                this.showStatChangeEffect('happiness', 30);
+                this.showStatChangeEffect('energy', -20);
+                this.showCustomMessage('You win! +30 Happy!', '#00ff00');
+                setTimeout(() => {
+                    this.simonStage = 1;
+                    this.initMemoryGame();
+                }, 1800);
+            } else {
+                this.stats.happiness = Math.min(100, this.stats.happiness + 10);
+                this.stats.energy = Math.max(0, this.stats.energy - 5);
+                this.updateDisplay();
+                this.showStatChangeEffect('happiness', 10);
+                this.showStatChangeEffect('energy', -5);
+                this.showCustomMessage('Stage cleared! Next stage...', '#00bfff');
+                setTimeout(() => {
+                    this.simonStage++;
+                    this.initMemoryGame();
+                }, 1200);
+            }
         }
     }
     
-    playMemoryGame(buttonIndex) {
-        // Simple implementation - just give happiness for playing
-        this.stats.happiness = Math.min(100, this.stats.happiness + 15);
-        this.stats.energy = Math.max(0, this.stats.energy - 10);
-        this.updateDisplay();
-        this.showStatChangeEffect('happiness', 15);
-        this.showStatChangeEffect('energy', -10);
-        this.showCustomMessage("Fun game! +15 Happy!", "#ff00ff");
+    showSimonStage() {
+        // Show current stage and start sequence
+        const gameGrid = document.getElementById('game-grid');
+        const stageMsg = document.createElement('div');
+        stageMsg.id = 'simon-stage-msg';
+        stageMsg.textContent = `Stage ${this.simonStage} of ${this.simonMaxStage}`;
+        stageMsg.style.gridColumn = 'span 2';
+        stageMsg.style.textAlign = 'center';
+        stageMsg.style.fontWeight = 'bold';
+        stageMsg.style.marginBottom = '10px';
+        gameGrid.prepend(stageMsg);
+
+        // Generate next sequence
+        this.simonSequence = [];
+        for (let i = 0; i < this.simonStage; i++) {
+            this.simonSequence.push(Math.floor(Math.random() * 4));
+        }
+        this.simonPlayerInput = [];
+        this.playSimonSequence(0);
+    }
+
+    playSimonSequence(idx) {
+        // Disable buttons during sequence
+        this.simonButtons.forEach(btn => btn.disabled = true);
+        if (idx < this.simonSequence.length) {
+            const btnIdx = this.simonSequence[idx];
+            const btn = this.simonButtons[btnIdx];
+            // Flash button
+            btn.style.opacity = '0.5';
+            setTimeout(() => {
+                btn.style.opacity = '1';
+                setTimeout(() => {
+                    this.playSimonSequence(idx + 1);
+                }, 350);
+            }, 350);
+        } else {
+            // Enable buttons for player input
+            this.simonButtons.forEach(btn => btn.disabled = false);
+        }
+    }
+
+    handleSimonInput(btnIdx) {
+        this.simonPlayerInput.push(btnIdx);
+        const currentStep = this.simonPlayerInput.length - 1;
+        if (btnIdx !== this.simonSequence[currentStep]) {
+            // Incorrect input, reset game
+            this.simonButtons.forEach(btn => btn.disabled = true);
+            this.showCustomMessage('Wrong! Try again from Stage 1.', '#ff0000');
+            setTimeout(() => {
+                this.simonStage = 1;
+                this.initMemoryGame();
+            }, 1200);
+            return;
+        }
+        if (this.simonPlayerInput.length === this.simonSequence.length) {
+            // Completed stage
+            this.simonButtons.forEach(btn => btn.disabled = true);
+            if (this.simonStage === this.simonMaxStage) {
+                // Win!
+                this.stats.happiness = Math.min(100, this.stats.happiness + 30);
+                this.stats.energy = Math.max(0, this.stats.energy - 20);
+                this.updateDisplay();
+                this.showStatChangeEffect('happiness', 30);
+                this.showStatChangeEffect('energy', -20);
+                this.showCustomMessage('You win! +30 Happy!', '#00ff00');
+                setTimeout(() => {
+                    this.simonStage = 1;
+                    this.initMemoryGame();
+                }, 1800);
+            } else {
+                this.stats.happiness = Math.min(100, this.stats.happiness + 10);
+                this.stats.energy = Math.max(0, this.stats.energy - 5);
+                this.updateDisplay();
+                this.showStatChangeEffect('happiness', 10);
+                this.showStatChangeEffect('energy', -5);
+                this.showCustomMessage('Stage cleared! Next stage...', '#00bfff');
+                setTimeout(() => {
+                    this.simonStage++;
+                    this.initMemoryGame();
+                }, 1200);
+            }
+        }
     }
     
     cycleScreenColor() {
@@ -1464,6 +1635,23 @@ class Calfagotchi {
 // Initialize the game when the page loads
 window.addEventListener('DOMContentLoaded', () => {
     window.calfagotchi = new Calfagotchi();
+    // Start with a random case graphic
+    if (typeof window.calfagotchi.cycleSkin === 'function') {
+        // Pick a random skin index
+        const cases = [
+            { name: 'Red', color: 'tamagotchi.png', mainColor: '#ff6b6b' },
+            { name: 'Blue', color: 'tamagotchi_blue.png', mainColor: '#5fa8d3' },
+            { name: 'Pink', color: 'tamagotchi_pink.png', mainColor: '#ff86b3' },
+            { name: 'Purple', color: 'tamagotchi_purple.png', mainColor: '#ad7bee' },
+            { name: 'Yellow', color: 'tamagotchi_yellr.png', mainColor: '#ffda77' },
+            { name: 'ShitCream', color: 'tamagotchi_ShitCream.png', mainColor: '#d4b483' }
+        ];
+        const randomIndex = Math.floor(Math.random() * cases.length);
+        // Set the shell's caseIndex so cycleSkin() starts at random
+        const shell = document.querySelector('.calfagotchi-shell');
+        shell.dataset.caseIndex = randomIndex - 1 < 0 ? cases.length - 1 : randomIndex - 1;
+        window.calfagotchi.cycleSkin();
+    }
 });
 
 // Simple sound effects using Web Audio API
