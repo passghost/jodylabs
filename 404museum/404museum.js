@@ -311,10 +311,10 @@
             if (!config.artTypes.includes(type)) {
                 type = this.getRandomArtType();
             }
-            
+
             this.currentArtType = type;
             this.stopAnimations();
-            
+
             switch (type) {
                 case 'generative':
                     this.startGenerativeArt();
@@ -328,9 +328,77 @@
                 case 'abstract':
                     this.startAbstractArt();
                     break;
+                case 'geometricMandala':
+                    this.startGeometricMandala();
+                    break;
+                case 'waveInterference':
+                    this.startWaveInterference();
+                    break;
+                case 'neonGrid':
+                    this.startNeonGrid();
+                    break;
+                case 'plasmaField':
+                    this.startPlasmaField();
+                    break;
+                case 'spiralGalaxy':
+                    this.startSpiralGalaxy();
+                    break;
+                case 'matrixGlitch':
+                    this.startMatrixGlitch();
+                    break;
+                case 'cyberpunkCity':
+                    this.startCyberpunkCity();
+                    break;
+                case 'digitalRain':
+                    this.startDigitalRain();
+                    break;
+                case 'holographicMesh':
+                    this.startHolographicMesh();
+                    break;
+                case 'quantumField':
+                    this.startQuantumField();
+                    break;
+                case 'voronoiShatter':
+                    this.startVoronoiShatter();
+                    break;
                 default:
                     this.startGenerativeArt();
             }
+        }
+        // Add new art pattern methods below
+        startGeometricMandala() {
+            // Placeholder: You can copy the full implementation from your demo HTML
+            this.animationId = requestAnimationFrame(() => this.startGenerativeArt());
+        }
+        startWaveInterference() {
+            this.animationId = requestAnimationFrame(() => this.startGenerativeArt());
+        }
+        startNeonGrid() {
+            this.animationId = requestAnimationFrame(() => this.startGenerativeArt());
+        }
+        startPlasmaField() {
+            this.animationId = requestAnimationFrame(() => this.startGenerativeArt());
+        }
+        startSpiralGalaxy() {
+            this.animationId = requestAnimationFrame(() => this.startGenerativeArt());
+        }
+        startMatrixGlitch() {
+            this.animationId = requestAnimationFrame(() => this.startGenerativeArt());
+        }
+        startCyberpunkCity() {
+            this.animationId = requestAnimationFrame(() => this.startGenerativeArt());
+        }
+        startDigitalRain() {
+            this.animationId = requestAnimationFrame(() => this.startGenerativeArt());
+        }
+        startHolographicMesh() {
+            this.animationId = requestAnimationFrame(() => this.startGenerativeArt());
+        }
+        startQuantumField() {
+            this.animationId = requestAnimationFrame(() => this.startGenerativeArt());
+        }
+        startVoronoiShatter() {
+            this.animationId = requestAnimationFrame(() => this.startGenerativeArt());
         }
         
         /**
