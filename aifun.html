@@ -493,15 +493,24 @@
         <div class="projects-grid">
             <div class="project">
                 <div class="project-icon"><img src="Images/emrald.png" alt="Project Icon"></div>
-                <h2>Bar File - AI Art Collaboration</h2>
-                <p>A colab with a friend within 2000 lines due to current AI memory restrictions, THIS CURRENTLY HAS AI ART AND IS SOMEWHAT ADULT. Not for folks that don't appreciate either.</p>
-                <a href="Sever2H/bar.html" class="project-link">
-                    <span>View Bar Project</span>
+                <h2>Card Cake - Fiteme Card Arena</h2>
+                <p>Experience our latest online multiplayer card game! Build custom decks with your own images, play against friends in real-time matches, and master strategic card battles. Features include life counters, deck builder, custom card creation, and competitive multiplayer gameplay.</p>
+                <a href="CardCake/index.html" class="project-link">
+                    <span>Play Card Game</span>
                     <span>→</span>
                 </a>
             </div>
             
-            
+
+            <div class="project">
+                <div class="project-icon"><img src="Images/gem4.png" alt="Project Icon"></div>
+                <h2>Vertical Dot Matrix Marquee</h2>
+                <p>Display custom scrolling messages in a retro dot-matrix style! Add your own text, pick colors, and watch your message scroll vertically in a glowing ticker. Great for fun, announcements, or digital signage.</p>
+                <a href="Marquee/marquee.html" class="project-link">
+                    <span>Open Marquee App</span>
+                    <span>→</span>
+                </a>
+            </div>
             
             <div class="project">
                 <div class="project-icon"><img src="Images/gem3.png" alt="Project Icon"></div>
@@ -513,7 +522,6 @@
                 </a>
             </div>
 
-            
 
             <div class="project">
                 <div class="project-icon"><img src="Images/gem4.png" alt="Project Icon"></div>
@@ -689,215 +697,91 @@
     </script>
 
     <!-- JodyLabs Hit Counter -->
+    <div class="hit-counter" id="hit-counter" style="position:fixed;bottom:20px;right:20px;font-size:0.9rem;font-weight:500;color:#e63946;background:rgba(20,20,20,0.9);padding:8px 15px;border-radius:12px;border:1px solid #e63946;backdrop-filter:blur(5px);z-index:1000;text-align:center;min-width:120px;">
+        <span class="counter-label">Page Hits</span>
+        <span class="counter-value" id="hit-count">0</span>
+        <span id="hit-error" style="display:none;color:#ff4444;font-size:0.7rem;margin-top:2px;"></span>
+    </div>
     <script>
-        // Inline hit counter that connects directly to Supabase
-        class JodyHitCounter {
-            constructor(options = {}) {
-                this.apiUrl = options.apiUrl;
-                this.headers = {
-                    'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
-                    'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
-                    'Content-Type': 'application/json'
-                };
-                // Try both 'aifun' and 'aifun.html' for pagePath
-                this.pagePath = 'aifun';
-                this.pagePathAlt = 'aifun.html';
-                this.showCounter = options.showCounter !== false;
-                this.animated = options.animated !== false;
-                this.theme = options.theme || 'jody';
-                this.counterElement = null;
-                this.init();
-            }
+    // Hit Counter with Supabase (Stoner Home logic)
+    (function() {
+        const apiUrl = 'https://omcwjmvdjswkfjkahchm.supabase.co';
+        const headers = {
+            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
+            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
+            'Content-Type': 'application/json'
+        };
+        const pagePath = 'aifun';
+        const hitCountEl = document.getElementById('hit-count');
+        const hitErrorEl = document.getElementById('hit-error');
 
-            async init() {
-                try {
-                    await this.recordHit();
-                    if (this.showCounter) {
-                        this.displayCounter();
-                    }
-                } catch (error) {
-                    console.error('HitCounter error:', error);
-                    this.currentHits = null;
-                    if (this.showCounter) {
-                        this.displayCounterError(error);
-                    }
-                }
-            }
-
-            async recordHit() {
-                try {
-                    // Try main pagePath first
-                    let getResponse = await fetch(`${this.apiUrl}/rest/v1/page_hits?page_path=eq.${this.pagePath}&select=id,hit_count`, {
-                        method: 'GET',
-                        headers: this.headers
-                    });
-                    let getText = await getResponse.text();
-                    let existingData = [];
-                    try { existingData = JSON.parse(getText); } catch (e) { existingData = []; }
-                    // If not found, try alternate pagePath
-                    if ((!getResponse.ok || existingData.length === 0) && this.pagePathAlt) {
-                        getResponse = await fetch(`${this.apiUrl}/rest/v1/page_hits?page_path=eq.${this.pagePathAlt}&select=id,hit_count`, {
-                            method: 'GET',
-                            headers: this.headers
+        async function recordHit() {
+            hitErrorEl.style.display = 'none';
+            hitErrorEl.textContent = '';
+            try {
+                // Get existing record
+                const getResponse = await fetch(`${apiUrl}/rest/v1/page_hits?page_path=eq.${pagePath}&select=id,hit_count`, {
+                    method: 'GET',
+                    headers: headers
+                });
+                if (getResponse.ok) {
+                    const existingData = await getResponse.json();
+                    if (existingData.length > 0) {
+                        // Try to update existing
+                        const record = existingData[0];
+                        const newCount = record.hit_count + 1;
+                        const updateResponse = await fetch(`${apiUrl}/rest/v1/page_hits?id=eq.${record.id}`, {
+                            method: 'PATCH',
+                            headers: headers,
+                            body: JSON.stringify({
+                                hit_count: newCount,
+                                last_hit: new Date().toISOString(),
+                                updated_at: new Date().toISOString()
+                            })
                         });
-                        getText = await getResponse.text();
-                        try { existingData = JSON.parse(getText); } catch (e) { existingData = []; }
-                        if (existingData.length > 0) {
-                            this.pagePath = this.pagePathAlt;
-                        }
-                    }
-                    if (getResponse.ok) {
-                        if (existingData.length > 0) {
-                            const record = existingData[0];
-                            const newCount = record.hit_count + 1;
-                            this.currentHits = newCount;
-                            this.displayCounter();
-                            // PATCH body: only update hit_count and last_hit
-                            const updateResponse = await fetch(`${this.apiUrl}/rest/v1/page_hits?id=eq.${record.id}`, {
-                                method: 'PATCH',
-                                headers: this.headers,
-                                body: JSON.stringify({
-                                    hit_count: newCount,
-                                    last_hit: new Date().toISOString()
-                                })
-                            });
-                            const updateText = await updateResponse.text();
-                            if (!updateResponse.ok) {
-                                console.error('PATCH failed: ' + updateResponse.status + ' ' + updateText);
-                            }
-                            return;
+                        if (updateResponse.ok) {
+                            hitCountEl.textContent = newCount.toLocaleString();
                         } else {
-                            this.currentHits = 1;
-                            this.displayCounter();
-                            // POST body: only required fields
-                            const createResponse = await fetch(`${this.apiUrl}/rest/v1/page_hits`, {
-                                method: 'POST',
-                                headers: this.headers,
-                                body: JSON.stringify({
-                                    page_path: this.pagePath,
-                                    hit_count: 1,
-                                    first_hit: new Date().toISOString(),
-                                    last_hit: new Date().toISOString()
-                                })
-                            });
-                            const createText = await createResponse.text();
-                            if (!createResponse.ok) {
-                                console.error('POST failed: ' + createResponse.status + ' ' + createText);
-                            }
-                            return;
+                            hitCountEl.textContent = record.hit_count.toLocaleString();
+                            hitErrorEl.textContent = 'Could not update hit count.';
+                            hitErrorEl.style.display = 'block';
+                        }
+                    } else {
+                        // Create new record
+                        const createResponse = await fetch(`${apiUrl}/rest/v1/page_hits`, {
+                            method: 'POST',
+                            headers: headers,
+                            body: JSON.stringify({
+                                page_path: pagePath,
+                                hit_count: 1,
+                                first_hit: new Date().toISOString(),
+                                last_hit: new Date().toISOString(),
+                                last_ip_hash: 'browser-' + Math.random().toString(36).substring(7)
+                            })
+                        });
+                        if (createResponse.ok) {
+                            hitCountEl.textContent = '1';
+                        } else {
+                            hitCountEl.textContent = '---';
+                            hitErrorEl.textContent = 'Could not create hit record.';
+                            hitErrorEl.style.display = 'block';
                         }
                     }
-                    console.error('GET failed: ' + getResponse.status + ' ' + getText);
-                    this.currentHits = 1;
-                    this.displayCounter();
-                    return;
-                } catch (error) {
-                    console.error('HitCounter: recordHit error', error);
-                    this.lastError = error;
-                    this.currentHits = 1;
-                    this.displayCounterError(error);
-                    return;
-                }
-            }
-
-            displayCounter() {
-                // Reuse the counter element if it exists, else create it
-                if (!this.counterElement) {
-                    let counterContainer = document.getElementById('hit-counter-container');
-                    if (!counterContainer) {
-                        counterContainer = document.createElement('div');
-                        counterContainer.id = 'hit-counter-container';
-                        document.body.appendChild(counterContainer);
-                    }
-                    this.counterElement = document.createElement('div');
-                    this.counterElement.style.cssText = `
-                        position: fixed;
-                        bottom: 20px;
-                        right: 20px;
-                        background: rgba(20, 20, 20, 0.9);
-                        color: #e63946;
-                        padding: 10px 16px;
-                        border-radius: 12px;
-                        font-family: 'Orbitron', monospace;
-                        font-size: 14px;
-                        z-index: 1000;
-                        backdrop-filter: blur(5px);
-                        border: 1px solid rgba(230, 57, 70, 0.4);
-                        box-shadow: 0 0 20px rgba(230, 57, 70, 0.3);
-                        transition: all 0.3s ease;
-                        cursor: pointer;
-                    `;
-                    this.counterElement.onmouseenter = () => {
-                        this.counterElement.style.transform = 'scale(1.05)';
-                        this.counterElement.style.boxShadow = '0 0 30px rgba(230, 57, 70, 0.5)';
-                    };
-                    this.counterElement.onmouseleave = () => {
-                        this.counterElement.style.transform = 'scale(1)';
-                        this.counterElement.style.boxShadow = '0 0 20px rgba(230, 57, 70, 0.3)';
-                    };
-                    counterContainer.appendChild(this.counterElement);
-                }
-                // Always update the text content
-                if (this.animated && this.currentHits > 1) {
-                    let current = Math.max(1, this.currentHits - 10);
-                    const animate = () => {
-                        if (current < this.currentHits) {
-                            current++;
-                            this.counterElement.textContent = `Visitors: ${current}`;
-                            requestAnimationFrame(animate);
-                        }
-                    };
-                    animate();
                 } else {
-                    this.counterElement.textContent = `Visitors: ${this.currentHits}`;
+                    hitCountEl.textContent = '---';
+                    hitErrorEl.textContent = 'API error.';
+                    hitErrorEl.style.display = 'block';
                 }
-            }
-
-            displayCounterError(error) {
-                if (!this.counterElement) {
-                    let counterContainer = document.getElementById('hit-counter-container');
-                    if (!counterContainer) {
-                        counterContainer = document.createElement('div');
-                        counterContainer.id = 'hit-counter-container';
-                        document.body.appendChild(counterContainer);
-                    }
-                    this.counterElement = document.createElement('div');
-                    this.counterElement.style.cssText = `
-                        position: fixed;
-                        bottom: 20px;
-                        right: 20px;
-                        background: rgba(20, 20, 20, 0.9);
-                        color: #e63946;
-                        padding: 10px 16px;
-                        border-radius: 12px;
-                        font-family: 'Orbitron', monospace;
-                        font-size: 14px;
-                        z-index: 1000;
-                        backdrop-filter: blur(5px);
-                        border: 1px solid rgba(230, 57, 70, 0.4);
-                        box-shadow: 0 0 20px rgba(230, 57, 70, 0.3);
-                        transition: all 0.3s ease;
-                        cursor: pointer;
-                    `;
-                    counterContainer.appendChild(this.counterElement);
-                }
-                this.counterElement.textContent = `Visitors: Error loading (${error && error.message ? error.message : 'Unknown error'})`;
+            } catch (error) {
+                console.error('Hit counter error:', error);
+                hitCountEl.textContent = '---';
+                hitErrorEl.textContent = 'Network or server error.';
+                hitErrorEl.style.display = 'block';
             }
         }
-
-        // Initialize hit counter
-        document.addEventListener('DOMContentLoaded', () => {
-            try {
-                window.jodyHitCounter = new JodyHitCounter({
-                    apiUrl: 'https://omcwjmvdjswkfjkahchm.supabase.co',
-                    theme: 'jody',
-                    animated: true,
-                    showCounter: true
-                });
-            } catch (error) {
-                console.error('❌ Hit counter error:', error);
-            }
-        });
+        // Always show the latest count on page load
+        recordHit();
+    })();
     </script>
 </body>
 </html>
