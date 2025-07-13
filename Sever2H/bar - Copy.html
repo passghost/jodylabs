@@ -1,0 +1,2049 @@
+// Utility: restore patron to wandering state and movement
+    function restoreWandering(bubbleObj) {
+      bubbleObj.state = 'wandering';
+      bubbleObj.dx = (Math.random() - 0.5) * 1.2;
+      bubbleObj.dy = (Math.random() - 0.5) * 1.2;
+      bubbleObj.el.style.zIndex = '1';
+      if (bubbleObj.personalityTimer) {
+        clearInterval(bubbleObj.personalityTimer);
+        bubbleObj.personalityTimer = null;
+      }
+    }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Bar Scene</title>
+  <style>
+    body { margin: 0; background: #222; color: #fff; font-family: Arial, sans-serif; }
+    #profile {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      display: flex;
+      align-items: center;
+      background: rgba(30,30,30,0.85);
+      padding: 12px 24px;
+      border-radius: 10px;
+      box-shadow: 0 2px 12px #0008;
+    }
+    #profile img {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      border: 2px solid #888;
+      background: #222;
+      margin-right: 18px;
+    }
+    #bar-area {
+      position: absolute;
+      left: 0; top: 0; width: 100vw; height: 100vh;
+      overflow: hidden;
+      background: linear-gradient(to bottom, #222 60%, #2a1a0a 100%);
+      z-index: 0;
+    }
+    #patrons {
+      position: absolute;
+      z-index: 1;
+    }
+    #bar {
+      position: absolute;
+      left: 0; bottom: 120px; width: 100vw; height: 120px;
+      background: linear-gradient(to top, #4b2e13 80%, #a67c52 100%);
+      border-top: 6px solid #c9a063;
+      box-shadow: 0 -4px 24px #000a;
+      z-index: 15;
+    }
+    #player {
+      position: absolute;
+      left: 40px;
+      bottom: 40px;
+      display: flex;
+      align-items: center;
+      z-index: 8;
+      background: rgba(30,30,30,0.85);
+      padding: 12px 24px;
+      border-radius: 10px;
+      box-shadow: 0 2px 12px #0008;
+    }
+    #player img {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      border: 2px solid #888;
+      background: #222;
+      margin-right: 18px;
+    }
+    @keyframes shakePink {
+      0% { transform: translateX(-50%) scale(1); }
+      25% { transform: translateX(-50%) scale(1.03); }
+      50% { transform: translateX(-50%) scale(0.97); }
+      75% { transform: translateX(-50%) scale(1.03); }
+      100% { transform: translateX(-50%) scale(1); }
+    }
+  </style>
+  <!-- Patron logic is now in this file -->
+</head>
+<body>
+  <div id="status-bar" style="position:absolute;top:20px;right:30px;font-size:20px;background:rgba(30,30,30,0.85);padding:10px 22px;border-radius:10px;box-shadow:0 2px 12px #0008;z-index:10;display:flex;align-items:center;gap:18px;">
+    <span id="cash">Cash: $50</span>
+    <span id="beer-count">Beer: 60</span>
+    <span id="wabeer-count" style="margin-left:18px;">WaBeer: 0</span>
+    <span style="margin-left:10px;display:flex;align-items:center;gap:4px;">
+      <button id="make-wabeer-btn" style="width:22px;height:22px;padding:0;border-radius:50%;background:#44aaff;color:#fff;border:none;box-shadow:0 2px 8px #0008;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:14px;">
+        <span style="font-size:16px;">🍺</span>
+      </button>
+      <span style="font-size:12px;">Make WaBeer (1 Beer → 3 WaBeer)</span>
+    </span>
+    <span style="margin-left:10px;display:flex;align-items:center;gap:4px;">
+      <button id="resupply-btn" style="width:22px;height:22px;padding:0;border-radius:50%;background:#2a6fd6;color:#fff;border:none;box-shadow:0 2px 8px #0008;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:14px;">
+        <span style="font-size:16px;">🔄</span>
+      </button>
+      <span style="font-size:12px;">Resupply Beer ($12)</span>
+    </span>
+    <span id="delivery-timer" style="margin-left:10px;color:#ffb300;font-size:16px;display:none;"></span>
+  </div>
+  <div id="bar-area">
+    <div id="patrons"></div>
+    <div id="bar"></div>
+    <div id="player"></div>
+    <button id="serveBeerBtn" style="position:absolute;left:50%;bottom:160px;transform:translateX(-50%);z-index:30;font-size:20px;padding:10px 28px;border-radius:12px;background:#c9a063;color:#222;border:none;box-shadow:0 2px 12px #0008;cursor:pointer;">Serve Beer</button>
+  </div>
+  <script>
+    // Patron image pool
+    const patronImages = Array.from({length: 132}, (_, i) => `ProfileImages/${i+1}.png`);
+    // Dog image pool
+    const dogImages = [
+      'Dog/00003-239854200.png',
+      'Dog/00004-3892349186.png',
+      'Dog/00005-2661111304.png',
+      'Dog/00006-1961666463.png',
+      'Dog/00007-2366782299.png'
+    ];
+    let dogBubble = null;
+
+    // Vil image pool
+    const vilImages = Array.from({length: 10}, (_, i) => `Vil/${i+1}.png`); // Adjust count as needed
+    let vilBubble = null;
+
+    // Patron bubble array and max
+    const bubbles = [];
+    const MAX_PATRONS = 10;
+
+    // Patron creation
+    function spawnPatron(getBarY, getPatronYMax, patronsDiv) {
+      if (bubbles.length >= MAX_PATRONS) return;
+      let imgSrc = patronImages[Math.floor(Math.random() * patronImages.length)];
+      const size = 84 + Math.random() * 24; // Larger patron size
+      const x = Math.random() * (window.innerWidth - size);
+      let yMin = 0;
+      let yMax = getPatronYMax();
+      const y = yMin;
+      const dx = (Math.random() - 0.5) * 1.2;
+      const dy = (Math.random() - 0.5) * 1.2;
+      const bubble = document.createElement('div');
+      bubble.style.position = 'absolute';
+      bubble.style.left = `${x}px`;
+      bubble.style.top = `${y}px`;
+      bubble.style.width = `${size}px`;
+      bubble.style.height = `${size}px`;
+      bubble.style.borderRadius = '50%';
+      bubble.style.background = '#333';
+      bubble.style.boxShadow = '0 2px 8px #000a';
+      bubble.style.border = '2px solid #888';
+      bubble.style.display = 'flex';
+      bubble.style.alignItems = 'center';
+      bubble.style.justifyContent = 'center';
+      const img = document.createElement('img');
+      img.src = imgSrc;
+      img.alt = 'patron';
+      img.style.width = '90%';
+      img.style.height = '90%';
+      img.style.borderRadius = '50%';
+      img.style.objectFit = 'cover';
+      img.style.border = '3px solid #ffd700'; // Gold border for patrons
+      img.onerror = function handler() {
+        // Patron fallback logic: use a random ProfileImages/1-20.png if image fails
+        const fallbackPatronImages = Array.from({length: 20}, (_, i) => `ProfileImages/${i+1}.png`);
+        const fallback = fallbackPatronImages[Math.floor(Math.random() * fallbackPatronImages.length)];
+        if (img.src !== fallback) {
+          img.src = fallback;
+        } else {
+          img.src = 'https://via.placeholder.com/64x64?text=No+Img';
+        }
+        img.onerror = null;
+      };
+      bubble.appendChild(img);
+      // Mood bar
+      const moodBar = document.createElement('div');
+      moodBar.style.position = 'absolute';
+      moodBar.style.left = '50%';
+      moodBar.style.bottom = '4px';
+      moodBar.style.transform = 'translateX(-50%)';
+      moodBar.style.width = '60px';
+      moodBar.style.height = '10px';
+      moodBar.style.background = '#222';
+      moodBar.style.borderRadius = '6px';
+      moodBar.style.boxShadow = '0 1px 4px #0006';
+      moodBar.style.overflow = 'hidden';
+      moodBar.style.border = '2px solid #444';
+      moodBar.style.zIndex = '102'; // Ensure above stat panel
+      bubble.appendChild(moodBar);
+      patronsDiv.appendChild(bubble);
+      // Add intoxication, WaBeer streak, and cash
+      const intoxication = 0;
+      const waBeerStreak = 0;
+      const patronCash = 1 + Math.floor(Math.random() * 500);
+      const mood = Math.floor(Math.random() * 100); // 0-100 mood
+      // Set initial mood bar value with minimum width
+      const moodWidth = Math.max(mood, 8); // Always at least 8%
+      moodBar.innerHTML = `<div style='height:100%;width:${moodWidth}%;background:${mood>66?'#4caf50':mood>33?'#ffd700':'#e75480'};border-radius:6px;'></div>`;
+      bubbles.push({el: bubble, x, y, dx, dy, size, yMin, yMax, state: 'wandering', intoxication, waBeerStreak, patronCash, mood, moodBar});
+      // Add hover stat panel (do not include moodBar)
+      const statPanel = document.createElement('div');
+      statPanel.style.position = 'absolute';
+      statPanel.style.left = '50%';
+      statPanel.style.top = '-38px';
+      statPanel.style.transform = 'translateX(-50%)';
+      statPanel.style.background = 'rgba(40,40,40,0.95)';
+      statPanel.style.color = '#fff';
+      statPanel.style.fontSize = '15px';
+      statPanel.style.padding = '6px 18px';
+      statPanel.style.borderRadius = '10px';
+      statPanel.style.boxShadow = '0 2px 8px #000a';
+      statPanel.style.zIndex = '100';
+      statPanel.style.display = 'none';
+      statPanel.innerHTML = `<div style='font-size:15px;color:#ffd700;'>Cash: $${patronCash}</div><div>Intoxication: 0</div>`;
+      // Add withdraw button for staff
+      const withdrawBtn = document.createElement('button');
+      withdrawBtn.textContent = '💸 Withdraw';
+      withdrawBtn.title = 'Withdraw all money from employee';
+      withdrawBtn.style.fontSize = '13px';
+      withdrawBtn.style.marginLeft = '8px';
+      withdrawBtn.style.padding = '2px 8px';
+      withdrawBtn.style.borderRadius = '8px';
+      withdrawBtn.style.border = 'none';
+      withdrawBtn.style.background = '#e75480';
+      withdrawBtn.style.color = '#fff';
+      withdrawBtn.style.cursor = 'pointer';
+      withdrawBtn.style.boxShadow = '0 1px 4px #0006';
+      withdrawBtn.onclick = function(e) {
+        e.stopPropagation();
+        // Only allow if this patron is staff and has money
+        const bubbleObj = bubbles.find(b => b.el === bubble);
+        if (bubbleObj && bubbleObj.isStaff && bubbleObj.patronCash > 0) {
+          cash += bubbleObj.patronCash;
+          bubbleObj.patronCash = 0;
+          statPanel.innerHTML = `<div style='font-size:15px;color:#ffd700;'>Cash: $0</div><div>Intoxication: ${bubbleObj.intoxication}</div>`;
+          statPanel.appendChild(withdrawBtn);
+        }
+      };
+      bubble.appendChild(statPanel);
+      bubble.onmouseenter = function(e) {
+        // Only show statPanel, not moodBar
+        statPanel.style.display = 'block';
+        if (bubbles.find(b => b.el === bubble)?.isStaff) {
+          if (!statPanel.contains(withdrawBtn)) statPanel.appendChild(withdrawBtn);
+        }
+      };
+      bubble.onmouseleave = function(e) {
+        statPanel.style.display = 'none';
+        if (statPanel.contains(withdrawBtn)) statPanel.removeChild(withdrawBtn);
+      };
+    }
+
+    // Dog creation
+    function spawnDog(getBarY, getPatronYMax, patronsDiv) {
+      if (dogBubble) return; // Only one dog at a time
+      const imgSrc = dogImages[Math.floor(Math.random() * dogImages.length)];
+      const size = 44 + Math.random() * 16; // Smaller dog size
+      const x = Math.random() * (window.innerWidth - size);
+      const yMin = 40;
+      const yMax = getPatronYMax();
+      const y = yMin + Math.random() * (yMax - yMin - 80);
+      const el = document.createElement('div');
+      el.style.position = 'absolute';
+      el.style.left = `${x}px`;
+      el.style.top = `${y}px`;
+      el.style.width = `${size}px`;
+      el.style.height = `${size}px`;
+      el.style.zIndex = '2';
+      el.style.borderRadius = '50%';
+      el.style.background = '#222';
+      el.style.boxShadow = '0 2px 12px #0008';
+      el.style.transition = 'left 0.5s, top 0.5s';
+      const img = document.createElement('img');
+      img.src = imgSrc;
+      img.alt = 'dog';
+      img.style.width = '100%';
+      img.style.height = '100%';
+      img.style.objectFit = 'cover';
+      img.style.borderRadius = '50%';
+      img.style.border = '3px solid #e75480'; // Pink border for dog
+      el.appendChild(img);
+      patronsDiv.appendChild(el);
+      dogBubble = {
+        el,
+        img,
+        x,
+        y,
+        size,
+        dx: (Math.random() - 0.5) * 1.2,
+        dy: (Math.random() - 0.5) * 1.2,
+        yMin,
+        yMax,
+        state: 'wanderingDog'
+      };
+      // Dog leaves after 18-30 seconds
+      setTimeout(() => {
+        if (!dogBubble) return;
+        dogBubble.state = 'leavingDog';
+        el.style.zIndex = '5';
+        el.style.transition = 'top 2.2s, opacity 1.2s';
+        el.style.top = '-80px';
+        el.style.opacity = '0';
+        setTimeout(() => {
+          if (el.parentNode) el.parentNode.removeChild(el);
+          dogBubble = null;
+        }, 2200);
+      }, 18000 + Math.random() * 12000);
+    }
+
+    // Vil creation
+    function spawnVil(getBarY, getPatronYMax, patronsDiv) {
+      if (vilBubble) return; // Only one Vil at a time
+      const imgSrc = vilImages[Math.floor(Math.random() * vilImages.length)];
+      const size = 72 + Math.random() * 18; // Similar to patrons but can adjust
+      const x = Math.random() * (window.innerWidth - size);
+      const yMin = 40;
+      const yMax = getPatronYMax();
+      const y = yMin + Math.random() * (yMax - yMin - 80);
+      const el = document.createElement('div');
+      el.style.position = 'absolute';
+      el.style.left = `${x}px`;
+      el.style.top = `${y}px`;
+      el.style.width = `${size}px`;
+      el.style.height = `${size}px`;
+      el.style.zIndex = '2';
+      el.style.borderRadius = '50%';
+      el.style.background = '#222';
+      el.style.boxShadow = '0 2px 18px #000c';
+      el.style.transition = 'left 0.5s, top 0.5s';
+      const img = document.createElement('img');
+      img.src = imgSrc;
+      img.alt = 'vil';
+      img.style.width = '100%';
+      img.style.height = '100%';
+      img.style.objectFit = 'cover';
+      img.style.borderRadius = '50%';
+      img.style.border = '4px solid #222'; // Dark border for Vil
+      el.appendChild(img);
+      patronsDiv.appendChild(el);
+      vilBubble = {
+        el,
+        img,
+        x,
+        y,
+        size,
+        dx: (Math.random() - 0.5) * 1.2,
+        dy: (Math.random() - 0.5) * 1.2,
+        yMin,
+        yMax,
+        state: 'wanderingVil'
+      };
+      // Vil leaves after 18-30 seconds
+      setTimeout(() => {
+        if (!vilBubble) return;
+        vilBubble.state = 'leavingVil';
+        el.style.zIndex = '5';
+        el.style.transition = 'top 2.2s, opacity 1.2s';
+        el.style.top = '-80px';
+        el.style.opacity = '0';
+        setTimeout(() => {
+          if (el.parentNode) el.parentNode.removeChild(el);
+          vilBubble = null;
+        }, 2200);
+      }, 18000 + Math.random() * 12000);
+    }
+
+    // Patron casual leave logic
+    function patronLeaveCasually(bubbleObj) {
+      if (bubbleObj.isStaff) return; // Staff cannot leave unless fired
+      const bubble = bubbleObj.el;
+      bubbleObj.state = 'leaving';
+      bubble.style.zIndex = '5';
+      bubble.style.transition = 'top 2.2s, opacity 1.2s';
+      // Animate bubble up and fade out
+      bubble.style.top = '-80px';
+      bubble.style.opacity = '0';
+      setTimeout(() => {
+        if (bubble.parentNode) bubble.parentNode.removeChild(bubble);
+        const idx = bubbles.indexOf(bubbleObj);
+        if (idx !== -1) bubbles.splice(idx, 1);
+      }, 2200);
+    }
+    // Curses patrons may say when served WaBeer
+    const wabeerCurses = [
+      "What the hell is this?",
+      "This is disgusting!",
+      "You call this beer?",
+      "I'm outta here!",
+      "Worst drink ever!",
+      "You should be ashamed!",
+      "Gross!",
+      "Never coming back!",
+      "Is this a joke?",
+      "You ruined my night!"
+    ];
+    // Get character info from query string
+    const params = new URLSearchParams(window.location.search);
+    const name = params.get('name') || 'Unknown';
+    const portrait = params.get('portrait') || '';
+    // Player portrait fallback logic
+    const playerImgFallbacks = Array.from({length: 20}, (_, i) => `ProfileImages/${i+1}.png`);
+    const playerDiv = document.getElementById('player');
+    playerDiv.innerHTML = `
+      <img id='player-portrait' src='${portrait}' alt='portrait'>
+      <div>
+        <div style='font-size:22px;font-weight:bold;'>${name}</div>
+        <div style='font-size:15px;color:#aaa;'>Location: Bar</div>
+      </div>
+    `;
+    const playerImg = document.getElementById('player-portrait');
+    playerImg.onerror = function() {
+      // Pick a random fallback image from ProfileImages/1-20.png
+      const fallback = playerImgFallbacks[Math.floor(Math.random() * playerImgFallbacks.length)];
+      if (playerImg.src !== fallback) {
+        playerImg.src = fallback;
+      } else {
+        playerImg.src = 'https://via.placeholder.com/120x180?text=No+Img';
+      }
+    };
+    // Cash and beer inventory variables
+    let cash = 50;
+    let beer = 60;
+    const resupplyBtn = document.getElementById('resupply-btn');
+    const makeWaBeerBtn = document.getElementById('make-wabeer-btn');
+    const deliveryTimerSpan = document.getElementById('delivery-timer');
+    let deliveryTimeout = null;
+    let deliveryEndTime = null;
+    let wabeer = 0;
+    function updateStatusBar() {
+      document.getElementById('cash').innerHTML = `<img src='Contentimages/Money.png' alt='Cash' style='width:22px;height:22px;vertical-align:middle;margin-right:6px;'> $${cash}`;
+      document.getElementById('beer-count').innerHTML = `<img src='Contentimages/piss.png' alt='Beer' style='width:22px;height:22px;vertical-align:middle;margin-right:6px;'> ${beer}`;
+      document.getElementById('wabeer-count').innerHTML = `<img src='Contentimages/Dirty.png' alt='WaBeer' style='width:22px;height:22px;vertical-align:middle;margin-right:6px;'> ${wabeer}`;
+      // Enable/disable resupply button
+      if (deliveryTimeout || cash < 12) {
+        resupplyBtn.disabled = true;
+        resupplyBtn.style.opacity = 0.6;
+        resupplyBtn.style.cursor = 'not-allowed';
+      } else {
+        resupplyBtn.disabled = false;
+        resupplyBtn.style.opacity = 1;
+        resupplyBtn.style.cursor = 'pointer';
+      }
+      // Enable/disable make WaBeer button
+      if (beer < 1) {
+        makeWaBeerBtn.disabled = true;
+        makeWaBeerBtn.style.opacity = 0.6;
+        makeWaBeerBtn.style.cursor = 'not-allowed';
+      } else {
+        makeWaBeerBtn.disabled = false;
+        makeWaBeerBtn.style.opacity = 1;
+        makeWaBeerBtn.style.cursor = 'pointer';
+      }
+    }
+    updateStatusBar();
+    makeWaBeerBtn.onclick = function() {
+      if (beer >= 1) {
+        beer -= 1;
+        wabeer += 3;
+        updateStatusBar();
+      }
+    };
+
+    function startDeliveryTimer() {
+      deliveryEndTime = Date.now() + 3 * 60 * 1000; // 3 minutes
+      deliveryTimerSpan.style.display = '';
+      function updateTimer() {
+        const msLeft = deliveryEndTime - Date.now();
+        if (msLeft > 0) {
+          const min = Math.floor(msLeft / 60000);
+          const sec = Math.floor((msLeft % 60000) / 1000);
+          deliveryTimerSpan.textContent = `Delivery in: ${min}:${sec.toString().padStart(2, '0')}`;
+          deliveryTimeout = setTimeout(updateTimer, 500);
+        } else {
+          deliveryTimerSpan.style.display = 'none';
+          deliveryTimeout = null;
+          beer += 12;
+          updateStatusBar();
+        }
+      }
+      updateTimer();
+    }
+
+    resupplyBtn.onclick = function() {
+      if (cash >= 12 && !deliveryTimeout) {
+        cash -= 12;
+        updateStatusBar();
+        startDeliveryTimer();
+      }
+    };
+    // Patron bubbles animated
+    // Patron logic moved to patron.js
+    const patronsDiv = document.getElementById('patrons');
+    patronsDiv.style.position = 'absolute';
+    patronsDiv.style.left = '0';
+    patronsDiv.style.top = '0';
+    patronsDiv.style.width = '100vw';
+    patronsDiv.style.height = `calc(100vh - 160px)`;
+    patronsDiv.style.zIndex = '1';
+    patronsDiv.innerHTML = '';
+    function getBarY() {
+      const bar = document.getElementById('bar');
+      if (bar) {
+        const rect = bar.getBoundingClientRect();
+        return rect.top - 8;
+      }
+      return window.innerHeight - 120 - 8;
+    }
+    function getPatronYMax() {
+      return getBarY();
+    }
+    window.getPatronYMax = getPatronYMax;
+    // Initial spawn
+    for (let i = 0; i < 2; i++) {
+      window.spawnPatron(getBarY, getPatronYMax, patronsDiv);
+    }
+    // Add new patrons every 7–12 seconds
+    setInterval(() => {
+      window.spawnPatron(getBarY, getPatronYMax, patronsDiv);
+      // If too many patrons, trigger a fight
+      if (window.bubbles.length > window.MAX_PATRONS) {
+        triggerFight();
+      }
+    }, 7000 + Math.random() * 5000);
+    // Patron fight logic
+    function triggerFight() {
+      // Only non-staff can fight
+      const nonStaff = bubbles.filter(b => !b.isStaff);
+      if (nonStaff.length < 2) return;
+      // Pick two random non-staff patrons to fight
+      const idx1 = bubbles.indexOf(nonStaff[Math.floor(Math.random() * nonStaff.length)]);
+      let idx2 = idx1;
+      while (idx2 === idx1) {
+        idx2 = bubbles.indexOf(nonStaff[Math.floor(Math.random() * nonStaff.length)]);
+      }
+      const b1 = bubbles[idx1];
+      const b2 = bubbles[idx2];
+      // Animate fight: shake both bubbles for 2 seconds
+      b1.el.style.animation = 'shake 0.2s infinite';
+      b2.el.style.animation = 'shake 0.2s infinite';
+      // After 2 seconds, pick a loser
+      setTimeout(() => {
+        b1.el.style.animation = '';
+        b2.el.style.animation = '';
+        const loserIdx = Math.random() < 0.5 ? idx1 : idx2;
+        const loser = bubbles[loserIdx];
+        // Animate loser fading out and leaving
+        if (!loser.isStaff) {
+          loser.el.style.transition = 'opacity 0.8s, top 1.2s';
+          loser.el.style.opacity = '0';
+          loser.el.style.top = `${window.innerHeight + 100}px`;
+          setTimeout(() => {
+            if (loser.el.parentNode) loser.el.parentNode.removeChild(loser.el);
+            const idx = bubbles.indexOf(loser);
+            if (idx !== -1) bubbles.splice(idx, 1);
+            if (bubbles.length < MAX_PATRONS) window.spawnPatron(getBarY, getPatronYMax, patronsDiv);
+          }, 1200);
+        }
+      }, 2000);
+    }
+
+    // Patron casual leave logic
+    function patronLeaveCasually(bubbleObj) {
+      if (bubbleObj.isStaff) return; // Staff cannot leave unless fired
+      const bubble = bubbleObj.el;
+      bubbleObj.state = 'leaving';
+      bubble.style.zIndex = '5';
+      bubble.style.transition = 'top 2.2s, opacity 1.2s';
+      // Animate bubble up and fade out
+      bubble.style.top = '-80px';
+      bubble.style.opacity = '0';
+      setTimeout(() => {
+        if (bubble.parentNode) bubble.parentNode.removeChild(bubble);
+        const idx = bubbles.indexOf(bubbleObj);
+        if (idx !== -1) bubbles.splice(idx, 1);
+        // Spawn a new patron if below MAX_PATRONS
+        if (bubbles.length < MAX_PATRONS) {
+          spawnPatron();
+        }
+      }, 2200);
+    }
+
+    // Add 3 large table circles to the bar area
+    (function addTables() {
+      const barArea = document.getElementById('bar-area');
+      const tableCount = 3;
+      const tableSize = 180;
+      // Sync table positions to be visually centered and spaced in the bar area
+      const barAreaRect = barArea.getBoundingClientRect();
+      const areaWidth = barAreaRect.width;
+      const areaLeft = barAreaRect.left;
+      const areaTop = barAreaRect.top;
+      // Calculate spacing so tables are centered horizontally in bar area
+      const spacing = (areaWidth - tableSize * tableCount) / (tableCount + 1);
+      for (let i = 0; i < tableCount; i++) {
+        const tableDiv = document.createElement('div');
+        tableDiv.style.position = 'absolute';
+        // Use areaLeft for correct offset
+        tableDiv.style.left = `${spacing + i * (tableSize + spacing)}px`;
+        // Place tables vertically in the lower half of the bar area
+        tableDiv.style.top = `${Math.max(120, barAreaRect.height/2 - tableSize/2 + 80)}px`;
+        tableDiv.style.width = `${tableSize}px`;
+        tableDiv.style.height = `${tableSize}px`;
+        tableDiv.style.borderRadius = '50%';
+        tableDiv.style.background = '#222';
+        tableDiv.style.boxShadow = '0 2px 18px #000a';
+        tableDiv.style.zIndex = '0';
+        tableDiv.style.cursor = 'default';
+        const img = document.createElement('img');
+        img.src = 'Contentimages/Table.png';
+        img.alt = 'Table';
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.objectFit = 'cover';
+        img.style.borderRadius = '50%';
+        img.style.border = '8px solid #c9a063';
+        img.style.pointerEvents = 'none';
+        tableDiv.appendChild(img);
+        tableDiv.style.userSelect = 'none';
+        barArea.appendChild(tableDiv);
+      }
+    })();
+    // Dog leaves after 18-30 seconds
+    setTimeout(() => {
+      if (!dogBubble) return;
+      dogBubble.state = 'leavingDog';
+      dogBubble.el.style.zIndex = '5';
+      dogBubble.el.style.transition = 'top 2.2s, opacity 1.2s';
+      dogBubble.el.style.top = '-80px';
+      dogBubble.el.style.opacity = '0';
+      setTimeout(() => {
+        if (dogBubble.el.parentNode) dogBubble.el.parentNode.removeChild(dogBubble.el);
+        dogBubble = null;
+      }, 2200);
+    }, 18000 + Math.random() * 12000);
+    // Patron casual leave logic
+    function patronLeaveCasually(bubbleObj) {
+      if (bubbleObj.isStaff) return; // Staff cannot leave unless fired
+      const bubble = bubbleObj.el;
+      bubbleObj.state = 'leaving';
+      bubble.style.zIndex = '5';
+      bubble.style.transition = 'top 2.2s, opacity 1.2s';
+      // Animate bubble up and fade out
+      bubble.style.top = '-80px';
+      bubble.style.opacity = '0';
+      setTimeout(() => {
+        if (bubble.parentNode) bubble.parentNode.removeChild(bubble);
+        const idx = bubbles.indexOf(bubbleObj);
+        if (idx !== -1) bubbles.splice(idx, 1);
+        // Spawn a new patron if below MAX_PATRONS
+        if (bubbles.length < MAX_PATRONS) {
+          spawnPatron();
+        }
+      }, 2200);
+    }
+
+    // Periodically let a random patron leave casually
+    setInterval(() => {
+      // Only let wandering patrons leave
+      const candidates = bubbles.filter(b => b.state === 'wandering');
+      if (candidates.length > 0 && Math.random() < 0.3) { // 30% chance every 10s
+        const b = candidates[Math.floor(Math.random() * candidates.length)];
+        patronLeaveCasually(b);
+        // Mark patron as in pink interaction
+        patron.inPinkInteraction = true;
+      }
+    }, 10000);
+
+    // Group dance logic: patrons with intoxication > 4 shake together
+    setInterval(() => {
+      // Find all wandering patrons with intoxication > 4
+      const dancers = bubbles.filter(b => b.state === 'wandering' && b.intoxication > 4);
+      if (dancers.length > 0 && Math.random() < 0.5) { // 50% chance every 12s
+        // Pick a random subset (at least 2 if possible)
+        let group = dancers;
+        if (dancers.length > 2) {
+          group = [];
+          const count = 2 + Math.floor(Math.random() * (dancers.length - 1));
+          const shuffled = dancers.slice().sort(() => Math.random() - 0.5);
+          group = shuffled.slice(0, count);
+        }
+        // Animate shake for 2.5s
+        for (const b of group) {
+          b.el.style.animation = 'shake 0.25s infinite';
+        }
+        setTimeout(() => {
+          for (const b of group) {
+            b.el.style.animation = '';
+          }
+        }, 2500);
+      }
+    }, 12000);
+
+    // Interactions for patrons with intoxication > 2
+    const interactionTexts = [
+      "You're my best friend!",
+      "Let's dance!",
+      "Did you know I love you, man?",
+      "We should start a band!",
+      "I bet I can drink more than you!",
+      "Let's do something wild!",
+      "You wanna race to the door?",
+      "I think the bartender likes us!",
+      "Cheers to us!",
+      "Let's get everyone together!",
+      "I feel invincible!",
+      "You ever think about the universe?",
+      "We should order another round!",
+      "I’m not even tipsy yet!",
+      "You’re hilarious!",
+      "Let’s make a toast!",
+      "I dare you to dance on the bar!",
+      "We should exit together!",
+      "I’m feeling bold tonight!",
+      "Let’s run around!",
+      // Gritty additions
+      "You look like you’ve had a rough night.",
+      "This place stinks, but the booze is cheap.",
+      "I’m only talking to you because my glass is empty.",
+      "Don’t get too close, I bite.",
+      "If you spill my drink, you’re buying the next one.",
+      "I’ve seen worse dives, but not many.",
+      "You think you’re tough? Prove it.",
+      "I’m not here to make friends.",
+      "Let’s see who can hold their liquor.",
+      "If you’re looking for trouble, you found it."
+    ];
+    let pinkInteractionActive = false;
+    // Track pink interactions per staff
+    let pinkInteractionStaff = new Set();
+    setInterval(() => {
+      // Remove global block
+      // Patron-employee pink glow/shake interaction
+      // Loosen eligibility: intoxication > 1 and $2
+      // Track patrons currently in pink interaction
+      if (!window.pinkInteractionPatrons) window.pinkInteractionPatrons = new Set();
+      const eligiblePatrons = bubbles.filter(b => b.state === 'wandering' && !b.isStaff && b.intoxication > 1 && b.patronCash >= 2 && !window.pinkInteractionPatrons.has(b));
+      const eligibleStaff = bubbles.filter(b => b.state === 'wandering' && b.isStaff && !pinkInteractionStaff.has(b));
+      if (eligiblePatrons.length > 0 && eligibleStaff.length > 0) {
+        const patron = eligiblePatrons[Math.floor(Math.random() * eligiblePatrons.length)];
+        const staff = eligibleStaff[Math.floor(Math.random() * eligibleStaff.length)];
+        pinkInteractionStaff.add(staff);
+        window.pinkInteractionPatrons.add(patron);
+        // Move patron next to staff
+        patron.dx = 0;
+        patron.dy = 0;
+        staff.dx = 0;
+          // Remove pink interaction flag
+          patron.inPinkInteraction = false;
+          // Ensure patron DOM element is not removed
+          if (!patron.el.parentNode) {
+            patronsDiv.appendChild(patron.el);
+          }
+          // Ensure patron is still in bubbles array
+          if (!bubbles.includes(patron)) {
+            bubbles.push(patron);
+          }
+        staff.dy = 0;
+        patron.state = 'pinkSway';
+        staff.state = 'pinkSway';
+        // Animate patron slowly to staff
+        const targetX = staff.x + staff.size;
+        const targetY = staff.y;
+        let steps = 40;
+        let step = 0;
+        const startX = patron.x;
+        const startY = patron.y;
+        function moveToStaff() {
+          step++;
+          patron.x = startX + (targetX - startX) * (step / steps);
+          patron.y = startY + (targetY - startY) * (step / steps);
+          patron.el.style.left = `${patron.x}px`;
+          patron.el.style.top = `${patron.y}px`;
+          if (step < steps) {
+            requestAnimationFrame(moveToStaff);
+          }
+        }
+        moveToStaff();
+        staff.el.style.transition = 'box-shadow 0.5s, border 0.5s';
+        patron.el.style.transition = 'box-shadow 0.5s, border 0.5s';
+        staff.el.style.boxShadow = '0 0 32px 8px #e75480, 0 2px 8px #000a';
+        staff.el.style.border = '3px solid #e75480';
+        patron.el.style.boxShadow = '0 0 32px 8px #e75480, 0 2px 8px #000a';
+        patron.el.style.border = '3px solid #e75480';
+        staff.el.style.animation = 'shakePink 3.5s infinite';
+        patron.el.style.animation = 'shakePink 3.5s infinite';
+        // Keep patron and staff together for 1 minute
+        let swayInterval = setInterval(() => {
+          patron.x = staff.x + staff.size;
+          patron.y = staff.y;
+          patron.el.style.left = `${patron.x}px`;
+          patron.el.style.top = `${patron.y}px`;
+        }, 100);
+        // $2 transfer every second for 60 seconds
+        let secondsElapsed = 0;
+        let cashInterval = setInterval(() => {
+          if (patron.patronCash >= 2) {
+            patron.patronCash -= 2;
+            staff.patronCash = (staff.patronCash || 0) + 2;
+            // Update stat panels
+            const staffPanel = staff.el.querySelector('div');
+            if (staffPanel) staffPanel.innerHTML = `<div style='font-size:15px;color:#ffd700;'>Cash: $${staff.patronCash}</div><div>Intoxication: ${staff.intoxication}</div>`;
+            const patronPanel = patron.el.querySelector('div');
+            if (patronPanel) patronPanel.innerHTML = `<div style='font-size:15px;color:#ffd700;'>Cash: $${patron.patronCash}</div><div>Intoxication: ${patron.intoxication}</div>`;
+          }
+          secondsElapsed++;
+          if (secondsElapsed >= 60) {
+            clearInterval(cashInterval);
+          }
+        }, 1000);
+        // Show pink interaction text
+        const midX = (staff.x + patron.x) / 2 + staff.size/2;
+        const midY = (staff.y + patron.y) / 2 - 70;
+        const interactionDiv = document.createElement('div');
+        interactionDiv.textContent = '💸 Patron pays Employee $2';
+        interactionDiv.style.position = 'absolute';
+        interactionDiv.style.left = `${midX}px`;
+        interactionDiv.style.top = `${midY}px`;
+        interactionDiv.style.transform = 'translateX(-50%)';
+        interactionDiv.style.background = 'rgba(230,84,128,0.95)';
+        interactionDiv.style.color = '#fff';
+        interactionDiv.style.fontSize = '20px';
+        interactionDiv.style.padding = '10px 24px';
+        interactionDiv.style.borderRadius = '14px';
+        interactionDiv.style.boxShadow = '0 2px 12px #000a';
+        interactionDiv.style.zIndex = '101';
+        document.body.appendChild(interactionDiv);
+        setTimeout(() => {
+          interactionDiv.remove();
+        }, 2200);
+        // After 1 minute, remove pink glow and sway, restore wandering
+        setTimeout(() => {
+          clearInterval(swayInterval);
+          staff.el.style.boxShadow = '';
+          staff.el.style.border = '';
+          patron.el.style.boxShadow = '';
+          patron.el.style.border = '';
+          staff.el.style.animation = '';
+          patron.el.style.animation = '';
+          // Restore staff and patron to wandering and movement
+          restoreWandering(staff);
+          restoreWandering(patron);
+          pinkInteractionStaff.delete(staff);
+          window.pinkInteractionPatrons.delete(patron);
+          // Ensure staff DOM element is not removed
+          if (!staff.el.parentNode) {
+            patronsDiv.appendChild(staff.el);
+          }
+          // Ensure staff is still in bubbles array
+          if (!bubbles.includes(staff)) {
+            bubbles.push(staff);
+          }
+        }, 60000);
+        return;
+      }
+      // If too many patrons, trigger a fight
+      if (window.bubbles.length > window.MAX_PATRONS) {
+        triggerFight();
+      }
+      // Patron-patron interactions
+      const eligible = bubbles.filter(b => b.state === 'wandering' && b.intoxication > 2);
+      if (eligible.length < 2) return;
+      // Pick a random pair
+      const shuffled = eligible.slice().sort(() => Math.random() - 0.5);
+      const p1 = shuffled[0];
+      const p2 = shuffled[1];
+      // Show a random interaction text above the pair
+      const text = interactionTexts[Math.floor(Math.random() * interactionTexts.length)];
+      const midX = (p1.x + p2.x) / 2 + p1.size/2;
+      const midY = (p1.y + p2.y) / 2 - 70;
+      const interactionDiv = document.createElement('div');
+      interactionDiv.textContent = text;
+      interactionDiv.style.position = 'absolute';
+      interactionDiv.style.left = `${midX}px`;
+      interactionDiv.style.top = `${midY}px`;
+      interactionDiv.style.transform = 'translateX(-50%)';
+      interactionDiv.style.background = 'rgba(80,40,120,0.95)';
+      interactionDiv.style.color = '#fff';
+      interactionDiv.style.fontSize = '20px';
+      interactionDiv.style.padding = '10px 24px';
+      interactionDiv.style.borderRadius = '14px';
+      interactionDiv.style.boxShadow = '0 2px 12px #000a';
+      interactionDiv.style.zIndex = '100';
+      document.body.appendChild(interactionDiv);
+      setTimeout(() => {
+        interactionDiv.remove();
+      }, 2200);
+      // Patron-patron action selection, weighted for 'congregate' by intoxication
+      let actions = ['fight', 'run', 'sex', 'exit'];
+      // Add 'congregate' multiple times based on average intoxication
+      const avgIntox = (p1.intoxication + p2.intoxication) / 2;
+      const congregateWeight = Math.max(1, Math.floor(avgIntox));
+      for (let i = 0; i < congregateWeight; i++) actions.push('congregate');
+      // Dramatically increase gunfight chance for testing
+      for (let i = 0; i < 12; i++) actions.push('gunfight');
+      // If either patron's mood is low, add even more gunfight weight
+      if ((p1.mood !== undefined && p1.mood < 20) || (p2.mood !== undefined && p2.mood < 20)) {
+        for (let i = 0; i < 8; i++) actions.push('gunfight');
+      }
+      const action = actions[Math.floor(Math.random() * actions.length)];
+      switch(action) {
+        case 'fight':
+          // ...existing code...
+          p1.el.style.animation = 'shake 0.2s infinite';
+          p2.el.style.animation = 'shake 0.2s infinite';
+          setTimeout(() => {
+            p1.el.style.animation = '';
+            p2.el.style.animation = '';
+            const loser = Math.random() < 0.5 ? p1 : p2;
+            // Only remove if not staff
+            if (!loser.isStaff) {
+              loser.el.style.transition = 'opacity 0.8s, top 1.2s';
+              loser.el.style.opacity = '0';
+              loser.el.style.top = `${window.innerHeight + 100}px`;
+              setTimeout(() => {
+                if (loser.el.parentNode) loser.el.parentNode.removeChild(loser.el);
+                const idx = bubbles.indexOf(loser);
+                if (idx !== -1) bubbles.splice(idx, 1);
+                if (bubbles.length < MAX_PATRONS) spawnPatron();
+              }, 1200);
+            }
+          }, 2000);
+          break;
+        case 'run':
+          // ...existing code...
+          p1.dx = (Math.random() - 0.5) * 6;
+          p1.dy = (Math.random() - 0.5) * 6;
+          p2.dx = (Math.random() - 0.5) * 6;
+          p2.dy = (Math.random() - 0.5) * 6;
+          setTimeout(() => {
+            p1.dx = (Math.random() - 0.5) * 1.2;
+            p1.dy = (Math.random() - 0.5) * 1.2;
+            p2.dx = (Math.random() - 0.5) * 1.2;
+            p2.dy = (Math.random() - 0.5) * 1.2;
+          }, 3000);
+          break;
+        case 'sex':
+          // ...existing code...
+          const midX = (p1.x + p2.x) / 2;
+          const midY = (p1.y + p2.y) / 2;
+          p1.x = midX - p1.size/2;
+          p2.x = midX + p1.size/2;
+          p1.y = midY;
+          p2.y = midY;
+          p1.el.style.background = '#e75480';
+          p2.el.style.background = '#e75480';
+          setTimeout(() => {
+            p1.el.style.background = '#333';
+            p2.el.style.background = '#333';
+          }, 2000);
+          break;
+        case 'congregate':
+          // ...existing code...
+          const spotX = Math.random() * (window.innerWidth - p1.size - p2.size);
+          const spotY = Math.random() * 600;
+          p1.x = spotX;
+          p2.x = spotX + p1.size;
+          p1.y = spotY;
+          p2.y = spotY;
+          p1.el.style.transform = 'scale(1.3)';
+          p2.el.style.transform = 'scale(1.3)';
+          setTimeout(() => {
+            p1.el.style.transform = '';
+            p2.el.style.transform = '';
+          }, 2000);
+          break;
+        case 'exit':
+          // ...existing code...
+          p1.state = 'leaving';
+          p2.state = 'leaving';
+          p1.el.style.zIndex = '5';
+          p2.el.style.zIndex = '5';
+          p1.el.style.transition = 'top 2.2s, opacity 1.2s';
+          p2.el.style.transition = 'top 2.2s, opacity 1.2s';
+          p1.el.style.top = '-80px';
+          p2.el.style.top = '-80px';
+          p1.el.style.opacity = '0';
+          p2.el.style.opacity = '0';
+          setTimeout(() => {
+            if (p1.el.parentNode) p1.el.parentNode.removeChild(p1.el);
+            if (p2.el.parentNode) p2.el.parentNode.removeChild(p2.el);
+            const idx1 = bubbles.indexOf(p1);
+            const idx2 = bubbles.indexOf(p2);
+            if (idx1 !== -1) bubbles.splice(idx1, 1);
+            if (idx2 !== -1) bubbles.splice(idx2, 1);
+            if (bubbles.length < MAX_PATRONS) window.spawnPatron(getBarY, getPatronYMax, patronsDiv);
+            if (bubbles.length < MAX_PATRONS) window.spawnPatron(getBarY, getPatronYMax, patronsDiv);
+          }, 2200);
+          break;
+        case 'gunfight':
+          // Gunfight: all wandering guests gather to watch, two duelists duel
+          const allWandering = bubbles.filter(b => b.state === 'wandering');
+          const bar = document.getElementById('bar');
+          let barRect = {left: window.innerWidth/2 - 120, top: window.innerHeight - 120, width: 240, height: 120};
+          if (bar) barRect = bar.getBoundingClientRect();
+          const centerX = barRect.left + barRect.width/2;
+          const centerY = barRect.top + barRect.height/2;
+          // Animate all wandering guests to semicircle around center (smoothly)
+          const radius = 120 + Math.random() * 40;
+          const angleStep = Math.PI / (allWandering.length + 1);
+          allWandering.forEach(function(b, i) {
+            const angle = Math.PI/2 + (i - allWandering.length/2) * angleStep;
+            const targetX = centerX + Math.cos(angle) * radius;
+            const targetY = centerY + Math.sin(angle) * radius;
+            let steps = 40;
+            let step = 0;
+            const startX = b.x;
+            const startY = b.y;
+            b.dx = 0;
+            b.dy = 0;
+            b.state = 'watchingGunfight';
+            b.el.style.boxShadow = '';
+            b.el.style.border = '';
+            b.el.style.background = '#333';
+            function moveGuest() {
+              step++;
+              b.x = startX + (targetX - startX) * (step / steps);
+              b.y = startY + (targetY - startY) * (step / steps);
+              b.el.style.left = `${b.x}px`;
+              b.el.style.top = `${b.y}px`;
+              if (step < steps) {
+                requestAnimationFrame(moveGuest);
+              }
+            }
+            moveGuest();
+          });
+          // Animate duelists to center, facing each other, glowing black (smoothly)
+          function moveDuelistToCenter(duelist, targetX, targetY, callback) {
+            duelist.el.style.zIndex = 100;
+            duelist.el.style.boxShadow = '0 0 32px 12px #000, 0 2px 8px #000a';
+            duelist.el.style.border = '3px solid #000';
+            duelist.el.style.background = '#111';
+            let steps = 40;
+            let step = 0;
+            const startX = duelist.x;
+            const startY = duelist.y;
+            function moveSlowly() {
+              step++;
+              duelist.x = startX + (targetX - startX) * (step / steps);
+              duelist.y = startY + (targetY - startY) * (step / steps);
+              duelist.el.style.left = `${duelist.x}px`;
+              duelist.el.style.top = `${duelist.y}px`;
+              if (step < steps) {
+                requestAnimationFrame(moveSlowly);
+              } else {
+                if (callback) callback();
+              }
+            }
+            moveSlowly();
+          }
+          // Duelist positions
+          const p1TargetX = centerX - 60;
+          const p2TargetX = centerX + 60;
+          const pTargetY = centerY;
+          moveDuelistToCenter(p1, p1TargetX, pTargetY);
+          moveDuelistToCenter(p2, p2TargetX, pTargetY);
+          // Show gunfight text
+          const gunfightDiv = document.createElement('div');
+          gunfightDiv.textContent = '🤠 Gunfight!';
+          gunfightDiv.style.position = 'absolute';
+          gunfightDiv.style.left = `${centerX}px`;
+          gunfightDiv.style.top = `${centerY - 90}px`;
+          gunfightDiv.style.transform = 'translateX(-50%)';
+          gunfightDiv.style.background = 'rgba(0,0,0,0.95)';
+          gunfightDiv.style.color = '#ffd700';
+          gunfightDiv.style.fontSize = '24px';
+          gunfightDiv.style.padding = '12px 32px';
+          gunfightDiv.style.borderRadius = '16px';
+          gunfightDiv.style.boxShadow = '0 2px 12px #000a';
+          gunfightDiv.style.zIndex = '101';
+          document.body.appendChild(gunfightDiv);
+          // Animate duelists facing each other for dramatic pause
+          setTimeout(function() {
+            // Animate glowing black bullets
+            // p1 shoots at p2
+            const bullet1 = document.createElement('div');
+            bullet1.style.position = 'absolute';
+            bullet1.style.left = `${p1TargetX + p1.size}px`;
+            bullet1.style.top = `${pTargetY + p1.size/2}px`;
+            bullet1.style.width = '18px';
+            bullet1.style.height = '18px';
+            bullet1.style.borderRadius = '50%';
+            bullet1.style.background = 'radial-gradient(circle, #222 60%, #ffd700 100%)';
+            bullet1.style.boxShadow = '0 0 18px 8px #000';
+            bullet1.style.zIndex = '102';
+            document.body.appendChild(bullet1);
+            bullet1.animate([
+              { left: `${p1TargetX + p1.size}px`, top: `${pTargetY + p1.size/2}px` },
+              { left: `${p2TargetX}px`, top: `${pTargetY + p2.size/2}px` }
+            ], { duration: 600, fill: 'forwards' });
+            setTimeout(() => { bullet1.remove(); }, 700);
+            // p2 shoots at p1
+            const bullet2 = document.createElement('div');
+            bullet2.style.position = 'absolute';
+            bullet2.style.left = `${p2TargetX}px`;
+            bullet2.style.top = `${pTargetY + p2.size/2}px`;
+            bullet2.style.width = '18px';
+            bullet2.style.height = '18px';
+            bullet2.style.borderRadius = '50%';
+            bullet2.style.background = 'radial-gradient(circle, #222 60%, #ffd700 100%)';
+            bullet2.style.boxShadow = '0 0 18px 8px #000';
+            bullet2.style.zIndex = '102';
+            document.body.appendChild(bullet2);
+            bullet2.animate([
+              { left: `${p2TargetX}px`, top: `${pTargetY + p2.size/2}px` },
+              { left: `${p1TargetX + p1.size}px`, top: `${pTargetY + p1.size/2}px` }
+            ], { duration: 600, fill: 'forwards' });
+            setTimeout(() => { bullet2.remove(); }, 700);
+          }, 700);
+          // After bullets, determine winner and animate victor
+          setTimeout(function() {
+            gunfightDiv.remove();
+            // 50/50 chance
+            const loser = Math.random() < 0.5 ? p1 : p2;
+            const winner = loser === p1 ? p2 : p1;
+            // Only remove if not staff
+            if (!loser.isStaff) {
+              loser.el.style.transition = 'opacity 0.8s, top 1.2s, left 1.2s';
+              loser.el.style.opacity = '0';
+              loser.el.style.top = `${window.innerHeight + 100}px`;
+              loser.el.style.left = `${centerX}px`;
+              setTimeout(function() {
+                if (loser.el.parentNode) loser.el.parentNode.removeChild(loser.el);
+                const idx = bubbles.indexOf(loser);
+                if (idx !== -1) bubbles.splice(idx, 1);
+                if (bubbles.length < MAX_PATRONS) window.spawnPatron(getBarY, getPatronYMax, patronsDiv);
+              }, 1200);
+            }
+            // Winner glows gold for a moment
+            winner.el.style.boxShadow = '0 0 32px 12px #ffd700, 0 2px 8px #000a';
+            winner.el.style.border = '3px solid #ffd700';
+            winner.el.style.background = '#222';
+            setTimeout(function() {
+              winner.el.style.boxShadow = '';
+              winner.el.style.border = '';
+              winner.el.style.background = '#333';
+            }, 1200);
+            // Restore all watching guests to wandering
+            allWandering.forEach(function(b) {
+              restoreWandering(b);
+              b.el.style.boxShadow = '';
+              b.el.style.border = '';
+              b.el.style.background = '#333';
+            });
+            p1.el.style.zIndex = '';
+            p2.el.style.zIndex = '';
+            // Fallback: after duel, ensure no patrons are stuck in duel states
+            setTimeout(function() {
+              bubbles.forEach(function(b) {
+                if (b.state === 'watchingGunfight' || b.state === 'gunfight' || b.state === 'duel' || b.state === 'movingToDuel') {
+                  b.state = 'wandering';
+                  b.dx = (Math.random() - 0.5) * 1.2;
+                  b.dy = (Math.random() - 0.5) * 1.2;
+                  b.el.style.boxShadow = '';
+                  b.el.style.border = '';
+                  b.el.style.background = '#333';
+                }
+              });
+            }, 2200);
+          }, 1800);
+          break;
+      }
+    }, 1500); // Try every 1.5s
+    function animateBubbles() {
+  // Update yMax for all bubbles in case window size or bar position changes
+  const yMaxDynamic = getPatronYMax();
+  for (const b of bubbles) {
+    b.yMax = yMaxDynamic;
+    // Only animate wandering patrons
+    if (b.state === 'wandering') {
+      // Patron personality: mood changes and particle effects
+      if (!b.personalityTimer) {
+        b.personalityTimer = setInterval(() => {
+          // Mood decreases over time
+          b.mood = Math.max(0, b.mood - 1);
+          if (b.moodBar) {
+            const moodWidth = Math.max(b.mood, 8);
+            b.moodBar.innerHTML = `<div style='height:100%;width:${moodWidth}%;background:${b.mood>66?'#4caf50':b.mood>33?'#ffd700':'#e75480'};border-radius:6px;'></div>`;
+          }
+          // Particle effect for mood decrease
+          if (Math.random() < 0.1) {
+            const particle = document.createElement('div');
+            particle.style.position = 'absolute';
+            particle.style.left = `${b.x + b.size/2 + (Math.random()-0.5)*40}px`;
+            particle.style.top = `${b.y - 18 + (Math.random()-0.5)*20}px`;
+            particle.style.width = '10px';
+            particle.style.height = '10px';
+            particle.style.borderRadius = '50%';
+            particle.style.background = '#e75480';
+            particle.style.opacity = '0.8';
+            particle.style.zIndex = '60';
+            particle.style.pointerEvents = 'none';
+            document.body.appendChild(particle);
+            setTimeout(() => particle.remove(), 900 + Math.random()*400);
+          }
+          // 10% chance to do a little shake or wiggle
+          if (Math.random() < 0.1) {
+            b.el.style.animation = 'shake 0.5s 1';
+            setTimeout(() => { b.el.style.animation = ''; }, 500);
+          }
+          // 10% chance to change direction
+          if (Math.random() < 0.1) {
+            b.dx = (Math.random() - 0.5) * 1.2;
+            b.dy = (Math.random() - 0.5) * 1.2;
+          }
+        }, 1800 + Math.random() * 1200);
+      }
+      b.x += b.dx;
+      b.y += b.dy;
+      // Bounce off walls
+      if (b.x < 0 || b.x > window.innerWidth - b.size) b.dx *= -1;
+      // Clamp y so patrons only wander within the bar area (not at the top or below the bar)
+      const barArea = document.getElementById('bar-area');
+      let barAreaRect = {top: 0, height: window.innerHeight};
+      if (barArea) barAreaRect = barArea.getBoundingClientRect();
+      const minY = barAreaRect.top + 10;
+      // Prevent wandering below the bar: use the same yMax as drink order position
+      const bar = document.getElementById('bar');
+      let barHeight = 120;
+      if (bar) barHeight = bar.getBoundingClientRect().height;
+      const maxY = getBarY() - barHeight + 8; // Same as drink order position
+      if (b.y < minY || b.y > maxY) b.dy *= -1;
+      b.x = Math.max(0, Math.min(window.innerWidth - b.size, b.x));
+      b.y = Math.max(minY, Math.min(maxY, b.y));
+      b.el.style.left = `${b.x}px`;
+      b.el.style.top = `${b.y}px`;
+    } else {
+      // Clear personality timer if not wandering
+      if (b.personalityTimer) {
+        clearInterval(b.personalityTimer);
+        b.personalityTimer = null;
+      }
+    }
+    // Remove coordinate display
+  }
+  // Animate dog if present
+  if (dogBubble) {
+    dogBubble.yMax = yMaxDynamic;
+    if (dogBubble.state === 'wanderingDog') {
+      dogBubble.x += dogBubble.dx;
+      dogBubble.y += dogBubble.dy;
+      // Bounce off walls
+      if (dogBubble.x < 0 || dogBubble.x > window.innerWidth - dogBubble.size) dogBubble.dx *= -1;
+      if (dogBubble.y < dogBubble.yMin || dogBubble.y > dogBubble.yMax) dogBubble.dy *= -1;
+      dogBubble.x = Math.max(0, Math.min(window.innerWidth - dogBubble.size, dogBubble.x));
+      dogBubble.y = Math.max(dogBubble.yMin, Math.min(dogBubble.yMax, dogBubble.y));
+      dogBubble.el.style.left = `${dogBubble.x}px`;
+      dogBubble.el.style.top = `${dogBubble.y}px`;
+    }
+  }
+  // Animate Vil if present
+  if (vilBubble) {
+    vilBubble.yMax = getPatronYMax();
+    if (vilBubble.state === 'wanderingVil') {
+      vilBubble.x += vilBubble.dx;
+      vilBubble.y += vilBubble.dy;
+      // Bounce off walls
+      if (vilBubble.x < 0 || vilBubble.x > window.innerWidth - vilBubble.size) vilBubble.dx *= -1;
+      if (vilBubble.y < vilBubble.yMin || vilBubble.y > vilBubble.yMax) vilBubble.dy *= -1;
+      vilBubble.x = Math.max(0, Math.min(window.innerWidth - vilBubble.size, vilBubble.x));
+      vilBubble.y = Math.max(vilBubble.yMin, Math.min(vilBubble.yMax, vilBubble.y));
+      vilBubble.el.style.left = `${vilBubble.x}px`;
+      vilBubble.el.style.top = `${vilBubble.y}px`;
+    }
+  }
+  requestAnimationFrame(animateBubbles);
+    // Patron order logic
+    // Job request logic
+    const yesIcon = 'Contentimages/yes.png'; // You need to provide this image
+    const noIcon = 'Contentimages/no.png';   // You need to provide this image
+    // Only use images 1-71 for hired staff
+    const prostImages = Array.from({length: 71}, (_, i) => `prost/${i+1}.png`);
+
+    function showJobRequest(bubbleObj) {
+      if (orderActive) return;
+      orderActive = true;
+      const bubble = bubbleObj.el;
+      const size = bubbleObj.size;
+      const x = bubbleObj.x;
+      let y = bubbleObj.y;
+      // Move bubble to bar
+      // Only set state for the ordering patron
+      bubbleObj._prevDx = bubbleObj.dx;
+      bubbleObj._prevDy = bubbleObj.dy;
+      bubbleObj.dx = 0;
+      bubbleObj.dy = 0;
+      bubbleObj.state = 'ordering';
+      bubble.style.zIndex = '20';
+      // Move bubble to just in front of the bar, not behind it
+      const bar = document.getElementById('bar');
+      let barHeight = 120;
+      if (bar) barHeight = bar.getBoundingClientRect().height;
+      const targetY = getBarY() - barHeight + 8; // 8px offset for visual gap
+      function animateToBar() {
+        if (y < targetY) {
+          y += 8;
+          if (y > targetY) y = targetY;
+          bubble.style.top = `${y}px`;
+          bubbleObj.y = y;
+          requestAnimationFrame(animateToBar);
+        } else {
+          // Show job request message
+          const jobDiv = document.createElement('div');
+          jobDiv.style.position = 'absolute';
+          jobDiv.style.left = `${x + size/2}px`;
+          jobDiv.style.top = `${y - 54}px`;
+          jobDiv.style.transform = 'translateX(-50%)';
+          jobDiv.style.background = 'rgba(60,40,20,0.95)';
+          jobDiv.style.color = '#fff';
+          jobDiv.style.fontSize = '22px';
+          jobDiv.style.padding = '18px 32px';
+          jobDiv.style.borderRadius = '16px';
+          jobDiv.style.boxShadow = '0 4px 24px #000a';
+          jobDiv.style.zIndex = '21';
+          jobDiv.style.display = 'flex';
+          jobDiv.style.alignItems = 'center';
+          // Patron image
+          const msgImg = bubble.querySelector('img').cloneNode(true);
+          msgImg.style.width = '54px';
+          msgImg.style.height = '54px';
+          msgImg.style.marginRight = '18px';
+          jobDiv.appendChild(msgImg);
+          // Message
+          const msg = document.createElement('span');
+          msg.textContent = "Can I have a job here?";
+          jobDiv.appendChild(msg);
+          document.body.appendChild(jobDiv);
+
+      // Align job request buttons horizontally with the patron
+      const bar = document.getElementById('bar');
+      let barRect = {top: window.innerHeight - 120, height: 120};
+      if (bar) barRect = bar.getBoundingClientRect();
+      const barCenterY = barRect.top + barRect.height / 2;
+      const barBottomOffset = window.innerHeight - barCenterY - 18;
+      const statsBar = document.getElementById('status-bar');
+      let staffImgs = statsBar ? statsBar.querySelectorAll('.staff-profile') : [];
+      // Patron bubble position
+      const patronCenterX = bubbleObj.x + bubbleObj.size / 2;
+      if (staffImgs.length < 2) {
+        // Show Yes and No buttons horizontally aligned with patron
+        const yesBtn = document.createElement('button');
+        const staffPreviewImg = document.createElement('img');
+        staffPreviewImg.src = 'prost/1.png';
+        staffPreviewImg.alt = 'Staff Preview';
+        staffPreviewImg.style.width = '100%';
+        staffPreviewImg.style.height = '100%';
+        staffPreviewImg.style.objectFit = 'cover';
+        staffPreviewImg.onerror = function() {
+          if (!staffPreviewImg.src.includes('placeholder')) {
+            staffPreviewImg.src = 'https://via.placeholder.com/48x36?text=No+Img';
+          }
+        };
+        yesBtn.appendChild(staffPreviewImg);
+        yesBtn.title = 'Hire';
+        yesBtn.style.position = 'absolute';
+        yesBtn.style.left = (patronCenterX - 30) + 'px';
+        yesBtn.style.bottom = `${barBottomOffset}px`;
+        yesBtn.style.transform = 'translateX(-50%)';
+        yesBtn.style.zIndex = '30';
+        yesBtn.style.width = '48px';
+        yesBtn.style.height = '36px';
+        yesBtn.style.border = 'none';
+        yesBtn.style.background = '#4caf50';
+        yesBtn.style.color = '#fff';
+        yesBtn.style.borderRadius = '12px';
+        yesBtn.style.boxShadow = '0 2px 12px #0008';
+        yesBtn.style.cursor = 'pointer';
+        // Disable if 2 employees are already hired
+        if (staffImgs.length >= 2) {
+          yesBtn.disabled = true;
+          yesBtn.style.opacity = 0.6;
+          yesBtn.style.cursor = 'not-allowed';
+        }
+        document.body.appendChild(yesBtn);
+        const noBtn = document.createElement('button');
+        noBtn.innerHTML = `<img src='${noIcon}' alt='No' style='width:100%;height:100%;object-fit:cover;'>`;
+        noBtn.title = 'Decline';
+        noBtn.style.position = 'absolute';
+        noBtn.style.left = (patronCenterX + 30) + 'px';
+        noBtn.style.bottom = `${barBottomOffset}px`;
+        noBtn.style.transform = 'translateX(-50%)';
+        noBtn.style.zIndex = '30';
+        noBtn.style.width = '48px';
+        noBtn.style.height = '36px';
+        noBtn.style.border = 'none';
+        noBtn.style.background = '#e53935';
+        noBtn.style.color = '#fff';
+        noBtn.style.borderRadius = '12px';
+        noBtn.style.boxShadow = '0 2px 12px #0008';
+        noBtn.style.cursor = 'pointer';
+        document.body.appendChild(noBtn);
+        yesBtn.onclick = function() {
+          // Hire logic goes here
+          jobDiv.remove();
+          yesBtn.remove();
+          noBtn.remove();
+          bubble.style.zIndex = '1';
+          bubbleObj.state = 'wandering';
+          bubbleObj.isStaff = true;
+          bubbleObj.dx = (Math.random() - 0.5) * 1.2;
+          bubbleObj.dy = (Math.random() - 0.5) * 1.2;
+          orderActive = false;
+          // Change profile image to one from prost when hired
+          const prostImgSrc = prostImages[Math.floor(Math.random() * prostImages.length)];
+          const imgEl = bubble.querySelector('img');
+          if (imgEl) {
+            imgEl.src = prostImgSrc;
+          }
+          // Remove any old stat panels
+          const oldPanels = Array.from(bubble.querySelectorAll('div')).filter(d => d.className === 'stat-panel' || d.style.position === 'absolute');
+          oldPanels.forEach(p => p.remove());
+          // Add new staff stat panel with withdraw button
+          const statPanel = document.createElement('div');
+          statPanel.className = 'stat-panel';
+          statPanel.style.position = 'absolute';
+          statPanel.style.left = '50%';
+          statPanel.style.top = '-38px';
+          statPanel.style.transform = 'translateX(-50%)';
+          statPanel.style.background = 'rgba(40,40,40,0.95)';
+          statPanel.style.color = '#fff';
+          statPanel.style.fontSize = '15px';
+          statPanel.style.padding = '6px 18px';
+          statPanel.style.borderRadius = '10px';
+          statPanel.style.boxShadow = '0 2px 8px #000a';
+          statPanel.style.zIndex = '100';
+          statPanel.innerHTML = `<div style='font-size:15px;color:#ffd700;'>Cash: $${bubbleObj.patronCash}</div><div>Intoxication: ${bubbleObj.intoxication}</div>`;
+          const withdrawBtn = document.createElement('button');
+          withdrawBtn.textContent = '💸 Withdraw';
+          withdrawBtn.title = 'Withdraw all money from employee';
+          withdrawBtn.style.fontSize = '13px';
+          withdrawBtn.style.marginLeft = '8px';
+          withdrawBtn.style.padding = '2px 8px';
+          withdrawBtn.style.borderRadius = '8px';
+          withdrawBtn.style.border = 'none';
+          withdrawBtn.style.background = '#e75480';
+          withdrawBtn.style.color = '#fff';
+          withdrawBtn.style.cursor = 'pointer';
+          withdrawBtn.style.boxShadow = '0 1px 4px #0006';
+          withdrawBtn.onclick = function(e) {
+            e.stopPropagation();
+            if (bubbleObj.patronCash > 0) {
+              cash += bubbleObj.patronCash;
+              bubbleObj.patronCash = 0;
+              updateStatusBar();
+              statPanel.innerHTML = `<div style='font-size:15px;color:#ffd700;'>Cash: $0</div><div>Intoxication: ${bubbleObj.intoxication}</div>`;
+              statPanel.appendChild(withdrawBtn);
+            }
+          };
+          statPanel.appendChild(withdrawBtn);
+          bubble.appendChild(statPanel);
+          // Add staff profile to status bar if not already present
+          const statsBar = document.getElementById('status-bar');
+          let alreadyStaff = false;
+          statsBar.querySelectorAll('.staff-profile').forEach(img => {
+            if (img.src === prostImgSrc) alreadyStaff = true;
+          });
+          if (!alreadyStaff) {
+            const staffImg = document.createElement('img');
+            staffImg.src = prostImgSrc;
+            staffImg.className = 'staff-profile';
+            staffImg.style.width = '38px';
+            staffImg.style.height = '38px';
+            staffImg.style.borderRadius = '50%';
+            staffImg.style.border = '2px solid #e75480';
+            staffImg.style.marginLeft = '8px';
+            staffImg.style.boxShadow = '0 2px 8px #0008';
+            statsBar.appendChild(staffImg);
+          }
+        };
+      } else {
+        // Only show No button horizontally aligned with patron if 2 staff are hired
+        const noBtn = document.createElement('button');
+        noBtn.innerHTML = `<img src='${noIcon}' alt='No' style='width:100%;height:100%;object-fit:cover;'>`;
+        noBtn.title = 'Decline';
+        noBtn.style.position = 'absolute';
+        noBtn.style.left = patronCenterX + 'px';
+        noBtn.style.bottom = `${barBottomOffset}px`;
+        noBtn.style.transform = 'translateX(-50%)';
+        noBtn.style.zIndex = '30';
+        noBtn.style.width = '48px';
+        noBtn.style.height = '36px';
+        noBtn.style.border = 'none';
+        noBtn.style.background = '#e53935';
+        noBtn.style.color = '#fff';
+        noBtn.style.borderRadius = '12px';
+        noBtn.style.boxShadow = '0 2px 12px #0008';
+        noBtn.style.cursor = 'pointer';
+        document.body.appendChild(noBtn);
+        noBtn.onclick = function() {
+          jobDiv.remove();
+          noBtn.remove();
+          bubble.style.zIndex = '1';
+          bubbleObj.state = 'wandering';
+          bubbleObj.dx = (Math.random() - 0.5) * 1.2;
+          bubbleObj.dy = (Math.random() - 0.5) * 1.2;
+          orderActive = false;
+        };
+      }
+        }
+      }
+      animateToBar();
+    }
+    const orderMessages = [
+      "Can I get a beer?",
+      "One cold one, please!",
+      "A pint, bartender!",
+      "Beer for me!",
+      "Pour me a brew!",
+      "Hit me with your best lager!",
+      "Make it a double!",
+      "Surprise me with something strong!",
+      "I need something to forget today!",
+      "Give me the house special!",
+      "Another round, please!",
+      "Fill me up!",
+      "What's on tap tonight?",
+      "I’ll take whatever’s cold!",
+      "Let’s get this party started!",
+      "I’m celebrating, pour me a drink!",
+      "I’ll have what they’re having!",
+      "Just keep them coming!",
+      "I want to taste every beer you have!",
+      "Make it frothy!",
+      "I’m thirsty for adventure!",
+      // Gritty additions
+      "Just give me something strong, I don't care what.",
+      "Pour me a drink that’ll burn going down.",
+      "I need something to drown out this dump.",
+      "Make it quick, I’m not here to chat.",
+      "Whatever’s cheap and nasty, barkeep.",
+      "Don’t talk, just pour.",
+      "I want to forget tonight, so make it count.",
+      "Surprise me, but don’t make it sweet.",
+      "I’m not here for the company, just the booze.",
+      "If it’s cold and strong, I’ll take it."
+    ];
+    let orderActive = false;
+    let orderTimeout = null;
+    // Remove the old global serveBeerBtn button from the DOM
+    const oldServeBtn = document.getElementById('serveBeerBtn');
+    if (oldServeBtn) oldServeBtn.remove();
+function showOrder(patronImg, bubbleObj) {
+      if (orderActive) return;
+      orderActive = true;
+      // Move the patron bubble to the bar at its current x position
+      const bubble = bubbleObj.el;
+      const size = bubbleObj.size;
+      const x = bubbleObj.x;
+      let y = bubbleObj.y;
+      // Reference to stat panel by class for reliability
+      const statPanel = bubble.querySelector('.stat-panel');
+      if (statPanel) {
+        statPanel.innerHTML = `<div style='font-size:15px;color:#ffd700;'>Cash: $${bubbleObj.patronCash}</div><div>Intoxication: ${bubbleObj.intoxication}</div>`;
+        // If staff, add tiny button to take their money (only once)
+        if (bubbleObj.isStaff) {
+          let takeBtn = statPanel.querySelector('.take-cash-btn');
+          if (!takeBtn) {
+            takeBtn = document.createElement('button');
+            takeBtn.textContent = '💸';
+            takeBtn.title = 'Take staff cash';
+            takeBtn.className = 'take-cash-btn';
+            takeBtn.style.color = '#fff';
+            takeBtn.style.cursor = 'pointer';
+            takeBtn.style.boxShadow = '0 1px 4px #0006';
+            takeBtn.onclick = function(e) {
+              e.stopPropagation();
+              if (bubbleObj.patronCash > 0) {
+                cash += bubbleObj.patronCash;
+                bubbleObj.patronCash = 0;
+                updateStatusBar();
+                statPanel.innerHTML = `<div style='font-size:15px;color:#ffd700;'>Cash: $0</div><div>Intoxication: ${bubbleObj.intoxication}</div>`;
+                statPanel.appendChild(takeBtn);
+              }
+            };
+            statPanel.appendChild(takeBtn);
+          }
+        }
+      }
+ // Save previous movement so we can restore after serving/abandoning
+      bubbleObj._prevDx = bubbleObj.dx;
+      bubbleObj._prevDy = bubbleObj.dy;
+      bubbleObj.dx = 0;
+      bubbleObj.dy = 0;
+      bubbleObj.state = 'ordering';
+      bubble.style.zIndex = '20';
+      // Animate bubble down to bar's dynamic position
+      bubbleObj._prevDy = bubbleObj.dy;
+      bubbleObj.dx = 0;
+      bubbleObj.dy = 0;
+      bubbleObj.state = 'ordering';
+      bubble.style.zIndex = '20';
+      // Animate bubble down to bar's dynamic position
+      // Move bubble to just in front of the bar, not behind it
+      const bar = document.getElementById('bar');
+      let barHeight = 120;
+      if (bar) barHeight = bar.getBoundingClientRect().height;
+      const targetY = getBarY() - barHeight + 8; // 8px offset for visual gap
+      function animateToBar() {
+        if (y < targetY) {
+          y += 8;
+          if (y > targetY) y = targetY;
+          bubble.style.top = `${y}px`;
+          bubbleObj.y = y;
+          requestAnimationFrame(animateToBar);
+        } else {
+          // Show order message above the bubble
+          const orderDiv = document.createElement('div');
+          orderDiv.style.position = 'absolute';
+          orderDiv.style.left = `${x + size/2}px`;
+          orderDiv.style.top = `${y - 54}px`;
+         
+          orderDiv.style.transform = 'translateX(-50%)';
+          orderDiv.style.background = 'rgba(60,40,20,0.95)';
+          orderDiv.style.color = '#fff';
+          orderDiv.style.fontSize = '22px';
+          orderDiv.style.padding = '18px 32px';
+          orderDiv.style.borderRadius = '16px';
+          orderDiv.style.boxShadow = '0 4px 24px #000a';
+          orderDiv.style.zIndex = '21';
+          orderDiv.style.display = 'flex';
+          orderDiv.style.alignItems = 'center';
+          // Patron image
+          const msgImg = document.createElement('img');
+          msgImg.src = patronImg;
+          msgImg.alt = 'patron';
+          msgImg.style.width = '54px';
+          msgImg.style.height = '54px';
+          msgImg.style.borderRadius = '50%';
+          msgImg.style.marginRight = '18px';
+          msgImg.style.border = '2px solid #888';
+          msgImg.onerror = function() {
+            if (!msgImg.src.includes('placeholder')) {
+              msgImg.src = 'https://via.placeholder.com/64x64?text=No+Img';
+            }
+          };
+          orderDiv.appendChild(msgImg);
+          // Message
+          const msg = document.createElement('span');
+          msg.textContent = orderMessages[Math.floor(Math.random() * orderMessages.length)];
+          orderDiv.appendChild(msg);
+          document.body.appendChild(orderDiv);
+      // Create serve buttons for Beer and WaBeer
+      const bar = document.getElementById('bar');
+      let barRect = {top: window.innerHeight - 120, height: 120};
+      if (bar) barRect = bar.getBoundingClientRect();
+      // Calculate vertical center of the bar for button placement
+      const barCenterY = barRect.top + barRect.height / 2;
+      // Convert barCenterY to a bottom offset relative to viewport
+      const barBottomOffset = window.innerHeight - barCenterY - 18; // 18px offset for visual centering
+
+      const serveBtnBeer = document.createElement('button');
+      serveBtnBeer.innerHTML = '<img src="Contentimages/piss.png" alt="Serve Beer" style="width:100%;height:100%;object-fit:cover;">';
+      serveBtnBeer.title = 'Serve Beer';
+      serveBtnBeer.style.position = 'absolute';
+      serveBtnBeer.style.left = (x + size/2 - 30) + 'px';
+      serveBtnBeer.style.bottom = `${barBottomOffset}px`;
+      serveBtnBeer.style.transform = 'translateX(-50%)';
+      serveBtnBeer.style.zIndex = '30';
+      serveBtnBeer.style.width = '48px';
+      serveBtnBeer.style.height = '36px';
+      serveBtnBeer.style.border = 'none';
+      serveBtnBeer.style.background = '#c9a063';
+      serveBtnBeer.style.color = '#222';
+      serveBtnBeer.style.borderRadius = '12px';
+      serveBtnBeer.style.boxShadow = '0 2px 12px #0008';
+      serveBtnBeer.style.cursor = 'pointer';
+      document.body.appendChild(serveBtnBeer);
+
+      const serveBtnWaBeer = document.createElement('button');
+      serveBtnWaBeer.innerHTML = '<img src="Contentimages/Dirty.png" alt="Serve WaBeer" style="width:100%;height:100%;object-fit:cover;">';
+      serveBtnWaBeer.title = 'Serve WaBeer';
+      serveBtnWaBeer.style.position = 'absolute';
+      serveBtnWaBeer.style.left = (x + size/2 + 30) + 'px';
+      serveBtnWaBeer.style.bottom = `${barBottomOffset}px`;
+      serveBtnWaBeer.style.transform = 'translateX(-50%)';
+      serveBtnWaBeer.style.zIndex = '30';
+      serveBtnWaBeer.style.width = '48px';
+      serveBtnWaBeer.style.height = '36px';
+      serveBtnWaBeer.style.border = 'none';
+      serveBtnWaBeer.style.background = '#44aaff';
+      serveBtnWaBeer.style.color = '#fff';
+      serveBtnWaBeer.style.borderRadius = '12px';
+      serveBtnWaBeer.style.boxShadow = '0 2px 12px #0008';
+      serveBtnWaBeer.style.cursor = 'pointer';
+      document.body.appendChild(serveBtnWaBeer);
+
+      // Enable/disable buttons based on inventory
+      function updateServeButtons() {
+        serveBtnBeer.disabled = beer < 1;
+        serveBtnBeer.style.opacity = beer < 1 ? 0.6 : 1;
+        serveBtnWaBeer.disabled = wabeer < 1;
+        serveBtnWaBeer.style.opacity = wabeer < 1 ? 0.6 : 1;
+      }
+      updateServeButtons();
+
+      // Serve Beer button click
+      serveBtnBeer.onclick = function() {
+        if (beer < 1) return;
+        // Beer costs $4 for patron
+        if (bubbleObj.patronCash < 4) {
+          // Patron can't afford, show message and leave
+          const noCashDiv = document.createElement('div');
+          noCashDiv.textContent = "Can't afford another drink!";
+          noCashDiv.style.position = 'absolute';
+          noCashDiv.style.left = `${x + size/2}px`;
+          noCashDiv.style.top = `${bubbleObj.y - 54}px`;
+          noCashDiv.style.transform = 'translateX(-50%)';
+          noCashDiv.style.background = 'rgba(120,30,30,0.95)';
+          noCashDiv.style.color = '#fff';
+          noCashDiv.style.fontSize = '20px';
+          noCashDiv.style.padding = '10px 24px';
+          noCashDiv.style.borderRadius = '14px';
+          noCashDiv.style.boxShadow = '0 2px 12px #000a';
+          noCashDiv.style.zIndex = '100';
+          document.body.appendChild(noCashDiv);
+          setTimeout(() => {
+            noCashDiv.remove();
+            bubbleObj.state = 'leaving';
+            bubble.style.zIndex = '5';
+            bubble.style.transition = 'top 2.2s, opacity 1.2s';
+            bubble.style.top = '-80px';
+            bubble.style.opacity = '0';
+            setTimeout(() => {
+              if (bubble.parentNode) bubble.parentNode.removeChild(bubble);
+              const idx = bubbles.indexOf(bubbleObj);
+              if (idx !== -1) bubbles.splice(idx, 1);
+            if (bubbles.length < MAX_PATRONS) window.spawnPatron(getBarY, getPatronYMax, patronsDiv);
+            }, 2200);
+          }, 1800);
+          // Remove order UI
+          orderDiv.remove();
+          serveBtnBeer.remove();
+          serveBtnWaBeer.remove();
+          orderActive = false;
+          return;
+        }
+        // Move player tag horizontally to patron
+        const player = document.getElementById('player');
+        const playerRect = player.getBoundingClientRect();
+        const targetX = x + size/2 - playerRect.width/2;
+        player.style.transition = 'left 0.7s cubic-bezier(.7,.2,.3,1)';
+        player.style.left = `${targetX}px`;
+        // Add $4 to cash and decrease beer by 1
+        cash += 4;
+        beer = Math.max(0, beer - 1);
+        bubbleObj.patronCash -= 4;
+        updateStatusBar();
+        updateServeButtons();
+        // Increase intoxication
+        bubbleObj.intoxication += 1;
+        // Increase mood on drinking
+        bubbleObj.mood = Math.min(100, bubbleObj.mood + 10);
+        // Only update the existing moodBar (created on spawn)
+        if (bubbleObj.moodBar) {
+          const moodWidth = Math.max(bubbleObj.mood, 8);
+          bubbleObj.moodBar.innerHTML = `<div style='height:100%;width:${moodWidth}%;background:${bubbleObj.mood>66?'#4caf50':bubbleObj.mood>33?'#ffd700':'#e75480'};border-radius:6px;'></div>`;
+        }
+        if (statPanel) statPanel.innerHTML = `<div style='font-size:15px;color:#ffd700;'>Cash: $${bubbleObj.patronCash}</div><div>Intoxication: ${bubbleObj.intoxication}</div>`;
+        // Reset WaBeer streak
+        bubbleObj.waBeerStreak = 0;
+        // Hide order message and buttons
+        orderDiv.remove();
+        serveBtnBeer.remove();
+        serveBtnWaBeer.remove();
+        // Animate player tag back to original position after a short delay
+        setTimeout(() => {
+          player.style.left = '40px';
+          player.style.transition = 'left 0.7s cubic-bezier(.7,.2,.3,1)';
+        }, 700);
+        // Patron hangs out near a table after being served
+        bubble.style.zIndex = '1';
+        // Only use the 3 central tables in the bar area
+        const barArea = document.getElementById('bar-area');
+        const centralTables = Array.from(barArea.children).filter(table => {
+          const img = table.querySelector('img');
+          return img && img.src.includes('Table.png');
+        });
+        const visibleTables = centralTables.slice(0, 3);
+        if (visibleTables.length === 3 && Math.random() < 0.8) {
+          const table = visibleTables[Math.floor(Math.random() * visibleTables.length)];
+          const rect = table.getBoundingClientRect();
+          let targetX = rect.left + rect.width/2 + (Math.random() - 0.5) * (rect.width/2 - bubbleObj.size);
+          let targetY = rect.top + rect.height/2 + (Math.random() - 0.5) * (rect.height/2 - bubbleObj.size);
+          targetX = Math.max(0, Math.min(window.innerWidth - bubbleObj.size, targetX));
+          targetY = Math.max(0, Math.min(window.innerHeight - bubbleObj.size, targetY));
+          const startX = bubbleObj.x;
+          const startY = bubbleObj.y;
+          let steps = 40;
+          let step = 0;
+          bubbleObj.state = 'movingToTable';
+          function moveToTable() {
+            step++;
+            bubbleObj.x = startX + (targetX - startX) * (step / steps);
+            bubbleObj.y = startY + (targetY - startY) * (step / steps);
+            bubble.style.left = `${bubbleObj.x}px`;
+            bubble.style.top = `${bubbleObj.y}px`;
+            if (step < steps) {
+              requestAnimationFrame(moveToTable);
+            } else {
+              // Restore state and movement after table animation
+              bubbleObj.state = 'wandering';
+              bubbleObj.dx = (Math.random() - 0.5) * 0.5;
+              bubbleObj.dy = (Math.random() - 0.5) * 0.5;
+            }
+          }
+          moveToTable();
+        } else {
+          // Restore state and movement if not moving to table
+          bubbleObj.state = 'wandering';
+          bubbleObj.dx = (Math.random() - 0.5) * 1.2;
+          bubbleObj.dy = (Math.random() - 0.5) * 1.2;
+        }
+        // If patron can't afford another drink, make them leave after a short delay
+        if (bubbleObj.patronCash < 4 && bubbleObj.patronCash < 2) {
+          setTimeout(() => {
+            bubbleObj.state = 'leaving';
+            bubble.style.zIndex = '5';
+            bubble.style.transition = 'top 2.2s, opacity 1.2s';
+            bubble.style.top = '-80px';
+            bubble.style.opacity = '0';
+            setTimeout(() => {
+              if (bubble.parentNode) bubble.parentNode.removeChild(bubble);
+              const idx = bubbles.indexOf(bubbleObj);
+              if (idx !== -1) bubbles.splice(idx, 1);
+            if (bubbles.length < MAX_PATRONS) window.spawnPatron(getBarY, getPatronYMax, patronsDiv);
+            }, 2200);
+          }, 1800);
+        }
+        // Reset order state after serving
+        orderActive = false;
+      };
+
+      // Serve WaBeer button click
+      serveBtnWaBeer.onclick = function() {
+        if (wabeer < 1) return;
+        // WaBeer costs $2 for patron
+        if (bubbleObj.patronCash < 2) {
+          // Patron can't afford, show message and leave
+          const noCashDiv = document.createElement('div');
+          noCashDiv.textContent = "Can't afford another drink!";
+          noCashDiv.style.position = 'absolute';
+          noCashDiv.style.left = `${x + size/2}px`;
+          noCashDiv.style.top = `${bubbleObj.y - 54}px`;
+          noCashDiv.style.transform = 'translateX(-50%)';
+          noCashDiv.style.background = 'rgba(120,30,30,0.95)';
+          noCashDiv.style.color = '#fff';
+          noCashDiv.style.fontSize = '20px';
+          noCashDiv.style.padding = '10px 24px';
+          noCashDiv.style.borderRadius = '14px';
+          noCashDiv.style.boxShadow = '0 2px 12px #000a';
+          noCashDiv.style.zIndex = '100';
+          document.body.appendChild(noCashDiv);
+          setTimeout(() => {
+            noCashDiv.remove();
+            bubbleObj.state = 'leaving';
+            bubble.style.zIndex = '5';
+            bubble.style.transition = 'top 2.2s, opacity 1.2s';
+            bubble.style.top = '-80px';
+            bubble.style.opacity = '0';
+            setTimeout(() => {
+              if (bubble.parentNode) bubble.parentNode.removeChild(bubble);
+              const idx = bubbles.indexOf(bubbleObj);
+              if (idx !== -1) bubbles.splice(idx, 1);
+            if (bubbles.length < MAX_PATRONS) window.spawnPatron(getBarY, getPatronYMax, patronsDiv);
+            }, 2200);
+          }, 1800);
+          // Remove order UI
+          orderDiv.remove();
+          serveBtnBeer.remove();
+          serveBtnWaBeer.remove();
+          orderActive = false;
+          return;
+        }
+        // Move player tag horizontally to patron
+        const player = document.getElementById('player');
+        const playerRect = player.getBoundingClientRect();
+        const targetX = x + size/2 - playerRect.width/2;
+        player.style.transition = 'left 0.7s cubic-bezier(.7,.2,.3,1)';
+        player.style.left = `${targetX}px`;
+        // Add $2 to cash and decrease WaBeer by 1
+        cash += 2;
+        wabeer = Math.max(0, wabeer - 1);
+        bubbleObj.patronCash -= 2;
+        updateStatusBar();
+        updateServeButtons();
+        // Increase intoxication (less than beer)
+        bubbleObj.intoxication += 0.5;
+        // Increase mood on drinking WaBeer
+        bubbleObj.mood = Math.min(100, bubbleObj.mood + 5);
+        // Ensure moodBar exists and is updated
+        if (!bubbleObj.moodBar) {
+          bubbleObj.moodBar = document.createElement('div');
+          bubbleObj.moodBar.style.position = 'absolute';
+          bubbleObj.moodBar.style.left = '8px';
+          bubbleObj.moodBar.style.bottom = '8px';
+          bubbleObj.moodBar.style.width = '64px';
+          bubbleObj.moodBar.style.height = '14px';
+          bubbleObj.moodBar.style.background = '#222';
+          bubbleObj.moodBar.style.borderRadius = '7px';
+          bubbleObj.moodBar.style.overflow = 'hidden';
+          bubbleObj.moodBar.style.zIndex = '2';
+          bubbleObj.el.appendChild(bubbleObj.moodBar);
+        }
+        const moodWidth = Math.max(bubbleObj.mood, 8);
+        bubbleObj.moodBar.innerHTML = `<div style='height:100%;width:${moodWidth}%;background:${bubbleObj.mood>66?'#4caf50':bubbleObj.mood>33?'#ffd700':'#e75480'};border-radius:6px;'></div>`;
+        if (statPanel) statPanel.textContent = `Intoxication: ${bubbleObj.intoxication} | Cash: $${bubbleObj.patronCash}`;
+        // Track WaBeer streak
+        if (!('waBeerStreak' in bubbleObj)) bubbleObj.waBeerStreak = 0;
+        bubbleObj.waBeerStreak++;
+        // Hide order message and buttons
+        orderDiv.remove();
+        serveBtnBeer.remove();
+        serveBtnWaBeer.remove();
+        // Animate player tag back to original position after a short delay
+        setTimeout(() => {
+          player.style.left = '40px';
+          player.style.transition = 'left 0.7s cubic-bezier(.7,.2,.3,1)';
+        }, 700);
+        // Patron curses and leaves with a 25% chance, or if too many WaBeers in a row
+        const curseChance = Math.random() < 0.25;
+
+        if (curseChance || bubbleObj.waBeerStreak >= waBeerStreakLimit) {
+          // Show curse message above the patron
+          const curseDiv = document.createElement('div');
+          curseDiv.textContent = wabeerCurses[Math.floor(Math.random() * wabeerCurses.length)];
+          curseDiv.style.position = 'absolute';
+          curseDiv.style.left = `${x + size/2}px`;
+          curseDiv.style.top = `${bubbleObj.y - 54}px`;
+          curseDiv.style.transform = 'translateX(-50%)';
+          curseDiv.style.background = 'rgba(120,30,30,0.95)';
+          curseDiv.style.color = '#fff';
+          curseDiv.style.fontSize = '20px';
+          curseDiv.style.padding = '10px 24px';
+          curseDiv.style.borderRadius = '14px';
+          curseDiv.style.boxShadow = '0 2px 12px #000a';
+          curseDiv.style.zIndex = '100';
+          document.body.appendChild(curseDiv);
+          setTimeout(() => {
+            curseDiv.remove();
+          }, 1800);
+          // Patron leaves after cursing
+          setTimeout(() => {
+            bubbleObj.state = 'leaving';
+            bubble.style.zIndex = '5';
+            bubble.style.transition = 'top 2.2s, opacity 1.2s';
+            bubble.style.top = '-80px';
+            bubble.style.opacity = '0';
+            // Reset waBeerStreak so new patrons start fresh
+            bubbleObj.waBeerStreak = 0;
+            // Restore movement in case patron doesn't get removed immediately
+            bubbleObj.dx = (Math.random() - 0.5) * 1.2;
+            bubbleObj.dy = (Math.random() - 0.5) * 1.2;
+            setTimeout(() => {
+              if (bubble.parentNode) bubble.parentNode.removeChild(bubble);
+              const idx = bubbles.indexOf(bubbleObj);
+              if (idx !== -1) bubbles.splice(idx, 1);
+              if (bubbles.length < MAX_PATRONS) window.spawnPatron(getBarY, getPatronYMax, patronsDiv);
+            }, 2200);
+          }, 1800);
+        } else {
+          // Patron wanders the bar after being served
+          bubble.style.zIndex = '1';
+          bubbleObj.state = 'wandering';
+          // Restore movement
+          bubbleObj.dx = (Math.random() - 0.5) * 1.2;
+          bubbleObj.dy = (Math.random() - 0.5) * 1.2;
+        }
+        // If patron can't afford another drink, make them leave after a short delay
+        if (bubbleObj.patronCash < 2 && bubbleObj.patronCash < 4) {
+          setTimeout(() => {
+            bubbleObj.state = 'leaving';
+            bubble.style.zIndex = '5';
+            bubble.style.transition = 'top 2.2s, opacity 1.2s';
+            bubble.style.top = '-80px';
+            bubble.style.opacity = '0';
+            setTimeout(() => {
+              if (bubble.parentNode) bubble.parentNode.removeChild(bubble);
+              const idx = bubbles.indexOf(bubbleObj);
+              if (idx !== -1) bubbles.splice(idx, 1);
+              if (bubbles.length < MAX_PATRONS) spawnPatron();
+            }, 2200);
+          }, 1800);
+        }
+        // Reset order state after serving
+        orderActive = false;
+      };
+
+      // After 30s, shake the buttons if not served
+      shakeTimeout = setTimeout(() => {
+        serveBtnBeer.style.animation = 'shake 0.5s infinite';
+        serveBtnWaBeer.style.animation = 'shake 0.5s infinite';
+      }, 30000);
+      // After 35s, abandon order and go back to wandering
+      abandonTimeout = setTimeout(() => {
+        serveBtnBeer.remove();
+        serveBtnWaBeer.remove();
+        orderDiv.remove();
+        bubble.style.zIndex = '1';
+        bubbleObj.state = 'wandering';
+        // Restore movement
+        bubbleObj.dx = (Math.random() - 0.5) * 1.2;
+        bubbleObj.dy = (Math.random() - 0.5) * 1.2;
+        orderActive = false;
+      }, 35000);
+       }
+    // How many WaBeers in a row before a patron leaves
+let waBeerStreakLimit = 3; // Change this variable to adjust how many WaBeers in a row triggers leaving
+
+    // Add shake animation CSS
+    const style = document.createElement('style');
+    style.textContent = `@keyframes shake { 0% { transform: translateX(-50%) translateY(0); } 25% { transform: translateX(-50%) translateY(-4px); } 50% { transform: translateX(-50%) translateY(4px); } 75% { transform: translateX(-50%) translateY(-4px); } 100% { transform: translateX(-50%) translateY(0); } }`;
+    document.head.appendChild(style);
+    // Slow the frequency of new patrons
+    // In scheduleOrder, only allow patrons who canOrder and are wandering to order
+    function scheduleOrder() {
+      const interval = 4000 + Math.random() * 6000; // 4-10s
+      setTimeout(() => {
+        // Occasionally spawn a dog (10% chance every interval)
+        if (!dogBubble && Math.random() < 0.10) {
+          spawnDog(getBarY, getPatronYMax, patronsDiv);
+        }
+        // Occasionally spawn a Vil (10% chance every 3 minutes)
+        if (!vilBubble && Math.random() < 0.10) {
+          spawnVil(getBarY, getPatronYMax, patronsDiv);
+        }
+        // Only allow one patron to order or ask for job at a time
+        if (orderActive) {
+          scheduleOrder();
+          return;
+        }
+        // Pick a random wandering patron who is not staff and not in pink interaction
+        const candidates = bubbles.filter(b => b.state === 'wandering' && !b.isStaff && !b.inPinkInteraction);
+        if (candidates.length > 0) {
+          const b = candidates[Math.floor(Math.random() * candidates.length)];
+          // 15% chance to ask for job, otherwise order
+          if (Math.random() < 0.15) {
+            showJobRequest(b);
+          } else {
+            showOrder(b.el.querySelector('img').src, b);
+          }
+        }
+        scheduleOrder();
+      }, interval);
+    }
+    scheduleOrder();
+  </script>
+</body>
+</html>
