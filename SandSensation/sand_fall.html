@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sand Fall Simulation</title>
+    <style>
+        body {
+            margin: 0;
+            background: linear-gradient(180deg, #222 0%, #444 100%);
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 18px;
+            background: #222;
+            padding: 18px 0 10px 0;
+            border-bottom: 2px solid #333;
+            box-shadow: 0 2px 8px #0004;
+        }
+        .controls label {
+            color: #FFD700;
+            font-weight: 500;
+            font-size: 1rem;
+            margin-right: 8px;
+        }
+        .controls input, .controls select {
+            background: #333;
+            color: #FFD700;
+            border: 1px solid #555;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 1rem;
+        }
+        .controls button {
+            background: #FFD700;
+            color: #222;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 18px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 2px 6px #0002;
+            transition: background 0.2s;
+        }
+        .controls button:hover {
+            background: #FFC300;
+        }
+        #pixelCount {
+            color: #FFD700;
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-left: 12px;
+        }
+        canvas {
+            display: block;
+            margin: 24px auto 0 auto;
+            background: #333;
+            border-radius: 8px;
+            box-shadow: 0 4px 24px #0006;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <label>Sand Color: <input type="color" id="sandColorPicker" value="#FFD700"></label>
+        <label>Pixel Size: <input type="number" id="pixelSize" min="1" max="100" value="1" style="width:50px;"></label>
+        <label>Frequency: <input type="number" id="frequency" min="1" max="50" value="5" style="width:50px;"></label>
+        <label>Speed: <input type="number" id="speed" min="1" max="20" value="1" style="width:50px;"></label>
+        <button id="flowButton">Flow: On</button>
+        <label>Flow Points:
+            <select id="flowPoints">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+            </select>
+        </label>
+        <label>Bomb Timer (seconds): <input type="number" id="bombTimer" min="0.1" max="5" step="0.1" value="0.7" style="width:60px;"></label>
+        <label>Bomb Radius: <input type="number" id="bombRadius" min="5" max="100" value="30" style="width:60px;"></label>
+        <label>Play Area Size: <input type="number" id="playAreaSize" min="100" max="1200" value="700" style="width:70px;"></label>
+        <span id="pixelCount">Pixels: 0</span>
+        <button id="bombButton">Drop Bomb</button>
+        <button id="rotateButton">Rotate 90°</button>
+        <button id="wormButton">Spawn Worm</button>
+    </div>
+    <canvas id="sandCanvas" width="700" height="700"></canvas>
+    <script>
+        const canvas = document.getElementById('sandCanvas');
+        const ctx = canvas.getContext('2d');
+        let playAreaSize = parseInt(document.getElementById('playAreaSize').value);
+        let width = playAreaSize;
+        let height = playAreaSize;
+        canvas.width = width;
+        canvas.height = height;
+        let sand = [];
+let sandColor = document.getElementById('sandColorPicker').value;
+let pixelSize = parseInt(document.getElementById('pixelSize').value);
+let frequency = parseInt(document.getElementById('frequency').value);
+let speed = parseInt(document.getElementById('speed').value);
+let flowOn = true;
+let flowPointCount = parseInt(document.getElementById('flowPoints').value);
+let bombTimer = parseFloat(document.getElementById('bombTimer').value);
+let bombRadius = parseInt(document.getElementById('bombRadius').value);
+let sources = Array.from({ length: flowPointCount }, (_, i) => ({
+    x: Math.floor(width / (flowPointCount + 1) * (i + 1)),
+    y: 0
+}));
+let draggingIndex = null;
+let bombs = [];
+let worms = [];
+// Worm logic
+function spawnWorm() {
+    // Find a random sand grain to spawn on
+    if (sand.length === 0) return;
+    const idx = Math.floor(Math.random() * sand.length);
+    const startX = sand[idx].x;
+    const startY = sand[idx].y;
+    // Each segment: {x, y, vx, vy}
+    const segments = [];
+    for (let i = 0; i < 10; i++) {
+        segments.push({
+            x: startX,
+            y: startY,
+            vx: 0,
+            vy: 0
+        });
+    }
+    worms.push({
+        segments,
+        swimming: true,
+        jumping: false,
+        gravity: 0,
+        jumpTimer: 0,
+        splash: false
+    });
+}
+document.getElementById('wormButton').addEventListener('click', spawnWorm);
+
+function updateWorms(elapsed) {
+    for (const worm of worms) {
+        // Swimming phase (move anywhere there is sand, faster)
+        if (worm.swimming) {
+            let head = worm.segments[0];
+            // Persistent random walk for head
+            if (!worm.dir || Math.random() < 0.02) {
+                // Occasionally pick a new direction
+                worm.dir = {
+                    angle: Math.random() * Math.PI * 2,
+                    speed: 3 + Math.random() * 2
+                };
+            }
+            let dx = Math.cos(worm.dir.angle) * worm.dir.speed;
+            let dy = Math.sin(worm.dir.angle) * worm.dir.speed * 0.7;
+            let nx = head.x + dx;
+            let ny = head.y + dy;
+            let hitWall = false;
+            if (nx < 0 || nx > width - 1) {
+                worm.dir.angle = Math.PI - worm.dir.angle;
+                hitWall = true;
+            }
+            if (ny < 0 || ny > height - 1) {
+                worm.dir.angle = -worm.dir.angle;
+                hitWall = true;
+            }
+            // Clamp after bounce
+            nx = Math.max(0, Math.min(width - 1, head.x + Math.cos(worm.dir.angle) * worm.dir.speed));
+            ny = Math.max(0, Math.min(height - 1, head.y + Math.sin(worm.dir.angle) * worm.dir.speed * 0.7));
+            // Only move if destination is sand
+            if (grid[Math.round(ny)][Math.round(nx)] === 1) {
+                head.x = nx;
+                head.y = ny;
+            } else if (!hitWall) {
+                // If blocked by sand, pick a new direction
+                worm.dir = {
+                    angle: Math.random() * Math.PI * 2,
+                    speed: 3 + Math.random() * 2
+                };
+            }
+            // Eat sand at each segment's position
+            for (let i = 0; i < worm.segments.length; i++) {
+                let seg = worm.segments[i];
+                let sx = Math.round(seg.x);
+                let sy = Math.round(seg.y);
+                if (sx >= 0 && sx < width && sy >= 0 && sy < height && grid[sy][sx] === 1) {
+                    // Remove sand from grid and sand array
+                    grid[sy][sx] = 0;
+                    for (let j = sand.length - 1; j >= 0; j--) {
+                        if (sand[j].x === sx && sand[j].y === sy) {
+                            sand.splice(j, 1);
+                            break;
+                        }
+                    }
+                }
+            }
+            // If head reaches the topmost sand pixel, jump out
+            let topSandY = height;
+            for (let y = 0; y < height; y++) {
+                if (grid[y][Math.round(head.x)] === 1) {
+                    topSandY = y;
+                    break;
+                }
+            }
+            if (Math.round(head.y) <= topSandY) {
+                worm.swimming = false;
+                worm.jumping = true;
+                worm.gravity = 0.2;
+                worm.jumpTimer = 0;
+                for (let i = 0; i < worm.segments.length; i++) {
+                    worm.segments[i].vy = -7 - i * 0.3;
+                }
+            }
+            // Train: each segment follows the previous
+            for (let i = 1; i < worm.segments.length; i++) {
+                let prev = worm.segments[i - 1];
+                let seg = worm.segments[i];
+                let dx = prev.x - seg.x;
+                let dy = prev.y - seg.y;
+                let dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist > 6) {
+                    seg.x += dx * 0.45;
+                    seg.y += dy * 0.45;
+                }
+                // Only move if inside sand
+                if (grid[Math.round(seg.y)][Math.round(seg.x)] !== 1) {
+                    seg.x -= dx * 0.45;
+                    seg.y -= dy * 0.45;
+                }
+            }
+        } else if (worm.jumping) {
+            // Jumping out of sand
+            for (let i = 0; i < worm.segments.length; i++) {
+                let seg = worm.segments[i];
+                seg.x += seg.vx || 0;
+                seg.y += seg.vy || 0;
+                seg.vy = (seg.vy || 0) + worm.gravity;
+            }
+            // Do NOT eat sand during jump phase; this prevents removing the sand pixel needed for reentry
+            // ...existing code...
+            // Fluid train-following during jump
+            for (let i = 1; i < worm.segments.length; i++) {
+                let prev = worm.segments[i - 1];
+                let seg = worm.segments[i];
+                let dx = prev.x - seg.x;
+                let dy = prev.y - seg.y;
+                let dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist > 6) {
+                    seg.x += dx * 0.45;
+                    seg.y += dy * 0.45;
+                }
+            }
+            worm.jumpTimer += elapsed;
+            // If head falls back into sand
+            let hx = Math.round(worm.segments[0].x);
+            let hy = Math.round(worm.segments[0].y);
+            if (hy >= 10 && hy < height && hx >= 0 && hx < width && grid[hy][hx] === 1) {
+                worm.jumping = false;
+                // Always splash, then return to swimming
+                // Remove sand in a large radius around the worm's head to create a crater
+                const craterRadius = 24;
+                const headX = Math.round(worm.segments[0].x);
+                const headY = Math.round(worm.segments[0].y);
+                for (let y = Math.max(0, headY - craterRadius); y <= Math.min(height - 1, headY + craterRadius); y++) {
+                    for (let x = Math.max(0, headX - craterRadius); x <= Math.min(width - 1, headX + craterRadius); x++) {
+                        const dx = x - headX;
+                        const dy = y - headY;
+                        if (dx * dx + dy * dy <= craterRadius * craterRadius) {
+                            if (grid[y][x] === 1) {
+                                grid[y][x] = 0;
+                                for (let i = sand.length - 1; i >= 0; i--) {
+                                    if (sand[i].x === x && sand[i].y === y) {
+                                        sand.splice(i, 1);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                // Reset positions and velocities so all segments follow the head
+                const head = worm.segments[0];
+                // Find nearest sand pixel to teleport worm after crater
+                let nearestSand = null;
+                let minDist = Infinity;
+                for (let y = Math.max(0, headY - 24); y <= Math.min(height - 1, headY + 24); y++) {
+                    for (let x = Math.max(0, headX - 24); x <= Math.min(width - 1, headX + 24); x++) {
+                        if (grid[y][x] === 1) {
+                            let dist = Math.abs(x - headX) + Math.abs(y - headY);
+                            if (dist < minDist) {
+                                minDist = dist;
+                                nearestSand = {x, y};
+                            }
+                        }
+                    }
+                }
+                if (nearestSand) {
+                    head.x = nearestSand.x;
+                    head.y = nearestSand.y;
+                } else {
+                    // If no sand found, warp to any sand in the play area
+                    let foundSand = null;
+                    let minDist = Infinity;
+                    for (let y = 0; y < height; y++) {
+                        for (let x = 0; x < width; x++) {
+                            if (grid[y][x] === 1) {
+                                let dist = Math.abs(x - head.x) + Math.abs(y - head.y);
+                                if (dist < minDist) {
+                                    minDist = dist;
+                                    foundSand = {x, y};
+                                }
+                            }
+                        }
+                    }
+                    if (foundSand) {
+                        head.x = foundSand.x;
+                        head.y = foundSand.y;
+                        for (let i = 1; i < worm.segments.length; i++) {
+                            worm.segments[i].x = foundSand.x;
+                            worm.segments[i].y = foundSand.y;
+                            worm.segments[i].vx = 0;
+                            worm.segments[i].vy = 0;
+                        }
+                        worm.segments[0].vx = 0;
+                        worm.segments[0].vy = 0;
+                        worm.justSplashed = true;
+                        worm.dir = {
+                            angle: Math.random() * Math.PI * 2,
+                            speed: 3 + Math.random() * 2
+                        };
+                        worm.swimming = true;
+                        worm.splash = false;
+                    } else {
+                        // No sand anywhere, destroy worm
+                        worms.splice(worms.indexOf(worm), 1);
+                        continue;
+                    }
+                }
+                for (let i = 1; i < worm.segments.length; i++) {
+                    worm.segments[i].x = head.x;
+                    worm.segments[i].y = head.y;
+                    worm.segments[i].vx = 0;
+                    worm.segments[i].vy = 0;
+                }
+                worm.segments[0].vx = 0;
+                worm.segments[0].vy = 0;
+                // Prevent eating sand on this frame after splash
+                worm.justSplashed = true;
+                // Reset worm direction to a new random direction so it doesn't keep falling
+                worm.dir = {
+                    angle: Math.random() * Math.PI * 2,
+                    speed: 3 + Math.random() * 2
+                };
+                worm.swimming = true;
+                worm.splash = false;
+            }
+        } else if (worm.dormant) {
+            // Dormant: do nothing until head meets sand
+            let hx = Math.round(worm.segments[0].x);
+            let hy = Math.round(worm.segments[0].y);
+            if (hy >= 0 && hy < height && hx >= 0 && hx < width && grid[hy][hx] === 1) {
+                worm.dormant = false;
+                worm.swimming = true;
+                // Reset worm direction to a new random direction
+                worm.dir = {
+                    angle: Math.random() * Math.PI * 2,
+                    speed: 3 + Math.random() * 2
+                };
+            }
+        }
+    }
+    // Remove worms that have left the play area
+    for (let i = worms.length - 1; i >= 0; i--) {
+        let head = worms[i].segments[0];
+        if (head.y > height + 20 || head.x < -20 || head.x > width + 20) {
+            worms.splice(i, 1);
+        }
+    }
+}
+
+document.getElementById('pixelSize').addEventListener('input', function(e) {
+    pixelSize = Math.max(1, Math.min(100, parseInt(e.target.value)));
+});
+document.getElementById('sandColorPicker').addEventListener('input', function(e) {
+    sandColor = e.target.value;
+});
+document.getElementById('frequency').addEventListener('input', function(e) {
+    frequency = Math.max(1, Math.min(50, parseInt(e.target.value)));
+});
+document.getElementById('speed').addEventListener('input', function(e) {
+    speed = Math.max(1, Math.min(20, parseInt(e.target.value)));
+});
+document.getElementById('flowButton').addEventListener('click', function() {
+    flowOn = !flowOn;
+    this.textContent = 'Flow: ' + (flowOn ? 'On' : 'Off');
+});
+document.getElementById('flowPoints').addEventListener('change', function(e) {
+    flowPointCount = parseInt(e.target.value);
+    sources = Array.from({ length: flowPointCount }, (_, i) => ({
+        x: Math.floor(width / (flowPointCount + 1) * (i + 1)),
+        y: 0
+    }));
+});
+function setBombTimer(e) {
+    bombTimer = Math.max(0.1, Math.min(5, parseFloat(e.target.value)));
+}
+document.getElementById('bombTimer').addEventListener('input', setBombTimer);
+document.getElementById('bombTimer').addEventListener('change', setBombTimer);
+document.getElementById('playAreaSize').addEventListener('input', function(e) {
+    playAreaSize = Math.max(100, Math.min(1200, parseInt(e.target.value)));
+    width = playAreaSize;
+    height = playAreaSize;
+    canvas.width = width;
+    canvas.height = height;
+    // Clamp sources to new area
+    sources = sources.map(src => ({
+        x: Math.max(0, Math.min(width - 1, src.x)),
+        y: Math.max(0, Math.min(height - 1, src.y))
+    }));
+    // Remove sand and bombs outside new area
+    sand = sand.filter(grain => grain.x >= 0 && grain.x < width && grain.y >= 0 && grain.y < height);
+    bombs = bombs.filter(bomb => bomb.x >= 0 && bomb.x < width && bomb.y >= 0 && bomb.y < height);
+    // Rebuild grid
+    grid = Array.from({ length: height }, () => Array(width).fill(0));
+    for (const grain of sand) {
+        grid[grain.y][grain.x] = 1;
+    }
+});
+
+let grid = Array.from({ length: height }, () => Array(width).fill(0));
+// Rotate simulation 90 degrees clockwise
+function rotate90() {
+    // Rotate grid
+    const newGrid = Array.from({ length: width }, () => Array(height).fill(0));
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            newGrid[x][height - 1 - y] = grid[y][x];
+        }
+    }
+    // Rotate sand positions
+    sand = sand.map(grain => ({
+        x: Math.max(0, Math.min(height - 1, height - 1 - grain.y)),
+        y: Math.max(0, Math.min(width - 1, grain.x)),
+        color: grain.color
+    }));
+    // Rotate bomb positions
+    bombs = bombs.map(bomb => ({
+        x: Math.max(0, Math.min(height - 1, height - 1 - bomb.y)),
+        y: Math.max(0, Math.min(width - 1, bomb.x)),
+        timer: bomb.timer
+    }));
+    // Do not move sources on rotation
+    // Swap width and height
+    const oldWidth = width;
+    const oldHeight = height;
+    canvas.width = oldHeight;
+    canvas.height = oldWidth;
+    width = canvas.width;
+    height = canvas.height;
+    // Rebuild grid
+    grid = Array.from({ length: height }, () => Array(width).fill(0));
+    for (const grain of sand) {
+        if (grain.y >= 0 && grain.y < height && grain.x >= 0 && grain.x < width) {
+            grid[grain.y][grain.x] = 1;
+        }
+    }
+}
+
+document.getElementById('rotateButton').addEventListener('click', rotate90);
+
+function explodeSand(cx, cy, radius = bombRadius) {
+    // Remove sand grains within the radius
+    for (let i = sand.length - 1; i >= 0; i--) {
+        const grain = sand[i];
+        const dx = grain.x - cx;
+        const dy = grain.y - cy;
+        if (dx * dx + dy * dy <= radius * radius) {
+            grid[grain.y][grain.x] = 0;
+            sand.splice(i, 1);
+        }
+    }
+}
+
+document.getElementById('bombButton').addEventListener('click', function() {
+    // Always get the latest value from the input field
+    const bombTimerInput = document.getElementById('bombTimer');
+    const timerValue = Math.max(0.1, Math.min(5, parseFloat(bombTimerInput.value)));
+    bombTimer = timerValue;
+    for (const src of sources) {
+        bombs.push({ x: src.x, y: src.y, timer: bombTimer * 1000 }); // convert seconds to ms
+    }
+});
+
+// Sand source position
+let sourceX = Math.floor(width / 2);
+let sourceY = 0;
+let isDragging = false;
+
+canvas.addEventListener('mousedown', function(e) {
+    const rect = canvas.getBoundingClientRect();
+    const mx = Math.floor(e.clientX - rect.left);
+    const my = Math.floor(e.clientY - rect.top);
+    for (let i = 0; i < sources.length; i++) {
+        const src = sources[i];
+        if (Math.abs(mx - src.x) < 10 && Math.abs(my - src.y) < 10) {
+            draggingIndex = i;
+            break;
+        }
+    }
+});
+document.addEventListener('mouseup', function(e) {
+    draggingIndex = null;
+});
+canvas.addEventListener('mousemove', function(e) {
+    if (draggingIndex !== null) {
+        const rect = canvas.getBoundingClientRect();
+        sources[draggingIndex].x = Math.max(0, Math.min(width - 1, Math.floor(e.clientX - rect.left)));
+        sources[draggingIndex].y = Math.max(0, Math.min(height - 1, Math.floor(e.clientY - rect.top)));
+    }
+});
+
+function addSandGrain() {
+    for (const src of sources) {
+        for (let dx = 0; dx < pixelSize; dx++) {
+            for (let dy = 0; dy < pixelSize; dy++) {
+                const x = Math.max(0, Math.min(width - 1, src.x + dx));
+                const y = Math.max(0, Math.min(height - 1, src.y + dy));
+                if (grid[y][x] === 0) {
+                    sand.push({ x, y, color: sandColor });
+                    grid[y][x] = 1;
+                }
+            }
+        }
+    }
+}
+
+        function updateSand() {
+            for (let i = sand.length - 1; i >= 0; i--) {
+                let { x, y } = sand[i];
+                if (y + 1 < height && grid[y + 1][x] === 0) {
+                    grid[y][x] = 0;
+                    grid[y + 1][x] = 1;
+                    sand[i].y++;
+                } else if (y + 1 < height) {
+                    // Try to move left or right
+                    let moved = false;
+                    if (x > 0 && grid[y + 1][x - 1] === 0) {
+                        grid[y][x] = 0;
+                        grid[y + 1][x - 1] = 1;
+                        sand[i].x--;
+                        sand[i].y++;
+                        moved = true;
+                    } else if (x < width - 1 && grid[y + 1][x + 1] === 0) {
+                        grid[y][x] = 0;
+                        grid[y + 1][x + 1] = 1;
+                        sand[i].x++;
+                        sand[i].y++;
+                        moved = true;
+                    }
+                    if (!moved) {
+                        // Stuck
+                    }
+                }
+            }
+        }
+
+function drawSand() {
+    ctx.clearRect(0, 0, width, height);
+    for (const grain of sand) {
+        ctx.fillStyle = grain.color;
+        ctx.fillRect(grain.x, grain.y, pixelSize, pixelSize);
+    }
+    ctx.fillStyle = 'red';
+    for (const src of sources) {
+        ctx.fillRect(src.x, src.y, pixelSize, pixelSize);
+    }
+}
+
+function updateBombs(elapsed) {
+    // Mark bomb positions in a bombGrid
+    const bombGrid = Array.from({ length: height }, () => Array(width).fill(0));
+    for (const bomb of bombs) {
+        bombGrid[bomb.y][bomb.x] = 1;
+    }
+    for (let i = bombs.length - 1; i >= 0; i--) {
+        let bx = bombs[i].x;
+        let by = bombs[i].y;
+        // Bomb falls like sand, but treat sand as solid
+        if (by + 1 < height && grid[by + 1][bx] === 0 && bombGrid[by + 1][bx] === 0) {
+            bombGrid[by][bx] = 0;
+            bombs[i].y++;
+            bombGrid[bombs[i].y][bx] = 1;
+        } else if (by + 1 < height) {
+            let moved = false;
+            if (bx > 0 && grid[by + 1][bx - 1] === 0 && bombGrid[by + 1][bx - 1] === 0) {
+                bombGrid[by][bx] = 0;
+                bombs[i].x--;
+                bombs[i].y++;
+                bombGrid[bombs[i].y][bombs[i].x] = 1;
+                moved = true;
+            } else if (bx < width - 1 && grid[by + 1][bx + 1] === 0 && bombGrid[by + 1][bx + 1] === 0) {
+                bombGrid[by][bx] = 0;
+                bombs[i].x++;
+                bombs[i].y++;
+                bombGrid[bombs[i].y][bombs[i].x] = 1;
+                moved = true;
+            }
+        }
+        bombs[i].timer -= elapsed;
+        if (bombs[i].timer <= 0) {
+            explodeSand(bombs[i].x, bombs[i].y, 30);
+            bombs.splice(i, 1);
+        }
+    }
+}
+
+let lastFrameTime = performance.now();
+function loop() {
+    const now = performance.now();
+    const elapsed = now - lastFrameTime;
+    lastFrameTime = now;
+    if (flowOn) {
+        for (let i = 0; i < frequency; i++) addSandGrain();
+    }
+    for (let s = 0; s < speed; s++) {
+        updateSand();
+        updateBombs(elapsed);
+    }
+    updateWorms(elapsed);
+    drawSand();
+    // Draw worms
+    ctx.save();
+    for (const worm of worms) {
+        // Draw worm body as a gradient from brown to white
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let i = 0; i < worm.segments.length; i++) {
+            let seg = worm.segments[i];
+            if (i === 0) {
+                ctx.moveTo(seg.x + pixelSize / 2, seg.y + pixelSize / 2);
+            } else {
+                ctx.lineTo(seg.x + pixelSize / 2, seg.y + pixelSize / 2);
+            }
+        }
+        // Stroke with gradient color (approximate by using middle segment color)
+        let midIdx = Math.floor(worm.segments.length / 2);
+        let midColor = getWormSegmentColor(midIdx, worm.segments.length);
+        ctx.strokeStyle = midColor;
+        ctx.stroke();
+        for (let i = 0; i < worm.segments.length; i++) {
+            let seg = worm.segments[i];
+            ctx.beginPath();
+            ctx.arc(seg.x + pixelSize / 2, seg.y + pixelSize / 2, 4, 0, 2 * Math.PI);
+            ctx.fillStyle = getWormSegmentColor(i, worm.segments.length);
+            ctx.fill();
+        }
+    }
+    // Helper for worm gradient color
+    function getWormSegmentColor(idx, total) {
+        // Brown: #8B4513, White: #FFFFFF
+        let t = idx / (total - 1);
+        let r1 = 0x8B, g1 = 0x45, b1 = 0x13;
+        let r2 = 0xFF, g2 = 0xFF, b2 = 0xFF;
+        let r = Math.round(r1 + (r2 - r1) * t);
+        let g = Math.round(g1 + (g2 - g1) * t);
+        let b = Math.round(b1 + (b2 - b1) * t);
+        return `rgb(${r},${g},${b})`;
+    }
+    ctx.restore();
+    // Draw bomb indicators
+    ctx.save();
+    ctx.globalAlpha = 0.7;
+    for (const bomb of bombs) {
+        ctx.beginPath();
+        ctx.arc(bomb.x + pixelSize / 2, bomb.y + pixelSize / 2, bombRadius, 0, 2 * Math.PI);
+        ctx.fillStyle = 'orange';
+        ctx.fill();
+    }
+    ctx.globalAlpha = 1.0;
+    ctx.restore();
+    // Update pixel counter
+    document.getElementById('pixelCount').textContent = 'Pixels: ' + sand.length;
+    requestAnimationFrame(loop);
+}
+
+loop();
+    </script>
+</body>
+</html>
