@@ -638,6 +638,8 @@
         <div class="hit-counter" id="hit-counter">
             <span class="counter-label">Page Hits</span>
             <span class="counter-value" id="hit-count">0</span>
+            <button id="refresh-hit" style="margin-top:4px;padding:2px 8px;font-size:0.8rem;border-radius:8px;border:none;background:#145c2a;color:#fff;cursor:pointer;">↻</button>
+            <span id="hit-error" style="display:none;color:#ff4444;font-size:0.7rem;margin-top:2px;"></span>
         </div>
 
         <!-- 3-Row Grid Layout -->
@@ -701,6 +703,14 @@
                   }(document,'script','weatherwidget-io-js');
                 </script>
                 <a href="https://forecast7.com/en/38d04n84d50/lexington/" target="_blank" class="widget-button">View Forecast</a>
+              </article>
+              <article class="widget" style="min-height:320px;" aria-label="Calfagotchi">
+                <h2>
+                  <img src="../Images/emrald.png" alt="Calfagotchi" class="widget-icon">
+                  Calfagotchi
+                </h2>
+                <iframe src="../Calf/index.html" title="Calfagotchi Virtual Pet" style="height:300px;border-radius:14px;border:2px solid #1ec16b;box-shadow:0 4px 24px 0 #1ec16b40;" sandbox="allow-scripts allow-same-origin"></iframe>
+                <a href="../Calf/index.html" target="_blank" class="widget-button" style="margin-top:0;font-size:1.1rem;">Open Full Calfagotchi</a>
               </article>
             </div>
 
@@ -780,23 +790,25 @@
                 'Content-Type': 'application/json'
             };
             const pagePath = 'stonerhome';
+            const hitCountEl = document.getElementById('hit-count');
+            const hitErrorEl = document.getElementById('hit-error');
+            const refreshBtn = document.getElementById('refresh-hit');
 
             async function recordHit() {
+                hitErrorEl.style.display = 'none';
+                hitErrorEl.textContent = '';
                 try {
                     // Get existing record
                     const getResponse = await fetch(`${apiUrl}/rest/v1/page_hits?page_path=eq.${pagePath}&select=id,hit_count`, {
                         method: 'GET',
                         headers: headers
                     });
-                    
                     if (getResponse.ok) {
                         const existingData = await getResponse.json();
-                        
                         if (existingData.length > 0) {
-                            // Update existing
+                            // Try to update existing
                             const record = existingData[0];
                             const newCount = record.hit_count + 1;
-                            
                             const updateResponse = await fetch(`${apiUrl}/rest/v1/page_hits?id=eq.${record.id}`, {
                                 method: 'PATCH',
                                 headers: headers,
@@ -806,10 +818,12 @@
                                     updated_at: new Date().toISOString()
                                 })
                             });
-                            
                             if (updateResponse.ok) {
-                                document.getElementById('hit-count').textContent = newCount.toLocaleString();
-                                return;
+                                hitCountEl.textContent = newCount.toLocaleString();
+                            } else {
+                                hitCountEl.textContent = record.hit_count.toLocaleString();
+                                hitErrorEl.textContent = 'Could not update hit count.';
+                                hitErrorEl.style.display = 'block';
                             }
                         } else {
                             // Create new record
@@ -824,21 +838,31 @@
                                     last_ip_hash: 'browser-' + Math.random().toString(36).substring(7)
                                 })
                             });
-                            
                             if (createResponse.ok) {
-                                document.getElementById('hit-count').textContent = '1';
-                                return;
+                                hitCountEl.textContent = '1';
+                            } else {
+                                hitCountEl.textContent = '---';
+                                hitErrorEl.textContent = 'Could not create hit record.';
+                                hitErrorEl.style.display = 'block';
                             }
                         }
+                    } else {
+                        hitCountEl.textContent = '---';
+                        hitErrorEl.textContent = 'API error.';
+                        hitErrorEl.style.display = 'block';
                     }
-                    throw new Error('Failed to record hit');
                 } catch (error) {
                     console.error('Hit counter error:', error);
-                    document.getElementById('hit-count').textContent = '---';
+                    hitCountEl.textContent = '---';
+                    hitErrorEl.textContent = 'Network or server error.';
+                    hitErrorEl.style.display = 'block';
                 }
             }
-
-            // Initialize on page load
+            // Manual refresh button
+            refreshBtn.onclick = function() {
+                recordHit();
+            };
+            // Always show the latest count on page load
             recordHit();
         })();
     </script>
