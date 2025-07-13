@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sounds of the Appalachian</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Pacifico&family=Great+Vibes&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #660000 100%);
+            margin: 0;
+            padding: 0;
+            color: #fff;
+        }
+        header {
+            background: #b30000;
+            color: #fff;
+            padding: 2rem 0 1rem 0;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+        }
+        h1 {
+            margin: 0;
+            font-size: 3rem;
+            letter-spacing: 2px;
+            color: #fff;
+            text-shadow: 2px 2px 12px #b30000, 0 0 8px #000;
+            font-family: 'Pacifico', 'Great Vibes', cursive, sans-serif;
+        }
+        header p {
+            font-size: 1.3rem;
+            color: #ffe5e5;
+            font-family: 'Great Vibes', 'Pacifico', cursive, sans-serif;
+            margin-top: 0.7rem;
+            margin-bottom: 0;
+            text-shadow: 1px 1px 8px #b30000, 0 0 4px #000;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 2.5rem auto;
+            padding: 0 1.5rem;
+            background: rgba(34, 0, 0, 0.7);
+            border-radius: 18px;
+            box-shadow: 0 4px 32px rgba(179,0,0,0.25);
+        }
+        .video-card {
+            background: linear-gradient(135deg, #2d0000 0%, #222 100%);
+            border-radius: 16px;
+            box-shadow: 0 4px 24px rgba(179,0,0,0.22);
+            margin-bottom: 2.5rem;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            border: 2.5px solid #b30000;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .video-card:hover {
+            transform: scale(1.02);
+            box-shadow: 0 8px 40px #b30000cc;
+        }
+        .video-embed {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: #000;
+            border-bottom: 2px solid #b30000;
+        }
+        .video-content {
+            padding: 1.5rem 2rem;
+        }
+        .video-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: #ff3333;
+            text-shadow: 2px 2px 8px #b30000, 0 0 4px #000;
+            font-family: 'Pacifico', 'Great Vibes', cursive, sans-serif;
+        }
+        .video-desc {
+            font-size: 1.08rem;
+            color: #fff;
+            opacity: 0.92;
+            font-family: 'Roboto', Arial, sans-serif;
+            margin-bottom: 0.2rem;
+        }
+        @media (max-width: 600px) {
+            h1 { font-size: 2rem; }
+            header p { font-size: 1.1rem; }
+            .container { padding: 0 0.5rem; }
+            .video-content { padding: 1rem; }
+        }
+        /* Particle effect styles */
+        #particles-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 0;
+        }
+        body, .container, header {
+            position: relative;
+            z-index: 1;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="particles-bg"></canvas>
+    <header>
+        <h1>Sounds of the Appalachian</h1>
+        <p>Experience the natural soundscape of the Appalachian region—frogs calling from misty ponds, gentle rain on leaves, crickets singing at dusk, and owls echoing through the night. These videos capture the wild beauty and peaceful atmosphere of Appalachian nature.</p>
+    </header>
+    <div class="container">
+        <div class="video-card">
+            <div class="video-embed">
+                <iframe width="100%" height="100%" src="https://www.youtube.com/embed/Q90izcEaZrc" title="Appalachian Music: A Journey" frameborder="0" allowfullscreen></iframe>
+            </div>
+            <div class="video-content">
+                <div class="video-title" style="text-align:center;">Volume 1</div>
+                <div class="video-desc" style="text-align:center;">Listen to the chorus of frogs echoing across Appalachian ponds and wetlands, a signature sound of spring and summer nights.</div>
+            </div>
+        </div>
+        <div class="video-card">
+            <div class="video-embed">
+                <iframe width="100%" height="100%" src="https://www.youtube.com/embed/C1b8e2fckL0?start=1225" title="Old-Time Fiddle Tunes" frameborder="0" allowfullscreen></iframe>
+            </div>
+            <div class="video-content">
+                <div class="video-title" style="text-align:center;">Volume 2</div>
+                <div class="video-desc" style="text-align:center;">Experience the gentle and soothing sound of rain falling on Appalachian leaves, creating a peaceful natural ambiance.</div>
+            </div>
+        </div>
+        <div class="video-card">
+            <div class="video-embed">
+                <iframe width="100%" height="100%" src="https://www.youtube.com/embed/xtmSk03UVn4" title="Mountain Ballads and Stories" frameborder="0" allowfullscreen></iframe>
+            </div>
+            <div class="video-content">
+                <div class="video-title" style="text-align:center;">Volume 3</div>
+                <div class="video-desc" style="text-align:center;">Hear the rhythmic chirping of crickets as dusk settles over the Appalachian hills, a calming soundscape for evening relaxation.</div>
+            </div>
+        </div>
+        <div class="video-card">
+            <div class="video-embed">
+                <iframe width="100%" height="100%" src="https://www.youtube.com/embed/dEHHTsTfBxw?start=40" title="Banjo Traditions" frameborder="0" allowfullscreen></iframe>
+            </div>
+            <div class="video-content">
+                <div class="video-title" style="text-align:center;">Volume 4</div>
+                <div class="video-desc" style="text-align:center;">Enjoy the haunting calls of owls echoing through Appalachian forests, adding mystery and beauty to the nighttime landscape.</div>
+            </div>
+        </div>
+        <div class="video-card">
+            <div class="video-embed">
+                <iframe width="100%" height="100%" src="https://www.youtube.com/embed/pBNeIg5RZ-E" title="Bluegrass Roots" frameborder="0" allowfullscreen></iframe>
+            </div>
+            <div class="video-content">
+                <div class="video-title" style="text-align:center;">Volume 5</div>
+                <div class="video-desc" style="text-align:center;">Relax to the gentle babble of mountain streams winding through the Appalachian valleys, a refreshing and tranquil sound.</div>
+            </div>
+        </div>
+        <div class="video-card">
+            <div class="video-embed">
+                <iframe width="100%" height="100%" src="https://www.youtube.com/embed/eGnvVrssmkw" title="Folk Songs of the Appalachians" frameborder="0" allowfullscreen></iframe>
+            </div>
+            <div class="video-content">
+                <div class="video-title" style="text-align:center;">Volume 6</div>
+                <div class="video-desc" style="text-align:center;">Immerse yourself in the full soundscape of Appalachian forests—birds, wind, insects, and distant wildlife—capturing the region's natural spirit.</div>
+            </div>
+        </div>
+    </div>
+</body>
+<script>
+// Simple sleep-themed particle effect
+const canvas = document.getElementById('particles-bg');
+const ctx = canvas.getContext('2d');
+let particles = [];
+const particleCount = 60;
+const colors = ['#fff8e1', '#ffe5b4', '#e0c3fc', '#b3e0ff', '#d1c4e9'];
+
+function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+function createParticles() {
+    particles = [];
+    for (let i = 0; i < particleCount; i++) {
+        particles.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            r: 2 + Math.random() * 3,
+            alpha: 0.3 + Math.random() * 0.5,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            speed: 0.2 + Math.random() * 0.4,
+            drift: (Math.random() - 0.5) * 0.2
+        });
+    }
+}
+createParticles();
+
+function drawParticles() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (let p of particles) {
+        ctx.save();
+        ctx.globalAlpha = p.alpha;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = p.color;
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 12;
+        ctx.fill();
+        ctx.restore();
+        p.y += p.speed;
+        p.x += p.drift;
+        if (p.y > canvas.height + 10) {
+            p.y = -10;
+            p.x = Math.random() * canvas.width;
+        }
+        if (p.x < -10 || p.x > canvas.width + 10) {
+            p.x = Math.random() * canvas.width;
+        }
+    }
+    requestAnimationFrame(drawParticles);
+}
+drawParticles();
+</script>
+</html>
