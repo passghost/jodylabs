@@ -11,36 +11,30 @@
     <div class="calfagotchi-container">
         <div class="support-button">
             <a href="https://www.paypal.com/donate/?business=TE5MW5QV6RRCS&amp;no_recurring=1&amp;item_name=Donations+encouraged%2C+but+of+course+not+expected.+Thanks+for+visiting!&amp;currency_code=USD" target="_blank">Support Me</a>
-            <a href="/jodylabs/index.html" class="main-site-link">Main Site</a>
-            <a href="/jodylabs/DadSim/DadSim.html" class="main-site-link">Dad's Web Counter</a>
         </div>
         <div class="calfagotchi-shell">
             <div class="screen">
                 <div class="status-bar">
                     <div class="stat">
                         <span class="stat-label">❤️</span>
-                        <span class="stat-label"><img src="../Images/emrald.png" alt="Health" style="height: 1.5em; vertical-align: middle;"></span>
                         <div class="stat-bar">
                             <div class="stat-fill" id="health-bar" style="width: 43.2949%;"></div>
                         </div>
                     </div>
                     <div class="stat">
-                        <span class="stat-label">�️</span>
-                        <span class="stat-label"><img src="../Images/gem2.png" alt="Hunger" style="height: 1.5em; vertical-align: middle;"></span>
+                        <span class="stat-label">🍔</span>
                         <div class="stat-bar">
                             <div class="stat-fill critical" id="hunger-bar" style="width: 0%;"></div>
                         </div>
                     </div>
                     <div class="stat">
-                        <span class="stat-label">�</span>
-                        <span class="stat-label"><img src="../Images/gem3.png" alt="Happiness" style="height: 1.5em; vertical-align: middle;"></span>
+                        <span class="stat-label">😊</span>
                         <div class="stat-bar">
                             <div class="stat-fill low" id="happiness-bar" style="width: 32.9784%;"></div>
                         </div>
                     </div>
                     <div class="stat">
-                        <span class="stat-label">�️</span>
-                        <span class="stat-label"><img src="../Images/gem4.png" alt="Temperature" style="height: 1.5em; vertical-align: middle;"></span>
+                        <span class="stat-label">🌡️</span>
                         <div class="stat-bar">
                             <div class="stat-fill" id="temp-bar" style="width: 70%;"></div>
                         </div>
@@ -48,15 +42,13 @@
                 </div>
                 
                 <div class="pet-area">
-                    <div class="pet-sprite dead" id="pet-sprite" style="animation: 2s ease-in-out infinite idle; transform: translate(-50%, -50%) scaleX(1); left: 39.9576%; top: 69.7795%;"></div>
+                    <div class="pet-sprite" id="pet-sprite" style="animation: 2s ease-in-out infinite idle; transform: translate(-50%, -50%) scaleX(1); left: 39.9576%; top: 69.7795%;"></div>
                     <div class="food-item" id="food-item"></div>
                     <div class="toy-item" id="toy-item"></div>
                     <div class="poop-item" id="poop-item" style="left: 32.5724%; top: 40.4459%; display: block; animation: 0.5s forwards poop-appear;"></div>
                     <div class="pee-puddle" id="pee-puddle"></div>
-                    <div class="mood-indicator" id="mood-indicator">�</div>
-                    <div class="mood-indicator" id="mood-indicator"><img src="../Images/emrald2.png" alt="Mood" style="height: 2em;"></div>
-                    <div class="sleep-bubble" id="sleep-bubble">�</div>
-                    <div class="sleep-bubble" id="sleep-bubble"><img src="../Images/gem5.png" alt="Sleep" style="height: 2em;"></div>
+                    <div class="mood-indicator" id="mood-indicator">😊</div>
+                    <div class="sleep-bubble" id="sleep-bubble">💤</div>
                 </div>
                 
                 <div class="age-display">
@@ -143,29 +135,37 @@
             
             <div class="buttons">
                 <button class="game-button" id="feed-btn">
-                    <span class="button-icon">⬆️</span>
+                    <span class="button-icon"><img src="../Images/emrald.png" alt="Up" style="height: 1.2em; vertical-align: middle;"></span>
                     <span class="button-label">UP</span>
                 </button>
                 <button class="game-button" id="play-btn">
-                    <span class="button-icon">⭕</span>
+                    <span class="button-icon"><img src="../Images/gem2.png" alt="Select" style="height: 1.2em; vertical-align: middle;"></span>
                     <span class="button-label">SELECT</span>
                 </button>
                 <button class="game-button" id="clean-btn">
-                    <span class="button-icon">⬇️</span>
+                    <span class="button-icon"><img src="../Images/gem3.png" alt="Down" style="height: 1.2em; vertical-align: middle;"></span>
                     <span class="button-label">DOWN</span>
                 </button>
             </div>
         </div>
         
-        <div class="game-over" id="game-over" style="display: block;">
-            <h2>� Game Over �</h2>
-            <h2><img src="../Images/gem4.png" alt="Game Over" style="height: 2em; vertical-align: middle;"> Game Over <img src="../Images/gem4.png" alt="Game Over" style="height: 2em; vertical-align: middle;"></h2>
+        <div class="game-over" id="game-over" style="display: none;">
+            <h2><img src="../Images/gem4.png" alt="Game Over" style="height: 2em; vertical-align: middle;"> Game Over</h2>
+            <div style="text-align:center; margin: 1em 0;"><img src="Calf1.png" alt="Dead Calf" style="height: 4em;"></div>
             <p>Your pet has died...</p>
             <button id="restart-btn">Start New Pet</button>
         </div>
     </div>
     
     <script src="script.js"></script>
+    <script>
+    // On page load, start with a random case graphic using the same logic as the menu color swap
+    window.addEventListener('DOMContentLoaded', function() {
+        if (typeof swapCaseColor === 'function') {
+            swapCaseColor(true); // true: randomize on load
+        }
+    });
+    </script>
 
 
 <div id="buffer-extension-hover-container" style="font-family: &quot;Roboto&quot;, sans-serif; display: none; position: absolute; z-index: 8675309; cursor: pointer; width: 67px;"><div id="buffer-extension-button-hover-container" style="position: relative; z-index: 8675309; width: 67px; height: 24px;"><span id="buffer-extension-hover-button" style="width: 67px; height: 24px; background-image: url(&quot;moz-extension://19cdb6c6-1ddd-4b87-a9b1-48004a74cf19/buffer-hover-button.svg&quot;); background-size: 67px 24px; cursor: pointer; opacity: 0.9; display: block; position: relative; z-index: 8675309;"></span><div id="buffer-extension-button-menu" style="position: relative; z-index: 8675308; width: 140px; height: 94px; display: none; bottom: 94px; right: 75px;"><div style="font-size: 14px; width: 140px; display: block; cursor: pointer; padding: 0px 4px; color: rgb(61, 61, 61); line-height: 28px; background-color: rgba(255, 255, 255, 0.8); border-top-left-radius: 4px; border-top-right-radius: 4px; height: 4px;"></div><div id="buffer-extension-create" class="buffer-extension-hover-button" style="font-size: 14px; width: 140px; height: 28px; display: block; cursor: pointer; padding: 0px 4px; color: rgb(61, 61, 61); line-height: 28px;"><span>Create Post</span></div><div id="buffer-extension-save" class="buffer-extension-hover-button" style="font-size: 14px; width: 140px; height: 28px; display: block; cursor: pointer; padding: 0px 4px; color: rgb(61, 61, 61); line-height: 28px;"><span>Save Idea</span></div><div style="font-size: 14px; width: 140px; display: block; cursor: pointer; padding: 0px 4px; color: rgb(61, 61, 61); line-height: 28px; background-color: rgba(255, 255, 255, 0.8); border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; height: 4px;"></div><style>.buffer-extension-hover-button { background-color:rgba(255, 255, 255, 0.8); } .buffer-extension-hover-button span { display:block; padding: 0 4px; border-radius: 4px 4px 4px 4px; -webkit-border-radius: 4px 4px 4px 4px; -moz-border-radius: 4px 4px 4px 4px; } .buffer-extension-hover-button:hover span { background-color:#F5F5F5; }</style></div></div></div></body></html>
