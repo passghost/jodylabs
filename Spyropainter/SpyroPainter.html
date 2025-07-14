@@ -3,76 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>90s Spin Paint Set</title>
+    <title>Spyro Painter</title>
     <style>
         body {
-            background: #f0f0f0;
-            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a0a0a 60%, #e63946 100%);
+            font-family: 'Orbitron', 'Rajdhani', 'Segoe UI', Arial, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
             margin: 0;
             padding: 0;
+            min-height: 100vh;
         }
         h1 {
-            margin-top: 24px;
-            color: #333;
+            margin-top: 32px;
+            color: #fff;
+            font-size: 3.2rem;
+            letter-spacing: 2px;
+            text-shadow: 0 0 24px #e63946, 0 2px 12px #000, 0 0 2px #fff;
+            font-family: 'Orbitron', 'Rajdhani', sans-serif;
+            background: none;
+            animation: titlePulse 2.5s infinite alternate;
+        }
+        @keyframes titlePulse {
+            from { text-shadow: 0 0 24px #e63946, 0 2px 12px #000; }
+            to { text-shadow: 0 0 40px #e63946, 0 4px 24px #e63946; }
         }
         #controls {
-            margin: 20px 0;
+            margin: 24px 0;
             display: flex;
-            gap: 16px;
+            gap: 18px;
             align-items: center;
+            background: rgba(230,57,70,0.13);
+            border-radius: 14px;
+            padding: 1.1rem 1.2rem;
+            box-shadow: 0 0 18px #e63946cc, 0 0 10px #000000cc;
+            border: 1.5px solid #e63946;
         }
         #spinCanvas {
-            background: #fff;
+            background: #181818;
             border-radius: 50%;
-            box-shadow: 0 0 24px #aaa;
-            border: 4px solid #ddd;
+            box-shadow: 0 0 40px #e63946cc, 0 0 24px #000000cc;
+            border: 4px solid #e63946;
         }
         .label {
             font-size: 1rem;
-            color: #444;
+            color: #fff;
+            font-weight: bold;
+            text-shadow: 0 0 8px #e63946, 0 0 2px #fff;
         }
         button {
-            padding: 8px 16px;
+            padding: 8px 18px;
             font-size: 1rem;
-            border-radius: 6px;
+            border-radius: 8px;
             border: none;
-            background: #4caf50;
+            background: linear-gradient(90deg, #e63946 0%, #23272a 100%);
             color: #fff;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: background 0.2s, transform 0.2s;
+            font-family: 'Rajdhani', 'Orbitron', sans-serif;
+            font-weight: 700;
+            letter-spacing: 1px;
+            box-shadow: 0 0 18px #e63946, 0 0 10px #000;
         }
         button:hover {
-            background: #388e3c;
+            background: linear-gradient(90deg, #fff 0%, #e63946 100%);
+            color: #e63946;
+            transform: scale(1.07) translateY(-2px);
+            box-shadow: 0 0 32px #e63946, 0 0 18px #fff;
         }
         input[type="color"] {
-            border: none;
+            border: 2px solid #e63946;
+            border-radius: 8px;
             width: 32px;
             height: 32px;
             padding: 0;
+            background: #23272a;
+            box-shadow: 0 0 8px #e63946cc;
         }
         #clearBtn {
-            background: #f44336;
+            background: linear-gradient(90deg, #e63946 0%, #23272a 100%);
         }
         #clearBtn:hover {
-            background: #b71c1c;
+            background: linear-gradient(90deg, #fff 0%, #e63946 100%);
+            color: #e63946;
+        }
+        .fancy-title {
+            margin-top: 32px;
+            color: #fff;
+            font-size: 3.2rem;
+            letter-spacing: 4px;
+            font-family: 'Orbitron', 'Rajdhani', sans-serif;
+            background: linear-gradient(90deg, #e63946 0%, #fff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-fill-color: transparent;
+            text-shadow: 0 0 40px #e63946, 0 2px 18px #000, 0 0 8px #fff;
+            animation: titlePulse 2.5s infinite alternate;
+            font-weight: 900;
+            filter: drop-shadow(0 0 18px #e63946cc);
         }
     </style>
 </head>
 <body>
-    <h1>90s Spin Paint Set</h1>
+    <h1 class="fancy-title">Spyro Painter</h1>
     <div id="controls">
         <span class="label">Spin Speed:</span>
-        <input type="range" id="speedSlider" min="0" max="0.6" step="0.01" value="0.24">
-        <span id="speedValue">0.24</span>
+        <input type="range" id="speedSlider" min="0" max="1.2" step="0.01" value="0.48">
+        <span id="speedValue">0.48</span>
         <span class="label">Paint Size:</span>
         <input type="range" id="sizeSlider" min="1" max="40" step="1" value="20">
         <span id="sizeValue">20</span>
         <span class="label">Paint Color:</span>
         <input type="color" id="colorPicker" value="#ff0000">
-        <button id="dropBtn">Drop Paint</button>
+        <span class="label">Direction:</span>
+        <select id="directionSelect">
+            <option value="1">Clockwise</option>
+            <option value="-1">Counterclockwise</option>
+        </select>
         <button id="clearBtn">Clear</button>
         <button id="exportBtn">Export Image</button>
     </div>
@@ -90,14 +139,15 @@
         const speedSlider = document.getElementById('speedSlider');
         const speedValue = document.getElementById('speedValue');
         const colorPicker = document.getElementById('colorPicker');
-        const dropBtn = document.getElementById('dropBtn');
+        // Removed dropBtn
         const clearBtn = document.getElementById('clearBtn');
         const sizeSlider = document.getElementById('sizeSlider');
         const sizeValue = document.getElementById('sizeValue');
         const exportBtn = document.getElementById('exportBtn');
 
         let spinSpeed = parseFloat(speedSlider.value);
-        const MAX_SPEED = 0.6;
+        let spinDirection = 1;
+        const MAX_SPEED = 1.2;
         let angle = 0;
         let paintDrops = [];
         // Paint drop structure: {x, y, size, color, angleOffset, velocity, r, theta, path}
@@ -143,7 +193,7 @@
         }
 
         function animate() {
-            angle += spinSpeed;
+            angle += spinSpeed * spinDirection;
             angle %= 2 * Math.PI;
             // Realistic trailing and liquid effect
             const wiggleFactor = 0.22 * (1 - spinSpeed / MAX_SPEED); // more wiggle at slow
@@ -226,7 +276,7 @@
                     }
                 }
                 // Remove drop if it reaches edge
-                if (drop.r >= 200) {
+                if (drop.r >= 220) {
                     paintDrops.splice(i, 1);
                 }
             }
@@ -254,7 +304,7 @@
 
         function dropPaint() {
             // Random position within disc
-            const r = Math.random() * 180;
+            const r = Math.random() * 220;
             const theta = Math.random() * 2 * Math.PI;
             dropPaintAt(r, theta, colorPicker.value);
         }
@@ -277,7 +327,7 @@
                 const dx = mx - canvas.width/2;
                 const dy = my - canvas.height/2;
                 const r = Math.sqrt(dx*dx + dy*dy);
-                if (r <= 200) {
+                if (r <= 220) {
                     const theta = Math.atan2(dy, dx);
                     dropPaintAt(r, theta, colorPicker.value);
                 }
@@ -305,7 +355,12 @@
         sizeSlider.addEventListener('input', () => {
             sizeValue.textContent = sizeSlider.value;
         });
-        dropBtn.addEventListener('click', dropPaint);
+        // Removed dropBtn event listener
+        // Direction select event
+        const directionSelect = document.getElementById('directionSelect');
+        directionSelect.addEventListener('change', () => {
+            spinDirection = parseInt(directionSelect.value);
+        });
         clearBtn.addEventListener('click', () => {
             clearPaint();
         });
