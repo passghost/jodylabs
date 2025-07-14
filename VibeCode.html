@@ -214,35 +214,130 @@
             padding: 60px 0;
             position: relative;
         }
-
-        .header h1 {
-            font-family: 'Orbitron', monospace;
-            font-weight: 900;
-            font-size: 4rem;
-            background: linear-gradient(45deg, #ffffff, #e63946, #ffffff);
-            background-size: 400% 400%;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: gradientShift 4s ease-in-out infinite;
-            margin-bottom: 20px;
-            text-shadow: 
-                0 0 20px rgba(230, 57, 70, 0.4),
-                0 0 40px rgba(230, 57, 70, 0.4),
-                0 0 60px rgba(230, 57, 70, 0.3);
+        .eye-container {
+            position: fixed;
+            top: 50%;
+            left: 40px;
+            transform: translateY(-50%);
+            width: 120px;
+            height: 120px;
+            z-index: 1000;
+            pointer-events: none;
         }
-
+        .eye-socket {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: radial-gradient(circle at center, #1a1a1a 0%, #000 100%);
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8), 0 0 20px rgba(230, 57, 70, 0.3);
+            overflow: hidden;
+            border: 2px solid rgba(230, 57, 70, 0.4);
+            animation: eyeGlow 4s ease-in-out infinite;
+        }
+        .eyeball {
+            position: absolute;
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-color: #333;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            transition: all 0.3s ease-out;
+            filter: drop-shadow(0 0 10px rgba(230, 57, 70, 0.4));
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .eyelid-top, .eyelid-bottom {
+            position: absolute;
+            width: 100%;
+            height: 50%;
+            background: linear-gradient(145deg, #181818 0%, #2a2a2a 60%, #e63946 85%, #b71c1c 92%, #181818 100%);
+            border-radius: 60px;
+            transition: all 0.15s ease-out;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+            z-index: 10;
+        }
+        .eyelid-top {
+            top: -20%;
+            border-bottom-left-radius: 10px;
+            border-bottom-right-radius: 10px;
+            transform-origin: bottom center;
+            transform: rotate(-2deg);
+        }
+        .eyelid-bottom {
+            bottom: -20%;
+            border-top-left-radius: 10px;
+            border-top-right-radius: 10px;
+            transform-origin: top center;
+        }
+        .eye-container.blinking .eyelid-top {
+            transform: translateY(70%) scaleY(1.2) rotate(-2deg);
+        }
+        .eye-container.blinking .eyelid-bottom {
+            transform: translateY(-70%) scaleY(1.2);
+        }
+        @keyframes eyeGlow {
+            0%, 100% { box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8), 0 0 20px rgba(230, 57, 70, 0.3); }
+            50% { box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8), 0 0 30px rgba(230, 57, 70, 0.6); }
+        }
         @keyframes gradientShift {
             0%, 100% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
         }
-
-        .header p {
-            font-size: 1.3rem;
-            opacity: 0.8;
-            max-width: 600px;
-            margin: 0 auto;
+        .hero-title {
+            font-family: 'Orbitron', monospace;
+            font-size: clamp(2.5rem, 6vw, 4.5rem);
+            font-weight: 900;
+            color: #fff;
+            text-shadow: 0 0 20px #e63946, 0 0 40px #e63946, 0 0 60px rgba(230, 57, 70, 0.5), 0 5px 20px rgba(0, 0, 0, 0.8);
+            margin-bottom: 20px;
+            letter-spacing: 4px;
+            animation: titlePulse 4s ease-in-out infinite alternate;
+            background: linear-gradient(45deg, #ffffff, #ff6b7a, #ffffff);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: titleGlow 3s ease-in-out infinite alternate, gradientShift 8s ease-in-out infinite;
+        }
+        @keyframes titlePulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.02); }
+        }
+        @keyframes titleGlow {
+            from { text-shadow: 0 0 20px #e63946, 0 0 40px #e63946, 0 0 60px rgba(230, 57, 70, 0.5); }
+            to { text-shadow: 0 0 30px #e63946, 0 0 60px #e63946, 0 0 90px rgba(230, 57, 70, 0.7); }
+        }
+        .hero-desc {
+            font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+            color: #cccccc;
+            margin-bottom: 40px;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
             line-height: 1.6;
+            font-weight: 400;
+        }
+        @media (max-width: 1200px) {
+            .eye-container { left: 20px; width: 100px; height: 100px; }
+            .eyeball { width: 75px; height: 75px; }
+        }
+        @media (max-width: 900px) {
+            .eye-container { left: 10px; width: 90px; height: 90px; }
+            .eyeball { width: 65px; height: 65px; }
+        }
+        @media (max-width: 768px) {
+            .eye-container { position: fixed; left: 5px; top: 50%; transform: translateY(-50%); width: 80px; height: 80px; }
+            .eyeball { width: 55px; height: 55px; }
+        }
+        @media (max-width: 480px) {
+            .eye-container { left: 2px; width: 60px; height: 60px; }
+            .eyeball { width: 45px; height: 45px; }
         }
 
         .projects-grid {
@@ -485,6 +580,13 @@
                 padding: 16px;
             }
         }
+
+        .eye-container.interested .eyelid-top {
+            transform: translateY(35%) scaleY(1.12) rotate(-2deg);
+        }
+        .eye-container.interested .eyelid-bottom {
+            transform: translateY(-35%) scaleY(1.12);
+        }
     </style>
 </head>
 <body>
@@ -499,8 +601,16 @@
 
     <div class="container">
         <div class="header">
-            <h1>The Vibe Code Registry</h1>
-            <p>A registry of web projects, games, and creative tools to vibe with.</p>
+            <!-- Animated Eye Component -->
+            <div class="eye-container" id="eyeContainer">
+                <div class="eye-socket">
+                    <div class="eyeball" id="eyeball"></div>
+                    <div class="eyelid-top"></div>
+                    <div class="eyelid-bottom"></div>
+                </div>
+            </div>
+            <h1 class="hero-title">The Vibe Code Registry</h1>
+            <p class="hero-desc">A registry of web projects, games, and creative tools to vibe with.</p>
         </div>
         
         <div class="projects-grid">
@@ -721,6 +831,172 @@
     </div>
 
     <script>
+        // Array of available eyeball images (exact paths from your list)
+        const eyeballImages = [
+            'Images/Snip/eye6.png',
+            'Images/Snip/eye7.png',
+            'Images/Snip/EyeballHueshift.png',
+            'Images/Snip/EyeballM1.png',
+            'Images/Snip/EyeballM2.png',
+            'Images/Snip/EyeballM3.png',
+            'Images/Snip/EyeballM4.png',
+            'Images/Snip/EyeballM5.png',
+            'Images/Snip/EyeballM6.png',
+            'Images/Snip/EyeballM7.png',
+            'Images/Snip/EyeballM8.png',
+            'Images/Snip/EyeballM9.png',
+            'Images/Snip/EyeballN1.png',
+            'Images/Snip/EyeballN2.png',
+            'Images/Snip/EyeballN3.png',
+            'Images/Snip/EyeballN4.png',
+            'Images/Snip/EyeballN5.png',
+            'Images/Snip/EyeballN6.png',
+            'Images/Snip/EyeballN7.png',
+            'Images/Snip/EyeballN8.png',
+            'Images/Snip/EyeballN9.png',
+            'Images/Snip/Eyenew1.png',
+            'Images/Snip/Eyenew2.png',
+            'Images/Snip/Eyenew3.png',
+            'Images/Snip/Eyenew5.png',
+            'Images/Snip/eyez1.png',
+            'Images/Snip/eyez2.png',
+            'Images/Snip/eyez3.png',
+            'Images/Snip/eyez4.png',
+            'Images/Snip/eyez5.png'
+        ];
+
+        class AnimatedEye {
+            constructor() {
+                this.eyeball = document.getElementById('eyeball');
+                this.eyeContainer = document.getElementById('eyeContainer');
+                this.isBlinking = false;
+                this.lastMouseMove = Date.now();
+                this.lookAroundInterval = null;
+                this.isInterested = false;
+                this.interestTimeout = null;
+                this.init();
+            }
+            init() {
+                this.setRandomEyeball();
+                document.addEventListener('mousemove', (e) => this.trackMouse(e));
+                this.startBlinking();
+                this.startLookingAround();
+                setInterval(() => this.setRandomEyeball(), 250);
+                // Interest on hover
+                document.querySelectorAll('.project-link').forEach(btn => {
+                    btn.addEventListener('mouseenter', (e) => this.showInterest(e));
+                    btn.addEventListener('mouseleave', () => this.clearInterest());
+                });
+            }
+            setRandomEyeball() {
+                const randomIndex = Math.floor(Math.random() * eyeballImages.length);
+                const selectedImage = eyeballImages[randomIndex];
+                const img = new Image();
+                img.onload = () => {
+                    this.eyeball.style.backgroundImage = `url('${selectedImage}')`;
+                    this.eyeball.style.backgroundColor = 'transparent';
+                };
+                img.onerror = () => {
+                    this.eyeball.style.backgroundImage = '';
+                    this.eyeball.style.background = `radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.9) 8%, rgba(200, 220, 255, 0.7) 15%, rgba(100, 150, 255, 0.8) 25%, rgba(50, 100, 200, 0.9) 40%, rgba(20, 50, 150, 0.95) 60%, rgba(0, 20, 100, 1) 80%, rgba(0, 0, 0, 1) 100%)`;
+                };
+                img.src = selectedImage;
+            }
+            trackMouse(e) {
+                if (this.isBlinking || this.isInterested) return;
+                this.lastMouseMove = Date.now();
+                // Move the whole eye-container vertically to follow the mouse
+                const windowHeight = window.innerHeight;
+                const mouseY = e.clientY;
+                // Clamp so the eye doesn't go off screen
+                const eyeHeight = this.eyeContainer.offsetHeight || 120;
+                const minY = eyeHeight / 2 + 10;
+                const maxY = windowHeight - eyeHeight / 2 - 10;
+                const clampedY = Math.max(minY, Math.min(mouseY, maxY));
+                this.eyeContainer.style.top = `${clampedY}px`;
+
+                // Eyeball moves within socket for realism, now tracks horizontally too
+                const eyeRect = this.eyeContainer.getBoundingClientRect();
+                const eyeCenterX = eyeRect.left + eyeRect.width / 2;
+                const eyeCenterY = eyeRect.top + eyeRect.height / 2;
+                const mouseX = e.clientX;
+                const deltaX = mouseX - eyeCenterX;
+                const deltaY = mouseY - eyeCenterY;
+                // Limit movement
+                const maxX = 22; // horizontal range
+                const maxYBall = 30; // vertical range for eyeball
+                const limitedX = Math.max(-maxX, Math.min(deltaX, maxX));
+                const limitedY = Math.max(-maxYBall, Math.min(deltaY, maxYBall));
+                this.eyeball.style.transform = `translate(calc(-50% + ${limitedX}px), calc(-50% + ${limitedY}px))`;
+            }
+
+            showInterest(e) {
+                if (this.isBlinking) return;
+                this.isInterested = true;
+                // Instead of rolling the eye, expand the eyelid a little for interest
+                this.eyeContainer.classList.add('interested');
+                this.eyeball.style.transition = 'all 0.18s cubic-bezier(0.4,0,0.2,1)';
+                clearTimeout(this.interestTimeout);
+                this.interestTimeout = setTimeout(() => {
+                    this.blinkNow();
+                }, 1200);
+            }
+
+            clearInterest() {
+                this.isInterested = false;
+                this.eyeContainer.classList.remove('interested');
+                this.eyeball.style.transform = 'translate(-50%, -50%)';
+                this.eyeball.style.transition = 'all 0.3s ease-out';
+                clearTimeout(this.interestTimeout);
+            }
+
+            blinkNow() {
+                this.isBlinking = true;
+                this.eyeContainer.classList.add('blinking');
+                setTimeout(() => {
+                    this.eyeContainer.classList.remove('blinking');
+                    this.isBlinking = false;
+                }, 120);
+            }
+            startBlinking() {
+                const blink = () => {
+                    // More natural blink timing
+                    if (Math.random() < 0.25) {
+                        this.isBlinking = true;
+                        this.eyeContainer.classList.add('blinking');
+                        setTimeout(() => {
+                            this.eyeContainer.classList.remove('blinking');
+                            this.isBlinking = false;
+                        }, 120 + Math.random() * 60);
+                    }
+                };
+                const scheduleNextBlink = () => {
+                    const delay = 2200 + Math.random() * 3500;
+                    setTimeout(() => {
+                        blink();
+                        scheduleNextBlink();
+                    }, delay);
+                };
+                scheduleNextBlink();
+            }
+            startLookingAround() {
+                setInterval(() => {
+                    if (Date.now() - this.lastMouseMove > 3000 && !this.isBlinking) {
+                        const randomX = (Math.random() - 0.5) * 20;
+                        const randomY = (Math.random() - 0.5) * 20;
+                        this.eyeball.style.transform = `translate(calc(-50% + ${randomX}px), calc(-50% + ${randomY}px))`;
+                        setTimeout(() => {
+                            if (Date.now() - this.lastMouseMove > 2000) {
+                                this.eyeball.style.transform = 'translate(-50%, -50%)';
+                            }
+                        }, 1000 + Math.random() * 2000);
+                    }
+                }, 2000);
+            }
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+            new AnimatedEye();
+        });
         // Create animated background particles
         function createParticles() {
             const particlesContainer = document.getElementById('particles');
