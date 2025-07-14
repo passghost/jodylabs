@@ -4,11 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Breakup Service - Sweet Release</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Rajdhani:wght@700&family=Montserrat:wght@700&display=swap" rel="stylesheet">
     <style>
         body {
             background: linear-gradient(135deg, #0a0a0a 0%, #1a0a0a 60%, #e63946 100%);
             color: #e0e0e0;
-            font-family: 'Orbitron', 'Rajdhani', 'Segoe UI', Arial, sans-serif;
+            font-family: 'Montserrat', 'Orbitron', 'Rajdhani', 'Segoe UI', Arial, sans-serif;
             min-height: 100vh;
             margin: 0;
             display: flex;
@@ -17,117 +18,6 @@
             justify-content: center;
             overflow: hidden;
         }
-        .container {
-            background: linear-gradient(145deg, #181818 0%, #2a2a2a 80%, #e63946 100%);
-            border-radius: 22px;
-            box-shadow: 0 0 80px 10px #e63946cc, 0 0 40px 10px #000000cc;
-            padding: 3.5rem 2.5rem 2.5rem 2.5rem;
-            max-width: 440px;
-            width: 100%;
-            text-align: center;
-            position: relative;
-            border: 2px solid #e63946;
-            animation: popIn 1.2s cubic-bezier(0.4,0,0.2,1);
-        }
-        @keyframes popIn {
-            0% { transform: scale(0.8) translateY(40px); opacity: 0; }
-            80% { transform: scale(1.05) translateY(-8px); opacity: 1; }
-            100% { transform: scale(1) translateY(0); opacity: 1; }
-        }
-        h1 {
-            color: #fff;
-            font-size: 2.7rem;
-            margin-bottom: 0.5rem;
-            letter-spacing: 3px;
-            font-family: 'Orbitron', 'Rajdhani', sans-serif;
-            text-shadow: 0 0 24px #e63946, 0 2px 12px #000, 0 0 2px #fff;
-            background: none;
-            -webkit-background-clip: initial;
-            -webkit-text-fill-color: initial;
-            background-clip: initial;
-            animation: titlePulse 2.5s infinite alternate;
-        }
-        @keyframes titlePulse {
-            from { text-shadow: 0 0 24px #e63946, 0 2px 12px #000; }
-            to { text-shadow: 0 0 40px #e63946, 0 4px 24px #e63946; }
-        }
-        p {
-            color: #e0e0e0;
-            margin-bottom: 2rem;
-            font-size: 1.15rem;
-            text-shadow: 0 2px 10px #000;
-        }
-        .price {
-            color: #e63946;
-            font-size: 1.4rem;
-            margin-bottom: 1.5rem;
-            font-weight: bold;
-            text-shadow: 0 0 10px #e63946;
-        }
-        .paypal-btn {
-            background: linear-gradient(90deg, #e63946 0%, #23272a 100%);
-            color: #fff;
-            border: none;
-            border-radius: 16px;
-            padding: 1rem 2.5rem;
-            font-size: 1.18rem;
-            cursor: pointer;
-            margin-top: 1rem;
-            margin-bottom: 1rem;
-            box-shadow: 0 0 18px #e63946, 0 0 10px #000;
-            transition: background 0.2s, transform 0.2s;
-            font-family: 'Rajdhani', 'Orbitron', sans-serif;
-            font-weight: 700;
-            letter-spacing: 1px;
-        }
-        .paypal-btn:hover {
-            background: linear-gradient(90deg, #fff 0%, #e63946 100%);
-            color: #e63946;
-            transform: scale(1.07) translateY(-2px);
-            box-shadow: 0 0 32px #e63946, 0 0 18px #fff;
-        }
-        .info-box {
-            margin-bottom: 2rem;
-            color: #fff;
-            font-weight: bold;
-            font-size: 1.08rem;
-            background: rgba(230,57,70,0.18);
-            border-radius: 12px;
-            padding: 1.1rem 1rem;
-            border: 1.5px solid #e63946;
-            box-shadow: 0 0 12px #e6394644;
-            text-shadow: 0 0 8px #e63946, 0 0 2px #fff;
-        }
-        .info-box a {
-            color: #e63946;
-            text-decoration: underline;
-            font-weight: bold;
-            background: none;
-            -webkit-background-clip: initial;
-            -webkit-text-fill-color: initial;
-            background-clip: initial;
-            text-shadow: 0 0 2px #fff, 0 0 8px #e63946;
-        }
-        .footer {
-            margin-top: 2rem;
-            color: #e63946;
-            font-size: 1.05rem;
-            text-shadow: 0 0 8px #e63946, 0 2px 8px #000;
-            font-family: 'Rajdhani', 'Orbitron', sans-serif;
-            letter-spacing: 1px;
-        }
-        /* Decorative glowing border */
-        .container:before {
-            content: '';
-            position: absolute;
-            top: -8px; left: -8px; right: -8px; bottom: -8px;
-            border-radius: 28px;
-            border: 2.5px solid #e63946;
-            box-shadow: 0 0 40px 10px #e63946cc, 0 0 80px 20px #e6394644;
-            opacity: 0.5;
-            pointer-events: none;
-        }
-        /* Animated background particles */
         .particles {
             position: fixed;
             top: 0; left: 0;
@@ -148,6 +38,105 @@
             90% { opacity: 1; }
             100% { transform: translateY(-100px) scale(1.2); opacity: 0; }
         }
+        .container {
+            background: linear-gradient(145deg, #181818 0%, #2a2a2a 80%, #e63946 100%);
+            border-radius: 22px;
+            box-shadow: 0 0 80px 10px #e63946cc, 0 0 40px 10px #000000cc;
+            padding: 3.5rem 2.5rem 2.5rem 2.5rem;
+            max-width: 440px;
+            width: 100%;
+            text-align: center;
+            position: relative;
+            border: 2px solid #e63946;
+            animation: popIn 1.2s cubic-bezier(0.4,0,0.2,1);
+            z-index: 1;
+        }
+        @keyframes popIn {
+            0% { transform: scale(0.8) translateY(40px); opacity: 0; }
+            80% { transform: scale(1.05) translateY(-8px); opacity: 1; }
+            100% { transform: scale(1) translateY(0); opacity: 1; }
+        }
+        h1 {
+            color: #fff;
+            font-size: 2.9rem;
+            margin-bottom: 0.5rem;
+            letter-spacing: 3px;
+            font-family: 'Orbitron', 'Montserrat', 'Rajdhani', sans-serif;
+            text-shadow: 0 0 32px #e63946, 0 2px 16px #000, 0 0 4px #fff;
+            background: none;
+            animation: titlePulse 2.5s infinite alternate;
+            font-weight: 900;
+        }
+        @keyframes titlePulse {
+            from { text-shadow: 0 0 32px #e63946, 0 2px 16px #000; }
+            to { text-shadow: 0 0 60px #e63946, 0 4px 32px #e63946; }
+        }
+        p {
+            color: #e0e0e0;
+            margin-bottom: 2rem;
+            font-size: 1.18rem;
+            text-shadow: 0 2px 12px #000;
+            font-family: 'Montserrat', 'Rajdhani', 'Orbitron', sans-serif;
+        }
+        .price {
+            color: #e63946;
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            font-weight: bold;
+            text-shadow: 0 0 16px #e63946;
+            font-family: 'Montserrat', 'Rajdhani', 'Orbitron', sans-serif;
+        }
+        .info-box {
+            margin-bottom: 2rem;
+            color: #fff;
+            font-weight: bold;
+            font-size: 1.08rem;
+            background: rgba(230,57,70,0.18);
+            border-radius: 12px;
+            padding: 1.1rem 1rem;
+            border: 1.5px solid #e63946;
+            box-shadow: 0 0 12px #e6394644;
+            text-shadow: 0 0 8px #e63946, 0 0 2px #fff;
+            font-family: 'Montserrat', 'Rajdhani', 'Orbitron', sans-serif;
+        }
+        .info-box a {
+            color: #e63946;
+            text-decoration: underline;
+            font-weight: bold;
+            background: none;
+            text-shadow: 0 0 2px #fff, 0 0 8px #e63946;
+        }
+        .paypal-btn {
+            background: linear-gradient(90deg, #e63946 0%, #23272a 100%);
+            color: #fff;
+            border: none;
+            border-radius: 16px;
+            padding: 1rem 2.5rem;
+            font-size: 1.18rem;
+            cursor: pointer;
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 0 18px #e63946, 0 0 10px #000;
+            transition: background 0.2s, transform 0.2s;
+            font-family: 'Montserrat', 'Rajdhani', 'Orbitron', sans-serif;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        .paypal-btn:hover {
+            background: linear-gradient(90deg, #fff 0%, #e63946 100%);
+            color: #e63946;
+            transform: scale(1.07) translateY(-2px);
+            box-shadow: 0 0 32px #e63946, 0 0 18px #fff;
+        }
+        .footer {
+            margin-top: 2rem;
+            color: #e63946;
+            font-size: 1.08rem;
+            text-shadow: 0 0 12px #e63946, 0 2px 12px #000;
+            font-family: 'Montserrat', 'Rajdhani', 'Orbitron', sans-serif;
+            letter-spacing: 1.5px;
+            font-weight: 700;
+        }
     </style>
 </head>
 <body>
@@ -162,7 +151,7 @@
         <button type="button" class="paypal-btn" onclick="window.open('https://www.paypal.com/donate/?business=TE5MW5QV6RRCS&no_recurring=1&item_name=Donations+encouraged%2C+but+of+course+not+expected.+Thanks+for+visiting!&currency_code=USD', '_blank')">Pay with PayPal</button>
         <div style="margin-top:0.5rem; color:#666; font-size:0.95rem;">(PayPal integration coming soon)</div>
     </div>
-    <div class="footer">No personal items harmed. No arguments started. Just closure.</div>
+    <div class="footer">Lets get a laugh out of it at the very least.</div>
     <script>
     // Create animated background particles
     function createParticles() {
