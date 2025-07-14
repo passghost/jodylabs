@@ -404,18 +404,20 @@
             display: inline-flex;
             align-items: center;
             gap: 10px;
-            background: linear-gradient(45deg, #e63946, #ff4757);
+            background: linear-gradient(145deg, #e63946 0%, #ff4757 60%, #fff 100%);
             color: white;
             text-decoration: none;
-            padding: 16px 36px;
+            padding: 18px 40px;
             border-radius: 50px;
-            font-weight: 600;
-            font-size: 1.15rem;
-            transition: all 0.3s ease;
+            font-weight: 700;
+            font-size: 1.25rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
             font-family: 'Rajdhani', sans-serif;
-            box-shadow: 0 4px 15px rgba(230, 57, 70, 0.3);
+            box-shadow: 0 8px 24px rgba(230, 57, 70, 0.45), 0 2px 0 #fff, 0 6px 0 #e63946, 0 12px 24px rgba(0,0,0,0.18);
+            border-bottom: 4px solid #b71c1c;
+            border-top: 2px solid #fff;
         }
 
         .project-link::before {
@@ -435,10 +437,9 @@
         }
 
         .project-link:hover {
-            transform: translateX(5px);
-            box-shadow: 
-                0 8px 25px rgba(230, 57, 70, 0.4),
-                0 0 40px rgba(230, 57, 70, 0.3);
+            transform: translateY(-2px) scale(1.04);
+            box-shadow: 0 16px 32px rgba(230, 57, 70, 0.55), 0 4px 0 #fff, 0 12px 0 #e63946, 0 24px 48px rgba(0,0,0,0.22);
+            border-bottom: 6px solid #b71c1c;
         }
 
         .footer-links {
@@ -508,10 +509,9 @@
                 <div class="project-icon"><img src="Images/emrald.png" alt="Project Icon"></div>
                 <h2>Card Cake - Fiteme Card Arena</h2>
                 <p>Experience our latest online multiplayer card game! Build custom decks with your own images, play against friends in real-time matches, and master strategic card battles. Features include life counters, deck builder, custom card creation, and competitive multiplayer gameplay.</p>
-                <a href="CardCake/index.html" class="project-link">
-                    <span>Play Card Game</span>
-                    <span>→</span>
-                </a>
+            <a href="CardCake/index.html" class="project-link">
+                <span>→</span>
+            </a>
             </div>
 
             <!-- SandSation Simulation Project Card -->
@@ -520,10 +520,9 @@
                 <div class="project-icon"><img src="Images/gem2.png" alt="SandSation Icon"></div>
                 <h2>SandSation - Sand Physics Simulation</h2>
                 <p>Explore mesmerizing falling sand physics! Interact with virtual grains, create landscapes, and watch realistic sand flow and pile up. Perfect for relaxation, creativity, and experimenting with digital sand art.</p>
-                <a href="SandSensation/sand_fall.html" class="project-link">
-                    <span>Play SandSation</span>
-                    <span>→</span>
-                </a>
+            <a href="SandSensation/sand_fall.html" class="project-link">
+                <span>→</span>
+            </a>
             </div>
             
 
@@ -532,10 +531,9 @@
                 <div class="project-icon"><img src="Images/gem4.png" alt="Project Icon"></div>
                 <h2>Vertical Dot Matrix Marquee</h2>
                 <p>Display custom scrolling messages in a retro dot-matrix style! Add your own text, pick colors, and watch your message scroll vertically in a glowing ticker. Great for fun, announcements, or digital signage.</p>
-                <a href="Marquee/marquee.html" class="project-link">
-                    <span>Open Marquee App</span>
-                    <span>→</span>
-                </a>
+            <a href="Marquee/marquee.html" class="project-link">
+                <span>→</span>
+            </a>
             </div>
             
             <div class="project">
@@ -543,10 +541,9 @@
                 <div class="project-icon"><img src="Images/gem3.png" alt="Project Icon"></div>
                 <h2>Stoner Homepage - Relaxation Hub</h2>
                 <p>Visit our chill homepage featuring live news feeds, weather widgets, relaxing content, and peaceful digital spaces. Perfect for unwinding with curated content designed for relaxation and mindfulness.</p>
-                <a href="StonerHome/stonerhome.html" class="project-link">
-                    <span>Enter Relaxation Mode</span>
-                    <span>→</span>
-                </a>
+            <a href="StonerHome/stonerhome.html" class="project-link">
+                <span>→</span>
+            </a>
             </div>
 
 
@@ -555,10 +552,9 @@
                 <div class="project-icon"><img src="Images/gem4.png" alt="Project Icon"></div>
                 <h2>GIF Creator - Animated GIF Maker</h2>
                 <p>Create custom animated GIFs with our free web-based GIF maker tool. Upload multiple images, adjust timing and effects, and generate high-quality animated GIFs perfect for social media, presentations, memes, and digital marketing.</p>
-                <a href="sandbox.html" class="project-link">
-                    <span>Create Animated GIFs</span>
-                    <span>→</span>
-                </a>
+            <a href="sandbox.html" class="project-link">
+                <span>→</span>
+            </a>
             </div>
 
             <div class="project">
@@ -566,10 +562,9 @@
                 <div class="project-icon"><img src="Images/gem5.png" alt="Project Icon"></div>
                 <h2>Jody'sList - Community Marketplace</h2>
                 <p>A community-driven trading platform specifically for Eastern Kentucky residents. Buy, sell, and trade items with your neighbors. Keep commerce local and build community connections with this simple, effective marketplace.</p>
-                <a href="EKYTrade/index.html" class="project-link">
-                    <span>Visit Jody'sList</span>
-                    <span>→</span>
-                </a>
+            <a href="EKYTrade/index.html" class="project-link">
+                <span>→</span>
+            </a>
             </div>
 
             <div class="project">
@@ -577,10 +572,9 @@
                 <div class="project-icon"><img src="Images/emrald.png" alt="Project Icon"></div>
                 <h2>NeonPang - AI Pong Game</h2>
                 <p>Play our vibrant neon-styled Pong game featuring an intelligent AI opponent, spectacular glowing visual effects, and modern gameplay mechanics. This classic arcade game gets a futuristic makeover with smooth animations and challenging AI.</p>
-                <a href="NeonPang/NeonPang.html" class="project-link">
-                    <span>Play Neon Pong</span>
-                    <span>→</span>
-                </a>
+            <a href="NeonPang/NeonPang.html" class="project-link">
+                <span>→</span>
+            </a>
             </div>
 
             <div class="project">
@@ -588,10 +582,9 @@
                 <div class="project-icon"><img src="Images/gem5.png" alt="Project Icon"></div>
                 <h2>GalacticBrow - Space Combat Game</h2>
                 <p>Engage in epic space battles in our scrolling space shooter! Fight dynamic enemy ships, navigate through asteroid fields, and experience thrilling interstellar combat with smooth controls, power-ups, and challenging boss battles.</p>
-                <a href="GalacticBrow/GB.html" class="project-link">
-                    <span>Launch Space Combat</span>
-                    <span>→</span>
-                </a>
+            <a href="GalacticBrow/GB.html" class="project-link">
+                <span>→</span>
+            </a>
             </div>
 
             <div class="project">
@@ -599,10 +592,9 @@
                 <div class="project-icon"><img src="Images/emrald2.png" alt="Project Icon"></div>
                 <h2>Prinko - Ball Drop Physics Game</h2>
                 <p>Experience the satisfying physics of ball-dropping in Prinko! Drop balls through a pin-filled board, aim for multiplier slots, and watch mesmerizing ball physics in action. Features realistic physics simulation and addictive gameplay mechanics.</p>
-                <a href="Prinko/Prinko.html" class="project-link">
-                    <span>Play Physics Game</span>
-                    <span>→</span>
-                </a>
+            <a href="Prinko/Prinko.html" class="project-link">
+                <span>→</span>
+            </a>
             </div>
 
             <div class="project">
@@ -610,10 +602,9 @@
                 <div class="project-icon"><img src="Images/gem3.png" alt="Project Icon"></div>
                 <h2>Dad's Web Counter - Retro Counter</h2>
                 <p>Something I made for my father, even though he's being a butthead right now.</p>
-                <a href="/jodylabs/DadSim/DadSim.html" class="project-link">
-                    <span>View Retro Counter</span>
-                    <span>→</span>
-                </a>
+            <a href="/jodylabs/DadSim/DadSim.html" class="project-link">
+                <span>→</span>
+            </a>
             </div>
 
             <div class="project">
@@ -621,10 +612,9 @@
                 <div class="project-icon"><img src="Images/emrald.png" alt="Project Icon"></div>
                 <h2>Germ Sim - Microorganism Simulation</h2>
                 <p>Explore the fascinating microscopic world with our educational germ simulation! Observe germs growing, reproducing, and evolving in real-time. Perfect for education, featuring realistic biological behaviors and interactive controls.</p>
-                <a href="GermSim/GermSim.html" class="project-link">
-                    <span>Study Microorganisms</span>
-                    <span>→</span>
-                </a>
+            <a href="GermSim/GermSim.html" class="project-link">
+                <span>→</span>
+            </a>
             </div>
 
             <div class="project">
@@ -632,10 +622,9 @@
                 <div class="project-icon"><img src="Images/emrald.png" alt="Project Icon"></div>
                 <h2>Photobooth - Classic Booth Experience</h2>
                 <p>Step into a virtual photobooth! Snap fun pictures, get instant photo strips, and enjoy the retro booth vibe—just like the classic mall experience. No editing, just pure photobooth nostalgia.</p>
-                <a href="PhotoBooth/Photobooth.html" class="project-link">
-                    <span>Try Photobooth</span>
-                    <span>→</span>
-                </a>
+            <a href="PhotoBooth/Photobooth.html" class="project-link">
+                <span>→</span>
+            </a>
             </div>
 
             <div class="project">
@@ -643,10 +632,9 @@
                 <div class="project-icon"><img src="Images/gem2.png" alt="Project Icon"></div>
                 <h2>404Museum - Interactive Error Art Gallery</h2>
                 <p>Transform boring 404 error pages into stunning interactive art galleries! This embeddable JavaScript library detects 404 errors and replaces them with generative art displays, creating engaging experiences from broken links. Perfect for developers who want to turn user frustration into artistic discovery.</p>
-                <a href="404museum/index.html" class="project-link">
-                    <span>Explore Art Gallery</span>
-                    <span>→</span>
-                </a>
+            <a href="404museum/index.html" class="project-link">
+                <span>→</span>
+            </a>
             </div>
 
             <div class="project">
@@ -654,10 +642,9 @@
                 <div class="project-icon"><img src="Images/gem4.png" alt="Project Icon"></div>
                 <h2>Calfabochi - Virtual Pet Game</h2>
                 <p>Raise and care for your own virtual calf pet! Feed it, play with it, and watch it grow in this interactive digital pet simulation. Track your pet's health, happiness, and hunger while bonding with your adorable pixel companion.</p>
-                <a href="Calf/index.html" class="project-link">
-                    <span>Play Calfabochi</span>
-                    <span>→</span>
-                </a>
+            <a href="Calf/index.html" class="project-link">
+                <span>→</span>
+            </a>
             </div>
 
             <div class="project">
@@ -665,20 +652,18 @@
                 <div class="project-icon"><img src="Images/gem4.png" alt="Masker Icon"></div>
                 <h2>Masker - Image Masking Application</h2>
                 <p>Try our new Masker app for creative image masking and overlays! Upload your image, apply custom masks, and experiment with unique visual effects. Perfect for artists, designers, and anyone who loves digital creativity.</p>
-                <a href="Masker/MaskFill.html" class="project-link">
-                    <span>Open Masker App</span>
-                    <span>→</span>
-                </a>
+            <a href="Masker/MaskFill.html" class="project-link">
+                <span>→</span>
+            </a>
             </div>
             <div class="project">
                 <img src="screenshots/ghostbox.png" alt="Gtechbox Screenshot" class="project-screenshot">
                 <div class="project-icon"><img src="Images/gem2.png" alt="Project Icon"></div>
                 <h2>Gtechbox - Ghost Box 2025</h2>
                 <p>Experience the mysterious Ghost Box 2025! Listen to unique audio, explore interactive features, and discover the secrets of the Gtechbox. Perfect for fans of paranormal and experimental web audio.</p>
-                <a href="Gtechbox/GhostBox2025swag.html" class="project-link">
-                    <span>Open Gtechbox</span>
-                    <span>→</span>
-                </a>
+            <a href="Gtechbox/GhostBox2025swag.html" class="project-link">
+                <span>→</span>
+            </a>
             </div>
 
             <div class="project">
@@ -686,10 +671,9 @@
                 <div class="project-icon"><img src="Images/gem3.png" alt="Project Icon"></div>
                 <h2>Sounds of Appa - Sound Experience</h2>
                 <p>Immerse yourself in the Sounds of Appa! Enjoy a curated collection of relaxing and atmospheric sounds. Great for background ambiance, meditation, or creative inspiration.</p>
-                <a href="Soundsofappa/Sounds.html" class="project-link">
-                    <span>Listen to Sounds</span>
-                    <span>→</span>
-                </a>
+            <a href="Soundsofappa/Sounds.html" class="project-link">
+                <span>→</span>
+            </a>
             </div>
 
             <div class="project">
@@ -697,10 +681,9 @@
                 <div class="project-icon"><img src="Images/emrald2.png" alt="Project Icon"></div>
                 <h2>Spyropainter - Generative Art Tool</h2>
                 <p>Create mesmerizing generative art with Spyropainter! Experiment with colors, shapes, and patterns to produce unique digital artwork. Perfect for artists and anyone who loves creative coding.</p>
-                <a href="Spyropainter/SpyroPainter.html" class="project-link">
-                    <span>Try Spyropainter</span>
-                    <span>→</span>
-                </a>
+            <a href="Spyropainter/SpyroPainter.html" class="project-link">
+                <span>→</span>
+            </a>
             </div>
 
             <div class="project">
@@ -708,10 +691,9 @@
                 <div class="project-icon"><img src="Images/gem4.png" alt="Project Icon"></div>
                 <h2>Panel Whiteboard - Collaborative Drawing</h2>
                 <p>Collaborate and draw together on the Panel Whiteboard! Share ideas, sketch diagrams, and brainstorm in real-time with friends or colleagues. Great for remote teamwork and creative sessions.</p>
-                <a href="Panelwhiteboard/test.html" class="project-link">
-                    <span>Open Whiteboard</span>
-                    <span>→</span>
-                </a>
+            <a href="Panelwhiteboard/test.html" class="project-link">
+                <span>→</span>
+            </a>
             </div>
 
             <!-- New Card: Breakup Service -->
@@ -720,10 +702,9 @@
                 <div class="project-icon"><img src="Images/gem2.png" alt="Project Icon"></div>
                 <h2>Breakup Service - Sweet Release</h2>
                 <p>Placeholder description for the Breakup Service. Add details about the service here soon.</p>
-                <a href="BreakupPhone/breaker.html" class="project-link">
-                    <span>Try Breakup Service</span>
-                    <span>→</span>
-                </a>
+            <a href="BreakupPhone/breaker.html" class="project-link">
+                <span>→</span>
+            </a>
             </div>
 
             <!-- New Card: JodyTV -->
@@ -732,10 +713,9 @@
                 <div class="project-icon"><img src="Images/gem2.png" alt="Project Icon"></div>
                 <h2>JodyTV - Streaming & Fun</h2>
                 <p>Placeholder description for JodyTV. Add details about the streaming or video project here soon.</p>
-                <a href="JodyTV/JodyTV.html" class="project-link">
-                    <span>Visit JodyTV</span>
-                    <span>→</span>
-                </a>
+            <a href="JodyTV/JodyTV.html" class="project-link">
+                <span>→</span>
+            </a>
             </div>
         </div>
     </div>
