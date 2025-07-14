@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<!-- This file was renamed from aifun.html. See git history for details. -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -35,52 +34,6 @@
         "@type": "Organization",
         "name": "JodyLabs"
       },
-    }
-    </script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: 'Rajdhani', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: 
-                radial-gradient(circle at 20% 50%, rgba(230, 57, 70, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 80% 20%, rgba(230, 57, 70, 0.08) 0%, transparent 50%),
-                radial-gradient(circle at 40% 80%, rgba(230, 57, 70, 0.06) 0%, transparent 50%),
-                linear-gradient(135deg, #000000 0%, #0d0d0d 25%, #1a0a0a 50%, #000000 100%);
-            color: #ffffff;
-            overflow-x: hidden;
-            position: relative;
-            min-height: 100vh;
-        }
-        /* ...rest of the CSS, HTML, and JS from aifun.html... */
-    </style>
-</head>
-<body>
-    <a href="index.html" class="back-btn">← Back to Home</a>
-    <div class="support-button">
-        <a href="https://www.paypal.com/donate/?business=TE5MW5QV6RRCS&no_recurring=1&item_name=Donations+encouraged%2C+but+of+course+not+expected.+Thanks+for+visiting!&currency_code=USD" target="_blank">Support Me</a>
-    </div>
-    <div class="particles" id="particles"></div>
-    <div class="container">
-        <div class="header">
-            <h1>The Vibe Code Registry</h1>
-            <p>A registry of web projects, games, and creative tools to vibe with.</p>
-        </div>
-        <div class="projects-grid">
-            <!-- All project cards from aifun.html go here -->
-            <!-- ...existing project cards and content... -->
-        </div>
-    </div>
-    <!-- Scripts and hit counter from aifun.html go here -->
-</body>
-</html>
-    }
-    </script>
       "image": "https://jodylabs.surge.sh/Images/jodylabs-main.png"
     }
     </script>
@@ -104,5 +57,350 @@
             position: relative;
             min-height: 100vh;
         }
-        /* ...rest of the CSS, HTML, and JS from aifun.html... */
-        ...existing code from aifun.html...
+        /* Animated background particles */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(2px 2px at 20px 30px, rgba(230, 57, 70, 0.3), transparent),
+                radial-gradient(2px 2px at 40px 70px, rgba(255, 255, 255, 0.1), transparent),
+                radial-gradient(1px 1px at 90px 40px, rgba(230, 57, 70, 0.2), transparent),
+                radial-gradient(1px 1px at 130px 80px, rgba(255, 255, 255, 0.05), transparent),
+                radial-gradient(2px 2px at 160px 30px, rgba(230, 57, 70, 0.1), transparent);
+            background-repeat: repeat;
+            background-size: 200px 100px;
+            animation: sparkle 20s linear infinite;
+            z-index: 0;
+            pointer-events: none;
+        }
+        @keyframes sparkle {
+            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 1; }
+            50% { transform: translateY(-10px) rotate(180deg); opacity: 0.8; }
+        }
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+        .particle {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 15s infinite linear;
+        }
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: linear-gradient(145deg, #1e1e1e, #2a2a2a);
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(230, 57, 70, 0.3);
+            transition: all 0.3s ease;
+            z-index: 1000;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 600;
+        }
+        .back-btn:hover {
+            background-color: #E63946;
+            transform: translateY(-2px);
+        }
+        .support-button {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 1000;
+        }
+        .support-button a {
+            display: inline-block;
+            background-color: #3E98D3;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+        .support-button a:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 2;
+        }
+        .header {
+            text-align: center;
+            padding: 60px 0;
+            position: relative;
+        }
+        .header h1 {
+            font-family: 'Orbitron', monospace;
+            font-weight: 900;
+            font-size: 4rem;
+            background: linear-gradient(45deg, #ffffff, #e63946, #ffffff);
+            background-size: 400% 400%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 4s ease-in-out infinite;
+            margin-bottom: 20px;
+            text-shadow: 
+                0 0 20px rgba(230, 57, 70, 0.4),
+                0 0 40px rgba(230, 57, 70, 0.4),
+                0 0 60px rgba(230, 57, 70, 0.3);
+        }
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        .header p {
+            font-size: 1.3rem;
+            opacity: 0.8;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+            padding: 40px 0;
+        }
+        .project {
+            background: linear-gradient(145deg, #1e1e1e, #2a2a2a);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(230, 57, 70, 0.2);
+            border-radius: 20px;
+            padding: 30px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            animation: slideInUp 0.6s ease-out forwards;
+            opacity: 0;
+            transform: translateY(50px);
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.4),
+                0 0 0 1px rgba(255, 255, 255, 0.05),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+        .project:nth-child(odd) {
+            animation-delay: 0.1s;
+        }
+        .project:nth-child(even) {
+            animation-delay: 0.2s;
+        }
+        @keyframes slideInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .project::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.6s;
+        }
+        .project:hover::before {
+            left: 100%;
+        }
+        .project:hover {
+            transform: translateY(-10px) scale(1.02);
+            border-color: rgba(0, 212, 255, 0.4);
+            box-shadow: 0 20px 40px rgba(0, 212, 255, 0.1);
+        }
+        .project-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 212, 255, 0.2);
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            transition: all 0.3s ease;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        .project-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+        .project:hover .project-icon {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(230, 57, 70, 0.4);
+        }
+        .project:hover .project-icon img {
+            transform: scale(1.1);
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        .project h2 {
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            color: #e63946;
+            transition: color 0.3s ease;
+        }
+        .project:hover h2 {
+            color: #ff4757;
+        }
+        .project p {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 25px;
+            opacity: 0.9;
+        }
+        .project-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: linear-gradient(45deg, #e63946, #ff4757);
+            color: white;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            font-family: 'Rajdhani', sans-serif;
+            box-shadow: 0 4px 15px rgba(230, 57, 70, 0.3);
+        }
+        .project-link::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, #ff4757, #e63946);
+            transition: left 0.3s ease;
+            z-index: -1;
+        }
+        .project-link:hover::before {
+            left: 0;
+        }
+        .project-link:hover {
+            transform: translateX(5px);
+            box-shadow: 
+                0 8px 25px rgba(230, 57, 70, 0.4),
+                0 0 40px rgba(230, 57, 70, 0.3);
+        }
+        .footer-links {
+            text-align: center;
+            padding: 60px 0 40px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 60px;
+        }
+        .footer-links a {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: linear-gradient(145deg, #1e1e1e, #2a2a2a);
+            color: #e63946;
+            text-decoration: none;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border: 2px solid rgba(230, 57, 70, 0.3);
+            font-family: 'Rajdhani', sans-serif;
+        }
+        .footer-links a:hover {
+            background: linear-gradient(145deg, #2a2a2a, #3a3a3a);
+            border-color: #e63946;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(230, 57, 70, 0.3);
+        }
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2.5rem;
+            }
+            .projects-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            .project {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-btn">← Back to Home</a>
+    <div class="support-button">
+        <a href="https://www.paypal.com/donate/?business=TE5MW5QV6RRCS&no_recurring=1&item_name=Donations+encouraged%2C+but+of+course+not+expected.+Thanks+for+visiting!&currency_code=USD" target="_blank">Support Me</a>
+    </div>
+    <div class="particles" id="particles"></div>
+    <div class="container">
+        <div class="header">
+            <h1>The Vibe Code Registry</h1>
+            <p>A registry of web projects, games, and creative tools to vibe with.</p>
+        </div>
+        <div class="projects-grid">
+            <div class="project">
+                <div class="project-icon"><img src="Images/emrald.png" alt="Project Icon"></div>
+                <h2>Card Cake - Fiteme Card Arena</h2>
+                <p>Experience our latest online multiplayer card game! Build custom decks with your own images, play against friends in real-time matches, and master strategic card battles. Features include life counters, deck builder, custom card creation, and competitive multiplayer gameplay.</p>
+                <a href="CardCake/index.html" class="project-link">
+                    <span>Play Card Game</span>
+                    <span>→</span>
+                </a>
+            </div>
+            <!-- SandSation Simulation Project Card -->
+            <div class="project">
+                <div class="project-icon"><img src="Images/gem2.png" alt="SandSation Icon"></div>
+                <h2>SandSation - Sand Physics Simulation</h2>
+                <p>Explore mesmerizing falling sand physics! Interact with virtual grains, create landscapes, and watch realistic sand flow and pile up. Perfect for relaxation, creativity, and experimenting with digital sand art.</p>
+                <a href="SandSensation/sand_fall.html" class="project-link">
+                    <span>Play SandSation</span>
+                    <span>→</span>
+                </a>
+            </div>
+            <!-- ...all other project cards and content from aifun.html... -->
+        </div>
+    </div>
+    <!-- Scripts and hit counter from aifun.html go here -->
+</body>
+</html>
