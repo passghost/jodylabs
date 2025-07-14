@@ -182,23 +182,29 @@
             left: 20px;
             z-index: 1000;
         }
-
-        .support-button a {
-            display: inline-block;
-            background-color: #3E98D3;
-            color: white;
-            padding: 10px 15px;
-            border-radius: 5px;
-            text-decoration: none;
-            font-weight: bold;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-            transition: all 0.3s ease;
+        .support-tooltip {
+            display: none;
+            position: absolute;
+            left: 110%;
+            bottom: 0;
+            background: rgba(30,30,30,0.97);
+            color: #fff;
+            padding: 12px 22px;
+            border-radius: 16px;
+            box-shadow: 0 4px 24px rgba(230,57,70,0.18);
+            font-size: 1.08rem;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 600;
+            border: 2px solid #e63946;
+            white-space: nowrap;
+            transition: opacity 0.2s, transform 0.2s;
+            opacity: 0;
+            pointer-events: none;
         }
-
-        .support-button a:hover {
-            background-color: #2980b9;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        .support-button:hover .support-tooltip {
+            display: block;
+            opacity: 1;
+            transform: translateY(-8px) scale(1.04);
         }
 
         .container {
@@ -594,6 +600,7 @@
     
     <div class="support-button">
         <a href="https://www.paypal.com/donate/?business=TE5MW5QV6RRCS&no_recurring=1&item_name=Donations+encouraged%2C+but+of+course+not+expected.+Thanks+for+visiting!&currency_code=USD" target="_blank">Support Me</a>
+        <div class="support-tooltip">You're awesome just for hovering over me.</div>
     </div>
     
     <!-- Animated background particles -->
