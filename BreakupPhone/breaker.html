@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Breakup Service - Sweet Release</title>
+    <style>
+        body {
+            background: #0a0a0a;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background: #181818;
+            border-radius: 12px;
+            box-shadow: 0 0 40px 10px #000000cc;
+            padding: 2.5rem 2rem;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+        }
+        h1 {
+            color: #ff2e2e;
+            font-size: 2.2rem;
+            margin-bottom: 0.5rem;
+            letter-spacing: 2px;
+        }
+        p {
+            color: #b0b0b0;
+            margin-bottom: 2rem;
+        }
+        label {
+            display: block;
+            margin: 1rem 0 0.5rem;
+            color: #e0e0e0;
+            font-weight: bold;
+        }
+        textarea, input[type="text"] {
+            width: 100%;
+            padding: 0.7rem;
+            border-radius: 6px;
+            border: none;
+            background: #222;
+            color: #fff;
+            margin-bottom: 1rem;
+            font-size: 1rem;
+        }
+        textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        .price {
+            color: #ff2e2e;
+            font-size: 1.3rem;
+            margin-bottom: 1.5rem;
+        }
+        .paypal-btn {
+            background: #23272a;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 0.8rem 2rem;
+            font-size: 1.1rem;
+            cursor: pointer;
+            margin-top: 1rem;
+            box-shadow: 0 0 10px #000;
+            transition: background 0.2s;
+        }
+        .paypal-btn:hover {
+            background: #ff2e2e;
+            color: #fff;
+        }
+        .footer {
+            margin-top: 2rem;
+            color: #444;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Sweet Release</h1>
+        <p>Let us handle the hard part. No drama, no arguments, just a gentle goodbye.<br>
+        <span class="price">$30 per breakup</span></p>
+        <form>
+            <label for="details">Worst parts of the relationship or breakup script:</label>
+            <textarea id="details" name="details" placeholder="Describe the issues or paste your breakup script here..." required></textarea>
+            <label for="email">Your Email (for confirmation):</label>
+            <input type="text" id="email" name="email" placeholder="you@email.com" required>
+            <!-- PayPal payment placeholder -->
+            <button type="button" class="paypal-btn">Pay with PayPal</button>
+            <div style="margin-top:0.5rem; color:#666; font-size:0.95rem;">(PayPal integration coming soon)</div>
+        </form>
+    </div>
+    <div class="footer">No personal items harmed. No arguments started. Just closure.</div>
+</body>
+</html>
