@@ -247,27 +247,63 @@
 
         .projects-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 30px;
+            grid-template-columns: repeat(2, 1fr);
+            grid-auto-rows: 370px;
+            gap: 32px;
             padding: 40px 0;
+        }
+        @media (max-width: 1400px) {
+            .projects-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        @media (max-width: 1000px) {
+            .projects-grid {
+                grid-template-columns: 1fr;
+                grid-auto-rows: 270px;
+            }
+        }
+        @media (max-width: 700px) {
+            .projects-grid {
+                grid-template-columns: 1fr;
+                grid-auto-rows: 200px;
+            }
         }
 
         .project {
             background: linear-gradient(145deg, #1e1e1e, #2a2a2a);
             backdrop-filter: blur(10px);
             border: 2px solid rgba(230, 57, 70, 0.2);
-            border-radius: 20px;
-            padding: 30px;
+            border-radius: 24px;
+            padding: 18px 32px 18px 32px;
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
             animation: slideInUp 0.6s ease-out forwards;
             opacity: 0;
             transform: translateY(50px);
-            box-shadow: 
-                0 8px 32px rgba(0, 0, 0, 0.4),
-                0 0 0 1px rgba(255, 255, 255, 0.05),
-                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.07), inset 0 1px 0 rgba(255,255,255,0.13);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-width: 0;
+            min-height: 340px;
+            position: relative;
+        }
+        .project-screenshot {
+            width: 220px;
+            height: 120px;
+            border-radius: 14px;
+            margin-bottom: 10px;
+            object-fit: cover;
+            box-shadow: 0 4px 24px rgba(0,212,255,0.10);
+            transition: transform 0.3s;
+        }
+        .project:hover .project-screenshot {
+            transform: scale(1.04) translateY(-4px);
+            box-shadow: 0 8px 32px rgba(230,57,70,0.18);
+        }
         }
 
         .project:nth-child(odd) {
@@ -307,13 +343,17 @@
         }
 
         .project-icon {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 20px;
-            border-radius: 12px;
+            width: 32px;
+            height: 32px;
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            margin: 0;
+            border-radius: 8px;
             overflow: hidden;
-            box-shadow: 0 8px 32px rgba(0, 212, 255, 0.2);
-            border: 2px solid rgba(0, 212, 255, 0.3);
+            box-shadow: 0 2px 8px rgba(0, 212, 255, 0.18);
+            border: 1px solid rgba(0, 212, 255, 0.18);
+            background: rgba(0,212,255,0.10);
             transition: all 0.3s ease;
             animation: pulse 2s ease-in-out infinite;
         }
@@ -342,8 +382,8 @@
         .project h2 {
             font-family: 'Orbitron', monospace;
             font-weight: 700;
-            font-size: 1.8rem;
-            margin-bottom: 15px;
+            font-size: 1.25rem;
+            margin-bottom: 10px;
             color: #e63946;
             transition: color 0.3s ease;
         }
@@ -353,10 +393,11 @@
         }
 
         .project p {
-            font-size: 1.1rem;
-            line-height: 1.6;
-            margin-bottom: 25px;
-            opacity: 0.9;
+            font-size: 0.98rem;
+            line-height: 1.5;
+            margin-bottom: 18px;
+            opacity: 0.92;
+            text-align: center;
         }
 
         .project-link {
@@ -366,9 +407,10 @@
             background: linear-gradient(45deg, #e63946, #ff4757);
             color: white;
             text-decoration: none;
-            padding: 12px 24px;
+            padding: 16px 36px;
             border-radius: 50px;
             font-weight: 600;
+            font-size: 1.15rem;
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
@@ -433,14 +475,13 @@
             .header h1 {
                 font-size: 2.5rem;
             }
-            
             .projects-grid {
                 grid-template-columns: 1fr;
                 gap: 20px;
+                grid-auto-rows: 220px;
             }
-            
             .project {
-                padding: 20px;
+                padding: 16px;
             }
         }
     </style>
@@ -463,6 +504,7 @@
         
         <div class="projects-grid">
             <div class="project">
+                <img src="screenshots/CardCake.png" alt="Card Cake Screenshot" class="project-screenshot">
                 <div class="project-icon"><img src="Images/emrald.png" alt="Project Icon"></div>
                 <h2>Card Cake - Fiteme Card Arena</h2>
                 <p>Experience our latest online multiplayer card game! Build custom decks with your own images, play against friends in real-time matches, and master strategic card battles. Features include life counters, deck builder, custom card creation, and competitive multiplayer gameplay.</p>
@@ -474,6 +516,7 @@
 
             <!-- SandSation Simulation Project Card -->
             <div class="project">
+                <img src="screenshots/SandFall.png" alt="SandSation Screenshot" class="project-screenshot">
                 <div class="project-icon"><img src="Images/gem2.png" alt="SandSation Icon"></div>
                 <h2>SandSation - Sand Physics Simulation</h2>
                 <p>Explore mesmerizing falling sand physics! Interact with virtual grains, create landscapes, and watch realistic sand flow and pile up. Perfect for relaxation, creativity, and experimenting with digital sand art.</p>
@@ -485,6 +528,7 @@
             
 
             <div class="project">
+                <img src="screenshots/Marquee.png" alt="Marquee Screenshot" class="project-screenshot">
                 <div class="project-icon"><img src="Images/gem4.png" alt="Project Icon"></div>
                 <h2>Vertical Dot Matrix Marquee</h2>
                 <p>Display custom scrolling messages in a retro dot-matrix style! Add your own text, pick colors, and watch your message scroll vertically in a glowing ticker. Great for fun, announcements, or digital signage.</p>
@@ -495,6 +539,7 @@
             </div>
             
             <div class="project">
+                <img src="screenshots/stonerhome.png" alt="Stoner Homepage Screenshot" class="project-screenshot">
                 <div class="project-icon"><img src="Images/gem3.png" alt="Project Icon"></div>
                 <h2>Stoner Homepage - Relaxation Hub</h2>
                 <p>Visit our chill homepage featuring live news feeds, weather widgets, relaxing content, and peaceful digital spaces. Perfect for unwinding with curated content designed for relaxation and mindfulness.</p>
@@ -506,6 +551,7 @@
 
 
             <div class="project">
+                <img src="screenshots/Gifcreator.png" alt="GIF Creator Screenshot" class="project-screenshot">
                 <div class="project-icon"><img src="Images/gem4.png" alt="Project Icon"></div>
                 <h2>GIF Creator - Animated GIF Maker</h2>
                 <p>Create custom animated GIFs with our free web-based GIF maker tool. Upload multiple images, adjust timing and effects, and generate high-quality animated GIFs perfect for social media, presentations, memes, and digital marketing.</p>
@@ -516,6 +562,7 @@
             </div>
 
             <div class="project">
+                <img src="screenshots/Jody'slist.png" alt="Jody'sList Screenshot" class="project-screenshot">
                 <div class="project-icon"><img src="Images/gem5.png" alt="Project Icon"></div>
                 <h2>Jody'sList - Community Marketplace</h2>
                 <p>A community-driven trading platform specifically for Eastern Kentucky residents. Buy, sell, and trade items with your neighbors. Keep commerce local and build community connections with this simple, effective marketplace.</p>
@@ -526,6 +573,7 @@
             </div>
 
             <div class="project">
+                <img src="screenshots/NeonPang.png" alt="NeonPang Screenshot" class="project-screenshot">
                 <div class="project-icon"><img src="Images/emrald.png" alt="Project Icon"></div>
                 <h2>NeonPang - AI Pong Game</h2>
                 <p>Play our vibrant neon-styled Pong game featuring an intelligent AI opponent, spectacular glowing visual effects, and modern gameplay mechanics. This classic arcade game gets a futuristic makeover with smooth animations and challenging AI.</p>
@@ -536,6 +584,7 @@
             </div>
 
             <div class="project">
+                <img src="screenshots/Galacticbrow.png" alt="GalacticBrow Screenshot" class="project-screenshot">
                 <div class="project-icon"><img src="Images/gem5.png" alt="Project Icon"></div>
                 <h2>GalacticBrow - Space Combat Game</h2>
                 <p>Engage in epic space battles in our scrolling space shooter! Fight dynamic enemy ships, navigate through asteroid fields, and experience thrilling interstellar combat with smooth controls, power-ups, and challenging boss battles.</p>
@@ -546,6 +595,7 @@
             </div>
 
             <div class="project">
+                <img src="screenshots/Prinko.png" alt="Prinko Screenshot" class="project-screenshot">
                 <div class="project-icon"><img src="Images/emrald2.png" alt="Project Icon"></div>
                 <h2>Prinko - Ball Drop Physics Game</h2>
                 <p>Experience the satisfying physics of ball-dropping in Prinko! Drop balls through a pin-filled board, aim for multiplier slots, and watch mesmerizing ball physics in action. Features realistic physics simulation and addictive gameplay mechanics.</p>
@@ -556,6 +606,7 @@
             </div>
 
             <div class="project">
+                <img src="screenshots/DadSim.png" alt="Dad's Web Counter Screenshot" class="project-screenshot">
                 <div class="project-icon"><img src="Images/gem3.png" alt="Project Icon"></div>
                 <h2>Dad's Web Counter - Retro Counter</h2>
                 <p>Relive web nostalgia with our retro-style web counter featuring rapid number increments, bouncing ball animations, and classic 90s web aesthetic. A fun throwback to early internet culture and vintage web design.</p>
@@ -566,6 +617,7 @@
             </div>
 
             <div class="project">
+                <img src="screenshots/GermSim.png" alt="Germ Sim Screenshot" class="project-screenshot">
                 <div class="project-icon"><img src="Images/emrald.png" alt="Project Icon"></div>
                 <h2>Germ Sim - Microorganism Simulation</h2>
                 <p>Explore the fascinating microscopic world with our educational germ simulation! Observe germs growing, reproducing, and evolving in real-time. Perfect for education, featuring realistic biological behaviors and interactive controls.</p>
@@ -576,6 +628,7 @@
             </div>
 
             <div class="project">
+                <img src="screenshots/photobooth.png" alt="AI Photobooth Screenshot" class="project-screenshot">
                 <div class="project-icon"><img src="Images/emrald.png" alt="Project Icon"></div>
                 <h2>AI Photobooth - Classic Booth Experience</h2>
                 <p>Step into a virtual photobooth! Snap fun pictures, get instant photo strips, and enjoy the retro booth vibe—just like the classic mall experience. No editing, just pure photobooth nostalgia.</p>
@@ -586,6 +639,7 @@
             </div>
 
             <div class="project">
+                <img src="screenshots/404museum.png" alt="404Museum Screenshot" class="project-screenshot">
                 <div class="project-icon"><img src="Images/gem2.png" alt="Project Icon"></div>
                 <h2>404Museum - Interactive Error Art Gallery</h2>
                 <p>Transform boring 404 error pages into stunning interactive art galleries! This embeddable JavaScript library detects 404 errors and replaces them with generative art displays, creating engaging experiences from broken links. Perfect for developers who want to turn user frustration into artistic discovery.</p>
@@ -596,6 +650,7 @@
             </div>
 
             <div class="project">
+                <img src="screenshots/Calf.png" alt="Calfabochi Screenshot" class="project-screenshot">
                 <div class="project-icon"><img src="Images/gem4.png" alt="Project Icon"></div>
                 <h2>Calfabochi - Virtual Pet Game</h2>
                 <p>Raise and care for your own virtual calf pet! Feed it, play with it, and watch it grow in this interactive digital pet simulation. Track your pet's health, happiness, and hunger while bonding with your adorable pixel companion.</p>
@@ -606,6 +661,7 @@
             </div>
 
             <div class="project">
+                <img src="screenshots/Masker.png" alt="Masker Screenshot" class="project-screenshot">
                 <div class="project-icon"><img src="Images/gem4.png" alt="Masker Icon"></div>
                 <h2>Masker - Image Masking Application</h2>
                 <p>Try our new Masker app for creative image masking and overlays! Upload your image, apply custom masks, and experiment with unique visual effects. Perfect for artists, designers, and anyone who loves digital creativity.</p>
@@ -615,6 +671,7 @@
                 </a>
             </div>
             <div class="project">
+                <img src="screenshots/ghostbox.png" alt="Gtechbox Screenshot" class="project-screenshot">
                 <div class="project-icon"><img src="Images/gem2.png" alt="Project Icon"></div>
                 <h2>Gtechbox - Ghost Box 2025</h2>
                 <p>Experience the mysterious Ghost Box 2025! Listen to unique audio, explore interactive features, and discover the secrets of the Gtechbox. Perfect for fans of paranormal and experimental web audio.</p>
@@ -625,6 +682,7 @@
             </div>
 
             <div class="project">
+                <img src="screenshots/SoundsofAppa.png" alt="Sounds of Appa Screenshot" class="project-screenshot">
                 <div class="project-icon"><img src="Images/gem3.png" alt="Project Icon"></div>
                 <h2>Sounds of Appa - Sound Experience</h2>
                 <p>Immerse yourself in the Sounds of Appa! Enjoy a curated collection of relaxing and atmospheric sounds. Great for background ambiance, meditation, or creative inspiration.</p>
@@ -635,6 +693,7 @@
             </div>
 
             <div class="project">
+                <img src="screenshots/spyropainter.png" alt="Spyropainter Screenshot" class="project-screenshot">
                 <div class="project-icon"><img src="Images/emrald2.png" alt="Project Icon"></div>
                 <h2>Spyropainter - Generative Art Tool</h2>
                 <p>Create mesmerizing generative art with Spyropainter! Experiment with colors, shapes, and patterns to produce unique digital artwork. Perfect for artists and anyone who loves creative coding.</p>
@@ -645,6 +704,7 @@
             </div>
 
             <div class="project">
+                <img src="screenshots/PanelWhiteboard.png" alt="Panel Whiteboard Screenshot" class="project-screenshot">
                 <div class="project-icon"><img src="Images/gem4.png" alt="Project Icon"></div>
                 <h2>Panel Whiteboard - Collaborative Drawing</h2>
                 <p>Collaborate and draw together on the Panel Whiteboard! Share ideas, sketch diagrams, and brainstorm in real-time with friends or colleagues. Great for remote teamwork and creative sessions.</p>
