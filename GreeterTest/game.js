@@ -1,6 +1,6 @@
 console.log("game.js loaded");
 // GreeterTest Multiplayer Game
-// Version: 1.2.3 (2025-07-16)
+// Version: 1.2.4 (2025-07-16)
 //
 // Supabase configuration
 const SUPABASE_URL = 'https://omcwjmvdjswkfjkahchm.supabase.co';
@@ -45,7 +45,7 @@ async function joinWorld() {
     document.getElementById('playerNameDisplay').textContent = playerName;
 
     // Show version number on both login and game screens
-    const version = 'v1.2.3 (2025-07-16)';
+    const version = 'v1.2.4 (2025-07-16)';
     // Login screen
     const loginVersionSpan = document.getElementById('loginVersion');
     if (loginVersionSpan) {
@@ -270,15 +270,16 @@ FOR ALL USING (true) WITH CHECK (true);
         });
 
         // Fetch existing players, chat messages, and stickers
+
         await fetchAllPlayers();
         await fetchRecentChatMessages();
-        await fetchAllStickers();
+        await fetchAllStickers(); // Only once on initial load
 
-        // Add fallback polling in case real-time doesn't work
+        // Add fallback polling in case real-time doesn't work (players and chat only)
         setInterval(async () => {
             await fetchAllPlayers();
-            await fetchRecentChatMessages(); // Poll for chat messages too
-        }, 2000); // Poll every 2 seconds as backup
+            await fetchRecentChatMessages();
+        }, 2000);
 
         console.log('Multiplayer mode enabled!');
 
@@ -468,21 +469,22 @@ function handleChatUpdate(payload) {
 }
 
 function handleStickerUpdate(payload) {
-    // Debug: Real-time sticker event received
+    // Real-time sticker event received
     const stickerData = payload.new;
     if (!stickerData) return;
-    console.log('[DEBUG] handleStickerUpdate event:', stickerData);
-    // Add sticker to the scene
-    const sticker = {
-        id: stickerData.id,
-        url: stickerData.url,
-        x: stickerData.x,
-        y: stickerData.y,
-        timestamp: new Date(stickerData.timestamp).getTime(),
-        placedBy: stickerData.placed_by
-    };
-    stickers.set(sticker.id, sticker);
-    loadStickerImage(sticker);
+    // Only add if not already present
+    if (!stickers.has(stickerData.id)) {
+        const sticker = {
+            id: stickerData.id,
+            url: stickerData.url,
+            x: stickerData.x,
+            y: stickerData.y,
+            timestamp: new Date(stickerData.timestamp).getTime(),
+            placedBy: stickerData.placed_by
+        };
+        stickers.set(sticker.id, sticker);
+        loadStickerImage(sticker);
+    }
 }
 
 async function fetchRecentChatMessages() {
@@ -527,18 +529,20 @@ async function fetchAllStickers() {
             return;
         }
 
-        // Add all stickers to the scene
+        // Add all stickers to the scene, but only if not already present
         data.forEach(stickerData => {
-            const sticker = {
-                id: stickerData.id,
-                url: stickerData.url,
-                x: stickerData.x,
-                y: stickerData.y,
-                timestamp: new Date(stickerData.timestamp).getTime(),
-                placedBy: stickerData.placed_by
-            };
-            stickers.set(sticker.id, sticker);
-            loadStickerImage(sticker);
+            if (!stickers.has(stickerData.id)) {
+                const sticker = {
+                    id: stickerData.id,
+                    url: stickerData.url,
+                    x: stickerData.x,
+                    y: stickerData.y,
+                    timestamp: new Date(stickerData.timestamp).getTime(),
+                    placedBy: stickerData.placed_by
+                };
+                stickers.set(sticker.id, sticker);
+                loadStickerImage(sticker);
+            }
         });
     } catch (error) {
         console.error('Error fetching stickers:', error);
@@ -774,45 +778,33 @@ function placeStickerAtPlayer(imageUrl) {
     if (!currentPlayer) return;
 
     const stickerId = 'sticker_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
-
-    // Create image object to test if URL works
-    const img = new Image();
-
-    img.onload = () => {
-        const stickerData = {
-            id: stickerId,
-            url: imageUrl,
-            x: currentPlayer.x + PLAYER_SIZE / 2 - 25, // Center at player position
-            y: currentPlayer.y + PLAYER_SIZE / 2 - 25,
-            timestamp: Date.now(),
-            placedBy: currentPlayer.name
-        };
-
-        // Optimistically add sticker locally for instant feedback
-        if (!stickers.has(stickerId)) {
-            stickers.set(stickerId, stickerData);
-            loadStickerImage(stickerData);
-        }
-
-        // Debug: Log sticker placement (request)
-        console.log('[DEBUG] Sticker placed (request):', {
-            playerName: currentPlayer.name,
-            stickerId,
-            imageUrl,
-            x: stickerData.x,
-            y: stickerData.y,
-            timestamp: stickerData.timestamp
-        });
-
-        // Send sticker to database for syncing
-        sendStickerToDatabase(stickerData);
+    const stickerData = {
+        id: stickerId,
+        url: imageUrl,
+        x: currentPlayer.x + PLAYER_SIZE / 2 - 25, // Center at player position
+        y: currentPlayer.y + PLAYER_SIZE / 2 - 25,
+        timestamp: Date.now(),
+        placedBy: currentPlayer.name
     };
 
-    img.onerror = () => {
-        alert('Failed to load image. Please check the URL and try again.');
-    };
+    // Optimistically add sticker locally for instant feedback
+    if (!stickers.has(stickerId)) {
+        stickers.set(stickerId, stickerData);
+        loadStickerImage(stickerData);
+    }
 
-    img.src = imageUrl;
+    // Debug: Log sticker placement (request)
+    console.log('[DEBUG] Sticker placed (request):', {
+        playerName: currentPlayer.name,
+        stickerId,
+        imageUrl,
+        x: stickerData.x,
+        y: stickerData.y,
+        timestamp: stickerData.timestamp
+    });
+
+    // Send sticker to database for syncing
+    sendStickerToDatabase(stickerData);
 
     // Clear input
     const stickerInput = document.getElementById('stickerInput');
@@ -826,45 +818,33 @@ function placeStickerAt(x, y) {
     if (!imageUrl) return;
 
     const stickerId = 'sticker_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
-
-    // Create image object to test if URL works
-    const img = new Image();
-
-    img.onload = () => {
-        const stickerData = {
-            id: stickerId,
-            url: imageUrl,
-            x: x - 25, // Center the 50px sticker
-            y: y - 25,
-            timestamp: Date.now(),
-            placedBy: currentPlayer ? currentPlayer.name : 'Anonymous'
-        };
-
-        // Optimistically add sticker locally for instant feedback
-        if (!stickers.has(stickerId)) {
-            stickers.set(stickerId, stickerData);
-            loadStickerImage(stickerData);
-        }
-
-        // Debug: Log sticker placement (request)
-        console.log('[DEBUG] Sticker placed (request):', {
-            playerName: currentPlayer ? currentPlayer.name : 'Anonymous',
-            stickerId,
-            imageUrl,
-            x: stickerData.x,
-            y: stickerData.y,
-            timestamp: stickerData.timestamp
-        });
-
-        // Send sticker to database for syncing
-        sendStickerToDatabase(stickerData);
+    const stickerData = {
+        id: stickerId,
+        url: imageUrl,
+        x: x - 25, // Center the 50px sticker
+        y: y - 25,
+        timestamp: Date.now(),
+        placedBy: currentPlayer ? currentPlayer.name : 'Anonymous'
     };
 
-    img.onerror = () => {
-        alert('Failed to load image. Please check the URL and try again.');
-    };
+    // Optimistically add sticker locally for instant feedback
+    if (!stickers.has(stickerId)) {
+        stickers.set(stickerId, stickerData);
+        loadStickerImage(stickerData);
+    }
 
-    img.src = imageUrl;
+    // Debug: Log sticker placement (request)
+    console.log('[DEBUG] Sticker placed (request):', {
+        playerName: currentPlayer ? currentPlayer.name : 'Anonymous',
+        stickerId,
+        imageUrl,
+        x: stickerData.x,
+        y: stickerData.y,
+        timestamp: stickerData.timestamp
+    });
+
+    // Send sticker to database for syncing
+    sendStickerToDatabase(stickerData);
 
     // Clear input
     stickerInput.value = '';
@@ -921,15 +901,14 @@ function render() {
 
 function drawStickers() {
     stickers.forEach(sticker => {
-        // Check if image is already cached
-        if (stickerImages.has(sticker.id)) {
-            const img = stickerImages.get(sticker.id);
-            if (img.complete && img.naturalWidth > 0) {
-                ctx.drawImage(img, sticker.x, sticker.y, 50, 50);
-            }
-        } else {
-            // Load and cache the image
+        // Only load image if not already cached
+        if (!stickerImages.has(sticker.id)) {
             loadStickerImage(sticker);
+            return;
+        }
+        const img = stickerImages.get(sticker.id);
+        if (img.complete && img.naturalWidth > 0) {
+            ctx.drawImage(img, sticker.x, sticker.y, 50, 50);
         }
     });
 }
