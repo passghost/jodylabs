@@ -41,7 +41,7 @@ async function joinWorld() {
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('gameContainer').style.display = 'flex';
     document.getElementById('playerNameDisplay').textContent = playerName;
-// Show version number on login screen
+// Show version number on login screen (run on page load, not after login)
 window.addEventListener('DOMContentLoaded', () => {
     const versionSpan = document.getElementById('loginVersion');
     if (versionSpan) {
