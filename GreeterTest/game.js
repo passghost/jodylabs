@@ -16,7 +16,7 @@ let playerImages = {};
 const PLAYER_SIZE = 32;
 const MOVE_SPEED = 3;
 const UPDATE_INTERVAL = 150; // ms - more frequent updates for smoother sync
-const INTERPOLATION_SPEED = 0.2; // Slightly faster interpolation
+const INTERPOLATION_SPEED = 0.35; // Faster interpolation for smoother sync
 const MIN_MOVE_DISTANCE = 5; // Only send updates if moved this much
 
 // Initialize game
@@ -437,6 +437,8 @@ function drawPlayer(player, isCurrentPlayer = false) {
 function updatePlayerInterpolation() {
     // Smoothly move other players toward their target positions
     players.forEach(player => {
+        // Never interpolate the current player (local control only)
+        if (currentPlayer && player.id === currentPlayer.id) return;
         if (player.targetX !== undefined && player.targetY !== undefined) {
             // Calculate distance to target
             const dx = player.targetX - player.x;
@@ -444,17 +446,16 @@ function updatePlayerInterpolation() {
             const distance = Math.sqrt(dx * dx + dy * dy);
 
             // If close enough, snap to target
-            if (distance < 1) {
+            if (distance < 2) {
                 player.x = player.targetX;
                 player.y = player.targetY;
             } else {
                 // Smooth interpolation toward target
                 player.x += dx * INTERPOLATION_SPEED;
                 player.y += dy * INTERPOLATION_SPEED;
-
-                // Set walking animation based on movement
-                player.isWalking = distance > 2;
             }
+            // Set walking animation based on movement
+            player.isWalking = distance > 2;
         }
     });
 }
