@@ -22,9 +22,9 @@ let stickerMode = false;
 
 // Game constants
 const PLAYER_SIZE = 32;
-const MOVE_SPEED = 3;
-const UPDATE_INTERVAL = 20; // ms - ultra frequent updates for fastest sync
-const INTERPOLATION_SPEED = 0.45; // Even faster interpolation for snappier sync
+const MOVE_SPEED = 1.2; // Slower movement for smoother transitions
+const UPDATE_INTERVAL = 30; // Slightly less frequent updates
+const INTERPOLATION_SPEED = 0.13; // Much slower interpolation for smooth glide
 const MIN_MOVE_DISTANCE = 1; // Send updates for even the smallest movement
 
 // Initialize game
@@ -45,7 +45,7 @@ async function joinWorld() {
     document.getElementById('playerNameDisplay').textContent = playerName;
 
     // Show version number on both login and game screens
-    const version = 'v1.3.5 (2025-07-16)';
+    const version = 'v1.3.6 (2025-07-16)';
     // Login screen
     const loginVersionSpan = document.getElementById('loginVersion');
     if (loginVersionSpan) {
@@ -620,6 +620,54 @@ function renderPlaceholder() {
     console.log("Using placeholder render function - this should not happen");
 }
 
+function render() {
+    // Black background
+    ctx.fillStyle = '#0a0a0a';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Red grid pattern
+    ctx.strokeStyle = 'rgba(255, 0, 0, 0.18)';
+    ctx.lineWidth = 1;
+    for (let x = 0; x < canvas.width; x += 50) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+    }
+    for (let y = 0; y < canvas.height; y += 50) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+    }
+
+    // Draw stickers first (behind players)
+    drawStickers();
+
+    // Draw other players first
+    players.forEach(player => {
+        drawPlayer(player);
+    });
+
+    // Draw current player
+    if (currentPlayer) {
+        drawPlayer(currentPlayer, true);
+    }
+    
+    // Draw all chat bubbles on top of players
+    // This ensures chat bubbles are always visible and not covered by other players
+    players.forEach(player => {
+        drawChatBubble(player);
+    });
+    
+    // Draw current player's chat bubble
+    if (currentPlayer) {
+        drawChatBubble(currentPlayer);
+    }
+    
+    // ...debug log removed for clarity...
+}
+
 function drawPlayer(player, isCurrentPlayer = false) {
     // Use player.playerImages if available, otherwise fall back to global playerImages
     const images = player.playerImages || playerImages;
@@ -636,17 +684,23 @@ function drawPlayer(player, isCurrentPlayer = false) {
     // Draw player sprite
     ctx.drawImage(image, player.x, player.y, PLAYER_SIZE, PLAYER_SIZE);
 
-    // Draw player name
-    ctx.fillStyle = isCurrentPlayer ? '#f1c40f' : '#ffffff';
-    ctx.font = '12px Arial';
+    // Stylized player name
+    ctx.fillStyle = isCurrentPlayer ? '#ff2222' : '#ff4444';
+    ctx.font = 'bold 13px Arial';
     ctx.textAlign = 'center';
+    ctx.shadowColor = '#000';
+    ctx.shadowBlur = 4;
     ctx.fillText(player.name, player.x + PLAYER_SIZE / 2, player.y - 5);
+    ctx.shadowBlur = 0;
 
     // Draw selection indicator for current player
     if (isCurrentPlayer) {
-        ctx.strokeStyle = '#f1c40f';
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#ff2222';
+        ctx.lineWidth = 2.5;
+        ctx.shadowColor = '#ff2222';
+        ctx.shadowBlur = 8;
         ctx.strokeRect(player.x - 2, player.y - 2, PLAYER_SIZE + 4, PLAYER_SIZE + 4);
+        ctx.shadowBlur = 0;
     }
 }
 
@@ -882,54 +936,6 @@ async function placeStickerAt(x, y) {
 }
 
 // Update render function to include chat bubbles and stickers
-function render() {
-    // Clear canvas
-    ctx.fillStyle = '#27ae60';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Draw grid pattern
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-    ctx.lineWidth = 1;
-    for (let x = 0; x < canvas.width; x += 50) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, canvas.height);
-        ctx.stroke();
-    }
-    for (let y = 0; y < canvas.height; y += 50) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(canvas.width, y);
-        ctx.stroke();
-    }
-
-    // Draw stickers first (behind players)
-    drawStickers();
-
-    // Draw other players first
-    players.forEach(player => {
-        drawPlayer(player);
-    });
-
-    // Draw current player
-    if (currentPlayer) {
-        drawPlayer(currentPlayer, true);
-    }
-    
-    // Draw all chat bubbles on top of players
-    // This ensures chat bubbles are always visible and not covered by other players
-    players.forEach(player => {
-        drawChatBubble(player);
-    });
-    
-    // Draw current player's chat bubble
-    if (currentPlayer) {
-        drawChatBubble(currentPlayer);
-    }
-    
-    // ...debug log removed for clarity...
-}
-
 function drawStickers() {
     stickers.forEach(sticker => {
         // Only load image if not already cached
@@ -992,17 +998,18 @@ function createStickerPlaceholder(sticker) {
     fallbackCanvas.height = 50;
     const fallbackCtx = fallbackCanvas.getContext('2d');
 
-    // Draw a colorful placeholder with sticker info
-    const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57', '#ff9ff3'];
-    const colorIndex = Math.abs(hashString(sticker.id)) % colors.length;
-    const color = colors[colorIndex];
-
-    fallbackCtx.fillStyle = color;
+    // Red/black placeholder with sticker info
+    fallbackCtx.fillStyle = '#1a0000';
     fallbackCtx.fillRect(0, 0, 50, 50);
-    fallbackCtx.fillStyle = '#ffffff';
-    fallbackCtx.font = '10px Arial';
+    fallbackCtx.strokeStyle = '#ff2222';
+    fallbackCtx.lineWidth = 2;
+    fallbackCtx.strokeRect(2, 2, 46, 46);
+    fallbackCtx.fillStyle = '#ff2222';
+    fallbackCtx.font = 'bold 10px Arial';
     fallbackCtx.textAlign = 'center';
     fallbackCtx.fillText('STICKER', 25, 20);
+    fallbackCtx.fillStyle = '#fff';
+    fallbackCtx.font = '9px Arial';
     fallbackCtx.fillText(`by ${sticker.placedBy}`, 25, 35);
 
     // Convert canvas to image
