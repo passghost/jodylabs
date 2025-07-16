@@ -1,3 +1,4 @@
+console.log("game.js loaded");
 // GreeterTest Multiplayer Game
 // Version: 1.2.2 (2025-07-16)
 //
@@ -5,7 +6,7 @@
 const SUPABASE_URL = 'https://omcwjmvdjswkfjkahchm.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE';
 
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Game variables
 let canvas, ctx;
@@ -28,6 +29,7 @@ const MIN_MOVE_DISTANCE = 5; // Only send updates if moved this much
 
 // Initialize game
 async function joinWorld() {
+    console.log("joinWorld() called");
     const nameInput = document.getElementById('playerName');
     const playerName = nameInput.value.trim();
 
@@ -272,6 +274,11 @@ FOR ALL USING (true) WITH CHECK (true);
 
         console.log('Multiplayer mode enabled!');
 
+        // Periodically update last_seen even if not moving (keep alive)
+        setInterval(() => {
+            updatePlayerPosition(true); // Force update to keep alive
+        }, 20000); // Every 20 seconds
+
     } catch (error) {
         console.error('Supabase initialization error:', error);
     }
@@ -282,19 +289,19 @@ async function createPlayersTable() {
     // For now, we'll assume the table exists or will be created
 }
 
-async function updatePlayerPosition() {
+async function updatePlayerPosition(force = false) {
     if (!currentPlayer) return;
 
-    // Only send update if player has moved significantly
+    // Only send update if player has moved significantly, unless forced
     const dx = currentPlayer.x - currentPlayer.lastSentX;
     const dy = currentPlayer.y - currentPlayer.lastSentY;
     const distanceMoved = Math.sqrt(dx * dx + dy * dy);
 
-    // Send update if moved enough distance OR if walking state changed
+    // Send update if moved enough distance OR if walking state changed OR forced
     const walkingStateChanged = currentPlayer.lastSentWalking !== currentPlayer.isWalking;
 
-    if (distanceMoved < MIN_MOVE_DISTANCE && !walkingStateChanged) {
-        return; // Skip update if not moved enough
+    if (!force && distanceMoved < MIN_MOVE_DISTANCE && !walkingStateChanged) {
+        return; // Skip update if not moved enough and not forced
     }
 
     try {
@@ -334,10 +341,18 @@ async function fetchAllPlayers() {
             return;
         }
 
+        // Debug: Log raw data from Supabase
+        console.log('[fetchAllPlayers] Supabase returned:', data);
+
         // Only update other players, not current player
         const newPlayers = new Map();
         data.forEach(player => {
-            if (!currentPlayer || player.id !== currentPlayer.id) {
+            if (currentPlayer && player.id === currentPlayer.id) {
+                // Always keep currentPlayer reference in players map
+                // Ensure playerImages is always attached for rendering
+                currentPlayer.playerImages = playerImages;
+                newPlayers.set(player.id, currentPlayer);
+            } else {
                 const existingPlayer = players.get(player.id);
                 newPlayers.set(player.id, {
                     id: player.id,
@@ -348,13 +363,21 @@ async function fetchAllPlayers() {
                     // Current display position (for smooth interpolation)
                     x: existingPlayer ? existingPlayer.x : player.x,
                     y: existingPlayer ? existingPlayer.y : player.y,
-                    isWalking: player.is_walking,
-                    lastMoved: new Date(player.last_seen).getTime()
+                    isWalking: typeof player.is_walking === 'boolean' ? player.is_walking : false,
+                    lastMoved: new Date(player.last_seen).getTime(),
+                    playerImages: playerImages // Always attach images
                 });
             }
         });
+        // Always ensure currentPlayer is in the map and has playerImages
+        if (currentPlayer && !newPlayers.has(currentPlayer.id)) {
+            currentPlayer.playerImages = playerImages;
+            newPlayers.set(currentPlayer.id, currentPlayer);
+        }
         players = newPlayers;
         updatePlayerCount();
+        // Debug: Log all player IDs after fetching
+        console.log('[fetchAllPlayers] players in map:', Array.from(players.keys()));
     } catch (error) {
         console.error('Error fetching players:', error);
     }
@@ -366,7 +389,8 @@ function handlePlayerUpdate(payload) {
     // Handle DELETE events (player left)
     if (payload.eventType === 'DELETE') {
         const playerId = payload.old?.id;
-        if (playerId && players.has(playerId)) {
+        // Never delete currentPlayer from the map
+        if (playerId && players.has(playerId) && (!currentPlayer || playerId !== currentPlayer.id)) {
             players.delete(playerId);
             updatePlayerCount();
             console.log('Player left:', playerId);
@@ -376,13 +400,18 @@ function handlePlayerUpdate(payload) {
 
     // Handle INSERT/UPDATE events
     const player = payload.new;
-    if (!player || (currentPlayer && player.id === currentPlayer.id)) return;
+    if (!player) return;
+
+    // Never update currentPlayer from remote
+    if (currentPlayer && player.id === currentPlayer.id) return;
 
     // Remove old players (inactive for more than 30 seconds)
     const thirtySecondsAgo = Date.now() - 30000;
     if (new Date(player.last_seen).getTime() < thirtySecondsAgo) {
-        players.delete(player.id);
-        updatePlayerCount();
+        if (!currentPlayer || player.id !== currentPlayer.id) {
+            players.delete(player.id);
+            updatePlayerCount();
+        }
         return;
     }
 
@@ -396,8 +425,9 @@ function handlePlayerUpdate(payload) {
         // Current display position (for smooth interpolation)
         x: existingPlayer ? existingPlayer.x : player.x,
         y: existingPlayer ? existingPlayer.y : player.y,
-        isWalking: player.is_walking,
-        lastMoved: new Date(player.last_seen).getTime()
+        isWalking: typeof player.is_walking === 'boolean' ? player.is_walking : false,
+        lastMoved: new Date(player.last_seen).getTime(),
+        playerImages: playerImages // Always attach images
     });
 
     updatePlayerCount();
@@ -418,6 +448,9 @@ async function removePlayer() {
 
 function handleChatUpdate(payload) {
     console.log('Chat update received:', payload);
+    if (window.currentPlayer) {
+        console.log(`[${window.currentPlayer.name}] received chat from ${payload.new?.player_name}: ${payload.new?.message}`);
+    }
 
     const chatData = payload.new;
     if (!chatData) {
@@ -449,14 +482,16 @@ function handleStickerUpdate(payload) {
     if (!stickerData) return;
 
     // Add sticker to the scene
-    stickers.set(stickerData.id, {
+    const sticker = {
         id: stickerData.id,
         url: stickerData.url,
         x: stickerData.x,
         y: stickerData.y,
         timestamp: new Date(stickerData.timestamp).getTime(),
         placedBy: stickerData.placed_by
-    });
+    };
+    stickers.set(sticker.id, sticker);
+    loadStickerImage(sticker);
 }
 
 async function fetchRecentChatMessages() {
@@ -502,15 +537,17 @@ async function fetchAllStickers() {
         }
 
         // Add all stickers to the scene
-        data.forEach(sticker => {
-            stickers.set(sticker.id, {
-                id: sticker.id,
-                url: sticker.url,
-                x: sticker.x,
-                y: sticker.y,
-                timestamp: new Date(sticker.timestamp).getTime(),
-                placedBy: sticker.placed_by
-            });
+        data.forEach(stickerData => {
+            const sticker = {
+                id: stickerData.id,
+                url: stickerData.url,
+                x: stickerData.x,
+                y: stickerData.y,
+                timestamp: new Date(stickerData.timestamp).getTime(),
+                placedBy: stickerData.placed_by
+            };
+            stickers.set(sticker.id, sticker);
+            loadStickerImage(sticker);
         });
     } catch (error) {
         console.error('Error fetching stickers:', error);
@@ -518,8 +555,8 @@ async function fetchAllStickers() {
 }
 
 function updatePlayerCount() {
-    // Only count players that are visible (other players + self)
-    const count = players.size + (currentPlayer ? 1 : 0);
+    // Only count unique players in the map (currentPlayer is always included)
+    const count = players.size;
     document.getElementById('playerCount').textContent = count;
 }
 
@@ -532,21 +569,25 @@ function handleInput() {
 
     // WASD and Arrow key controls
     if (keys['w'] || keys['arrowup']) {
-        currentPlayer.y = Math.max(0, currentPlayer.y - MOVE_SPEED);
+        currentPlayer.y -= MOVE_SPEED;
         moved = true;
     }
     if (keys['s'] || keys['arrowdown']) {
-        currentPlayer.y = Math.min(canvas.height - PLAYER_SIZE, currentPlayer.y + MOVE_SPEED);
+        currentPlayer.y += MOVE_SPEED;
         moved = true;
     }
     if (keys['a'] || keys['arrowleft']) {
-        currentPlayer.x = Math.max(0, currentPlayer.x - MOVE_SPEED);
+        currentPlayer.x -= MOVE_SPEED;
         moved = true;
     }
     if (keys['d'] || keys['arrowright']) {
-        currentPlayer.x = Math.min(canvas.width - PLAYER_SIZE, currentPlayer.x + MOVE_SPEED);
+        currentPlayer.x += MOVE_SPEED;
         moved = true;
     }
+
+    // Clamp player position to canvas bounds
+    currentPlayer.x = Math.max(0, Math.min(canvas.width - PLAYER_SIZE, currentPlayer.x));
+    currentPlayer.y = Math.max(0, Math.min(canvas.height - PLAYER_SIZE, currentPlayer.y));
 
     if (moved) {
         currentPlayer.isWalking = true;
@@ -566,7 +607,17 @@ function renderPlaceholder() {
 }
 
 function drawPlayer(player, isCurrentPlayer = false) {
-    const image = player.isWalking ? playerImages.walking : playerImages.standing;
+    // Use player.playerImages if available, otherwise fall back to global playerImages
+    const images = player.playerImages || playerImages;
+    // Ensure isWalking is always a boolean
+    const isWalking = typeof player.isWalking === 'boolean' ? player.isWalking : false;
+    // Always use standing image if not walking
+    const image = isWalking ? images.walking : images.standing;
+
+    // ...debug log removed for clarity...
+
+    // Fallback: If image is not loaded, don't draw to avoid errors
+    if (!image || !image.complete || image.naturalWidth === 0) return;
 
     // Draw player sprite
     ctx.drawImage(image, player.x, player.y, PLAYER_SIZE, PLAYER_SIZE);
@@ -590,6 +641,9 @@ function updatePlayerInterpolation() {
     players.forEach(player => {
         // Never interpolate the current player (local control only)
         if (currentPlayer && player.id === currentPlayer.id) return;
+        // Always ensure playerImages is set
+        if (!player.playerImages) player.playerImages = playerImages;
+        // Do not forcibly set isWalking; preserve server state
         if (player.targetX !== undefined && player.targetY !== undefined) {
             // Calculate distance to target
             const dx = player.targetX - player.x;
@@ -600,13 +654,14 @@ function updatePlayerInterpolation() {
             if (distance < 2) {
                 player.x = player.targetX;
                 player.y = player.targetY;
+                // Only set isWalking to false if it was moving
+                if (player.isWalking) player.isWalking = false;
             } else {
                 // Smooth interpolation toward target
                 player.x += dx * INTERPOLATION_SPEED;
                 player.y += dy * INTERPOLATION_SPEED;
+                player.isWalking = true;
             }
-            // Set walking animation based on movement
-            player.isWalking = distance > 2;
         }
     });
 }
@@ -681,8 +736,8 @@ async function sendStickerToDatabase(stickerData) {
             .insert({
                 id: stickerData.id,
                 url: stickerData.url,
-                x: stickerData.x,
-                y: stickerData.y,
+                x: Math.round(stickerData.x),
+                y: Math.round(stickerData.y),
                 placed_by: stickerData.placedBy,
                 timestamp: new Date(stickerData.timestamp).toISOString()
             });
@@ -840,10 +895,7 @@ function render() {
         drawChatBubble(currentPlayer);
     }
     
-    // Debug: Show active chat messages count
-    if (chatMessages.size > 0) {
-        console.log(`Active chat messages: ${chatMessages.size}`);
-    }
+    // ...debug log removed for clarity...
 }
 
 function drawStickers() {
@@ -871,7 +923,7 @@ function loadStickerImage(sticker) {
     img.onload = () => {
         // Only replace placeholder if image loads successfully
         stickerImages.set(sticker.id, img);
-        console.log(`Sticker image loaded: ${sticker.id}`);
+        console.log(`Sticker image loaded: ${sticker.id} (${sticker.url})`);
     };
 
     img.onerror = () => {
@@ -879,6 +931,8 @@ function loadStickerImage(sticker) {
         // Placeholder is already created, so do nothing
     };
 
+    // Debug: Log when attempting to load sticker image
+    console.log(`Attempting to load sticker image: ${sticker.id} (${sticker.url})`);
     // Don't set crossOrigin to avoid CORS errors
     img.src = sticker.url;
 }
@@ -928,9 +982,14 @@ function hashString(str) {
 setInterval(() => {
     const thirtySecondsAgo = Date.now() - 30000;
     players.forEach((player, id) => {
-        if (player.lastMoved < thirtySecondsAgo) {
+        // Never delete the current player from the map
+        if (currentPlayer && id === currentPlayer.id) return;
+        // Only remove if lastMoved is truly old (from last_seen in DB)
+        if (typeof player.lastMoved === 'number' && player.lastMoved < thirtySecondsAgo) {
+            console.log(`Cleanup: Removing player ${player.name} (${id}) lastMoved=${player.lastMoved} (${new Date(player.lastMoved).toISOString()})`);
             players.delete(id);
         }
     });
     updatePlayerCount();
+    // ...debug log removed for clarity...
 });
