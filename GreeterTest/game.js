@@ -45,7 +45,7 @@ async function joinWorld() {
     document.getElementById('playerNameDisplay').textContent = playerName;
 
     // Show version number on both login and game screens
-    const version = 'v1.3.6 (2025-07-16)';
+    const version = 'v1.3.7 (2025-07-16)';
     // Login screen
     const loginVersionSpan = document.getElementById('loginVersion');
     if (loginVersionSpan) {
