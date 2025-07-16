@@ -786,6 +786,12 @@ function placeStickerAtPlayer(imageUrl) {
             placedBy: currentPlayer.name
         };
 
+        // Optimistically add sticker locally for instant feedback
+        if (!stickers.has(stickerId)) {
+            stickers.set(stickerId, stickerData);
+            loadStickerImage(stickerData);
+        }
+
         // Debug: Log sticker placement (request)
         console.log('[DEBUG] Sticker placed (request):', {
             playerName: currentPlayer.name,
@@ -796,7 +802,7 @@ function placeStickerAtPlayer(imageUrl) {
             timestamp: stickerData.timestamp
         });
 
-        // Send sticker to database for syncing (do NOT update local stickers map here)
+        // Send sticker to database for syncing
         sendStickerToDatabase(stickerData);
     };
 
@@ -832,6 +838,12 @@ function placeStickerAt(x, y) {
             placedBy: currentPlayer ? currentPlayer.name : 'Anonymous'
         };
 
+        // Optimistically add sticker locally for instant feedback
+        if (!stickers.has(stickerId)) {
+            stickers.set(stickerId, stickerData);
+            loadStickerImage(stickerData);
+        }
+
         // Debug: Log sticker placement (request)
         console.log('[DEBUG] Sticker placed (request):', {
             playerName: currentPlayer ? currentPlayer.name : 'Anonymous',
@@ -842,7 +854,7 @@ function placeStickerAt(x, y) {
             timestamp: stickerData.timestamp
         });
 
-        // Send sticker to database for syncing (do NOT update local stickers map here)
+        // Send sticker to database for syncing
         sendStickerToDatabase(stickerData);
     };
 
