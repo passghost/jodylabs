@@ -258,11 +258,12 @@ async function fetchAllPlayers() {
             return;
         }
 
-        players.clear();
+        // Only update other players, not current player
+        const newPlayers = new Map();
         data.forEach(player => {
-            if (player.id !== currentPlayer.id) {
+            if (!currentPlayer || player.id !== currentPlayer.id) {
                 const existingPlayer = players.get(player.id);
-                players.set(player.id, {
+                newPlayers.set(player.id, {
                     id: player.id,
                     name: player.name,
                     // Target position from server
@@ -276,7 +277,7 @@ async function fetchAllPlayers() {
                 });
             }
         });
-
+        players = newPlayers;
         updatePlayerCount();
     } catch (error) {
         console.error('Error fetching players:', error);
@@ -299,7 +300,7 @@ function handlePlayerUpdate(payload) {
 
     // Handle INSERT/UPDATE events
     const player = payload.new;
-    if (!player || player.id === currentPlayer?.id) return;
+    if (!player || (currentPlayer && player.id === currentPlayer.id)) return;
 
     // Remove old players (inactive for more than 30 seconds)
     const thirtySecondsAgo = Date.now() - 30000;
@@ -340,6 +341,7 @@ async function removePlayer() {
 }
 
 function updatePlayerCount() {
+    // Only count players that are visible (other players + self)
     const count = players.size + (currentPlayer ? 1 : 0);
     document.getElementById('playerCount').textContent = count;
 }
