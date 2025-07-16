@@ -1,6 +1,6 @@
 console.log("game.js loaded");
 // GreeterTest Multiplayer Game
-// Version: 1.2.2 (2025-07-16)
+// Version: 1.2.3 (2025-07-16)
 //
 // Supabase configuration
 const SUPABASE_URL = 'https://omcwjmvdjswkfjkahchm.supabase.co';
@@ -23,7 +23,7 @@ let stickerMode = false;
 // Game constants
 const PLAYER_SIZE = 32;
 const MOVE_SPEED = 3;
-const UPDATE_INTERVAL = 150; // ms - more frequent updates for smoother sync
+const UPDATE_INTERVAL = 50; // ms - even more frequent updates for smoother sync
 const INTERPOLATION_SPEED = 0.35; // Faster interpolation for smoother sync
 const MIN_MOVE_DISTANCE = 5; // Only send updates if moved this much
 
@@ -45,7 +45,7 @@ async function joinWorld() {
     document.getElementById('playerNameDisplay').textContent = playerName;
 
     // Show version number on both login and game screens
-    const version = 'v1.2.2 (2025-07-16)';
+    const version = 'v1.2.3 (2025-07-16)';
     // Login screen
     const loginVersionSpan = document.getElementById('loginVersion');
     if (loginVersionSpan) {
@@ -739,6 +739,8 @@ async function sendStickerToDatabase(stickerData) {
 
         if (error) {
             console.error('Error sending sticker:', error);
+        } else {
+            console.log('[DEBUG] Sticker insert to DB complete:', stickerData);
         }
     } catch (error) {
         console.error('Database error sending sticker:', error);
