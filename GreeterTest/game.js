@@ -1,6 +1,6 @@
 console.log("game.js loaded");
 // GreeterTest Multiplayer Game
-// Version: 1.2.7 (2025-07-16)
+// Version: 1.2.8 (2025-07-16)
 //
 // Supabase configuration
 const SUPABASE_URL = 'https://omcwjmvdjswkfjkahchm.supabase.co';
@@ -23,9 +23,9 @@ let stickerMode = false;
 // Game constants
 const PLAYER_SIZE = 32;
 const MOVE_SPEED = 3;
-const UPDATE_INTERVAL = 50; // ms - even more frequent updates for smoother sync
-const INTERPOLATION_SPEED = 0.35; // Faster interpolation for smoother sync
-const MIN_MOVE_DISTANCE = 5; // Only send updates if moved this much
+const UPDATE_INTERVAL = 20; // ms - ultra frequent updates for fastest sync
+const INTERPOLATION_SPEED = 0.45; // Even faster interpolation for snappier sync
+const MIN_MOVE_DISTANCE = 1; // Send updates for even the smallest movement
 
 // Initialize game
 async function joinWorld() {
@@ -45,7 +45,7 @@ async function joinWorld() {
     document.getElementById('playerNameDisplay').textContent = playerName;
 
     // Show version number on both login and game screens
-    const version = 'v1.2.7 (2025-07-16)';
+    const version = 'v1.2.8 (2025-07-16)';
     // Login screen
     const loginVersionSpan = document.getElementById('loginVersion');
     if (loginVersionSpan) {
