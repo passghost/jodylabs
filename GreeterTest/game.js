@@ -902,14 +902,18 @@ function drawStickers() {
 }
 
 function loadStickerImage(sticker) {
-    // Create placeholder immediately to avoid CORS issues
+    // Always create a new Image and try to load the real image, replacing any placeholder
+    // Remove any existing image (placeholder or otherwise) so the new one can be set
+    stickerImages.delete(sticker.id);
+
+    // Create placeholder immediately to avoid CORS issues (will be replaced if real image loads)
     createStickerPlaceholder(sticker);
 
     // Try to load the actual image without crossOrigin
     const img = new Image();
 
     img.onload = () => {
-        // Only replace placeholder if image loads successfully
+        // Always replace with the real image if it loads successfully
         stickerImages.set(sticker.id, img);
         console.log(`Sticker image loaded: ${sticker.id} (${sticker.url})`);
     };
