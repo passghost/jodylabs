@@ -45,7 +45,7 @@ async function joinWorld() {
     document.getElementById('playerNameDisplay').textContent = playerName;
 
     // Show version number on both login and game screens
-    const version = 'v1.3.3 (2025-07-16)';
+    const version = 'v1.3.5 (2025-07-16)';
     // Login screen
     const loginVersionSpan = document.getElementById('loginVersion');
     if (loginVersionSpan) {
@@ -801,53 +801,23 @@ async function placeStickerAtPlayer(imageUrl) {
     const x = Math.round(currentPlayer.x + PLAYER_SIZE / 2 - 25);
     const y = Math.round(currentPlayer.y + PLAYER_SIZE / 2 - 25);
 
-    // Check for existing sticker with same URL and coordinates
+    // Always create a new sticker, even if it's a duplicate
     try {
-        const { data, error } = await supabase
-            .from('stickers')
-            .select('*')
-            .eq('url', imageUrl)
-            .eq('x', x)
-            .eq('y', y)
-            .limit(1);
-
-        if (error) {
-            console.error('Error checking for duplicate sticker:', error);
-        }
-
-        let stickerId, stickerData;
-        if (data && data.length > 0) {
-            // Sticker already exists, use existing
-            stickerId = data[0].id;
-            stickerData = {
-                id: stickerId,
-                url: imageUrl,
-                x: x,
-                y: y,
-                timestamp: new Date(data[0].timestamp).getTime(),
-                placedBy: data[0].placed_by
-            };
-            console.log('[DEBUG] Duplicate sticker found, using existing:', stickerData);
-        } else {
-            // New sticker
-            stickerId = 'sticker_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
-            stickerData = {
-                id: stickerId,
-                url: imageUrl,
-                x: x,
-                y: y,
-                timestamp: Date.now(),
-                placedBy: currentPlayer.name
-            };
-            // Send sticker to database for syncing
-            await sendStickerToDatabase(stickerData);
-        }
+        const stickerId = 'sticker_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+        const stickerData = {
+            id: stickerId,
+            url: imageUrl,
+            x: x,
+            y: y,
+            timestamp: Date.now(),
+            placedBy: currentPlayer.name
+        };
+        // Send sticker to database for syncing
+        await sendStickerToDatabase(stickerData);
 
         // Optimistically add sticker locally for instant feedback
-        if (!stickers.has(stickerId)) {
-            stickers.set(stickerId, stickerData);
-            loadStickerImage(stickerData);
-        }
+        stickers.set(stickerId, stickerData);
+        loadStickerImage(stickerData);
 
         // Debug: Log sticker placement (request)
         console.log('[DEBUG] Sticker placed (request):', {
@@ -876,53 +846,23 @@ async function placeStickerAt(x, y) {
     const rx = Math.round(x - 25);
     const ry = Math.round(y - 25);
 
-    // Check for existing sticker with same URL and coordinates
+    // Always create a new sticker, even if it's a duplicate
     try {
-        const { data, error } = await supabase
-            .from('stickers')
-            .select('*')
-            .eq('url', imageUrl)
-            .eq('x', rx)
-            .eq('y', ry)
-            .limit(1);
-
-        if (error) {
-            console.error('Error checking for duplicate sticker:', error);
-        }
-
-        let stickerId, stickerData;
-        if (data && data.length > 0) {
-            // Sticker already exists, use existing
-            stickerId = data[0].id;
-            stickerData = {
-                id: stickerId,
-                url: imageUrl,
-                x: rx,
-                y: ry,
-                timestamp: new Date(data[0].timestamp).getTime(),
-                placedBy: data[0].placed_by
-            };
-            console.log('[DEBUG] Duplicate sticker found, using existing:', stickerData);
-        } else {
-            // New sticker
-            stickerId = 'sticker_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
-            stickerData = {
-                id: stickerId,
-                url: imageUrl,
-                x: rx,
-                y: ry,
-                timestamp: Date.now(),
-                placedBy: currentPlayer ? currentPlayer.name : 'Anonymous'
-            };
-            // Send sticker to database for syncing
-            await sendStickerToDatabase(stickerData);
-        }
+        const stickerId = 'sticker_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+        const stickerData = {
+            id: stickerId,
+            url: imageUrl,
+            x: rx,
+            y: ry,
+            timestamp: Date.now(),
+            placedBy: currentPlayer ? currentPlayer.name : 'Anonymous'
+        };
+        // Send sticker to database for syncing
+        await sendStickerToDatabase(stickerData);
 
         // Optimistically add sticker locally for instant feedback
-        if (!stickers.has(stickerId)) {
-            stickers.set(stickerId, stickerData);
-            loadStickerImage(stickerData);
-        }
+        stickers.set(stickerId, stickerData);
+        loadStickerImage(stickerData);
 
         // Debug: Log sticker placement (request)
         console.log('[DEBUG] Sticker placed (request):', {
