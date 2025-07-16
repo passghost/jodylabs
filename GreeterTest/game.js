@@ -45,7 +45,7 @@ async function joinWorld() {
     document.getElementById('playerNameDisplay').textContent = playerName;
 
     // Show version number on both login and game screens
-    const version = 'v1.3.1 (2025-07-16)';
+    const version = 'v1.3.3 (2025-07-16)';
     // Login screen
     const loginVersionSpan = document.getElementById('loginVersion');
     if (loginVersionSpan) {
@@ -88,6 +88,13 @@ async function joinWorld() {
 
     // Start game loop
     gameLoop();
+
+    // Start 5s sticker refresh ticker (ensure only one interval is set)
+    if (!window._stickerRefreshInterval) {
+        window._stickerRefreshInterval = setInterval(() => {
+            fetchAllStickers();
+        }, 5000);
+    }
 }
 
 async function loadPlayerImages() {
@@ -524,11 +531,14 @@ async function fetchAllStickers() {
 
         console.log('[DEBUG] fetchAllStickers: fetched', data.length, 'stickers:', data);
 
-        // Clear stickerImages cache to prevent placeholder duplicates
-        stickerImages.clear();
+        // Clear stickers map, but do NOT clear stickerImages cache globally (only clear for stickers that are gone)
+        const oldStickerIds = new Set(stickers.keys());
         stickers.clear();
 
-        // Add or update all stickers in the scene, and always reload the image
+        // Track which stickers are present after refresh
+        const newStickerIds = new Set();
+
+        // Add or update all stickers in the scene, and always reload the image if URL changed
         data.forEach(stickerData => {
             const sticker = {
                 id: stickerData.id,
@@ -539,9 +549,19 @@ async function fetchAllStickers() {
                 placedBy: stickerData.placed_by
             };
             stickers.set(sticker.id, sticker);
-            // Always reload the image for this sticker (fixes placeholder issue)
-            console.log(`[DEBUG] fetchAllStickers: loading image for sticker ${sticker.id} (${sticker.url})`);
-            loadStickerImage(sticker);
+            newStickerIds.add(sticker.id);
+            // If image is missing or URL changed, reload
+            const img = stickerImages.get(sticker.id);
+            if (!img || (img.src && img.src !== sticker.url)) {
+                loadStickerImage(sticker);
+            }
+        });
+
+        // Remove images for stickers that no longer exist
+        oldStickerIds.forEach(id => {
+            if (!newStickerIds.has(id)) {
+                stickerImages.delete(id);
+            }
         });
     } catch (error) {
         console.error('Error fetching stickers:', error);
@@ -986,13 +1006,13 @@ function drawStickers() {
 
 function loadStickerImage(sticker) {
     // Helper to check if an image is a real loaded image (not a placeholder)
-    function isRealImage(img) {
-        return img && img.complete && img.naturalWidth > 0 && !img.src.startsWith('data:');
+    function isRealImage(img, url) {
+        return img && img.complete && img.naturalWidth > 0 && img.src === url;
     }
 
-    // Only set placeholder if there is no real image loaded
+    // Only set placeholder if there is no real image loaded for this URL
     const existingImg = stickerImages.get(sticker.id);
-    if (!isRealImage(existingImg)) {
+    if (!isRealImage(existingImg, sticker.url)) {
         createStickerPlaceholder(sticker);
     }
 
@@ -1004,8 +1024,11 @@ function loadStickerImage(sticker) {
     function tryLoadImage() {
         const img = new Image();
         img.onload = () => {
-            stickerImages.set(sticker.id, img);
-            console.log(`Sticker image loaded: ${sticker.id} (${sticker.url})`);
+            // Only replace if this is the correct URL (avoid race conditions)
+            if (img.src === sticker.url) {
+                stickerImages.set(sticker.id, img);
+                console.log(`Sticker image loaded: ${sticker.id} (${sticker.url})`);
+            }
         };
         img.onerror = () => {
             attempts++;
