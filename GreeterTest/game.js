@@ -455,22 +455,9 @@ async function removePlayer() {
 }
 
 function handleChatUpdate(payload) {
-    console.log('Chat update received:', payload);
-    if (window.currentPlayer) {
-        console.log(`[${window.currentPlayer.name}] received chat from ${payload.new?.player_name}: ${payload.new?.message}`);
-    }
-
+    // Only debug if this is a chat bubble placement event
     const chatData = payload.new;
-    if (!chatData) {
-        console.warn('Chat update missing data');
-        return;
-    }
-    
-    // IMPORTANT: Always process all chat messages, even from current player
-    // This ensures all clients see all messages consistently
-    
-    console.log(`Adding chat message for player ${chatData.player_name} (${chatData.player_id}): ${chatData.message}`);
-    
+    if (!chatData) return;
     // Add chat message for the player
     chatMessages.set(chatData.player_id, {
         text: chatData.message,
@@ -478,17 +465,13 @@ function handleChatUpdate(payload) {
         playerId: chatData.player_id,
         playerName: chatData.player_name
     });
-    
-    // Debug current chat messages
-    console.log('Current chat messages:', Array.from(chatMessages.entries()));
 }
 
 function handleStickerUpdate(payload) {
-    console.log('Sticker update:', payload);
-
+    // Debug: Real-time sticker event received
     const stickerData = payload.new;
     if (!stickerData) return;
-
+    console.log('[DEBUG] handleStickerUpdate event:', stickerData);
     // Add sticker to the scene
     const sticker = {
         id: stickerData.id,
@@ -706,7 +689,13 @@ async function sendChatMessage() {
 
     // Add chat message locally
     chatMessages.set(currentPlayer.id, chatData);
-    console.log(`Chat message added locally for ${currentPlayer.name}: ${message}`);
+    // Debug: Log chat bubble placement
+    console.log('[DEBUG] Chat bubble placed:', {
+        playerId: currentPlayer.id,
+        playerName: currentPlayer.name,
+        message: message,
+        timestamp: chatData.timestamp
+    });
 
     // Send to database for syncing
     await sendChatToDatabase(chatData);
@@ -714,8 +703,6 @@ async function sendChatMessage() {
     // Clear input
     chatInput.value = '';
     chatInput.blur();
-
-    console.log(`${currentPlayer.name}: ${message}`);
 }
 
 async function sendChatToDatabase(chatData) {
@@ -799,12 +786,18 @@ function placeStickerAtPlayer(imageUrl) {
             placedBy: currentPlayer.name
         };
 
-        stickers.set(stickerId, stickerData);
+        // Debug: Log sticker placement (request)
+        console.log('[DEBUG] Sticker placed (request):', {
+            playerName: currentPlayer.name,
+            stickerId,
+            imageUrl,
+            x: stickerData.x,
+            y: stickerData.y,
+            timestamp: stickerData.timestamp
+        });
 
-        // Send sticker to database for syncing
+        // Send sticker to database for syncing (do NOT update local stickers map here)
         sendStickerToDatabase(stickerData);
-
-        console.log(`Sticker placed by ${currentPlayer.name} at player location`);
     };
 
     img.onerror = () => {
@@ -839,12 +832,18 @@ function placeStickerAt(x, y) {
             placedBy: currentPlayer ? currentPlayer.name : 'Anonymous'
         };
 
-        stickers.set(stickerId, stickerData);
+        // Debug: Log sticker placement (request)
+        console.log('[DEBUG] Sticker placed (request):', {
+            playerName: currentPlayer ? currentPlayer.name : 'Anonymous',
+            stickerId,
+            imageUrl,
+            x: stickerData.x,
+            y: stickerData.y,
+            timestamp: stickerData.timestamp
+        });
 
-        // Send sticker to database for syncing
+        // Send sticker to database for syncing (do NOT update local stickers map here)
         sendStickerToDatabase(stickerData);
-
-        console.log(`Sticker placed by ${currentPlayer?.name || 'Anonymous'} at (${x}, ${y})`);
     };
 
     img.onerror = () => {
