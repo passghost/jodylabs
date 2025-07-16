@@ -46,7 +46,7 @@ async function joinWorld() {
     document.getElementById('playerNameDisplay').textContent = playerName;
 
     // Show version number on both login and game screens
-    const version = 'v1.4.1 (2025-07-16)';
+    const version = 'v1.5.0 (2025-07-16)';
     // Login screen
     const loginVersionSpan = document.getElementById('loginVersion');
     if (loginVersionSpan) {
@@ -309,17 +309,7 @@ async function createPlayersTable() {
 async function updatePlayerPosition(force = false) {
     if (!currentPlayer) return;
 
-    // Only send update if player has moved significantly, unless forced
-    const dx = currentPlayer.x - currentPlayer.lastSentX;
-    const dy = currentPlayer.y - currentPlayer.lastSentY;
-    const distanceMoved = Math.sqrt(dx * dx + dy * dy);
-
-    // Send update if moved enough distance OR if walking state changed OR forced
-    const walkingStateChanged = currentPlayer.lastSentWalking !== currentPlayer.isWalking;
-
-    if (!force && distanceMoved < MIN_MOVE_DISTANCE && !walkingStateChanged) {
-        return; // Skip update if not moved enough and not forced
-    }
+    // Always send update every frame for perfect sync
 
     try {
         const { error } = await supabase
@@ -419,8 +409,7 @@ function handlePlayerUpdate(payload) {
     const player = payload.new;
     if (!player) return;
 
-    // Never update currentPlayer from remote
-    if (currentPlayer && player.id === currentPlayer.id) return;
+    // Always update all players, including currentPlayer, from remote
 
     // Remove old players (inactive for more than 30 seconds)
     const thirtySecondsAgo = Date.now() - 30000;
@@ -725,13 +714,10 @@ function drawPlayer(player, isCurrentPlayer = false) {
 }
 
 function updatePlayerInterpolation() {
-    // Smoothly move other players toward their target positions
+    // Smoothly move all players (including local) toward their target positions
     players.forEach(player => {
-        // Never interpolate the current player (local control only)
-        if (currentPlayer && player.id === currentPlayer.id) return;
         // Always ensure playerImages is set
         if (!player.playerImages) player.playerImages = playerImages;
-        // Do not forcibly set isWalking; preserve server state
         if (player.targetX !== undefined && player.targetY !== undefined) {
             // Calculate distance to target
             const dx = player.targetX - player.x;
