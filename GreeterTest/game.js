@@ -46,7 +46,7 @@ async function joinWorld() {
     document.getElementById('playerNameDisplay').textContent = playerName;
 
     // Show version number on both login and game screens
-    const version = 'v1.3.8 (2025-07-16)';
+    const version = 'v1.3.9 (2025-07-16)';
     // Login screen
     const loginVersionSpan = document.getElementById('loginVersion');
     if (loginVersionSpan) {
@@ -1054,7 +1054,43 @@ function hashString(str) {
     return hash;
 }
 
-// drawChatBubble function is now in chat-bubbles.js
+// drawChatBubble function updated to use latest message from chatMessages array
+function drawChatBubble(player) {
+    if (!player || !chatMessages.has(player.id)) return;
+    const messages = chatMessages.get(player.id);
+    if (!messages || messages.length === 0) return;
+    const latestMessage = messages[messages.length - 1];
+    if (!latestMessage || !latestMessage.text) return;
+
+    // Only show chat bubble for 5 seconds after message
+    const now = Date.now();
+    if (now - latestMessage.timestamp > 5000) return;
+
+    // Draw bubble above player
+    const bubbleWidth = Math.max(60, ctx.measureText(latestMessage.text).width + 20);
+    const bubbleHeight = 28;
+    const x = player.x + PLAYER_SIZE / 2 - bubbleWidth / 2;
+    const y = player.y - bubbleHeight - 18;
+
+    // Bubble background
+    ctx.save();
+    ctx.globalAlpha = 0.92;
+    ctx.fillStyle = '#111';
+    ctx.strokeStyle = '#ff2222';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(x, y, bubbleWidth, bubbleHeight, 10);
+    ctx.fill();
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    // Text
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 13px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(latestMessage.text, player.x + PLAYER_SIZE / 2, y + 18);
+    ctx.restore();
+}
 
 // Cleanup inactive players periodically
 setInterval(() => {
