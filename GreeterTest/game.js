@@ -46,7 +46,7 @@ async function joinWorld() {
     document.getElementById('playerNameDisplay').textContent = playerName;
 
     // Show version number on both login and game screens
-    const version = 'v1.4.0 (2025-07-16)';
+    const version = 'v1.4.1 (2025-07-16)';
     // Login screen
     const loginVersionSpan = document.getElementById('loginVersion');
     if (loginVersionSpan) {
@@ -517,9 +517,11 @@ async function fetchRecentChatMessages() {
             if (!chatMessages.has(chat.player_id)) {
                 chatMessages.set(chat.player_id, []);
             }
+            // Use Date.now() for remote messages so bubble shows for 5s
+            const isLocal = currentPlayer && chat.player_id === currentPlayer.id;
             chatMessages.get(chat.player_id).push({
                 text: chat.message,
-                timestamp: new Date(chat.timestamp).getTime(),
+                timestamp: isLocal ? new Date(chat.timestamp).getTime() : Date.now(),
                 playerId: chat.player_id,
                 playerName: chat.player_name
             });
