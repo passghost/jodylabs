@@ -42,6 +42,51 @@
             font-size: 14px;
         }
         
+        #gameControls {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            align-items: center;
+        }
+        
+        #chatInput {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            width: 200px;
+        }
+        
+        #stickerInput {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            width: 250px;
+        }
+        
+        .control-button {
+            padding: 8px 15px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .control-button:hover {
+            background: #c0392b;
+        }
+        
+        .control-button.sticker {
+            background: #9b59b6;
+        }
+        
+        .control-button.sticker:hover {
+            background: #8e44ad;
+        }
+        
         input[type="text"] {
             padding: 10px;
             margin: 10px;
@@ -83,6 +128,12 @@
             Use WASD or Arrow Keys to move
             <br>
             <span id="versionInfo" style="color:#aaa;font-size:12px;">Version 1.0.0</span>
+        </div>
+        <div id="gameControls">
+            <input type="text" id="chatInput" placeholder="Type a message..." maxlength="100">
+            <button class="control-button" onclick="sendChatMessage()">Chat</button>
+            <input type="text" id="stickerInput" placeholder="Enter image URL for sticker..." maxlength="500">
+            <button class="control-button sticker" onclick="enableStickerMode()">Place Sticker</button>
         </div>
     </div>
 

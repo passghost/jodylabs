@@ -11,6 +11,9 @@ let players = new Map();
 let keys = {};
 let lastUpdate = 0;
 let playerImages = {};
+let chatMessages = new Map();
+let stickers = new Map();
+let stickerMode = false;
 
 // Game constants
 const PLAYER_SIZE = 32;
@@ -109,16 +112,36 @@ function setupEventListeners() {
         }
     });
 
-    // Mouse click to move
+    // Mouse click to move or place sticker
     canvas.addEventListener('click', (e) => {
         const rect = canvas.getBoundingClientRect();
-        const targetX = e.clientX - rect.left - PLAYER_SIZE / 2;
-        const targetY = e.clientY - rect.top - PLAYER_SIZE / 2;
+        const clickX = e.clientX - rect.left;
+        const clickY = e.clientY - rect.top;
 
-        currentPlayer.x = Math.max(0, Math.min(canvas.width - PLAYER_SIZE, targetX));
-        currentPlayer.y = Math.max(0, Math.min(canvas.height - PLAYER_SIZE, targetY));
-        currentPlayer.isWalking = true;
-        currentPlayer.lastMoved = Date.now();
+        if (stickerMode) {
+            placeStickerAt(clickX, clickY);
+            stickerMode = false;
+            canvas.style.cursor = 'crosshair';
+        } else {
+            const targetX = clickX - PLAYER_SIZE / 2;
+            const targetY = clickY - PLAYER_SIZE / 2;
+
+            currentPlayer.x = Math.max(0, Math.min(canvas.width - PLAYER_SIZE, targetX));
+            currentPlayer.y = Math.max(0, Math.min(canvas.height - PLAYER_SIZE, targetY));
+            currentPlayer.isWalking = true;
+            currentPlayer.lastMoved = Date.now();
+        }
+    });
+
+    // Enter key for chat
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            const chatInput = document.getElementById('chatInput');
+            if (document.activeElement === chatInput) {
+                sendChatMessage();
+                e.preventDefault();
+            }
+        }
     });
 }
 
@@ -474,6 +497,194 @@ function gameLoop() {
     }
 
     requestAnimationFrame(gameLoop);
+}
+
+// Chat and Sticker Functions
+function sendChatMessage() {
+    const chatInput = document.getElementById('chatInput');
+    const message = chatInput.value.trim();
+
+    if (!message || !currentPlayer) return;
+
+    // Add chat message to current player
+    chatMessages.set(currentPlayer.id, {
+        text: message,
+        timestamp: Date.now(),
+        playerId: currentPlayer.id
+    });
+
+    // Clear input
+    chatInput.value = '';
+    chatInput.blur();
+
+    // Send to database (you can extend this later)
+    console.log(`${currentPlayer.name}: ${message}`);
+}
+
+function enableStickerMode() {
+    const stickerInput = document.getElementById('stickerInput');
+    const imageUrl = stickerInput.value.trim();
+
+    if (!imageUrl) {
+        alert('Please enter an image URL first!');
+        return;
+    }
+
+    // Validate URL (basic check)
+    if (!imageUrl.match(/\.(jpeg|jpg|gif|png|webp)$/i) && !imageUrl.startsWith('http')) {
+        alert('Please enter a valid image URL (jpg, png, gif, webp)');
+        return;
+    }
+
+    stickerMode = true;
+    canvas.style.cursor = 'pointer';
+    alert('Click anywhere on the canvas to place your sticker!');
+}
+
+function placeStickerAt(x, y) {
+    const stickerInput = document.getElementById('stickerInput');
+    const imageUrl = stickerInput.value.trim();
+
+    if (!imageUrl) return;
+
+    const stickerId = 'sticker_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+
+    // Create image object to test if URL works
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+
+    img.onload = () => {
+        stickers.set(stickerId, {
+            id: stickerId,
+            url: imageUrl,
+            x: x - 25, // Center the 50px sticker
+            y: y - 25,
+            timestamp: Date.now(),
+            placedBy: currentPlayer ? currentPlayer.name : 'Anonymous'
+        });
+        console.log(`Sticker placed by ${currentPlayer?.name || 'Anonymous'} at (${x}, ${y})`);
+    };
+
+    img.onerror = () => {
+        alert('Failed to load image. Please check the URL and try again.');
+    };
+
+    img.src = imageUrl;
+
+    // Clear input
+    stickerInput.value = '';
+}
+
+// Update render function to include chat bubbles and stickers
+function render() {
+    // Clear canvas
+    ctx.fillStyle = '#27ae60';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Draw grid pattern
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+    ctx.lineWidth = 1;
+    for (let x = 0; x < canvas.width; x += 50) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+    }
+    for (let y = 0; y < canvas.height; y += 50) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+    }
+
+    // Draw stickers first (behind players)
+    drawStickers();
+
+    // Draw other players
+    players.forEach(player => {
+        drawPlayer(player);
+        drawChatBubble(player);
+    });
+
+    // Draw current player
+    if (currentPlayer) {
+        drawPlayer(currentPlayer, true);
+        drawChatBubble(currentPlayer);
+    }
+}
+
+function drawStickers() {
+    stickers.forEach(sticker => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+            ctx.drawImage(img, sticker.x, sticker.y, 50, 50);
+        };
+        img.src = sticker.url;
+    });
+}
+
+function drawChatBubble(player) {
+    const chatMessage = chatMessages.get(player.id);
+    if (!chatMessage) return;
+
+    // Remove old messages (after 5 seconds)
+    if (Date.now() - chatMessage.timestamp > 5000) {
+        chatMessages.delete(player.id);
+        return;
+    }
+
+    const bubbleX = player.x + PLAYER_SIZE / 2;
+    const bubbleY = player.y - 40;
+    const text = chatMessage.text;
+
+    // Measure text
+    ctx.font = '12px Arial';
+    const textWidth = ctx.measureText(text).width;
+    const bubbleWidth = Math.min(textWidth + 16, 200);
+    const bubbleHeight = 24;
+
+    // Draw bubble background
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+    ctx.strokeStyle = '#333';
+    ctx.lineWidth = 1;
+
+    // Bubble rectangle
+    ctx.beginPath();
+    ctx.roundRect(bubbleX - bubbleWidth / 2, bubbleY - bubbleHeight, bubbleWidth, bubbleHeight, 8);
+    ctx.fill();
+    ctx.stroke();
+
+    // Bubble tail
+    ctx.beginPath();
+    ctx.moveTo(bubbleX - 5, bubbleY);
+    ctx.lineTo(bubbleX, bubbleY + 8);
+    ctx.lineTo(bubbleX + 5, bubbleY);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Draw text
+    ctx.fillStyle = '#333';
+    ctx.textAlign = 'center';
+    ctx.fillText(text, bubbleX, bubbleY - 8);
+}
+
+// Add roundRect polyfill for older browsers
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+    CanvasRenderingContext2D.prototype.roundRect = function (x, y, width, height, radius) {
+        this.beginPath();
+        this.moveTo(x + radius, y);
+        this.lineTo(x + width - radius, y);
+        this.quadraticCurveTo(x + width, y, x + width, y + radius);
+        this.lineTo(x + width, y + height - radius);
+        this.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+        this.lineTo(x + radius, y + height);
+        this.quadraticCurveTo(x, y + height, x, y + height - radius);
+        this.lineTo(x, y + radius);
+        this.quadraticCurveTo(x, y, x + radius, y);
+        this.closePath();
+    };
 }
 
 // Cleanup inactive players periodically
