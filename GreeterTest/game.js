@@ -46,7 +46,7 @@ async function joinWorld() {
     document.getElementById('playerNameDisplay').textContent = playerName;
 
     // Show version number on both login and game screens
-    const version = 'v1.3.9 (2025-07-16)';
+    const version = 'v1.4.0 (2025-07-16)';
     // Login screen
     const loginVersionSpan = document.getElementById('loginVersion');
     if (loginVersionSpan) {
@@ -470,9 +470,11 @@ function handleChatUpdate(payload) {
     if (!chatMessages.has(chatData.player_id)) {
         chatMessages.set(chatData.player_id, []);
     }
+    // Use Date.now() for timestamp on remote clients to ensure 5s bubble display
+    const isLocal = currentPlayer && chatData.player_id === currentPlayer.id;
     chatMessages.get(chatData.player_id).push({
         text: chatData.message,
-        timestamp: new Date(chatData.timestamp).getTime(),
+        timestamp: isLocal ? new Date(chatData.timestamp).getTime() : Date.now(),
         playerId: chatData.player_id,
         playerName: chatData.player_name
     });
