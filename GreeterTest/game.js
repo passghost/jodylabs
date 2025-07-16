@@ -43,13 +43,21 @@ async function joinWorld() {
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('gameContainer').style.display = 'flex';
     document.getElementById('playerNameDisplay').textContent = playerName;
-// Show version number on login screen (run on page load, not after login)
-window.addEventListener('DOMContentLoaded', () => {
-    const versionSpan = document.getElementById('loginVersion');
-    if (versionSpan) {
-        versionSpan.textContent = 'v1.2.2 (2025-07-16)';
+
+    // Show version number on both login and game screens
+    const version = 'v1.2.2 (2025-07-16)';
+    // Login screen
+    const loginVersionSpan = document.getElementById('loginVersion');
+    if (loginVersionSpan) {
+        loginVersionSpan.textContent = version;
+        loginVersionSpan.style.display = 'inline';
     }
-});
+    // In-game UI (if you have a version span there)
+    const gameVersionSpan = document.getElementById('gameVersion');
+    if (gameVersionSpan) {
+        gameVersionSpan.textContent = version;
+        gameVersionSpan.style.display = 'inline';
+    }
 
     // Initialize canvas and game
     canvas = document.getElementById('gameCanvas');
