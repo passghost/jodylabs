@@ -1,6 +1,6 @@
 console.log("game.js loaded");
 // GreeterTest Multiplayer Game
-// Version: 1.3.0 (2025-07-16)
+// Version: 1.3.1 (2025-07-16)
 //
 // Supabase configuration
 const SUPABASE_URL = 'https://omcwjmvdjswkfjkahchm.supabase.co';
@@ -45,7 +45,7 @@ async function joinWorld() {
     document.getElementById('playerNameDisplay').textContent = playerName;
 
     // Show version number on both login and game screens
-    const version = 'v1.3.0 (2025-07-16)';
+    const version = 'v1.3.1 (2025-07-16)';
     // Login screen
     const loginVersionSpan = document.getElementById('loginVersion');
     if (loginVersionSpan) {
@@ -523,6 +523,10 @@ async function fetchAllStickers() {
         }
 
         console.log('[DEBUG] fetchAllStickers: fetched', data.length, 'stickers:', data);
+
+        // Clear stickerImages cache to prevent placeholder duplicates
+        stickerImages.clear();
+        stickers.clear();
 
         // Add or update all stickers in the scene, and always reload the image
         data.forEach(stickerData => {
@@ -1075,3 +1079,8 @@ setInterval(() => {
     updatePlayerCount();
     // ...debug log removed for clarity...
 });
+
+// Ticker: Refresh all stickers every 5 seconds
+setInterval(() => {
+    fetchAllStickers();
+}, 5000);
