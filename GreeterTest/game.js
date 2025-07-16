@@ -13,6 +13,7 @@ let lastUpdate = 0;
 let playerImages = {};
 let chatMessages = new Map();
 let stickers = new Map();
+let stickerImages = new Map(); // Cache for loaded sticker images
 let stickerMode = false;
 
 // Game constants
@@ -158,6 +159,7 @@ DATABASE SETUP INSTRUCTIONS:
 1. Go to your Supabase project: https://omcwjmvdjswkfjkahchm.supabase.co
 2. Go to SQL Editor and run this query:
 
+-- Players table
 CREATE TABLE players (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
@@ -167,11 +169,38 @@ CREATE TABLE players (
   last_seen TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Chat messages table
+CREATE TABLE chat_messages (
+  id SERIAL PRIMARY KEY,
+  player_id TEXT NOT NULL,
+  player_name TEXT NOT NULL,
+  message TEXT NOT NULL,
+  timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Stickers table
+CREATE TABLE stickers (
+  id TEXT PRIMARY KEY,
+  url TEXT NOT NULL,
+  x INTEGER NOT NULL,
+  y INTEGER NOT NULL,
+  placed_by TEXT NOT NULL,
+  timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Enable Row Level Security
 ALTER TABLE players ENABLE ROW LEVEL SECURITY;
+ALTER TABLE chat_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE stickers ENABLE ROW LEVEL SECURITY;
 
 -- Allow anonymous users to read and write
 CREATE POLICY "Allow anonymous access" ON players
+FOR ALL USING (true) WITH CHECK (true);
+
+CREATE POLICY "Allow anonymous access" ON chat_messages
+FOR ALL USING (true) WITH CHECK (true);
+
+CREATE POLICY "Allow anonymous access" ON stickers
 FOR ALL USING (true) WITH CHECK (true);
 
 3. Refresh the page and multiplayer will work!
@@ -183,12 +212,20 @@ FOR ALL USING (true) WITH CHECK (true);
         await updatePlayerPosition();
 
         // Subscribe to player updates with unique channel name
-        const channelName = 'players_' + Math.random().toString(36).substr(2, 9);
+        const channelName = 'game_' + Math.random().toString(36).substr(2, 9);
         const channel = supabase
             .channel(channelName)
             .on('postgres_changes',
                 { event: '*', schema: 'public', table: 'players' },
                 handlePlayerUpdate
+            )
+            .on('postgres_changes',
+                { event: 'INSERT', schema: 'public', table: 'chat_messages' },
+                handleChatUpdate
+            )
+            .on('postgres_changes',
+                { event: 'INSERT', schema: 'public', table: 'stickers' },
+                handleStickerUpdate
             )
             .subscribe((status) => {
                 console.log('Subscription status:', status);
@@ -209,8 +246,10 @@ FOR ALL USING (true) WITH CHECK (true);
             }
         });
 
-        // Fetch existing players
+        // Fetch existing players, chat messages, and stickers
         await fetchAllPlayers();
+        await fetchRecentChatMessages();
+        await fetchAllStickers();
 
         // Add fallback polling in case real-time doesn't work
         setInterval(async () => {
@@ -363,6 +402,97 @@ async function removePlayer() {
     }
 }
 
+function handleChatUpdate(payload) {
+    console.log('Chat update:', payload);
+
+    const chatData = payload.new;
+    if (!chatData || (currentPlayer && chatData.player_id === currentPlayer.id)) return;
+
+    // Add chat message for the player
+    chatMessages.set(chatData.player_id, {
+        text: chatData.message,
+        timestamp: new Date(chatData.timestamp).getTime(),
+        playerId: chatData.player_id,
+        playerName: chatData.player_name
+    });
+}
+
+function handleStickerUpdate(payload) {
+    console.log('Sticker update:', payload);
+
+    const stickerData = payload.new;
+    if (!stickerData) return;
+
+    // Add sticker to the scene
+    stickers.set(stickerData.id, {
+        id: stickerData.id,
+        url: stickerData.url,
+        x: stickerData.x,
+        y: stickerData.y,
+        timestamp: new Date(stickerData.timestamp).getTime(),
+        placedBy: stickerData.placed_by
+    });
+}
+
+async function fetchRecentChatMessages() {
+    try {
+        const { data, error } = await supabase
+            .from('chat_messages')
+            .select('*')
+            .gte('timestamp', new Date(Date.now() - 10000).toISOString()) // Last 10 seconds
+            .order('timestamp', { ascending: false })
+            .limit(20);
+
+        if (error) {
+            console.error('Error fetching chat messages:', error);
+            return;
+        }
+
+        // Add recent chat messages
+        data.forEach(chat => {
+            if (!currentPlayer || chat.player_id !== currentPlayer.id) {
+                chatMessages.set(chat.player_id, {
+                    text: chat.message,
+                    timestamp: new Date(chat.timestamp).getTime(),
+                    playerId: chat.player_id,
+                    playerName: chat.player_name
+                });
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching chat messages:', error);
+    }
+}
+
+async function fetchAllStickers() {
+    try {
+        const { data, error } = await supabase
+            .from('stickers')
+            .select('*')
+            .gte('timestamp', new Date(Date.now() - 3600000).toISOString()) // Last hour
+            .order('timestamp', { ascending: true });
+
+        if (error) {
+            console.error('Error fetching stickers:', error);
+            return;
+        }
+
+        // Add all stickers to the scene
+        data.forEach(sticker => {
+            stickers.set(sticker.id, {
+                id: sticker.id,
+                url: sticker.url,
+                x: sticker.x,
+                y: sticker.y,
+                timestamp: new Date(sticker.timestamp).getTime(),
+                placedBy: sticker.placed_by
+            });
+        });
+    } catch (error) {
+        console.error('Error fetching stickers:', error);
+    }
+}
+
 function updatePlayerCount() {
     // Only count players that are visible (other players + self)
     const count = players.size + (currentPlayer ? 1 : 0);
@@ -500,25 +630,71 @@ function gameLoop() {
 }
 
 // Chat and Sticker Functions
-function sendChatMessage() {
+async function sendChatMessage() {
     const chatInput = document.getElementById('chatInput');
     const message = chatInput.value.trim();
 
     if (!message || !currentPlayer) return;
 
-    // Add chat message to current player
-    chatMessages.set(currentPlayer.id, {
+    const chatData = {
         text: message,
         timestamp: Date.now(),
-        playerId: currentPlayer.id
-    });
+        playerId: currentPlayer.id,
+        playerName: currentPlayer.name
+    };
+
+    // Add chat message locally
+    chatMessages.set(currentPlayer.id, chatData);
+    console.log(`Chat message added locally for ${currentPlayer.name}: ${message}`);
+
+    // Send to database for syncing
+    await sendChatToDatabase(chatData);
 
     // Clear input
     chatInput.value = '';
     chatInput.blur();
 
-    // Send to database (you can extend this later)
     console.log(`${currentPlayer.name}: ${message}`);
+}
+
+async function sendChatToDatabase(chatData) {
+    try {
+        const { error } = await supabase
+            .from('chat_messages')
+            .insert({
+                player_id: chatData.playerId,
+                player_name: chatData.playerName,
+                message: chatData.text,
+                timestamp: new Date(chatData.timestamp).toISOString()
+            });
+
+        if (error) {
+            console.error('Error sending chat message:', error);
+        }
+    } catch (error) {
+        console.error('Database error sending chat:', error);
+    }
+}
+
+async function sendStickerToDatabase(stickerData) {
+    try {
+        const { error } = await supabase
+            .from('stickers')
+            .insert({
+                id: stickerData.id,
+                url: stickerData.url,
+                x: stickerData.x,
+                y: stickerData.y,
+                placed_by: stickerData.placedBy,
+                timestamp: new Date(stickerData.timestamp).toISOString()
+            });
+
+        if (error) {
+            console.error('Error sending sticker:', error);
+        }
+    } catch (error) {
+        console.error('Database error sending sticker:', error);
+    }
 }
 
 function enableStickerMode() {
@@ -536,9 +712,50 @@ function enableStickerMode() {
         return;
     }
 
-    stickerMode = true;
-    canvas.style.cursor = 'pointer';
-    alert('Click anywhere on the canvas to place your sticker!');
+    // Place sticker at current player's location instead of click location
+    if (currentPlayer) {
+        placeStickerAtPlayer(imageUrl);
+    } else {
+        alert('Player not found!');
+    }
+}
+
+function placeStickerAtPlayer(imageUrl) {
+    if (!currentPlayer) return;
+
+    const stickerId = 'sticker_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+
+    // Create image object to test if URL works
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+
+    img.onload = () => {
+        const stickerData = {
+            id: stickerId,
+            url: imageUrl,
+            x: currentPlayer.x + PLAYER_SIZE / 2 - 25, // Center at player position
+            y: currentPlayer.y + PLAYER_SIZE / 2 - 25,
+            timestamp: Date.now(),
+            placedBy: currentPlayer.name
+        };
+
+        stickers.set(stickerId, stickerData);
+
+        // Send sticker to database for syncing
+        sendStickerToDatabase(stickerData);
+
+        console.log(`Sticker placed by ${currentPlayer.name} at player location`);
+    };
+
+    img.onerror = () => {
+        alert('Failed to load image. Please check the URL and try again.');
+    };
+
+    img.src = imageUrl;
+
+    // Clear input
+    const stickerInput = document.getElementById('stickerInput');
+    stickerInput.value = '';
 }
 
 function placeStickerAt(x, y) {
@@ -554,14 +771,20 @@ function placeStickerAt(x, y) {
     img.crossOrigin = 'anonymous';
 
     img.onload = () => {
-        stickers.set(stickerId, {
+        const stickerData = {
             id: stickerId,
             url: imageUrl,
             x: x - 25, // Center the 50px sticker
             y: y - 25,
             timestamp: Date.now(),
             placedBy: currentPlayer ? currentPlayer.name : 'Anonymous'
-        });
+        };
+
+        stickers.set(stickerId, stickerData);
+
+        // Send sticker to database for syncing
+        sendStickerToDatabase(stickerData);
+
         console.log(`Sticker placed by ${currentPlayer?.name || 'Anonymous'} at (${x}, ${y})`);
     };
 
@@ -615,13 +838,78 @@ function render() {
 
 function drawStickers() {
     stickers.forEach(sticker => {
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = () => {
-            ctx.drawImage(img, sticker.x, sticker.y, 50, 50);
-        };
-        img.src = sticker.url;
+        // Check if image is already cached
+        if (stickerImages.has(sticker.id)) {
+            const img = stickerImages.get(sticker.id);
+            if (img.complete && img.naturalWidth > 0) {
+                ctx.drawImage(img, sticker.x, sticker.y, 50, 50);
+            }
+        } else {
+            // Load and cache the image
+            loadStickerImage(sticker);
+        }
     });
+}
+
+function loadStickerImage(sticker) {
+    // Create placeholder immediately to avoid CORS issues
+    createStickerPlaceholder(sticker);
+
+    // Try to load the actual image without crossOrigin
+    const img = new Image();
+
+    img.onload = () => {
+        // Only replace placeholder if image loads successfully
+        stickerImages.set(sticker.id, img);
+        console.log(`Sticker image loaded: ${sticker.id}`);
+    };
+
+    img.onerror = () => {
+        console.warn(`Failed to load sticker image: ${sticker.url} - Using placeholder`);
+        // Placeholder is already created, so do nothing
+    };
+
+    // Don't set crossOrigin to avoid CORS errors
+    img.src = sticker.url;
+}
+
+function createStickerPlaceholder(sticker) {
+    const fallbackCanvas = document.createElement('canvas');
+    fallbackCanvas.width = 50;
+    fallbackCanvas.height = 50;
+    const fallbackCtx = fallbackCanvas.getContext('2d');
+
+    // Draw a colorful placeholder with sticker info
+    const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57', '#ff9ff3'];
+    const colorIndex = Math.abs(hashString(sticker.id)) % colors.length;
+    const color = colors[colorIndex];
+
+    fallbackCtx.fillStyle = color;
+    fallbackCtx.fillRect(0, 0, 50, 50);
+    fallbackCtx.fillStyle = '#ffffff';
+    fallbackCtx.font = '10px Arial';
+    fallbackCtx.textAlign = 'center';
+    fallbackCtx.fillText('STICKER', 25, 20);
+    fallbackCtx.fillText(`by ${sticker.placedBy}`, 25, 35);
+
+    // Convert canvas to image
+    const fallbackImg = new Image();
+    fallbackImg.onload = () => {
+        stickerImages.set(sticker.id, fallbackImg);
+    };
+    fallbackImg.src = fallbackCanvas.toDataURL();
+}
+
+// Helper function for string hashing
+function hashString(str) {
+    let hash = 0;
+    if (str.length === 0) return hash;
+    for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // Convert to 32bit integer
+    }
+    return hash;
 }
 
 function drawChatBubble(player) {
@@ -668,6 +956,52 @@ function drawChatBubble(player) {
     ctx.fillStyle = '#333';
     ctx.textAlign = 'center';
     ctx.fillText(text, bubbleX, bubbleY - 8);
+}
+
+// Add roundRect polyfill for older browsers
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+    CanvasRenderingContext2D.prototype.roundRect = function (x, y, width, height, radius) {
+        this.beginPath();
+        this.moveTo(x + radius, y);
+        this.lineTo(x + width - radius, y);
+        this.quadraticCurveTo(x + width, y, x + width, y + radius);
+        this.lineTo(x + width, y + height - radius);
+        this.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+        this.lineTo(x + radius, y + height);
+        this.quadraticCurveTo(x, y + height, x, y + height - radius);
+        this.lineTo(x, y + radius);
+        this.quadraticCurveTo(x, y, x + radius, y);
+        this.closePath();
+    };
+}
+
+// Cleanup inactive players periodically
+setInterval(() => {
+    const thirtySecondsAgo = Date.now() - 30000;
+    players.forEach((player, id) => {
+        if (player.lastMoved < thirtySecondsAgo) {
+            players.delete(id);
+        }
+    });
+    updatePlayerCount();
+}, 5000);
+ctx.roundRect(bubbleX - bubbleWidth / 2, bubbleY - bubbleHeight, bubbleWidth, bubbleHeight, 8);
+ctx.fill();
+ctx.stroke();
+
+// Bubble tail
+ctx.beginPath();
+ctx.moveTo(bubbleX - 5, bubbleY);
+ctx.lineTo(bubbleX, bubbleY + 8);
+ctx.lineTo(bubbleX + 5, bubbleY);
+ctx.closePath();
+ctx.fill();
+ctx.stroke();
+
+// Draw text
+ctx.fillStyle = '#333';
+ctx.textAlign = 'center';
+ctx.fillText(text, bubbleX, bubbleY - 8);
 }
 
 // Add roundRect polyfill for older browsers
