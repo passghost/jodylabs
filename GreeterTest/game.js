@@ -1,6 +1,6 @@
 console.log("game.js loaded");
 // GreeterTest Multiplayer Game
-// Version: 1.2.8 (2025-07-16)
+// Version: 1.2.9 (2025-07-16)
 //
 // Supabase configuration
 const SUPABASE_URL = 'https://omcwjmvdjswkfjkahchm.supabase.co';
@@ -45,7 +45,7 @@ async function joinWorld() {
     document.getElementById('playerNameDisplay').textContent = playerName;
 
     // Show version number on both login and game screens
-    const version = 'v1.2.8 (2025-07-16)';
+    const version = 'v1.2.9 (2025-07-16)';
     // Login screen
     const loginVersionSpan = document.getElementById('loginVersion');
     if (loginVersionSpan) {
@@ -471,7 +471,11 @@ function handleChatUpdate(payload) {
 function handleStickerUpdate(payload) {
     // Real-time sticker event received
     const stickerData = payload.new;
-    if (!stickerData) return;
+    console.log('[DEBUG] handleStickerUpdate called:', payload);
+    if (!stickerData) {
+        console.warn('[DEBUG] handleStickerUpdate: No stickerData in payload:', payload);
+        return;
+    }
     // Always force a full refresh of stickers on any real-time event
     fetchAllStickers();
 }
@@ -518,6 +522,8 @@ async function fetchAllStickers() {
             return;
         }
 
+        console.log('[DEBUG] fetchAllStickers: fetched', data.length, 'stickers:', data);
+
         // Add or update all stickers in the scene, and always reload the image
         data.forEach(stickerData => {
             const sticker = {
@@ -530,6 +536,7 @@ async function fetchAllStickers() {
             };
             stickers.set(sticker.id, sticker);
             // Always reload the image for this sticker (fixes placeholder issue)
+            console.log(`[DEBUG] fetchAllStickers: loading image for sticker ${sticker.id} (${sticker.url})`);
             loadStickerImage(sticker);
         });
     } catch (error) {
