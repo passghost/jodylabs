@@ -15,6 +15,7 @@ let players = new Map();
 let keys = {};
 let lastUpdate = 0;
 let playerImages = {};
+// Store an array of chat messages per player
 let chatMessages = new Map();
 let stickers = new Map();
 let stickerImages = new Map(); // Cache for loaded sticker images
@@ -45,7 +46,7 @@ async function joinWorld() {
     document.getElementById('playerNameDisplay').textContent = playerName;
 
     // Show version number on both login and game screens
-    const version = 'v1.3.7 (2025-07-16)';
+    const version = 'v1.3.8 (2025-07-16)';
     // Login screen
     const loginVersionSpan = document.getElementById('loginVersion');
     if (loginVersionSpan) {
@@ -463,16 +464,22 @@ async function removePlayer() {
 }
 
 function handleChatUpdate(payload) {
-    // Only debug if this is a chat bubble placement event
     const chatData = payload.new;
     if (!chatData) return;
-    // Add chat message for the player
-    chatMessages.set(chatData.player_id, {
+    // Store an array of messages per player
+    if (!chatMessages.has(chatData.player_id)) {
+        chatMessages.set(chatData.player_id, []);
+    }
+    chatMessages.get(chatData.player_id).push({
         text: chatData.message,
         timestamp: new Date(chatData.timestamp).getTime(),
         playerId: chatData.player_id,
         playerName: chatData.player_name
     });
+    // Keep only the last 5 messages per player (optional, for memory)
+    if (chatMessages.get(chatData.player_id).length > 5) {
+        chatMessages.get(chatData.player_id).shift();
+    }
 }
 
 function handleStickerUpdate(payload) {
@@ -493,22 +500,31 @@ async function fetchRecentChatMessages() {
             .from('chat_messages')
             .select('*')
             .gte('timestamp', new Date(Date.now() - 30000).toISOString()) // Last 30 seconds
-            .order('timestamp', { ascending: false })
-            .limit(20);
+            .order('timestamp', { ascending: true })
+            .limit(100);
 
         if (error) {
             console.error('Error fetching chat messages:', error);
             return;
         }
 
-        // Add ALL recent chat messages, including current player's
+        // Clear all chat messages
+        chatMessages.clear();
+        // Add ALL recent chat messages, grouped by player
         data.forEach(chat => {
-            chatMessages.set(chat.player_id, {
+            if (!chatMessages.has(chat.player_id)) {
+                chatMessages.set(chat.player_id, []);
+            }
+            chatMessages.get(chat.player_id).push({
                 text: chat.message,
                 timestamp: new Date(chat.timestamp).getTime(),
                 playerId: chat.player_id,
                 playerName: chat.player_name
             });
+            // Keep only the last 5 messages per player
+            if (chatMessages.get(chat.player_id).length > 5) {
+                chatMessages.get(chat.player_id).shift();
+            }
             console.log(`Loaded chat message: ${chat.player_name}: ${chat.message}`);
         });
     } catch (error) {
@@ -764,8 +780,14 @@ async function sendChatMessage() {
         playerName: currentPlayer.name
     };
 
-    // Add chat message locally
-    chatMessages.set(currentPlayer.id, chatData);
+    // Add chat message locally (as array)
+    if (!chatMessages.has(currentPlayer.id)) {
+        chatMessages.set(currentPlayer.id, []);
+    }
+    chatMessages.get(currentPlayer.id).push(chatData);
+    if (chatMessages.get(currentPlayer.id).length > 5) {
+        chatMessages.get(currentPlayer.id).shift();
+    }
     // Debug: Log chat bubble placement
     console.log('[DEBUG] Chat bubble placed:', {
         playerId: currentPlayer.id,
