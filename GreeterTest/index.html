@@ -116,6 +116,8 @@
         <input type="text" id="playerName" placeholder="Enter your name" maxlength="20">
         <br>
         <button onclick="joinWorld()">Join World</button>
+        <br>
+        <span id="loginVersion" style="color:#aaa;font-size:12px;margin-top:15px;display:block;"></span>
     </div>
     
     <div id="gameContainer">
@@ -125,7 +127,7 @@
             Players online: <span id="playerCount">0</span> |
             Use WASD or Arrow Keys to move
             <br>
-            <span id="versionInfo" style="color:#aaa;font-size:12px;">Version 1.1.0</span>
+
         </div>
         <div id="gameControls">
             <input type="text" id="chatInput" placeholder="Type a message..." maxlength="100">
@@ -136,6 +138,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="chat-bubbles.js"></script>
     <script src="game.js"></script>
 </body>
 </html>

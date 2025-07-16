@@ -1,11 +1,11 @@
 // GreeterTest Multiplayer Game
-// Version: 1.2.0 (2025-07-16)
+// Version: 1.2.1 (2025-07-16)
 //
 // Supabase configuration
 const SUPABASE_URL = 'https://omcwjmvdjswkfjkahchm.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE';
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Game variables
 let canvas, ctx;
@@ -36,10 +36,18 @@ async function joinWorld() {
         return;
     }
 
+
     // Hide login screen and show game
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('gameContainer').style.display = 'flex';
     document.getElementById('playerNameDisplay').textContent = playerName;
+// Show version number on login screen
+window.addEventListener('DOMContentLoaded', () => {
+    const versionSpan = document.getElementById('loginVersion');
+    if (versionSpan) {
+        versionSpan.textContent = 'v1.2.1 (2025-07-16)';
+    }
+});
 
     // Initialize canvas and game
     canvas = document.getElementById('gameCanvas');
