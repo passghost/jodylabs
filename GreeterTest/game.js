@@ -1,6 +1,6 @@
 console.log("game.js loaded");
 // GreeterTest Multiplayer Game
-// Version: 1.2.5 (2025-07-16)
+// Version: 1.2.6 (2025-07-16)
 //
 // Supabase configuration
 const SUPABASE_URL = 'https://omcwjmvdjswkfjkahchm.supabase.co';
@@ -45,7 +45,7 @@ async function joinWorld() {
     document.getElementById('playerNameDisplay').textContent = playerName;
 
     // Show version number on both login and game screens
-    const version = 'v1.2.5 (2025-07-16)';
+    const version = 'v1.2.6 (2025-07-16)';
     // Login screen
     const loginVersionSpan = document.getElementById('loginVersion');
     if (loginVersionSpan) {
@@ -518,20 +518,19 @@ async function fetchAllStickers() {
             return;
         }
 
-        // Add all stickers to the scene, but only if not already present
+        // Add or update all stickers in the scene, and always reload the image
         data.forEach(stickerData => {
-            if (!stickers.has(stickerData.id)) {
-                const sticker = {
-                    id: stickerData.id,
-                    url: stickerData.url,
-                    x: stickerData.x,
-                    y: stickerData.y,
-                    timestamp: new Date(stickerData.timestamp).getTime(),
-                    placedBy: stickerData.placed_by
-                };
-                stickers.set(sticker.id, sticker);
-                loadStickerImage(sticker);
-            }
+            const sticker = {
+                id: stickerData.id,
+                url: stickerData.url,
+                x: stickerData.x,
+                y: stickerData.y,
+                timestamp: new Date(stickerData.timestamp).getTime(),
+                placedBy: stickerData.placed_by
+            };
+            stickers.set(sticker.id, sticker);
+            // Always reload the image for this sticker (fixes placeholder issue)
+            loadStickerImage(sticker);
         });
     } catch (error) {
         console.error('Error fetching stickers:', error);
