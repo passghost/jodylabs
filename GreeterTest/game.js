@@ -1,3 +1,6 @@
+// GreeterTest Multiplayer Game
+// Version: 1.2.0 (2025-07-16)
+//
 // Supabase configuration
 const SUPABASE_URL = 'https://omcwjmvdjswkfjkahchm.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE';
@@ -254,6 +257,7 @@ FOR ALL USING (true) WITH CHECK (true);
         // Add fallback polling in case real-time doesn't work
         setInterval(async () => {
             await fetchAllPlayers();
+            await fetchRecentChatMessages(); // Poll for chat messages too
         }, 2000); // Poll every 2 seconds as backup
 
         console.log('Multiplayer mode enabled!');
@@ -403,11 +407,19 @@ async function removePlayer() {
 }
 
 function handleChatUpdate(payload) {
-    console.log('Chat update:', payload);
+    console.log('Chat update received:', payload);
 
     const chatData = payload.new;
-    if (!chatData || (currentPlayer && chatData.player_id === currentPlayer.id)) return;
-
+    if (!chatData) {
+        console.warn('Chat update missing data');
+        return;
+    }
+    
+    // IMPORTANT: Always process all chat messages, even from current player
+    // This ensures all clients see all messages consistently
+    
+    console.log(`Adding chat message for player ${chatData.player_name} (${chatData.player_id}): ${chatData.message}`);
+    
     // Add chat message for the player
     chatMessages.set(chatData.player_id, {
         text: chatData.message,
@@ -415,6 +427,9 @@ function handleChatUpdate(payload) {
         playerId: chatData.player_id,
         playerName: chatData.player_name
     });
+    
+    // Debug current chat messages
+    console.log('Current chat messages:', Array.from(chatMessages.entries()));
 }
 
 function handleStickerUpdate(payload) {
@@ -439,7 +454,7 @@ async function fetchRecentChatMessages() {
         const { data, error } = await supabase
             .from('chat_messages')
             .select('*')
-            .gte('timestamp', new Date(Date.now() - 10000).toISOString()) // Last 10 seconds
+            .gte('timestamp', new Date(Date.now() - 30000).toISOString()) // Last 30 seconds
             .order('timestamp', { ascending: false })
             .limit(20);
 
@@ -448,16 +463,15 @@ async function fetchRecentChatMessages() {
             return;
         }
 
-        // Add recent chat messages
+        // Add ALL recent chat messages, including current player's
         data.forEach(chat => {
-            if (!currentPlayer || chat.player_id !== currentPlayer.id) {
-                chatMessages.set(chat.player_id, {
-                    text: chat.message,
-                    timestamp: new Date(chat.timestamp).getTime(),
-                    playerId: chat.player_id,
-                    playerName: chat.player_name
-                });
-            }
+            chatMessages.set(chat.player_id, {
+                text: chat.message,
+                timestamp: new Date(chat.timestamp).getTime(),
+                playerId: chat.player_id,
+                playerName: chat.player_name
+            });
+            console.log(`Loaded chat message: ${chat.player_name}: ${chat.message}`);
         });
     } catch (error) {
         console.error('Error fetching chat messages:', error);
@@ -535,36 +549,10 @@ function handleInput() {
     }
 }
 
-function render() {
-    // Clear canvas
-    ctx.fillStyle = '#27ae60';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Draw grid pattern
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-    ctx.lineWidth = 1;
-    for (let x = 0; x < canvas.width; x += 50) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, canvas.height);
-        ctx.stroke();
-    }
-    for (let y = 0; y < canvas.height; y += 50) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(canvas.width, y);
-        ctx.stroke();
-    }
-
-    // Draw other players
-    players.forEach(player => {
-        drawPlayer(player);
-    });
-
-    // Draw current player
-    if (currentPlayer) {
-        drawPlayer(currentPlayer, true);
-    }
+// This is a placeholder function that will be overridden by the complete render function below
+// Keeping this to avoid errors if it's referenced elsewhere
+function renderPlaceholder() {
+    console.log("Using placeholder render function - this should not happen");
 }
 
 function drawPlayer(player, isCurrentPlayer = false) {
@@ -727,7 +715,6 @@ function placeStickerAtPlayer(imageUrl) {
 
     // Create image object to test if URL works
     const img = new Image();
-    img.crossOrigin = 'anonymous';
 
     img.onload = () => {
         const stickerData = {
@@ -768,7 +755,6 @@ function placeStickerAt(x, y) {
 
     // Create image object to test if URL works
     const img = new Image();
-    img.crossOrigin = 'anonymous';
 
     img.onload = () => {
         const stickerData = {
@@ -823,16 +809,30 @@ function render() {
     // Draw stickers first (behind players)
     drawStickers();
 
-    // Draw other players
+    // Draw other players first
     players.forEach(player => {
         drawPlayer(player);
-        drawChatBubble(player);
     });
 
     // Draw current player
     if (currentPlayer) {
         drawPlayer(currentPlayer, true);
+    }
+    
+    // Draw all chat bubbles on top of players
+    // This ensures chat bubbles are always visible and not covered by other players
+    players.forEach(player => {
+        drawChatBubble(player);
+    });
+    
+    // Draw current player's chat bubble
+    if (currentPlayer) {
         drawChatBubble(currentPlayer);
+    }
+    
+    // Debug: Show active chat messages count
+    if (chatMessages.size > 0) {
+        console.log(`Active chat messages: ${chatMessages.size}`);
     }
 }
 
@@ -912,68 +912,7 @@ function hashString(str) {
     return hash;
 }
 
-function drawChatBubble(player) {
-    const chatMessage = chatMessages.get(player.id);
-    if (!chatMessage) return;
-
-    // Remove old messages (after 5 seconds)
-    if (Date.now() - chatMessage.timestamp > 5000) {
-        chatMessages.delete(player.id);
-        return;
-    }
-
-    const bubbleX = player.x + PLAYER_SIZE / 2;
-    const bubbleY = player.y - 40;
-    const text = chatMessage.text;
-
-    // Measure text
-    ctx.font = '12px Arial';
-    const textWidth = ctx.measureText(text).width;
-    const bubbleWidth = Math.min(textWidth + 16, 200);
-    const bubbleHeight = 24;
-
-    // Draw bubble background
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-    ctx.strokeStyle = '#333';
-    ctx.lineWidth = 1;
-
-    // Bubble rectangle
-    ctx.beginPath();
-    ctx.roundRect(bubbleX - bubbleWidth / 2, bubbleY - bubbleHeight, bubbleWidth, bubbleHeight, 8);
-    ctx.fill();
-    ctx.stroke();
-
-    // Bubble tail
-    ctx.beginPath();
-    ctx.moveTo(bubbleX - 5, bubbleY);
-    ctx.lineTo(bubbleX, bubbleY + 8);
-    ctx.lineTo(bubbleX + 5, bubbleY);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-
-    // Draw text
-    ctx.fillStyle = '#333';
-    ctx.textAlign = 'center';
-    ctx.fillText(text, bubbleX, bubbleY - 8);
-}
-
-// Add roundRect polyfill for older browsers
-if (!CanvasRenderingContext2D.prototype.roundRect) {
-    CanvasRenderingContext2D.prototype.roundRect = function (x, y, width, height, radius) {
-        this.beginPath();
-        this.moveTo(x + radius, y);
-        this.lineTo(x + width - radius, y);
-        this.quadraticCurveTo(x + width, y, x + width, y + radius);
-        this.lineTo(x + width, y + height - radius);
-        this.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-        this.lineTo(x + radius, y + height);
-        this.quadraticCurveTo(x, y + height, x, y + height - radius);
-        this.lineTo(x, y + radius);
-        this.quadraticCurveTo(x, y, x + radius, y);
-        this.closePath();
-    };
-}
+// drawChatBubble function is now in chat-bubbles.js
 
 // Cleanup inactive players periodically
 setInterval(() => {
@@ -984,50 +923,4 @@ setInterval(() => {
         }
     });
     updatePlayerCount();
-}, 5000);
-ctx.roundRect(bubbleX - bubbleWidth / 2, bubbleY - bubbleHeight, bubbleWidth, bubbleHeight, 8);
-ctx.fill();
-ctx.stroke();
-
-// Bubble tail
-ctx.beginPath();
-ctx.moveTo(bubbleX - 5, bubbleY);
-ctx.lineTo(bubbleX, bubbleY + 8);
-ctx.lineTo(bubbleX + 5, bubbleY);
-ctx.closePath();
-ctx.fill();
-ctx.stroke();
-
-// Draw text
-ctx.fillStyle = '#333';
-ctx.textAlign = 'center';
-ctx.fillText(text, bubbleX, bubbleY - 8);
-}
-
-// Add roundRect polyfill for older browsers
-if (!CanvasRenderingContext2D.prototype.roundRect) {
-    CanvasRenderingContext2D.prototype.roundRect = function (x, y, width, height, radius) {
-        this.beginPath();
-        this.moveTo(x + radius, y);
-        this.lineTo(x + width - radius, y);
-        this.quadraticCurveTo(x + width, y, x + width, y + radius);
-        this.lineTo(x + width, y + height - radius);
-        this.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-        this.lineTo(x + radius, y + height);
-        this.quadraticCurveTo(x, y + height, x, y + height - radius);
-        this.lineTo(x, y + radius);
-        this.quadraticCurveTo(x, y, x + radius, y);
-        this.closePath();
-    };
-}
-
-// Cleanup inactive players periodically
-setInterval(() => {
-    const thirtySecondsAgo = Date.now() - 30000;
-    players.forEach((player, id) => {
-        if (player.lastMoved < thirtySecondsAgo) {
-            players.delete(id);
-        }
-    });
-    updatePlayerCount();
-}, 5000);
+});
