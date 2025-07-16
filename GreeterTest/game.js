@@ -1,5 +1,5 @@
 // GreeterTest Multiplayer Game
-// Version: 1.2.1 (2025-07-16)
+// Version: 1.2.2 (2025-07-16)
 //
 // Supabase configuration
 const SUPABASE_URL = 'https://omcwjmvdjswkfjkahchm.supabase.co';
@@ -45,7 +45,7 @@ async function joinWorld() {
 window.addEventListener('DOMContentLoaded', () => {
     const versionSpan = document.getElementById('loginVersion');
     if (versionSpan) {
-        versionSpan.textContent = 'v1.2.1 (2025-07-16)';
+        versionSpan.textContent = 'v1.2.2 (2025-07-16)';
     }
 });
 
@@ -67,6 +67,8 @@ window.addEventListener('DOMContentLoaded', () => {
         lastSentX: 0,
         lastSentY: 0
     };
+    // Add current player to players map so it is recognized
+    players.set(currentPlayer.id, currentPlayer);
 
     // Setup event listeners
     setupEventListeners();
