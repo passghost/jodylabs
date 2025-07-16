@@ -1,6 +1,6 @@
 console.log("game.js loaded");
 // GreeterTest Multiplayer Game
-// Version: 1.2.9 (2025-07-16)
+// Version: 1.3.0 (2025-07-16)
 //
 // Supabase configuration
 const SUPABASE_URL = 'https://omcwjmvdjswkfjkahchm.supabase.co';
@@ -45,7 +45,7 @@ async function joinWorld() {
     document.getElementById('playerNameDisplay').textContent = playerName;
 
     // Show version number on both login and game screens
-    const version = 'v1.2.9 (2025-07-16)';
+    const version = 'v1.3.0 (2025-07-16)';
     // Login screen
     const loginVersionSpan = document.getElementById('loginVersion');
     if (loginVersionSpan) {
@@ -771,80 +771,150 @@ function enableStickerMode() {
     }
 }
 
-function placeStickerAtPlayer(imageUrl) {
+async function placeStickerAtPlayer(imageUrl) {
     if (!currentPlayer) return;
 
-    const stickerId = 'sticker_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
-    const stickerData = {
-        id: stickerId,
-        url: imageUrl,
-        x: currentPlayer.x + PLAYER_SIZE / 2 - 25, // Center at player position
-        y: currentPlayer.y + PLAYER_SIZE / 2 - 25,
-        timestamp: Date.now(),
-        placedBy: currentPlayer.name
-    };
+    const x = Math.round(currentPlayer.x + PLAYER_SIZE / 2 - 25);
+    const y = Math.round(currentPlayer.y + PLAYER_SIZE / 2 - 25);
 
-    // Optimistically add sticker locally for instant feedback
-    if (!stickers.has(stickerId)) {
-        stickers.set(stickerId, stickerData);
-        loadStickerImage(stickerData);
+    // Check for existing sticker with same URL and coordinates
+    try {
+        const { data, error } = await supabase
+            .from('stickers')
+            .select('*')
+            .eq('url', imageUrl)
+            .eq('x', x)
+            .eq('y', y)
+            .limit(1);
+
+        if (error) {
+            console.error('Error checking for duplicate sticker:', error);
+        }
+
+        let stickerId, stickerData;
+        if (data && data.length > 0) {
+            // Sticker already exists, use existing
+            stickerId = data[0].id;
+            stickerData = {
+                id: stickerId,
+                url: imageUrl,
+                x: x,
+                y: y,
+                timestamp: new Date(data[0].timestamp).getTime(),
+                placedBy: data[0].placed_by
+            };
+            console.log('[DEBUG] Duplicate sticker found, using existing:', stickerData);
+        } else {
+            // New sticker
+            stickerId = 'sticker_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+            stickerData = {
+                id: stickerId,
+                url: imageUrl,
+                x: x,
+                y: y,
+                timestamp: Date.now(),
+                placedBy: currentPlayer.name
+            };
+            // Send sticker to database for syncing
+            await sendStickerToDatabase(stickerData);
+        }
+
+        // Optimistically add sticker locally for instant feedback
+        if (!stickers.has(stickerId)) {
+            stickers.set(stickerId, stickerData);
+            loadStickerImage(stickerData);
+        }
+
+        // Debug: Log sticker placement (request)
+        console.log('[DEBUG] Sticker placed (request):', {
+            playerName: currentPlayer.name,
+            stickerId,
+            imageUrl,
+            x: stickerData.x,
+            y: stickerData.y,
+            timestamp: stickerData.timestamp
+        });
+
+        // Clear input
+        const stickerInput = document.getElementById('stickerInput');
+        stickerInput.value = '';
+    } catch (err) {
+        console.error('Error in placeStickerAtPlayer:', err);
     }
-
-    // Debug: Log sticker placement (request)
-    console.log('[DEBUG] Sticker placed (request):', {
-        playerName: currentPlayer.name,
-        stickerId,
-        imageUrl,
-        x: stickerData.x,
-        y: stickerData.y,
-        timestamp: stickerData.timestamp
-    });
-
-    // Send sticker to database for syncing
-    sendStickerToDatabase(stickerData);
-
-    // Clear input
-    const stickerInput = document.getElementById('stickerInput');
-    stickerInput.value = '';
 }
 
-function placeStickerAt(x, y) {
+async function placeStickerAt(x, y) {
     const stickerInput = document.getElementById('stickerInput');
     const imageUrl = stickerInput.value.trim();
 
     if (!imageUrl) return;
 
-    const stickerId = 'sticker_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
-    const stickerData = {
-        id: stickerId,
-        url: imageUrl,
-        x: x - 25, // Center the 50px sticker
-        y: y - 25,
-        timestamp: Date.now(),
-        placedBy: currentPlayer ? currentPlayer.name : 'Anonymous'
-    };
+    const rx = Math.round(x - 25);
+    const ry = Math.round(y - 25);
 
-    // Optimistically add sticker locally for instant feedback
-    if (!stickers.has(stickerId)) {
-        stickers.set(stickerId, stickerData);
-        loadStickerImage(stickerData);
+    // Check for existing sticker with same URL and coordinates
+    try {
+        const { data, error } = await supabase
+            .from('stickers')
+            .select('*')
+            .eq('url', imageUrl)
+            .eq('x', rx)
+            .eq('y', ry)
+            .limit(1);
+
+        if (error) {
+            console.error('Error checking for duplicate sticker:', error);
+        }
+
+        let stickerId, stickerData;
+        if (data && data.length > 0) {
+            // Sticker already exists, use existing
+            stickerId = data[0].id;
+            stickerData = {
+                id: stickerId,
+                url: imageUrl,
+                x: rx,
+                y: ry,
+                timestamp: new Date(data[0].timestamp).getTime(),
+                placedBy: data[0].placed_by
+            };
+            console.log('[DEBUG] Duplicate sticker found, using existing:', stickerData);
+        } else {
+            // New sticker
+            stickerId = 'sticker_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+            stickerData = {
+                id: stickerId,
+                url: imageUrl,
+                x: rx,
+                y: ry,
+                timestamp: Date.now(),
+                placedBy: currentPlayer ? currentPlayer.name : 'Anonymous'
+            };
+            // Send sticker to database for syncing
+            await sendStickerToDatabase(stickerData);
+        }
+
+        // Optimistically add sticker locally for instant feedback
+        if (!stickers.has(stickerId)) {
+            stickers.set(stickerId, stickerData);
+            loadStickerImage(stickerData);
+        }
+
+        // Debug: Log sticker placement (request)
+        console.log('[DEBUG] Sticker placed (request):', {
+            playerName: currentPlayer ? currentPlayer.name : 'Anonymous',
+            stickerId,
+            imageUrl,
+            x: stickerData.x,
+            y: stickerData.y,
+            timestamp: stickerData.timestamp
+        });
+
+        // Clear input
+        stickerInput.value = '';
+    } catch (err) {
+        console.error('Error in placeStickerAt:', err);
     }
-
-    // Debug: Log sticker placement (request)
-    console.log('[DEBUG] Sticker placed (request):', {
-        playerName: currentPlayer ? currentPlayer.name : 'Anonymous',
-        stickerId,
-        imageUrl,
-        x: stickerData.x,
-        y: stickerData.y,
-        timestamp: stickerData.timestamp
-    });
-
-    // Send sticker to database for syncing
-    sendStickerToDatabase(stickerData);
-
-    // Clear input
-    stickerInput.value = '';
 }
 
 // Update render function to include chat bubbles and stickers
