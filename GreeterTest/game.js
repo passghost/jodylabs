@@ -904,31 +904,42 @@ function drawStickers() {
 }
 
 function loadStickerImage(sticker) {
-    // Always create a new Image and try to load the real image, replacing any placeholder
-    // Remove any existing image (placeholder or otherwise) so the new one can be set
-    stickerImages.delete(sticker.id);
+    // Helper to check if an image is a real loaded image (not a placeholder)
+    function isRealImage(img) {
+        return img && img.complete && img.naturalWidth > 0 && !img.src.startsWith('data:');
+    }
 
-    // Create placeholder immediately to avoid CORS issues (will be replaced if real image loads)
-    createStickerPlaceholder(sticker);
+    // Only set placeholder if there is no real image loaded
+    const existingImg = stickerImages.get(sticker.id);
+    if (!isRealImage(existingImg)) {
+        createStickerPlaceholder(sticker);
+    }
 
-    // Try to load the actual image without crossOrigin
-    const img = new Image();
+    // Retry logic for loading the real image
+    let attempts = 0;
+    const maxAttempts = 3;
+    const retryDelay = 1000; // ms
 
-    img.onload = () => {
-        // Always replace with the real image if it loads successfully
-        stickerImages.set(sticker.id, img);
-        console.log(`Sticker image loaded: ${sticker.id} (${sticker.url})`);
-    };
+    function tryLoadImage() {
+        const img = new Image();
+        img.onload = () => {
+            stickerImages.set(sticker.id, img);
+            console.log(`Sticker image loaded: ${sticker.id} (${sticker.url})`);
+        };
+        img.onerror = () => {
+            attempts++;
+            if (attempts < maxAttempts) {
+                console.warn(`Retrying sticker image load (${attempts}) for: ${sticker.url}`);
+                setTimeout(tryLoadImage, retryDelay);
+            } else {
+                console.warn(`Failed to load sticker image after ${maxAttempts} attempts: ${sticker.url} - Using placeholder`);
+            }
+        };
+        console.log(`Attempting to load sticker image: ${sticker.id} (${sticker.url}), attempt ${attempts + 1}`);
+        img.src = sticker.url;
+    }
 
-    img.onerror = () => {
-        console.warn(`Failed to load sticker image: ${sticker.url} - Using placeholder`);
-        // Placeholder is already created, so do nothing
-    };
-
-    // Debug: Log when attempting to load sticker image
-    console.log(`Attempting to load sticker image: ${sticker.id} (${sticker.url})`);
-    // Don't set crossOrigin to avoid CORS errors
-    img.src = sticker.url;
+    tryLoadImage();
 }
 
 function createStickerPlaceholder(sticker) {
