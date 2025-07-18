@@ -687,7 +687,7 @@
                 <div class="project-icon"><img src="Images/gem3.png" alt="Project Icon"></div>
                     <div class="project-body">
                         <h2>Dad's Web Counter - Retro Counter</h2>
-                        <p>Relive web nostalgia with our retro-style web counter featuring rapid number increments, bouncing ball animations, and classic 90s web aesthetic. A fun throwback to early internet culture and vintage web design.</p>
+                        <p>This was something I made for my father. He would run these back in the day when he was away from his computer. He really enjoyed watching these. He's currently being a butthead. Add be back on discord butthead.</p>
                     </div>
                 </div>
                 <img src="screenshots/DadSim.png" alt="Dad's Web Counter Screenshot" class="project-screenshot">
@@ -714,11 +714,11 @@
                 <div class="project-content">
                 <div class="project-icon"><img src="Images/emrald.png" alt="Project Icon"></div>
                     <div class="project-body">
-                        <h2>AI Photobooth - Classic Booth Experience</h2>
+                        <h2>Photobooth</h2>
                         <p>Step into a virtual photobooth! Snap fun pictures, get instant photo strips, and enjoy the retro booth vibe—just like the classic mall experience. No editing, just pure photobooth nostalgia.</p>
                     </div>
                 </div>
-                <img src="screenshots/photobooth.png" alt="AI Photobooth Screenshot" class="project-screenshot">
+                <img src="screenshots/photobooth.png" alt="Photobooth Screenshot" class="project-screenshot">
                 <a href="PhotoBooth/Photobooth.html" class="project-link">
                     <span>→</span>
                 </a>
@@ -859,100 +859,220 @@
         ];
 
         // AnimatedEye logic from index.html
+
+        // Eye emotion states
+        const eyeEmotions = [
+            {
+                name: 'neutral',
+                images: eyeballImages,
+                eyelidTop: 0,
+                eyelidBottom: 0,
+                moveRange: 15,
+                blinkSpeed: 120,
+                idleWander: 20,
+                rigVAmplitude: 6,
+                rigHAmplitude: 10
+            },
+            {
+                name: 'happy',
+                images: eyeballImages,
+                eyelidTop: -10,
+                eyelidBottom: 10,
+                moveRange: 18,
+                blinkSpeed: 90,
+                idleWander: 28,
+                rigVAmplitude: 10,
+                rigHAmplitude: 14
+            },
+            {
+                name: 'sleepy',
+                images: eyeballImages,
+                eyelidTop: 30,
+                eyelidBottom: 30,
+                moveRange: 7,
+                blinkSpeed: 300,
+                idleWander: 6,
+                rigVAmplitude: 2,
+                rigHAmplitude: 3
+            },
+            {
+                name: 'surprised',
+                images: eyeballImages,
+                eyelidTop: -25,
+                eyelidBottom: -25,
+                moveRange: 22,
+                blinkSpeed: 60,
+                idleWander: 30,
+                rigVAmplitude: 16,
+                rigHAmplitude: 18
+            },
+            {
+                name: 'angry',
+                images: eyeballImages,
+                eyelidTop: -18,
+                eyelidBottom: 18,
+                moveRange: 10,
+                blinkSpeed: 80,
+                idleWander: 10,
+                rigVAmplitude: 8,
+                rigHAmplitude: 8
+            },
+            {
+                name: 'excited',
+                images: eyeballImages,
+                eyelidTop: -40,
+                eyelidBottom: -40,
+                moveRange: 30,
+                blinkSpeed: 40,
+                idleWander: 40,
+                rigVAmplitude: 30,
+                rigHAmplitude: 30
+            }
+        ];
+
+        let currentEmotion = 0; // index in eyeEmotions
+
         function setEyeballImage(imgUrl) {
             const eyeball = document.getElementById('eyeball');
             eyeball.style.backgroundImage = `url('${imgUrl}')`;
             eyeball.style.backgroundColor = 'transparent';
         }
 
+        function setEyeEmotion(idx) {
+            currentEmotion = idx;
+            const emotion = eyeEmotions[currentEmotion];
+            // Eyelid animation
+            const eyeContainer = document.getElementById('eyeContainer');
+            const topLid = eyeContainer.querySelector('.eyelid-top');
+            const bottomLid = eyeContainer.querySelector('.eyelid-bottom');
+            topLid.style.transform = `translateY(${emotion.eyelidTop}%) scaleY(1.2) rotate(-2deg)`;
+            bottomLid.style.transform = `translateY(${-emotion.eyelidBottom}%) scaleY(1.2)`;
+            // Change eyeball image for emotion
+            setEyeballImage(randomEyeballImage());
+        }
+
+        // Helper to set excited state
+        let excitedTimeout = null;
+        function setExcitedState(active) {
+            if (active) {
+                setEyeEmotion(eyeEmotions.length - 1); // excited is last
+                if (excitedTimeout) clearTimeout(excitedTimeout);
+            } else {
+                // After a short delay, return to previous (neutral)
+                excitedTimeout = setTimeout(() => {
+                    setEyeEmotion(0);
+                }, 400);
+            }
+        }
+
+        function cycleEyeEmotion() {
+            setEyeEmotion((currentEmotion + 1) % eyeEmotions.length);
+        }
+
         function randomEyeballImage() {
             return eyeballImages[Math.floor(Math.random() * eyeballImages.length)];
         }
+
 
         function moveEyeball(x, y) {
             const eyeball = document.getElementById('eyeball');
             eyeball.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
         }
 
+
         function resetEyeball() {
             const eyeball = document.getElementById('eyeball');
             eyeball.style.transform = 'translate(-50%, -50%)';
         }
+
 
         function blinkEye() {
             const eyeContainer = document.getElementById('eyeContainer');
             eyeContainer.classList.add('blinking');
             setTimeout(() => {
                 eyeContainer.classList.remove('blinking');
-            }, 120);
+            }, eyeEmotions[currentEmotion].blinkSpeed);
         }
 
+
         document.addEventListener('DOMContentLoaded', () => {
-            // Initial eyeball image
-            setEyeballImage(randomEyeballImage());
+            // Initial emotion
+            setEyeEmotion(0);
+            // Change emotion every 20s (demo)
+            setInterval(cycleEyeEmotion, 20000);
 
             // Change eyeball image every 30s
             setInterval(() => {
                 setEyeballImage(randomEyeballImage());
             }, 30000);
 
-            // Mouse tracking
+            // Mouse tracking (smooth vertical movement)
             let lastMouseMove = Date.now();
+            let targetTop = 18;
+            let currentTop = 18;
+            const eyeContainer = document.getElementById('eyeContainer');
+            const eyeHeight = 100;
+            const eyeWidth = 100;
+            // Padding to avoid overlap with UI
+            const minTop = 20; // not flush with top
+            const minLeft = 18;
+            const maxTop = window.innerHeight - eyeHeight - 60; // avoid support button
+            const maxLeft = window.innerWidth - eyeWidth - 20; // never right edge
+
             document.addEventListener('mousemove', (e) => {
                 lastMouseMove = Date.now();
-                const eyeContainer = document.getElementById('eyeContainer');
-                const eyeball = document.getElementById('eyeball');
-                // Clamp vertical position so eye stays in viewport
-                const eyeHeight = 100; // px, matches CSS
-                const minTop = 0;
-                const maxTop = window.innerHeight - eyeHeight;
                 let newTop = e.clientY - eyeHeight / 2;
+                // Clamp to avoid overlap with support/back buttons
                 newTop = Math.max(minTop, Math.min(maxTop, newTop));
-                eyeContainer.style.top = newTop + 'px';
-                // Eye stays flush left
-                // Horizontal position will be animated, so don't set here
+                targetTop = newTop;
                 // Eyeball tracks mouse within socket as before
                 const eyeRect = eyeContainer.getBoundingClientRect();
                 const eyeCenterX = eyeRect.left + eyeRect.width / 2;
                 const eyeCenterY = eyeRect.top + eyeRect.height / 2;
                 const mouseX = e.clientX;
                 const mouseY = e.clientY;
+                const emotion = eyeEmotions[currentEmotion];
+                const maxDistance = emotion.moveRange;
                 const deltaX = mouseX - eyeCenterX;
                 const deltaY = mouseY - eyeCenterY;
                 const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-                const maxDistance = 15;
                 const limitedDistance = Math.min(distance, maxDistance);
                 const angle = Math.atan2(deltaY, deltaX);
-                const moveX = Math.cos(angle) * (limitedDistance / maxDistance) * 15;
-                const moveY = Math.sin(angle) * (limitedDistance / maxDistance) * 15;
+                const moveX = Math.cos(angle) * (limitedDistance / maxDistance) * maxDistance;
+                const moveY = Math.sin(angle) * (limitedDistance / maxDistance) * maxDistance;
                 moveEyeball(moveX, moveY);
             });
 
             // Animate the whole eye rig horizontally (gentle sine wave)
             function animateEyeRig() {
-                const eyeContainer = document.getElementById('eyeContainer');
                 const baseLeft = 18; // px
-                const baseTop = parseFloat(eyeContainer.style.top) || 18; // px, set by mouse tracking
-                const hAmplitude = 10; // px horizontal
-                const hSpeed = 0.0012; // radians/ms
-                const vAmplitude = 6; // px vertical
-                const vSpeed = 0.0017; // radians/ms
+                // Smooth vertical movement
+                currentTop += (targetTop - currentTop) * 0.18;
+                // Clamp to avoid overlap with UI
+                let clampedTop = Math.max(minTop, Math.min(maxTop, currentTop));
+                // Emotion-based amplitude
+                const emotion = eyeEmotions[currentEmotion];
+                const hAmplitude = emotion.rigHAmplitude;
+                const vAmplitude = emotion.rigVAmplitude;
+                const hSpeed = 0.0012;
+                const vSpeed = 0.0017;
                 const time = Date.now();
-                // Horizontal sine wave
                 const wiggleX = Math.sin(time * hSpeed) * hAmplitude;
-                // Vertical sine wave layered on mouse tracking
                 const wiggleY = Math.cos(time * vSpeed) * vAmplitude;
-                // Random jitter (subtle)
                 const jitterX = (Math.random() - 0.5) * 2.2;
                 const jitterY = (Math.random() - 0.5) * 2.2;
-                eyeContainer.style.left = (baseLeft + wiggleX + jitterX) + 'px';
-                eyeContainer.style.top = (baseTop + wiggleY + jitterY) + 'px';
+                // Clamp left to avoid overlap with back/support
+                let left = baseLeft + wiggleX + jitterX;
+                left = Math.max(minLeft, Math.min(maxLeft, left));
+                eyeContainer.style.left = left + 'px';
+                eyeContainer.style.top = (clampedTop + wiggleY + jitterY) + 'px';
                 requestAnimationFrame(animateEyeRig);
             }
             animateEyeRig();
 
             // Blinking (random interval, always triggers)
             function scheduleBlink() {
+                const emotion = eyeEmotions[currentEmotion];
                 const delay = 3000 + Math.random() * 5000;
                 setTimeout(() => {
                     blinkEye();
@@ -964,8 +1084,9 @@
             // Idle look around
             setInterval(() => {
                 if (Date.now() - lastMouseMove > 3000) {
-                    const randomX = (Math.random() - 0.5) * 20;
-                    const randomY = (Math.random() - 0.5) * 20;
+                    const emotion = eyeEmotions[currentEmotion];
+                    const randomX = (Math.random() - 0.5) * emotion.idleWander;
+                    const randomY = (Math.random() - 0.5) * emotion.idleWander;
                     moveEyeball(randomX, randomY);
                     setTimeout(() => {
                         if (Date.now() - lastMouseMove > 2000) {
@@ -974,6 +1095,15 @@
                     }, 1200);
                 }
             }, 2000);
+
+            // Click eye to cycle emotion
+            eyeContainer.addEventListener('click', cycleEyeEmotion);
+
+            // Excited on project-link hover
+            document.querySelectorAll('.project-link').forEach(link => {
+                link.addEventListener('mouseenter', () => setExcitedState(true));
+                link.addEventListener('mouseleave', () => setExcitedState(false));
+            });
         });
         // Create animated background particles
         function createParticles() {
