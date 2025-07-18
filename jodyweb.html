@@ -223,6 +223,19 @@
                 0 0 20px rgba(255, 255, 255, 0.8);
             border-color: #ffffff;
         }
+
+        /* Unique Animations for Each Node */
+        @keyframes orbit1 { 0% { transform: rotate(0deg) translateX(350px) rotate(0deg) scale(1); } 50% { transform: rotate(180deg) translateX(350px) rotate(-180deg) scale(1.1); } 100% { transform: rotate(360deg) translateX(350px) rotate(-360deg) scale(1); } }
+        @keyframes orbit2 { 0% { transform: rotate(0deg) translateX(350px) rotate(0deg) scale(1); } 25% { transform: rotate(90deg) translateX(370px) rotate(-90deg) scale(1.08); } 75% { transform: rotate(270deg) translateX(330px) rotate(-270deg) scale(0.95); } 100% { transform: rotate(360deg) translateX(350px) rotate(-360deg) scale(1); } }
+        @keyframes orbit3 { 0% { transform: rotate(0deg) translateX(350px) rotate(0deg) scale(1); } 40% { transform: rotate(144deg) translateX(360px) rotate(-144deg) scale(1.12); } 60% { transform: rotate(216deg) translateX(340px) rotate(-216deg) scale(0.92); } 100% { transform: rotate(360deg) translateX(350px) rotate(-360deg) scale(1); } }
+        @keyframes orbit4 { 0% { transform: rotate(0deg) translateX(350px) rotate(0deg) scale(1); } 50% { transform: rotate(180deg) translateX(370px) rotate(-180deg) scale(1.15); } 100% { transform: rotate(360deg) translateX(350px) rotate(-360deg) scale(1); } }
+        @keyframes orbit5 { 0% { transform: rotate(0deg) translateX(350px) rotate(0deg) scale(1); } 30% { transform: rotate(108deg) translateX(340px) rotate(-108deg) scale(0.9); } 80% { transform: rotate(288deg) translateX(360px) rotate(-288deg) scale(1.13); } 100% { transform: rotate(360deg) translateX(350px) rotate(-360deg) scale(1); } }
+        @keyframes orbit6 { 0% { transform: rotate(0deg) translateX(350px) rotate(0deg) scale(1); } 60% { transform: rotate(216deg) translateX(370px) rotate(-216deg) scale(1.18); } 100% { transform: rotate(360deg) translateX(350px) rotate(-360deg) scale(1); } }
+        @keyframes orbit7 { 0% { transform: rotate(0deg) translateX(350px) rotate(0deg) scale(1); } 20% { transform: rotate(72deg) translateX(330px) rotate(-72deg) scale(0.93); } 90% { transform: rotate(324deg) translateX(370px) rotate(-324deg) scale(1.16); } 100% { transform: rotate(360deg) translateX(350px) rotate(-360deg) scale(1); } }
+        @keyframes orbit8 { 0% { transform: rotate(0deg) translateX(350px) rotate(0deg) scale(1); } 50% { transform: rotate(180deg) translateX(360px) rotate(-180deg) scale(1.1); } 100% { transform: rotate(360deg) translateX(350px) rotate(-360deg) scale(1); } }
+        @keyframes orbit9 { 0% { transform: rotate(0deg) translateX(350px) rotate(0deg) scale(1); } 70% { transform: rotate(252deg) translateX(340px) rotate(-252deg) scale(0.95); } 100% { transform: rotate(360deg) translateX(350px) rotate(-360deg) scale(1); } }
+        @keyframes orbit10 { 0% { transform: rotate(0deg) translateX(350px) rotate(0deg) scale(1); } 50% { transform: rotate(180deg) translateX(370px) rotate(-180deg) scale(1.13); } 100% { transform: rotate(360deg) translateX(350px) rotate(-360deg) scale(1); } }
+        @keyframes orbit11 { 0% { transform: rotate(0deg) translateX(350px) rotate(0deg) scale(1); } 60% { transform: rotate(216deg) translateX(330px) rotate(-216deg) scale(0.92); } 100% { transform: rotate(360deg) translateX(350px) rotate(-360deg) scale(1); } }
         
         .connection-line {
             position: absolute;
@@ -410,6 +423,30 @@
                 filter: brightness(1.2);
             }
         }
+
+        .title-letter {
+            display: inline-block;
+            opacity: 0.85;
+            animation: titleLetterWave 1.6s cubic-bezier(0.77,0,0.18,1) infinite alternate;
+        }
+
+        @keyframes titleLetterWave {
+            0% {
+                transform: translateY(0) scale(1);
+                text-shadow: 0 0 20px #ff0000, 0 0 40px #ff0000;
+                opacity: 0.85;
+            }
+            50% {
+                transform: translateY(-12px) scale(1.15);
+                text-shadow: 0 0 40px #fff, 0 0 80px #ff0000;
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(0) scale(1);
+                text-shadow: 0 0 20px #ff0000, 0 0 40px #ff0000;
+                opacity: 0.85;
+            }
+        }
         
         /* Back Button */
         .back-button {
@@ -509,6 +546,8 @@
         <div class="connection-line" id="line7"></div>
         <div class="connection-line" id="line8"></div>
         <div class="connection-line" id="line9"></div>
+        <div class="connection-line" id="line10"></div>
+        <div class="connection-line" id="line11"></div>
         
         <!-- Professional Link Network -->
         <a href="https://x.com/S_Q_U_I_D_eath" target="_blank" class="link-node" id="node1">
@@ -547,6 +586,13 @@
             <span>Discord</span>
         </a>
         
+        <!-- Reddit Circles -->
+        <a href="https://www.reddit.com/r/IndyGameGarage/" target="_blank" class="link-node" id="node10">
+            <span>Reddit:<br>IndyGameGarage</span>
+        </a>
+        <a href="https://www.reddit.com/r/TheMasterArtIndex/" target="_blank" class="link-node" id="node11">
+            <span>Reddit:<br>TheMasterArtIndex</span>
+        </a>
         <!-- Back Button -->
         <a href="javascript:history.back()" class="back-button">
             <span class="arrow">&larr;</span> Back
@@ -554,20 +600,19 @@
     </div>
 
     <script>
-        // Position link nodes in orbit
+        // Position link nodes in orbit with unique animations
         const nodes = document.querySelectorAll('.link-node');
         const radius = 350;
         const angleStep = (2 * Math.PI) / nodes.length;
-        
         nodes.forEach((node, index) => {
             const angle = index * angleStep;
             const x = Math.cos(angle) * radius;
             const y = Math.sin(angle) * radius;
-            
             node.style.position = 'absolute';
             node.style.left = `calc(50% + ${x}px - 70px)`;
             node.style.top = `calc(50% + ${y}px - 70px)`;
-            node.style.animation = `orbit ${20 + index * 2}s linear infinite`;
+            // Assign a unique animation to each node
+            node.style.animation = `orbit${index + 1} ${18 + index * 2}s cubic-bezier(0.77,0,0.18,1) infinite`;
             node.style.animationDelay = `${index * -2.5}s`;
         });
         
@@ -576,7 +621,6 @@
         lines.forEach((line, index) => {
             const angle = index * angleStep;
             const length = radius - 110;
-            
             line.style.position = 'absolute';
             line.style.left = '50%';
             line.style.top = '50%';
@@ -599,6 +643,22 @@
                 container.appendChild(particle);
             }
         }
+        
+        // Animate title letters by wrapping each in a span
+        document.addEventListener('DOMContentLoaded', function() {
+            const title = document.querySelector('.title');
+            if (title) {
+                const text = title.textContent;
+                title.innerHTML = '';
+                [...text].forEach((char, i) => {
+                    const span = document.createElement('span');
+                    span.textContent = char === ' ' ? '\u00A0' : char;
+                    span.className = 'title-letter';
+                    span.style.animationDelay = (i * 0.08) + 's';
+                    title.appendChild(span);
+                });
+            }
+        });
         
         // Initialize everything
         createParticles();
@@ -754,7 +814,7 @@
                     apiUrl: 'https://omcwjmvdjswkfjkahchm.supabase.co',
                     headers: {
                         'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
-                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
+                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9zZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
                         'Content-Type': 'application/json'
                     },
                     theme: 'jody',
