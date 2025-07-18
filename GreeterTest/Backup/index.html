@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zarrow World</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #2c3e50;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        #loginScreen {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        #gameContainer {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        #gameCanvas {
+            border: 2px solid #34495e;
+            background: #27ae60;
+            cursor: crosshair;
+        }
+        
+        #playerInfo {
+            color: white;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        
+        #gameControls {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            align-items: center;
+        }
+        
+        #chatInput {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            width: 200px;
+        }
+        
+        #stickerInput {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            width: 250px;
+        }
+        
+        .control-button {
+            padding: 8px 15px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .control-button:hover {
+            background: #c0392b;
+        }
+        
+        .control-button.sticker {
+            background: #9b59b6;
+        }
+        
+        .control-button.sticker:hover {
+            background: #8e44ad;
+        }
+        
+        input[type="text"] {
+            padding: 10px;
+            margin: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        button:hover {
+            background: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <div id="loginScreen">
+        <h1>Welcome to Zarrow World</h1>
+        <input type="text" id="playerName" placeholder="Enter your name" maxlength="20">
+        <br>
+        <button onclick="joinWorld()">Join World</button>
+        <br>
+        <span id="loginVersion" style="color:#aaa;font-size:12px;margin-top:15px;display:block;"></span>
+    </div>
+    
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <div id="playerInfo">
+            <span id="playerNameDisplay"></span> | 
+            Players online: <span id="playerCount">0</span> |
+            Use WASD or Arrow Keys to move
+            <span id="gameVersion" style="color:#aaa;font-size:12px;margin-left:10px;"></span>
+            <br>
+        </div>
+        <div id="gameControls">
+            <input type="text" id="chatInput" placeholder="Type a message..." maxlength="100">
+            <button class="control-button" onclick="sendChatMessage()">Chat</button>
+            <input type="text" id="stickerInput" placeholder="Enter image URL for sticker..." maxlength="500">
+            <button class="control-button sticker" onclick="enableStickerMode()">Place Sticker</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="chat-bubbles.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
