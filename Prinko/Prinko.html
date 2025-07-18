@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prinko - Ball Drop Physics Game | JodyLabs</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Play Prinko, the satisfying ball-dropping physics game! Drop balls through pin-filled boards, aim for multiplier slots, and watch mesmerizing realistic physics in action.">
+    <meta name="keywords" content="Prinko, ball drop game, physics game, pachinko, arcade game, multiplier game, satisfying game, browser game, HTML5 game">
+    <meta name="author" content="JodyLabs">
+    <meta name="robots" content="index, follow">
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="Prinko - Ball Drop Physics Game">
+    <meta property="og:description" content="🎯 Drop balls through pin-filled boards and watch satisfying physics in action! Aim for multiplier slots in this addictive arcade game. Play free now!">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://jodylabs.surge.sh/Prinko/Prinko.html">
+    <meta property="og:site_name" content="JodyLabs">
+    <meta property="og:image" content="https://jodylabs.surge.sh/Images/prinko-preview.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Prinko Game - Ball dropping physics game">
+    <meta property="og:locale" content="en_US">
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@jodylabs">
+    <meta name="twitter:title" content="Prinko - Ball Drop Physics Game">
+    <meta name="twitter:description" content="🎯 Satisfying ball-dropping physics game! Drop balls through pins, hit multipliers, watch mesmerizing physics. Free browser game!">
+    <meta name="twitter:image" content="https://jodylabs.surge.sh/Images/prinko-preview.png">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://jodylabs.surge.sh/Prinko/Prinko.html">
+    
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "VideoGame",
+      "name": "Prinko",
+      "description": "A satisfying ball-dropping physics game where players drop balls through pin-filled boards and aim for multiplier slots",
+      "url": "https://jodylabs.surge.sh/Prinko/Prinko.html",
+      "author": {
+        "@type": "Organization",
+        "name": "JodyLabs"
+      },
+      "genre": ["Arcade", "Puzzle", "Physics"],
+      "playMode": "SinglePlayer",
+      "applicationCategory": "Game",
+      "operatingSystem": "Web Browser",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      }
+    }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Pacifico&display=swap');
+
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: black;
+            font-family: 'Roboto', sans-serif;
+        }
+        .title {
+            font-family: 'Pacifico', cursive;
+            font-size: 48px;
+            color: white;
+            margin-bottom: 20px;
+        }
+        .board-container {
+            position: relative;
+            z-index: 2; /* Ensure board is above the circle */
+        }
+        .board {
+            width: 500px;
+            height: 600px;
+            background: black;
+            border: 10px solid red;
+            box-shadow: 0 0 20px red;
+            position: relative;
+            overflow: hidden;
+        }
+        .pin {
+            width: 10px;
+            height: 10px;
+            background: linear-gradient(45deg, silver, black);
+            border-radius: 50%;
+            position: absolute;
+        }
+        .blue-pin {
+            background: blue;
+            box-shadow: 0 0 10px blue;
+        }
+        .ball {
+            width: 7.5px; /* Reduced size by 50% */
+            height: 7.5px; /* Reduced size by 50% */
+            background: orange;
+            border-radius: 50%;
+            position: absolute;
+            top: 0;
+            box-shadow: 0 0 10px red;
+        }
+        .circle-ball {
+            width: 7.5px; /* Same size as the regular ball */
+            height: 7.5px;
+            background: orange;
+            border-radius: 50%;
+            position: absolute;
+            top: 0;
+            box-shadow: 0 0 10px red;
+        }
+        .slot {
+            width: 16.67%;
+            height: 20px;
+            background: red;
+            position: absolute;
+            bottom: 0;
+            text-align: center;
+            color: white;
+            font-weight: bold;
+            line-height: 20px;
+            border-left: 1px solid white;
+        }
+        .slot:first-child {
+            border-left: none;
+        }
+        .slot:nth-child(1) { left: 0; }
+        .slot:nth-child(2) { left: 14.29%; }
+        .slot:nth-child(3) { left: 28.58%; }
+        .slot:nth-child(4) { left: 42.87%; }
+        .slot:nth-child(5) { left: 57.16%; }
+        .slot:nth-child(6) { left: 71.45%; }
+        .slot:nth-child(7) { left: 85.74%; }
+        .slot[data-points="1000"], .slot[data-points="extra"], .slot[data-points="x5"] {
+            width: 10%; /* Reduced width */
+            font-size: 14px; /* Adjusted font size */
+        }
+        .slot[data-points="x5"] {
+    width: 8.34%; /* Doubled width */
+    font-size: 14px; /* Adjusted font size */
+    background: green;
+    box-shadow: 0 0 10px green; /* Added green glow */
+}
+
+
+        .score, .allowance {
+            position: absolute;
+            top: -40px;
+            font-size: 20px;
+            font-weight: bold;
+            color: white;
+            z-index: 4; /* Ensure score and allowance are above the circle */
+        }
+        .score {
+            left: 10px;
+        }
+        .allowance {
+            right: 10px;
+        }
+        .spawn-rate {
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 20px;
+            font-weight: bold;
+            color: white;
+            z-index: 4; /* Ensure spawn rate is above the circle */
+        }
+        .controls {
+            position: absolute;
+            top: 50%;
+            right: -360px; /* Moved 400 pixels to the left from the original position */
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 3; /* Ensure controls are above the circle */
+        }
+        .controls button {
+            padding: 5px 10px;
+            font-size: 14px;
+            font-weight: bold;
+            color: white;
+            background: red;
+            border: none;
+            cursor: pointer;
+        }
+        .buy-balls {
+            padding: 5px 10px;
+            font-size: 14px;
+            font-weight: bold;
+            color: white;
+            background: red;
+            border: none;
+            cursor: pointer;
+        }
+        .circle {
+            width: 500px; /* Same as the width of the board */
+            height: 500px; /* Same as the width of the board */
+            border: 20px solid red; /* Increased border thickness */
+            border-radius: 50%; /* Make it a circle */
+            position: absolute;
+            top: 50%; /* Center vertically */
+            left: 300px; /* Adjusted to ensure visibility */
+            transform: translateY(-50%);
+            z-index: 2; /* Set z-order */
+            background: rgba(0, 0, 255, 0.1); /* 10% transparency */
+        }
+    </style>
+</head>
+<body>
+    <div class="title">Prinko</div>
+    <div class="board-container">
+        <!-- Score Counter -->
+        <div class="score" id="score">Score: 0</div>
+        <!-- Ball Allowance -->
+        <div class="allowance" id="allowance">Balls: 100</div>
+        <!-- Ball Spawn Rate -->
+        <div class="spawn-rate" id="spawn-rate">Spawn Rate: 0</div>
+        <!-- Controls -->
+        <div class="controls">
+            <button id="increase-rate">Increase Rate</button>
+            <button id="decrease-rate">Decrease Rate</button>
+            <button class="buy-balls" id="buy-balls">Buy 10 Balls for 5000 Points</button>
+        </div>
+        <div class="board" id="board">
+            <!-- Pins -->
+            <!-- Pins will be added dynamically -->
+            <!-- Slots -->
+            <div class="slot" data-points="5">5</div>
+            <div class="slot" data-points="10">10</div>
+            <div class="slot" data-points="50">50</div>
+            <div class="slot" data-points="100">100</div>
+            <div class="slot" data-points="extra">Extra Ball</div>
+            <div class="slot" data-points="1000">1000</div>
+            <div class="slot" data-points="x5">x5</div>
+        </div>
+    </div>
+    <div class="circle"></div>
+
+    <script>
+        const board = document.getElementById('board');
+        const circle = document.querySelector('.circle'); // Ensure circle is defined here
+        const scoreDisplay = document.getElementById('score');
+        const allowanceDisplay = document.getElementById('allowance');
+        const spawnRateDisplay = document.getElementById('spawn-rate');
+        const increaseRateButton = document.getElementById('increase-rate');
+        const decreaseRateButton = document.getElementById('decrease-rate');
+        const buyBallsButton = document.getElementById('buy-balls');
+        const gravity = 0.5;
+        let score = 0;
+        let allowance = 100;
+        let spawnRate = 0;
+
+        function getRandomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function getRandomColor() {
+            return 'orange'; // All balls are orange
+        }
+
+        function createPins() {
+    const pins = document.querySelectorAll('.pin:not(.blue-pin)');
+    pins.forEach(pin => pin.remove());
+
+    for (let i = 0; i < 70; i++) {
+        const pin = document.createElement('div');
+        pin.className = 'pin';
+        pin.style.top = getRandomInt(30, board.clientHeight - 100) + 'px';
+        pin.style.left = getRandomInt(0, board.clientWidth - 10) + 'px';
+        board.appendChild(pin);
+    }
+}
+        function createBluePins() {
+            for (let i = 0; i < 5; i++) {
+                const pin = document.createElement('div');
+                pin.className = 'pin blue-pin';
+                pin.style.top = getRandomInt(30, board.clientHeight - 100) + 'px';
+                                pin.style.left = getRandomInt(0, board.clientWidth - 10) + 'px';
+                board.appendChild(pin);
+            }
+        }
+
+        function spawnBall(extra = false) {
+            if (allowance <= 0 && !extra) return;
+
+            const ball = document.createElement('div');
+            ball.className = 'ball';
+            ball.style.background = getRandomColor(); // All balls are orange
+            const randomLeft = getRandomInt(0, board.clientWidth - ball.clientWidth);
+            ball.style.top = '0px';
+            ball.style.left = randomLeft + 'px';
+            board.appendChild(ball);
+
+            let velocityX = getRandomInt(-2, 2);
+            let velocityY = 0;
+            let positionY = 0;
+
+            function update() {
+                velocityY += gravity;
+                positionY += velocityY;
+
+                const pins = document.querySelectorAll('.pin');
+                pins.forEach(pin => {
+                    if (checkCollision(ball, pin)) {
+                        const ballRect = ball.getBoundingClientRect();
+                        const pinRect = pin.getBoundingClientRect();
+                        const dx = (ballRect.left + ballRect.width / 2) - (pinRect.left + pinRect.width / 2);
+                        const dy = (ballRect.top + ballRect.height / 2) - (pinRect.top + pinRect.height / 2);
+
+                        if (dx < 0) {
+                            velocityX = -Math.abs(velocityX) * 1.2 + getRandomInt(-1, 1); // 200% more dramatic bounce left
+                        } else {
+                            velocityX = Math.abs(velocityX) * 1.2 + getRandomInt(-1, 1); // 200% more dramatic bounce right
+                        }
+
+                        if (dy < 0) {
+                            velocityY = -Math.abs(velocityY) * 1.2; // 200% more dramatic bounce up
+                        } else {
+                            velocityY = Math.abs(velocityY) * 1.2; // 200% more dramatic bounce down
+                        }
+
+                        if (pin.classList.contains('blue-pin')) {
+                            pin.remove();
+                            for (let i = 0; i < 3; i++) {
+                                spawnBall(true);
+                            }
+                            setTimeout(() => {
+                                const newPin = document.createElement('div');
+                                newPin.className = 'pin blue-pin';
+                                newPin.style.top = getRandomInt(30, board.clientHeight - 100) + 'px';
+                                newPin.style.left = getRandomInt(0, board.clientWidth - 10) + 'px';
+                                board.appendChild(newPin);
+                            }, 60000); // Respawn one blue pin after 30 seconds
+                        }
+                    }
+                });
+
+                if (positionY + ball.clientHeight >= board.clientHeight) {
+                    positionY = board.clientHeight - ball.clientHeight;
+                    velocityY *= -1.2; // 200% more dramatic bounce effect
+
+                    // Check which slot the ball landed in
+                    const slots = document.querySelectorAll('.slot');
+                    slots.forEach(slot => {
+                        const slotRect = slot.getBoundingClientRect();
+                        const ballRect = ball.getBoundingClientRect();
+                        if (ballRect.left >= slotRect.left && ballRect.right <= slotRect.right) {
+                            const points = slot.getAttribute('data-points');
+                            if (points === 'extra') {
+                                allowance++; // Give an extra ball
+                                allowanceDisplay.textContent = `Balls: ${allowance}`;
+                            } else if (points === 'x5') {
+                                allowance += 5; // Add 5 balls
+                                allowanceDisplay.textContent = `Balls: ${allowance}`;
+                            } else {
+                                score += parseInt(points);
+                                scoreDisplay.textContent = `Score: ${score}`;
+                            }
+                        }
+                    });
+
+                    clearInterval(ball.updateInterval);
+                    ball.remove();
+                    if (!extra) {
+                        allowance--;
+                        allowanceDisplay.textContent = `Balls: ${allowance}`;
+                    }
+                }
+
+                // Wrap around if the ball goes off the edge
+                if (parseFloat(ball.style.left) < 0) {
+                    ball.style.left = board.clientWidth + 'px';
+                } else if (parseFloat(ball.style.left) > board.clientWidth) {
+                    ball.style.left = '0px';
+                }
+
+                // Collide with the top border
+                if (positionY < 0) {
+                    positionY = 0;
+                    velocityY *= -1.2; // 200% more dramatic bounce effect
+                }
+
+                ball.style.top = positionY + 'px';
+                ball.style.left = (parseFloat(ball.style.left) + velocityX) + 'px';
+            }
+
+            ball.updateInterval = setInterval(update, 16); // 60 FPS
+        }
+
+        function checkCollision(ball, pin) {
+            const ballRect = ball.getBoundingClientRect();
+            const pinRect = pin.getBoundingClientRect();
+            const dx = (ballRect.left + ballRect.width / 2) - (pinRect.left + pinRect.width / 2);
+            const dy = (ballRect.top + ballRect.height / 2) - (pinRect.top + pinRect.height / 2);
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            return distance < (ballRect.width / 2 + pinRect.width / 2);
+        }
+
+        function spawnCircleBall() {
+            const radius = circle.clientWidth / 2;
+            const centerX = circle.clientWidth / 2;
+            const centerY = circle.clientHeight / 2;
+
+            const ball = document.createElement('div');
+            ball.className = 'circle-ball';
+
+            let angle = Math.random() * 2 * Math.PI;
+            let distance = Math.random() * (radius - 10); // Ensure balls are within the circle
+
+            ball.style.top = `${centerY + distance * Math.sin(angle) - 5}px`;
+            ball.style.left = `${centerX + distance * Math.cos(angle) - 5}px`;
+
+            circle.appendChild(ball);
+            applyGravityToCircleBall(ball);
+        }
+
+        function applyGravityToCircleBall(ball) {
+            let velocityY = 0; // Initial velocity set to 0
+            let velocityX = 0; // Initial velocity set to 0
+            const gravity = 0.0; // Gravity set to 0
+            const vortexStrength = 0.01; // Increased vortex strength
+
+            function update() {
+                velocityY += gravity;
+                let positionY = parseFloat(ball.style.top) + velocityY;
+                let positionX = parseFloat(ball.style.left) + velocityX;
+
+                // Vortex effect
+                const circleRect = circle.getBoundingClientRect();
+                const centerX = circleRect.width / 2;
+                const centerY = circleRect.height / 2;
+                const ballRect = ball.getBoundingClientRect();
+                const dx = centerX - (ballRect.left + ballRect.width / 2 - circleRect.left);
+                const dy = centerY - (ballRect.top + ballRect.height / 2 - circleRect.top);
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance > 0) {
+                    velocityX += vortexStrength * dx / distance;
+                    velocityY += vortexStrength * dy / distance;
+                }
+
+                // Check collision with the edge of the circle based on the color
+                const distanceFromCenter = Math.sqrt(
+                    Math.pow(ballRect.left + ballRect.width / 2 - (circleRect.left + centerX), 2) +
+                    Math.pow(ballRect.top + ballRect.height / 2 - (circleRect.top + centerY), 2)
+                );
+
+                if (distanceFromCenter + ballRect.width / 2 >= circleRect.width / 2) {
+                    // Move the ball to a varied random position within -100 to 100 pixels from the center
+                    const offsetX = getRandomInt(-100, 100);
+                    const offsetY = getRandomInt(-100, 100);
+                    ball.style.top = `${centerY + offsetY - ballRect.height / 2}px`;
+                    ball.style.left = `${centerX + offsetX - ballRect.width / 2}px`;
+                    velocityY = 0;
+                    velocityX = 0;
+                } else {
+                    ball.style.top = `${positionY}px`;
+                    ball.style.left = `${positionX}px`;
+                }
+            }
+
+            setInterval(update, 16); // 60 FPS
+        }
+
+        function syncCircleBalls() {
+            const currentBalls = document.querySelectorAll('.circle-ball').length;
+            const difference = allowance - currentBalls;
+
+            if (difference > 0) {
+                for (let i = 0; i < difference; i++) {
+                    spawnCircleBall();
+                }
+            } else if (difference < 0) {
+                const balls = document.querySelectorAll('.circle-ball');
+                for (let i = 0; i < Math.abs(difference); i++) {
+                    balls[i].remove();
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            for (let i = 0; i < 100; i++) {
+                spawnCircleBall();
+            }
+            createPins();
+            createBluePins();
+
+            // Control ball spawn rate
+            let spawnInterval;
+            function updateSpawnRate() {
+                clearInterval(spawnInterval);
+                if (spawnRate > 0) {
+                    spawnInterval = setInterval(spawnBall, 5000 / spawnRate); // Adjust spawn rate
+                }
+            }
+
+            increaseRateButton.addEventListener('click', () => {
+    if (spawnRate < 10) {
+        spawnRate++;
+                            spawnRateDisplay.textContent = `Spawn Rate: ${spawnRate}`;
+                    updateSpawnRate();
+                }
+            });
+
+            decreaseRateButton.addEventListener('click', () => {
+                if (spawnRate > 0) {
+                    spawnRate--;
+                    spawnRateDisplay.textContent = `Spawn Rate: ${spawnRate}`;
+                    updateSpawnRate();
+                }
+            });
+
+            buyBallsButton.addEventListener('click', () => {
+                if (score >= 5000) { // Changed cost to 5000
+                    score -= 5000;
+                    allowance += 10;
+                    scoreDisplay.textContent = `Score: ${score}`;
+                    allowanceDisplay.textContent = `Balls: ${allowance}`;
+                    syncCircleBalls(); // Sync circle balls with allowance
+                }
+            });
+
+            // Change pin organization every 5 seconds
+            setInterval(createPins, 5000);
+
+            // Sync circle balls with allowance on load
+            setInterval(syncCircleBalls, 2000);
+        });
+    </script>
+</body>
+</html>

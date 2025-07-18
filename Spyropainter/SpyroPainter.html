@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spyro Painter</title>
+    <style>
+        body {
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a0a0a 60%, #e63946 100%);
+            font-family: 'Orbitron', 'Rajdhani', 'Segoe UI', Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+        h1 {
+            margin-top: 32px;
+            color: #fff;
+            font-size: 3.2rem;
+            letter-spacing: 2px;
+            text-shadow: 0 0 24px #e63946, 0 2px 12px #000, 0 0 2px #fff;
+            font-family: 'Orbitron', 'Rajdhani', sans-serif;
+            background: none;
+            animation: titlePulse 2.5s infinite alternate;
+        }
+        @keyframes titlePulse {
+            from { text-shadow: 0 0 24px #e63946, 0 2px 12px #000; }
+            to { text-shadow: 0 0 40px #e63946, 0 4px 24px #e63946; }
+        }
+        #controls {
+            margin: 24px 0;
+            display: flex;
+            gap: 18px;
+            align-items: center;
+            background: rgba(230,57,70,0.13);
+            border-radius: 14px;
+            padding: 1.1rem 1.2rem;
+            box-shadow: 0 0 18px #e63946cc, 0 0 10px #000000cc;
+            border: 1.5px solid #e63946;
+        }
+        #spinCanvas {
+            background: #181818;
+            border-radius: 50%;
+            box-shadow: 0 0 40px #e63946cc, 0 0 24px #000000cc;
+            border: 4px solid #e63946;
+        }
+        .label {
+            font-size: 1rem;
+            color: #fff;
+            font-weight: bold;
+            text-shadow: 0 0 8px #e63946, 0 0 2px #fff;
+        }
+        button {
+            padding: 8px 18px;
+            font-size: 1rem;
+            border-radius: 8px;
+            border: none;
+            background: linear-gradient(90deg, #e63946 0%, #23272a 100%);
+            color: #fff;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.2s;
+            font-family: 'Rajdhani', 'Orbitron', sans-serif;
+            font-weight: 700;
+            letter-spacing: 1px;
+            box-shadow: 0 0 18px #e63946, 0 0 10px #000;
+        }
+        button:hover {
+            background: linear-gradient(90deg, #fff 0%, #e63946 100%);
+            color: #e63946;
+            transform: scale(1.07) translateY(-2px);
+            box-shadow: 0 0 32px #e63946, 0 0 18px #fff;
+        }
+        input[type="color"] {
+            border: 2px solid #e63946;
+            border-radius: 8px;
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            background: #23272a;
+            box-shadow: 0 0 8px #e63946cc;
+        }
+        #clearBtn {
+            background: linear-gradient(90deg, #e63946 0%, #23272a 100%);
+        }
+        #clearBtn:hover {
+            background: linear-gradient(90deg, #fff 0%, #e63946 100%);
+            color: #e63946;
+        }
+        .fancy-title {
+            margin-top: 32px;
+            color: #fff;
+            font-size: 3.2rem;
+            letter-spacing: 4px;
+            font-family: 'Orbitron', 'Rajdhani', sans-serif;
+            background: linear-gradient(90deg, #e63946 0%, #fff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-fill-color: transparent;
+            text-shadow: 0 0 40px #e63946, 0 2px 18px #000, 0 0 8px #fff;
+            animation: titlePulse 2.5s infinite alternate;
+            font-weight: 900;
+            filter: drop-shadow(0 0 18px #e63946cc);
+        }
+    </style>
+</head>
+<body>
+    <h1 class="fancy-title">Spyro Painter</h1>
+    <div id="controls">
+        <span class="label">Spin Speed:</span>
+        <input type="range" id="speedSlider" min="0" max="1.2" step="0.01" value="0.48">
+        <span id="speedValue">0.48</span>
+        <span class="label">Paint Size:</span>
+        <input type="range" id="sizeSlider" min="1" max="40" step="1" value="20">
+        <span id="sizeValue">20</span>
+        <span class="label">Paint Color:</span>
+        <input type="color" id="colorPicker" value="#ff0000">
+        <span class="label">Direction:</span>
+        <select id="directionSelect">
+            <option value="1">Clockwise</option>
+            <option value="-1">Counterclockwise</option>
+        </select>
+        <button id="clearBtn">Clear</button>
+        <button id="exportBtn">Export Image</button>
+    </div>
+    <canvas id="spinCanvas" width="500" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('spinCanvas');
+        const ctx = canvas.getContext('2d');
+        // Permanent paint layer
+        const paintLayer = document.createElement('canvas');
+        paintLayer.width = canvas.width;
+        paintLayer.height = canvas.height;
+        const paintCtx = paintLayer.getContext('2d');
+        // For blur effect
+        paintCtx.imageSmoothingEnabled = true;
+        const speedSlider = document.getElementById('speedSlider');
+        const speedValue = document.getElementById('speedValue');
+        const colorPicker = document.getElementById('colorPicker');
+        // Removed dropBtn
+        const clearBtn = document.getElementById('clearBtn');
+        const sizeSlider = document.getElementById('sizeSlider');
+        const sizeValue = document.getElementById('sizeValue');
+        const exportBtn = document.getElementById('exportBtn');
+
+        let spinSpeed = parseFloat(speedSlider.value);
+        let spinDirection = 1;
+        const MAX_SPEED = 1.2;
+        let angle = 0;
+        let paintDrops = [];
+        // Paint drop structure: {x, y, size, color, angleOffset, velocity, r, theta, path}
+
+        function drawDisc() {
+            ctx.save();
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.translate(canvas.width/2, canvas.height/2);
+            ctx.rotate(angle);
+            // Draw disc
+            ctx.beginPath();
+            ctx.arc(0, 0, 220, 0, 2 * Math.PI);
+            ctx.fillStyle = '#fff';
+            ctx.fill();
+            ctx.strokeStyle = '#bbb';
+            ctx.lineWidth = 8;
+            ctx.stroke();
+
+            // Draw permanent paint layer (spins with disc)
+            ctx.save();
+            ctx.drawImage(paintLayer, -canvas.width/2, -canvas.height/2);
+            ctx.restore();
+
+            // Draw moving drops (splotch only)
+            for (const drop of paintDrops) {
+                ctx.save();
+                ctx.rotate(drop.angleOffset);
+                const splotch = drop.path[0];
+                // Ensure splotch size is always >= 1
+                const safeSize = Math.max(1, drop.size);
+                ctx.beginPath();
+                ctx.arc(splotch.x, splotch.y, safeSize, 0, 2 * Math.PI);
+                ctx.fillStyle = drop.color;
+                ctx.globalAlpha = 0.95;
+                ctx.shadowColor = drop.color;
+                ctx.shadowBlur = 10;
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+                ctx.shadowBlur = 0;
+                ctx.restore();
+            }
+            ctx.restore();
+        }
+
+        function animate() {
+            angle += spinSpeed * spinDirection;
+            angle %= 2 * Math.PI;
+            // Realistic trailing and liquid effect
+            const wiggleFactor = 0.22 * (1 - spinSpeed / MAX_SPEED); // more wiggle at slow
+            const curveFactor = 0.12 * (1 - spinSpeed / MAX_SPEED); // more curve at slow
+            const jitterFactor = 5 * (1 - spinSpeed / MAX_SPEED);
+            const splatterChance = 0.18 * (1 - spinSpeed / MAX_SPEED);
+            // Update paint drops to spin and move outward
+            for (let i = paintDrops.length - 1; i >= 0; i--) {
+                const drop = paintDrops[i];
+                drop.angleOffset += spinSpeed;
+                // Radial force: increase velocity based on spinSpeed, add realism
+                drop.velocity += spinSpeed * (0.7 + Math.random()*0.2);
+                drop.r += drop.velocity;
+                // Add random wiggle and curve to theta for liquid effect
+                drop.theta += (Math.random()-0.5) * wiggleFactor + Math.sin(drop.r/30) * curveFactor;
+                // Convert polar to cartesian
+                drop.x = Math.cos(drop.theta) * drop.r;
+                drop.y = Math.sin(drop.theta) * drop.r;
+                // Add to path
+                drop.path.push({x: drop.x, y: drop.y, r: drop.r});
+                // Draw streak on permanent layer
+                if (drop.path.length > 1) {
+                    paintCtx.save();
+                    paintCtx.translate(paintLayer.width/2, paintLayer.height/2);
+                    paintCtx.rotate(drop.angleOffset);
+                    // Draw each segment with width based on start position
+                    for (let j = 1; j < drop.path.length; j++) {
+                        const prev = drop.path[j-1];
+                        const curr = drop.path[j];
+                        // Smooth trailing: blend color and opacity, add blur
+                        const jitterX = curr.x + (Math.random()-0.5)*jitterFactor;
+                        const jitterY = curr.y + (Math.random()-0.5)*jitterFactor;
+                        const rNorm = prev.r / 200;
+                        // Ensure segWidth is always >= 1
+                        const segWidth = Math.max(1, drop.size * (1 - rNorm) + 1);
+                        paintCtx.save();
+                        paintCtx.beginPath();
+                        paintCtx.moveTo(prev.x, prev.y);
+                        paintCtx.lineTo(jitterX, jitterY);
+                        paintCtx.strokeStyle = drop.color;
+                        // Fade out at end of trail, but never below 0.08
+                        let fade = 1 - (j / drop.path.length);
+                        let alpha = (0.7 + Math.random()*0.2) * (1 - rNorm) * fade + 0.10;
+                        paintCtx.globalAlpha = Math.max(0.08, alpha);
+                        paintCtx.lineWidth = segWidth;
+                        paintCtx.lineCap = 'round';
+                        paintCtx.lineJoin = 'round';
+                        paintCtx.shadowColor = drop.color;
+                        paintCtx.shadowBlur = 14 * (1 - rNorm) * fade;
+                        paintCtx.filter = 'blur(0.5px)';
+                        paintCtx.stroke();
+                        paintCtx.filter = 'none';
+                        paintCtx.globalAlpha = 1.0;
+                        paintCtx.shadowBlur = 0;
+                        paintCtx.restore();
+                    }
+                    paintCtx.restore();
+                    // Random splatter effect
+                    const endR = drop.path[drop.path.length-1].r;
+                    if (Math.random() < splatterChance) {
+                        const splatR = endR + Math.random() * 18;
+                        const splatTheta = drop.theta + (Math.random()-0.5)*0.7;
+                        const sx = Math.cos(splatTheta) * splatR;
+                        const sy = Math.sin(splatTheta) * splatR;
+                        paintCtx.save();
+                        paintCtx.translate(paintLayer.width/2, paintLayer.height/2);
+                        paintCtx.rotate(drop.angleOffset);
+                        paintCtx.beginPath();
+                        paintCtx.arc(sx, sy, 2 + Math.random()*7, 0, 2*Math.PI);
+                        paintCtx.fillStyle = drop.color;
+                        paintCtx.globalAlpha = 0.35 + Math.random()*0.4;
+                        paintCtx.shadowColor = drop.color;
+                        paintCtx.shadowBlur = 10;
+                        paintCtx.filter = 'blur(0.5px)';
+                        paintCtx.fill();
+                        paintCtx.filter = 'none';
+                        paintCtx.globalAlpha = 1.0;
+                        paintCtx.shadowBlur = 0;
+                        paintCtx.restore();
+                    }
+                }
+                // Remove drop if it reaches edge
+                if (drop.r >= 220) {
+                    paintDrops.splice(i, 1);
+                }
+            }
+            drawDisc();
+            requestAnimationFrame(animate);
+        }
+
+        function dropPaintAt(r, theta, color) {
+            const x = Math.cos(theta) * r;
+            const y = Math.sin(theta) * r;
+            const baseSize = parseInt(sizeSlider.value);
+            const size = baseSize + (Math.random()-0.5)*8; // add some randomization
+            paintDrops.push({
+                r,
+                theta,
+                x,
+                y,
+                size,
+                color,
+                angleOffset: angle,
+                velocity: 0.3 + Math.random() * 1.2, // more random initial velocity
+                path: [{x, y, r}]
+            });
+        }
+
+        function dropPaint() {
+            // Random position within disc
+            const r = Math.random() * 220;
+            const theta = Math.random() * 2 * Math.PI;
+            dropPaintAt(r, theta, colorPicker.value);
+        }
+
+        function clearPaint() {
+            paintDrops = [];
+            paintCtx.clearRect(0, 0, paintLayer.width, paintLayer.height);
+        }
+
+        // Continuous pour logic
+        let pouring = false;
+        let pourInterval = null;
+        function startPour(e) {
+            pouring = true;
+            function pour() {
+                if (!pouring) return;
+                const rect = canvas.getBoundingClientRect();
+                const mx = e.clientX - rect.left;
+                const my = e.clientY - rect.top;
+                const dx = mx - canvas.width/2;
+                const dy = my - canvas.height/2;
+                const r = Math.sqrt(dx*dx + dy*dy);
+                if (r <= 220) {
+                    const theta = Math.atan2(dy, dx);
+                    dropPaintAt(r, theta, colorPicker.value);
+                }
+                pourInterval = setTimeout(pour, 40); // pour every 40ms
+            }
+            pour();
+        }
+        function stopPour() {
+            pouring = false;
+            if (pourInterval) clearTimeout(pourInterval);
+        }
+        canvas.addEventListener('mousedown', startPour);
+        canvas.addEventListener('mouseup', stopPour);
+        canvas.addEventListener('mouseleave', stopPour);
+        canvas.addEventListener('touchstart', function(e) {
+            if (e.touches.length > 0) startPour(e.touches[0]);
+        });
+        canvas.addEventListener('touchend', stopPour);
+        canvas.addEventListener('touchcancel', stopPour);
+
+        speedSlider.addEventListener('input', () => {
+            spinSpeed = parseFloat(speedSlider.value);
+            speedValue.textContent = spinSpeed.toFixed(2);
+        });
+        sizeSlider.addEventListener('input', () => {
+            sizeValue.textContent = sizeSlider.value;
+        });
+        // Removed dropBtn event listener
+        // Direction select event
+        const directionSelect = document.getElementById('directionSelect');
+        directionSelect.addEventListener('change', () => {
+            spinDirection = parseInt(directionSelect.value);
+        });
+        clearBtn.addEventListener('click', () => {
+            clearPaint();
+        });
+        exportBtn.addEventListener('click', () => {
+            // Export the visible canvas as PNG
+            // First, draw the disc and paint layer to a temp canvas
+            const exportCanvas = document.createElement('canvas');
+            exportCanvas.width = canvas.width;
+            exportCanvas.height = canvas.height;
+            const exportCtx = exportCanvas.getContext('2d');
+            exportCtx.save();
+            exportCtx.translate(canvas.width/2, canvas.height/2);
+            exportCtx.rotate(angle);
+            // Draw disc
+            exportCtx.beginPath();
+            exportCtx.arc(0, 0, 220, 0, 2 * Math.PI);
+            exportCtx.fillStyle = '#fff';
+            exportCtx.fill();
+            exportCtx.strokeStyle = '#bbb';
+            exportCtx.lineWidth = 8;
+            exportCtx.stroke();
+            // Draw paint layer
+            exportCtx.drawImage(paintLayer, -canvas.width/2, -canvas.height/2);
+            exportCtx.restore();
+            // Download
+            const link = document.createElement('a');
+            link.download = 'spinpaint.png';
+            link.href = exportCanvas.toDataURL('image/png');
+            link.click();
+        });
+
+        // Initial draw
+        drawDisc();
+        animate();
+    </script>
+</body>
+</html>

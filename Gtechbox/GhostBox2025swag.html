@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>GTech Box (modern ghost box)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background: radial-gradient(ellipse at top left, #440000 0%, #0a0a0a 100%);
+            color: #e0e0e0;
+            font-family: 'Roboto', Arial, sans-serif;
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .ghostbox {
+            background: linear-gradient(135deg, #2a0a0a 0%, #1a0000 100%);
+            border-radius: 40px;
+            box-shadow: 0 12px 64px #ff222288, 0 0 0 12px #2a0a0a66, 0 0 80px 8px #ff222222 inset;
+            padding: 2.2rem 2.2rem 1.7rem 2.2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            border: 3px solid #ff2222;
+            width: 480px;
+            max-width: 99vw;
+        }
+        .ghostbox::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            border-radius: 32px;
+            pointer-events: none;
+            box-shadow: 0 0 80px 8px #ff222222 inset;
+        }
+        .ghostbox h1 {
+            font-family: 'Orbitron', 'Roboto', Arial, sans-serif;
+            font-size: 2.5rem;
+            color: #ff2222;
+            letter-spacing: 3px;
+            margin-bottom: 1.5rem;
+            text-shadow: 0 0 24px #ff2222cc, 0 0 4px #fff, 0 0 2px #ff2222;
+        }
+        .dial {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 60% 40%, #2a0a0a 60%, #440000 100%);
+            border: 10px solid #ff2222;
+            box-shadow: 0 8px 32px #ff2222cc, 0 0 0 10px #2a0a0a66;
+            position: relative;
+            margin-bottom: 2.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .dial-pointer {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 10px;
+            height: 80px;
+            background: linear-gradient(180deg, #ff2222 0%, #fff 100%);
+            border-radius: 5px;
+            box-shadow: 0 0 24px #ff2222cc, 0 0 8px #fff;
+            transform-origin: bottom center;
+            transform: translate(-50%, -100%) rotate(0deg);
+        }
+        .controls {
+            margin-bottom: 1.5rem;
+            display: flex;
+            gap: 0.7rem;
+            flex-wrap: wrap;
+        }
+        button {
+            background: linear-gradient(90deg, #ff2222 0%, #2a0a0a 100%);
+            color: #fff0f0;
+            border: none;
+            border-radius: 12px;
+            padding: 0.8rem 1.7rem;
+            font-size: 1.15rem;
+            font-family: 'Orbitron', 'Roboto', Arial, sans-serif;
+            font-weight: 700;
+            margin: 0 0.7rem;
+            cursor: pointer;
+            box-shadow: 0 4px 16px #ff2222cc;
+            transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+        }
+        button:hover {
+            background: linear-gradient(90deg, #2a0a0a 0%, #ff2222 100%);
+            color: #ff2222;
+            box-shadow: 0 6px 24px #ff2222cc;
+        }
+        .station-info {
+            margin-top: 1.2rem;
+            font-size: 1.2rem;
+            text-align: center;
+            color: #ff2222;
+            font-family: 'Orbitron', 'Roboto', Arial, sans-serif;
+            text-shadow: 0 0 12px #ff2222cc, 0 0 2px #fff;
+        }
+        #speedRange {
+            accent-color: #ff2222;
+        }
+        #dialRange {
+            accent-color: #ff2222;
+        }
+        label {
+            font-family: 'Orbitron', 'Roboto', Arial, sans-serif;
+            color: #ff2222;
+            font-size: 1.1rem;
+            margin-right: 0.5rem;
+        }
+        audio {
+            background: #2a0a0a;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px #ff222288;
+        }
+        /* AM/FM slider custom styles */
+        #amfmTrack {
+            width: 100%;
+            height: 10px;
+            background: linear-gradient(90deg, #ff2222 0%, #440000 100%);
+            border-radius: 5px;
+            position: absolute;
+            top: 11px;
+            left: 0;
+            box-shadow: 0 0 12px #ff2222cc;
+        }
+        #amfmKnob {
+            width: 28px;
+            height: 28px;
+            background: radial-gradient(circle at 60% 40%, #ff2222 60%, #440000 100%);
+            border-radius: 50%;
+            position: absolute;
+            top: 2px;
+            left: 0;
+            box-shadow: 0 0 16px #ff2222cc, 0 0 8px #fff;
+            border: 3px solid #fff;
+            transition: left 0.2s;
+        }
+        .amfm-labels {
+            width: 90%;
+            display: flex;
+            justify-content: space-between;
+            font-family: 'Orbitron','Roboto',Arial,sans-serif;
+            font-size: 1em;
+            color: #ff2222;
+            margin-top: 2px;
+        }
+        .amfm-labels span {
+            text-shadow: 0 0 8px #ff2222cc;
+        }
+        /* Volume slider custom styles */
+        #volumeRange {
+            accent-color: #ff2222;
+            background: linear-gradient(90deg, #440000 0%, #ff2222 100%);
+            border-radius: 8px;
+            box-shadow: 0 2px 8px #ff222288;
+        }
+        @media (max-width: 600px) {
+            .ghostbox {
+                padding: 1rem 0.5rem;
+            }
+            .dial {
+                width: 90px;
+                height: 90px;
+            }
+            .dial-pointer {
+                height: 40px;
+                width: 5px;
+            }
+            .controls button {
+                padding: 0.5rem 0.8rem;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="ghostbox">
+        <h1 style="display:flex; flex-direction:column; align-items:center; justify-content:center;">
+            <span>GTech Box</span>
+            <span style="font-size:1.1rem; font-weight:400; color:#fff; margin-top:0.3em;">(modern ghost box)</span>
+        </h1>
+        <div class="disclaimer" style="margin-bottom:1.2rem; color:#e0e0e0; font-size:1rem; text-align:center; font-family:'Roboto',Arial,sans-serif; background:#23243a; border-radius:10px; box-shadow:0 2px 8px #00e6e688; padding:0.7rem 1.2rem; margin-left:0.5rem; margin-right:0.5rem;">
+            <strong>Disclaimer:</strong> Please use responsibly and be mindful when attempting spirit communication.<br>
+            <span style="font-size:0.95em; color:#ff2222;">Ghost Box sessions are for entertainment and experimental purposes only.</span>
+        </div>
+        <div class="dial" id="dial">
+            <div class="dial-pointer" id="dialPointer"></div>
+        </div>
+        <div class="controls">
+            <button id="autoBtn">Auto Rotate</button>
+            <button id="manualBtn">Manual</button>
+        </div>
+        <div style="margin-bottom:1rem; text-align:center;">
+            <label for="speedRange">Cycle Speed:</label>
+            <input type="range" id="speedRange" min="500" max="2000" value="1500" step="100" style="width:120px;">
+            <span id="speedLabel">1.5s</span>
+        </div>
+        <!-- Removed basic AM/FM slider, only graphic slider remains -->
+        <div class="station-info" id="stationInfo" style="height:1.5em; margin-bottom:0.7em;"></div>
+        <div style="width:98%; margin:0.5em 0 1em 0; display:flex; flex-direction:column; align-items:center;">
+            <div id="amfmSliderContainer" style="width:90%; height:32px; background:#1a0000; border-radius:16px; box-shadow:0 2px 8px #ff222288; position:relative; display:flex; align-items:center; cursor:pointer;">
+                <div id="amfmTrack"></div>
+                <div id="amfmKnob"></div>
+            </div>
+            <div class="amfm-labels">
+                <span>AM</span><span>FM</span>
+            </div>
+        </div>
+        <audio id="radioAudio" controls autoplay style="margin-top:1rem; width:98%;"></audio>
+        <audio id="staticAudio" src="stat.mp3" loop style="display:none"></audio>
+        <div style="margin-top:0.7rem; text-align:center;">
+            <label for="volumeRange">Volume:</label>
+            <input type="range" id="volumeRange" min="0" max="1" step="0.01" value="1" style="width:90px;">
+            <button id="muteBtn">Mute</button>
+        </div>
+    </div>
+    <script>
+    // --- Ghost Box Logic ---
+    const volumeRange = document.getElementById('volumeRange');
+    const muteBtn = document.getElementById('muteBtn');
+    const dialPointer = document.getElementById('dialPointer');
+    const stationInfo = document.getElementById('stationInfo');
+    const radioAudio = document.getElementById('radioAudio');
+    const autoBtn = document.getElementById('autoBtn');
+    const manualBtn = document.getElementById('manualBtn');
+    const staticAudio = document.getElementById('staticAudio');
+    const amfmSliderContainer = document.getElementById('amfmSliderContainer');
+    const amfmKnob = document.getElementById('amfmKnob');
+    let isDraggingKnob = false;
+
+    let stations = [];
+    let currentIdx = 0;
+    let autoMode = false;
+    let autoInterval = null;
+    let cycleSpeed = 3500;
+    cycleSpeed = 1500;
+    let staticTimeout = null;
+
+    // Get live radio stations from Radio Browser API
+    // Fetch talk radio stations (genre: 'talk')
+    // Fetch English talk radio stations
+    async function fetchStations() {
+        stationInfo.textContent = 'Loading English talk radio stations...';
+        try {
+            // Query for multiple spoken-word tags
+            const tags = ['talk', 'news', 'information', 'spoken', 'interview', 'debate', 'discussion', 'public radio'];
+            let allStations = [];
+            for (let tag of tags) {
+                const resp = await fetch(`https://de1.api.radio-browser.info/json/stations/bytag/${encodeURIComponent(tag)}?limit=20&language=english`);
+                let stationsForTag = await resp.json();
+                allStations = allStations.concat(stationsForTag);
+            }
+            // Deduplicate by station uuid
+            const seen = new Set();
+            allStations = allStations.filter(st => {
+                if (!st.language || !st.url_resolved) return false;
+                if (!st.language.toLowerCase().includes('english')) return false;
+                // Exclude music genres
+                const musicTags = ['music', 'pop', 'rock', 'jazz', 'classical', 'hiphop', 'country', 'dance', 'electronic', 'blues', 'metal', 'reggae', 'folk', 'soul', 'rnb', 'rap', 'punk', 'disco', 'techno', 'trance', 'dubstep', 'edm'];
+                if (st.tags && musicTags.some(tag => st.tags.toLowerCase().includes(tag))) return false;
+                if (seen.has(st.stationuuid)) return false;
+                seen.add(st.stationuuid);
+                return true;
+            });
+            stations = allStations;
+            if (stations.length === 0) throw new Error('No stations found');
+            stationInfo.textContent = `Ready. Found ${stations.length} stations.`;
+            setStation(0);
+            // If auto mode is enabled, start cycling
+            if (autoMode) {
+                startAutoCycle();
+            }
+        } catch (e) {
+            stationInfo.textContent = 'Failed to load stations.';
+        }
+    }
+
+    function setStation(idx) {
+        currentIdx = idx;
+        // Make dial rotation cover more than one full circle for a longer feel
+        const turns = 2.5; // dial rotates 2.5 full circles across all stations
+        const deg = idx * ((360 * turns) / (stations.length - 1));
+        dialPointer.style.transition = 'transform 0.5s cubic-bezier(0.77,0,0.175,1)';
+        dialPointer.style.transform = `translate(-50%, -100%) rotate(${deg}deg)`;
+        // Make AM/FM knob slide with a longer feel (track is visually longer)
+        if (amfmKnob && amfmKnob.parentElement) {
+            const trackWidth = amfmKnob.parentElement.offsetWidth - 24;
+            // Make knob move slower, so it takes longer to reach the end
+            const knobPos = Math.round((idx/(stations.length-1))*trackWidth*1.2);
+            amfmKnob.style.transition = 'left 0.5s cubic-bezier(0.77,0,0.175,1)';
+            amfmKnob.style.left = `${Math.max(0, Math.min(trackWidth, knobPos))}px`;
+        }
+        // Cache audio elements for each station
+        if (!setStation.audioCache) setStation.audioCache = {};
+        const st = stations[idx];
+        let audioEl = setStation.audioCache[idx];
+        if (!audioEl) {
+            audioEl = document.createElement('audio');
+            audioEl.src = st.url_resolved;
+            audioEl.preload = 'auto';
+            setStation.audioCache[idx] = audioEl;
+        }
+        // Pause all cached audios except current
+        Object.keys(setStation.audioCache).forEach(key => {
+            if (Number(key) !== idx) setStation.audioCache[key].pause();
+        });
+        // Attach cached audio to main player
+        radioAudio.srcObject = null;
+        radioAudio.src = audioEl.src;
+        radioAudio.load();
+        radioAudio.play();
+        // Sync volume and mute with static
+        radioAudio.volume = volumeRange.value;
+        staticAudio.volume = Math.max(0, volumeRange.value * 0.35);
+        staticAudio.volume = Math.max(0, volumeRange.value * 0.35);
+        radioAudio.muted = muteBtn.classList.contains('muted');
+        staticAudio.muted = muteBtn.classList.contains('muted');
+        stationInfo.textContent = '';
+
+        // Silence detection using a separate static audio element
+        function playStaticIfSilent() {
+            // If radio is not playing, play static
+            if (radioAudio.paused || radioAudio.readyState < 3 || radioAudio.duration === 0) {
+                staticAudio.style.display = '';
+                staticAudio.volume = Math.max(0, volumeRange.value - 0.35);
+                staticAudio.muted = muteBtn.classList.contains('muted');
+                staticAudio.play();
+                stationInfo.textContent = '';
+            } else {
+                staticAudio.pause();
+                staticAudio.style.display = 'none';
+            }
+        }
+        radioAudio.onplay = playStaticIfSilent;
+        radioAudio.onpause = playStaticIfSilent;
+        radioAudio.onerror = playStaticIfSilent;
+        radioAudio.oncanplay = playStaticIfSilent;
+        setTimeout(playStaticIfSilent, 2000);
+
+        // If no sound output, fill with stat.mp3
+        let silenceTimeout;
+        function checkSilence() {
+            // If audio is not playing or is silent, play static
+            if (radioAudio.readyState < 3 || radioAudio.paused || radioAudio.volume === 0) {
+                radioAudio.src = 'stat.mp3';
+                radioAudio.loop = true;
+                radioAudio.load();
+                radioAudio.play();
+                stationInfo.textContent = '';
+            }
+        }
+        // Listen for errors or silence
+        radioAudio.oncanplay = () => {
+            clearTimeout(silenceTimeout);
+            if (radioAudio.duration === 0 || radioAudio.paused) {
+                checkSilence();
+            }
+        };
+        radioAudio.onerror = () => {
+            checkSilence();
+        };
+        // Fallback: check after 2 seconds
+        silenceTimeout = setTimeout(checkSilence, 2000);
+    }
+
+    function playStatic(callback) {
+        radioAudio.src = '';
+        stationInfo.textContent = '...static...';
+        // Play static noise for 1-2 seconds
+        let staticAudio = new Audio('https://cdn.pixabay.com/audio/2022/10/16/audio_12b2b1b2e7.mp3'); // Free static sound
+        staticAudio.volume = 0.5;
+        staticAudio.play();
+        staticTimeout = setTimeout(() => {
+            staticAudio.pause();
+            staticAudio = null;
+            callback();
+        }, 1200 + Math.random() * 800);
+    }
+
+    // --- AM/FM graphic slider logic ---
+    function getKnobIndexFromX(x) {
+        const rect = amfmSliderContainer.getBoundingClientRect();
+        let relX = x - rect.left;
+        let trackWidth = amfmSliderContainer.offsetWidth - 24;
+        relX = Math.max(0, Math.min(trackWidth, relX));
+        let idx = Math.round((relX / trackWidth) * (stations.length - 1));
+        return idx;
+    }
+    amfmSliderContainer.addEventListener('mousedown', function(e) {
+        isDraggingKnob = true;
+        const idx = getKnobIndexFromX(e.clientX);
+        setStation(idx);
+    });
+    document.addEventListener('mousemove', function(e) {
+        if (isDraggingKnob) {
+            const idx = getKnobIndexFromX(e.clientX);
+            setStation(idx);
+        }
+    });
+    document.addEventListener('mouseup', function(e) {
+        if (isDraggingKnob) {
+            isDraggingKnob = false;
+        }
+    });
+
+    autoBtn.onclick = () => {
+        if (autoMode) return;
+        autoMode = true;
+        autoBtn.disabled = true;
+        manualBtn.disabled = false;
+        startAutoCycle();
+    };
+    manualBtn.onclick = () => {
+        if (!autoMode) return;
+        autoMode = false;
+        autoBtn.disabled = false;
+        manualBtn.disabled = true;
+        clearInterval(autoInterval);
+    }
+
+    // Speed slider logic
+    // Volume and mute logic
+    volumeRange.addEventListener('input', e => {
+        radioAudio.volume = e.target.value;
+        staticAudio.volume = Math.max(0, e.target.value * 0.35);
+        // Also update cached audio elements for each station
+        if (setStation.audioCache) {
+            Object.values(setStation.audioCache).forEach(audioEl => {
+                audioEl.volume = e.target.value;
+            });
+        }
+    });
+    muteBtn.addEventListener('click', () => {
+        muteBtn.classList.toggle('muted');
+        const isMuted = muteBtn.classList.contains('muted');
+        radioAudio.muted = isMuted;
+        staticAudio.muted = isMuted;
+        muteBtn.textContent = isMuted ? 'Unmute' : 'Mute';
+    });
+    const speedRange = document.getElementById('speedRange');
+    const speedLabel = document.getElementById('speedLabel');
+    function startAutoCycle() {
+        clearInterval(autoInterval);
+        autoInterval = setInterval(() => {
+            let nextIdx = (currentIdx + 1) % stations.length;
+            setStation(nextIdx);
+        }, cycleSpeed);
+    }
+    speedRange.addEventListener('input', e => {
+        cycleSpeed = Number(e.target.value);
+        speedLabel.textContent = (cycleSpeed / 1000).toFixed(1) + 's';
+        if (autoMode) {
+            startAutoCycle();
+        }
+    });
+    manualBtn.disabled = true;
+
+    fetchStations();
+    </script>
+</body>
+</html>

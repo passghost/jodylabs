@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeonPang - AI Pong Game with Glowing Effects | JodyLabs</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Play NeonPang, a vibrant neon-styled Pong game with AI opponent and spectacular glowing effects! Classic arcade gameplay with modern visuals and challenging AI.">
+    <meta name="keywords" content="NeonPang, neon pong, AI pong game, arcade game, classic games, retro games, glow effects, browser game, HTML5 game">
+    <meta name="author" content="JodyLabs">
+    <meta name="robots" content="index, follow">
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="NeonPang - AI Pong Game with Glowing Effects">
+    <meta property="og:description" content="🏓 Experience classic Pong with a futuristic twist! Battle an intelligent AI opponent in this neon-glowing arcade masterpiece. Play free in your browser!">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://jodylabs.surge.sh/NeonPang/NeonPang.html">
+    <meta property="og:site_name" content="JodyLabs">
+    <meta property="og:image" content="https://jodylabs.surge.sh/Images/neonpang-preview.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="NeonPang Game - Glowing Pong with AI opponent">
+    <meta property="og:locale" content="en_US">
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@jodylabs">
+    <meta name="twitter:title" content="NeonPang - AI Pong Game with Glowing Effects">
+    <meta name="twitter:description" content="🏓 Classic Pong meets futuristic neon! Battle an AI opponent in this glowing arcade game. Free to play in your browser!">
+    <meta name="twitter:image" content="https://jodylabs.surge.sh/Images/neonpang-preview.png">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://jodylabs.surge.sh/NeonPang/NeonPang.html">
+    
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "VideoGame",
+      "name": "NeonPang",
+      "description": "A vibrant neon-styled Pong game featuring an intelligent AI opponent and spectacular glowing visual effects",
+      "url": "https://jodylabs.surge.sh/NeonPang/NeonPang.html",
+      "author": {
+        "@type": "Organization",
+        "name": "JodyLabs"
+      },
+      "genre": ["Arcade", "Sports", "Action"],
+      "playMode": "SinglePlayer",
+      "applicationCategory": "Game",
+      "operatingSystem": "Web Browser",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      }
+    }
+    </script>
+    <style>
+        @font-face {
+            font-family: 'Line1';
+            src: url('/fonts/Line1.ttf') format('truetype');
+        }
+        @font-face {
+            font-family: 'Bravo';
+            src: url('/fonts/bravo.ttf') format('truetype');
+        }
+        body {
+            background-color: #000000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Line1', sans-serif;
+        }
+        canvas {
+            border: 2px solid #ffffff;
+            position: relative;
+            box-shadow: 0 0 20px #ff0000, 0 0 40px #00ff00, 0 0 60px #0000ff;
+        }
+        canvas::after {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: -4px;
+            right: -4px;
+            bottom: -4px;
+            border: 2px solid #ff0000;
+            pointer-events: none;
+        }
+        h1 {
+            color: #0000ff; /* Changed color to blue */
+            text-shadow: 0 0 20px #ff0000, 0 0 40px #00ff00, 0 0 60px #0000ff; /* Identical glow to border */
+            margin-bottom: 20px;
+            font-size: 48px; /* Reduced size */
+            padding: 10px; /* Added padding */
+        }
+        .debug {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #ffffff;
+            font-family: 'Bravo', sans-serif; /* Changed font */
+        }
+    </style>
+</head>
+<body>
+    <h1>Neon Pang</h1>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div class="debug" id="debugInfo"></div>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const debugInfo = document.getElementById('debugInfo');
+
+        // Game variables
+        const paddleWidth = 20; // Fattened paddles
+        const paddleHeight = 100;
+        const ballSize = 20; // Increased ball size
+        let playerScore = 0;
+        let aiScore = 0;
+        let playerHits = 0;
+        let aiHits = 0;
+        const balls = [];
+        const powerups = [];
+        let lastTime = 0;
+        let fps = 0;
+        let fireworks = [];
+
+        // Player paddle
+        const playerPaddle = {
+            x: 10,
+            y: canvas.height / 2 - paddleHeight / 2,
+            width: paddleWidth,
+            height: paddleHeight,
+            dy: 0
+        };
+
+        // AI paddle
+        const aiPaddle = {
+            x: canvas.width - paddleWidth - 10,
+            y: canvas.height / 2 - paddleHeight / 2,
+            width: paddleWidth,
+            height: paddleHeight,
+            dy: 0
+        };
+
+        // Ball
+        function createBall(x, y, dx, dy, color) {
+            return { x, y, size: ballSize, dx, dy, color, particles: [] };
+        }
+
+        balls.push(createBall(canvas.width / 2, canvas.height / 2, 6, 6, '#ff00ff')); // Increased ball speed
+
+        // Powerup
+        function createPowerup(x, y, radius, dx, dy, color) {
+            return { x, y, radius, dx, dy, color };
+        }
+
+        powerups.push(createPowerup(200, 150, 15, 2, 2, '#ff0000')); // Red circular powerup
+
+        // Firework
+        function createFirework(x, y) {
+            const particles = [];
+            for (let i = 0; i < 100; i++) {
+                particles.push({
+                    x,
+                    y,
+                    dx: (Math.random() - 0.5) * 6,
+                    dy: (Math.random() - 0.5) * 6,
+                    color: `hsl(${Math.random() * 360}, 100%, 50%)`, // Multicolor
+                    alpha: 1
+                });
+            }
+            return particles;
+        }
+
+        // Draw paddles with reduced particle effect and slower color change
+        function drawPaddle(paddle) {
+            const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
+            const color = colors[Math.floor((Date.now() / 1000) % colors.length)]; // Slower color change
+            ctx.fillStyle = color;
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = color;
+            ctx.beginPath();
+            ctx.roundRect(paddle.x, paddle.y, paddle.width, paddle.height, 10); // Rounded edges
+            ctx.fill();
+
+            // Reduced particle effect
+            for (let i = 0; i < 5; i++) {
+                ctx.fillStyle = `rgba(255, ${Math.random() * 255}, 0, ${Math.random()})`;
+                ctx.beginPath();
+                ctx.arc(paddle.x + Math.random() * paddle.width, paddle.y + Math.random() * paddle.height, Math.random() * 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // Draw ball with gradient and particles
+        function drawBall(ball) {
+            const gradient = ctx.createRadialGradient(ball.x + ball.size / 2, ball.y + ball.size / 2, ball.size / 4, ball.x + ball.size / 2, ball.y + ball.size / 2, ball.size / 2);
+            gradient.addColorStop(0, '#ffffff');
+            gradient.addColorStop(1, ball.color);
+            ctx.fillStyle = gradient;
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = ball.color;
+            ctx.fillRect(ball.x, ball.y, ball.size, ball.size);
+
+            // Particle effect
+            ball.particles.push({ x: ball.x + ball.size / 2, y: ball.y + ball.size / 2, alpha: 1 });
+            ball.particles.forEach((particle, index) => {
+                ctx.fillStyle = `rgba(255, 255, 255, ${particle.alpha})`;
+                ctx.beginPath();
+                ctx.arc(particle.x, particle.y, 3, 0, Math.PI * 2);
+                ctx.fill();
+                particle.alpha -= 0.1; // Reduced lifetime more
+                if (particle.alpha <= 0) {
+                    ball.particles.splice(index, 1);
+                }
+            });
+        }
+
+        // Draw powerup with slow and random flicker
+        function drawPowerup(powerup) {
+            const gradient = ctx.createRadialGradient(powerup.x, powerup.y, powerup.radius / 2, powerup.x, powerup.y, powerup.radius);
+            gradient.addColorStop(0, '#ff0000');
+            gradient.addColorStop(1, '#ffff00');
+            ctx.fillStyle = gradient;
+            ctx.shadowBlur = Math.random() * 10; // Slow and random flicker
+            ctx.shadowColor = powerup.color;
+            ctx.beginPath();
+            ctx.arc(powerup.x, powerup.y, powerup.radius, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // Draw score with stylization
+        function drawScore() {
+            ctx.font = '32px Bravo';
+            ctx.fillStyle = '#ffffff';
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#ffffff';
+            ctx.fillText(`Player: ${playerScore}`, 20, 40);
+            ctx.fillText(`AI: ${aiScore}`, canvas.width - 100, 40);
+        }
+
+        // Draw fireworks
+        function drawFireworks() {
+            fireworks.forEach((firework, index) => {
+                firework.forEach((particle, particleIndex) => {
+                    ctx.fillStyle = `rgba(${particle.color}, ${particle.alpha})`;
+                    ctx.beginPath();
+                    ctx.arc(particle.x, particle.y, 5, 0, Math.PI * 2); // Bigger fireworks
+                    ctx.fill();
+                    particle.x += particle.dx;
+                    particle.y += particle.dy;
+                    particle.alpha -= 0.02;
+                    if (particle.alpha <= 0) {
+                        firework.splice(particleIndex, 1);
+                    }
+                });
+                if (firework.length === 0) {
+                    fireworks.splice(index, 1);
+                }
+            });
+        }
+
+               // Print debug coordinates, hits, and FPS
+        function printDebug() {
+            debugInfo.innerHTML = '';
+            balls.forEach((ball, index) => {
+                debugInfo.innerHTML += `Ball ${index + 1}: (${ball.x.toFixed(1)}, ${ball.y.toFixed(1)})<br>`;
+            });
+            debugInfo.innerHTML += `Player Hits: ${playerHits}<br>`;
+            debugInfo.innerHTML += `AI Hits: ${aiHits}<br>`;
+            debugInfo.innerHTML += `FPS: ${fps.toFixed(1)}<br>`;
+        }
+
+        // Update game objects
+        function update(timestamp) {
+            if (!lastTime) lastTime = timestamp;
+            const deltaTime = timestamp - lastTime;
+            fps = 1000 / deltaTime;
+            lastTime = timestamp;
+
+            // Move player paddle
+            playerPaddle.y += playerPaddle.dy;
+
+            // Move balls
+            balls.forEach((ball, index) => {
+                ball.x += ball.dx;
+                ball.y += ball.dy;
+
+                // Ball collision with top and bottom walls
+                if (ball.y <= 0 || ball.y + ball.size >= canvas.height) {
+                    ball.dy *= -1;
+                }
+
+                // Ball collision with paddles
+                if (ball.x <= playerPaddle.x + playerPaddle.width && ball.y >= playerPaddle.y && ball.y <= playerPaddle.y + playerPaddle.height) {
+                    ball.dx *= -1;
+                    playerHits++;
+                }
+
+                if (ball.x + ball.size >= aiPaddle.x && ball.y >= aiPaddle.y && ball.y <= aiPaddle.y + aiPaddle.height) {
+                    ball.dx *= -1;
+                    aiHits++;
+                }
+
+                // Ball out of bounds
+                if (ball.x <= 0) {
+                    aiScore++;
+                    balls.splice(index, 1);
+                    if (balls.length === 0) {
+                        balls.push(createBall(canvas.width / 2, canvas.height / 2, 6, 6, '#ff00ff'));
+                    }
+                }
+
+                if (ball.x + ball.size >= canvas.width) {
+                    playerScore++;
+                    balls.splice(index, 1);
+                    if (balls.length === 0) {
+                        balls.push(createBall(canvas.width / 2, canvas.height / 2, -6, 6, '#ff00ff'));
+                    }
+                }
+
+                // Ball collision with powerups
+                powerups.forEach((powerup, powerupIndex) => {
+                    if (ball.x < powerup.x + powerup.radius && ball.x + ball.size > powerup.x &&
+                        ball.y < powerup.y + powerup.radius && ball.y + ball.size > powerup.y) {
+                        balls.forEach(b => {
+                            b.dx *= 1.5; // Speed up all balls
+                            b.dy *= 1.5;
+                        });
+                        powerups.splice(powerupIndex, 1);
+                        setTimeout(() => {
+                            if (powerups.length < 3) { // Allow up to 3 powerups
+                                powerups.push(createPowerup(Math.random() * canvas.width, Math.random() * canvas.height, 15, 2, 2, '#ff0000'));
+                            }
+                        }, 30000);
+                    }
+                });
+            });
+
+            // Move powerups
+            powerups.forEach(powerup => {
+                powerup.x += powerup.dx;
+                powerup.y += powerup.dy;
+
+                // Powerup collision with walls
+                if (powerup.x <= 0 || powerup.x + powerup.radius >= canvas.width) {
+                    powerup.dx *= -1;
+                }
+                if (powerup.y <= 0 || powerup.y + powerup.radius >= canvas.height) {
+                    powerup.dy *= -1;
+                }
+            });
+
+            // AI paddle movement
+            if (balls.length > 0) {
+                const ball = balls[0];
+                if (ball.y < aiPaddle.y + aiPaddle.height / 2) {
+                    aiPaddle.dy = -4; // Slowed down AI paddle
+                } else {
+                    aiPaddle.dy = 4;
+                }
+                aiPaddle.y += aiPaddle.dy;
+            }
+
+            // Prevent paddles from going out of bounds
+            if (playerPaddle.y < 0) playerPaddle.y = 0;
+            if (playerPaddle.y + playerPaddle.height > canvas.height) playerPaddle.y = canvas.height - playerPaddle.height;
+            if (aiPaddle.y < 0) aiPaddle.y = 0;
+            if (aiPaddle.y + aiPaddle.height > canvas.height) aiPaddle.y = canvas.height - aiPaddle.height;
+
+            // End game if score reaches 10
+            if (playerScore >= 10 || aiScore >= 10) {
+                fireworks.push(createFirework(playerScore >= 10 ? 100 : canvas.width - 100, canvas.height / 2));
+                playerScore = 0;
+                aiScore = 0;
+                balls.length = 0;
+                balls.push(createBall(canvas.width / 2, canvas.height / 2, 6, 6, '#ff00ff'));
+            }
+        }
+
+        // Game loop
+        function gameLoop(timestamp) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawFireworks(); // Draw fireworks behind the board
+            drawPaddle(playerPaddle);
+            drawPaddle(aiPaddle);
+            balls.forEach(drawBall);
+            powerups.forEach(drawPowerup);
+            drawScore();
+            printDebug();
+            update(timestamp);
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+            switch (e.key) {
+                case 'w':
+                    playerPaddle.dy = -8; // Increased speed of player paddle
+                    break;
+                case 's':
+                    playerPaddle.dy = 8; // Increased speed of player paddle
+                    break;
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            switch (e.key) {
+                case 'w':
+                case 's':
+                    playerPaddle.dy = 0;
+                    break;
+            }
+        });
+
+        gameLoop();
+    </script>
+</body>
+</html>

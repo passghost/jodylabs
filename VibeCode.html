@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Vibe Code Registry</title>
+    
+    <!-- SE: Styles moved to <style> block -->
+    <meta name="description" content="Discover The Vibe Code Registry: a curated collection of interactive games, creative tools, and digital experiences. Play, create, and vibe with unique web projects from JodyLabs.">
+    <meta name="keywords" content="vibe code, web games, interactive games, browser games, creative tools, web applications, online games, HTML5 games, JavaScript games, digital art, card games, space games, arcade games, puzzle games, GIF creator, photo enhancement, creative projects">
+    <meta name="author" content="JodyLabs">
+    <meta name="robots" content="index, follow">
+    <meta name="language" content="English">
+    <meta name="revisit-after" content="7 days">
+    
+    <!-- Open Graph Meta Tags for Social Media -->
+    <meta property="og:title" content="The Vibe Code Registry - Interactive Games & Tools">
+    <meta property="og:description" content="Discover The Vibe Code Registry: a curated collection of interactive games, creative tools, and digital experiences. Play, create, and vibe with unique web projects from JodyLabs.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://jodylabs.surge.sh/VibeCode.html">
+    <meta property="og:site_name" content="JodyLabs Vibe Code Registry">
+    <meta property="og:locale" content="en_US">
+    <meta property="og:image" content="https://jodylabs.surge.sh/Images/jodylabs-main.png">
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="The Vibe Code Registry - Interactive Games & Tools">
+    <meta name="twitter:description" content="Discover The Vibe Code Registry: a curated collection of interactive games, creative tools, and digital experiences. Play, create, and vibe with unique web projects from JodyLabs.">
+    <meta name="twitter:site" content="@jodylabs">
+    <meta name="twitter:image" content="https://jodylabs.surge.sh/Images/jodylabs-main.png">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://jodylabs.surge.sh/VibeCode.html">
+    
+    <!-- Structured Data for Search Engines -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "The Vibe Code Registry",
+      "description": "A curated registry of interactive games, creative tools, and digital experiences from JodyLabs.",
+      "url": "https://jodylabs.surge.sh/VibeCode.html",
+      "author": {
+        "@type": "Organization",
+        "name": "JodyLabs"
+      },
+      "image": "https://jodylabs.surge.sh/Images/jodylabs-main.png"
+    }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Rajdhani', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(230, 57, 70, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(230, 57, 70, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, rgba(230, 57, 70, 0.06) 0%, transparent 50%),
+                linear-gradient(135deg, #000000 0%, #0d0d0d 25%, #1a0a0a 50%, #000000 100%);
+            color: #ffffff;
+            overflow-x: hidden;
+            position: relative;
+            min-height: 100vh;
+        }
+
+        /* Animated background particles */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(2px 2px at 20px 30px, rgba(230, 57, 70, 0.3), transparent),
+                radial-gradient(2px 2px at 40px 70px, rgba(255, 255, 255, 0.1), transparent),
+                radial-gradient(1px 1px at 90px 40px, rgba(230, 57, 70, 0.2), transparent),
+                radial-gradient(1px 1px at 130px 80px, rgba(255, 255, 255, 0.05), transparent),
+                radial-gradient(2px 2px at 160px 30px, rgba(230, 57, 70, 0.1), transparent);
+            background-repeat: repeat;
+            background-size: 200px 100px;
+            animation: sparkle 20s linear infinite;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        @keyframes sparkle {
+            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 1; }
+            50% { transform: translateY(-10px) rotate(180deg); opacity: 0.8; }
+        }
+
+        /* Animated background particles */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .particle {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 15s infinite linear;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: linear-gradient(145deg, #1e1e1e, #2a2a2a);
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(230, 57, 70, 0.3);
+            transition: all 0.3s ease;
+            z-index: 1000;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 600;
+        }
+        
+        .back-btn:hover {
+            background-color: #E63946;
+            transform: translateY(-2px);
+        }
+        
+        .support-button {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 1000;
+        }
+
+        .support-button a {
+            display: inline-block;
+            background-color: #3E98D3;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .support-button a:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .header {
+            text-align: center;
+            padding: 60px 0;
+            position: relative;
+        }
+
+        .header h1 {
+            font-family: 'Orbitron', monospace;
+            font-weight: 900;
+            font-size: 4rem;
+            background: linear-gradient(45deg, #ffffff, #e63946, #ffffff);
+            background-size: 400% 400%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 4s ease-in-out infinite;
+            margin-bottom: 20px;
+            text-shadow: 
+                0 0 20px rgba(230, 57, 70, 0.4),
+                0 0 40px rgba(230, 57, 70, 0.4),
+                0 0 60px rgba(230, 57, 70, 0.3);
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .header p {
+            font-size: 1.3rem;
+            opacity: 0.8;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* All empty rulesets removed for lint compliance */
+.project {
+    padding: 18px 12px;
+    position: relative;
+    overflow: hidden;
+    min-width: 320px;
+    max-width: 370px;
+    min-height: 260px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.22);
+    opacity: 0;
+    transform: translateY(50px);
+    animation: slideInUp 0.6s ease-out forwards;
+    transition: box-shadow 0.3s, transform 0.3s;
+}
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 30px;
+            padding: 40px 0;
+            justify-content: center;
+        }
+
+        .project-content {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: flex-start;
+            padding: 0;
+        }
+
+        .project-icon {
+            width: 36px;
+            height: 36px;
+            position: static;
+            margin-bottom: 10px;
+            align-self: flex-start;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(230,57,70,0.18), 0 1px 4px rgba(255,255,255,0.08);
+            border: 1px solid #e63946;
+            background: #222;
+            z-index: 2;
+        }
+
+        .project-icon img {
+            width:100%;
+            height:100%;
+            border-radius:12px;
+            object-fit:cover;
+        }
+
+        .project-body {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .project-screenshot {
+            width: 220px;
+            height: 140px;
+            border-radius: 14px;
+            margin: 12px 0 8px 0;
+            object-fit: cover;
+            box-shadow: 0 2px 12px rgba(230,57,70,0.13);
+            align-self: center;
+        }
+
+        .project h2 {
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 1.15rem;
+            margin-bottom: 2px;
+            color: #e63946;
+            letter-spacing: 0.5px;
+            text-align: center;
+        }
+
+        .project p {
+            font-size: 0.92rem;
+            line-height: 1.35;
+            margin-bottom: 2px;
+            opacity: 0.88;
+            text-align: center;
+        }
+
+        .project-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: linear-gradient(145deg, #e63946 0%, #ff4757 100%);
+    color: #fff;
+    text-decoration: none;
+    padding: 18px 38px;
+    border-radius: 28px;
+    font-weight: 700;
+    font-size: 1.15rem;
+    position: absolute;
+    right: 18px;
+    bottom: 18px;
+    font-family: 'Rajdhani', sans-serif;
+    box-shadow: 0 12px 32px rgba(230,57,70,0.32), 0 2px 8px rgba(255,255,255,0.10);
+    border: none;
+    outline: none;
+    transition: background 0.18s, box-shadow 0.18s, transform 0.18s;
+    z-index: 3;
+        }
+
+        .project-link:active {
+            background: linear-gradient(145deg, #c92a2a 0%, #e63946 100%);
+            transform: scale(0.97) translateY(2px);
+            box-shadow: 0 2px 6px rgba(230,57,70,0.18);
+        }
+
+        .project-link:hover {
+            background: linear-gradient(145deg, #ff4757 0%, #e63946 100%);
+            box-shadow: 0 12px 32px rgba(230,57,70,0.32);
+            transform: scale(1.04) translateY(-2px);
+        }
+
+        .project:nth-child(odd) {
+            animation-delay: 0.1s;
+        }
+
+        .project:nth-child(even) {
+            animation-delay: 0.2s;
+        }
+
+        @keyframes slideInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .project::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.6s;
+        }
+
+        .project:hover::before {
+            left: 100%;
+        }
+
+        .project:hover {
+            transform: translateY(-10px) scale(1.03);
+            border-color: #ff4757;
+            box-shadow: 0 24px 48px rgba(230,57,70,0.18), 0 0 40px rgba(230,57,70,0.12);
+        }
+
+        /* .project-icon empty ruleset removed for lint compliance */
+
+        /* .project-icon img empty ruleset removed for lint compliance */
+        /* All empty rulesets for .project-icon, .project:hover .project-icon, and .project:hover .project-icon img removed for lint compliance */
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .project h2 {
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 1rem;
+            margin-bottom: 5px;
+            color: #e63946;
+            transition: color 0.3s ease;
+        }
+
+        .project:hover h2 {
+            color: #ff4757;
+        }
+
+        .project p {
+            font-size: 0.85rem;
+            line-height: 1.3;
+            margin-bottom: 7px;
+            opacity: 0.88;
+        }
+
+        /* Removed duplicate and conflicting .project-link rules. Only absolute bottom-right button remains. */
+
+        .footer-links {
+            text-align: center;
+            padding: 60px 0 40px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 60px;
+        }
+
+        .footer-links a {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: linear-gradient(145deg, #1e1e1e, #2a2a2a);
+            color: #e63946;
+            text-decoration: none;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border: 2px solid rgba(230, 57, 70, 0.3);
+            font-family: 'Rajdhani', sans-serif;
+        }
+
+        .footer-links a:hover {
+            background: linear-gradient(145deg, #2a2a2a, #3a3a3a);
+            border-color: #e63946;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(230, 57, 70, 0.3);
+        }
+
+        /* Responsive design */
+        @media (max-width: 900px) {
+            .projects-grid {
+                grid-template-columns: 1fr;
+                gap: 22px;
+            }
+            .project {
+                padding: 16px;
+            }
+        }
+        /* Top left eyeball positioning */
+        .eye-top-left {
+            position: fixed;
+            top: 18px;
+            left: 18px;
+            width: 100px;
+            height: 100px;
+            z-index: 1001;
+            pointer-events: none;
+        }
+        .eye-top-left .eye-socket {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 50% 50%, #191919 0%, #000 100%);
+            box-shadow: 0 0 24px 6px rgba(230,57,70,0.18), 0 0 20px rgba(230,57,70,0.3);
+            overflow: hidden;
+            border: 2px solid rgba(230,57,70,0.4);
+            animation: eyeGlow 4s ease-in-out infinite;
+        }
+        .eye-top-left .eyeball {
+            position: absolute;
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-color: #333;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            transition: all 0.3s ease-out;
+            filter: drop-shadow(0 0 10px rgba(230,57,70,0.4));
+            border: 1px solid rgba(255,255,255,0.1);
+            z-index: 2;
+        }
+        .eye-top-left .eyelid-top, .eye-top-left .eyelid-bottom {
+            position: absolute;
+            width: 100%;
+            height: 50%;
+            background: linear-gradient(145deg, #232323, #191919);
+            border-radius: 60px;
+            transition: all 0.15s ease-out;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+            z-index: 3;
+        }
+        .eye-top-left .eyelid-top {
+            top: -18%;
+            border-bottom-left-radius: 10px;
+            border-bottom-right-radius: 10px;
+            transform-origin: bottom center;
+            transform: rotate(-2deg);
+        }
+        .eye-top-left .eyelid-bottom {
+            bottom: -18%;
+            border-top-left-radius: 10px;
+            border-top-right-radius: 10px;
+            transform-origin: top center;
+        }
+        .eye-top-left.blinking .eyelid-top {
+            transform: translateY(70%) scaleY(1.2) rotate(-2deg);
+        }
+        .eye-top-left.blinking .eyelid-bottom {
+            transform: translateY(-70%) scaleY(1.2);
+        }
+        @keyframes eyeGlow {
+            0%, 100% {
+                box-shadow: 0 0 24px 6px rgba(230,57,70,0.18), 0 0 20px rgba(230,57,70,0.3);
+            }
+            50% {
+                box-shadow: 0 0 32px 12px rgba(230,57,70,0.32), 0 0 30px rgba(230,57,70,0.6);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Top left animated eyeball -->
+    <div class="eye-container eye-top-left" id="eyeContainer">
+        <div class="eye-socket">
+            <div class="eyeball" id="eyeball"></div>
+            <div class="eyelid-top"></div>
+            <div class="eyelid-bottom"></div>
+        </div>
+    </div>
+    <a href="index.html" class="back-btn">← Back to Home</a>
+    <div class="support-button">
+        <a href="https://www.paypal.com/donate/?business=TE5MW5QV6RRCS&no_recurring=1&item_name=Donations+encouraged%2C+but+of+course+not+expected.+Thanks+for+visiting!&currency_code=USD" target="_blank">Support Me</a>
+    </div>
+    <!-- Animated background particles -->
+    <div class="particles" id="particles"></div>
+
+    <main class="container">
+        <div class="header">
+            <h1>The Vibe Code Registry</h1>
+            <p>A registry of web projects, games, and creative tools to vibe with.</p>
+        </div>
+        
+        <div class="projects-grid">
+            <div class="project">
+                <div class="project-content">
+                <div class="project-icon"><img src="Images/emrald.png" alt="Project Icon" loading="lazy"></div>
+                    <div class="project-body">
+                        <h2>Card Cake - Fiteme Card Arena</h2>
+                        <p>Experience our latest online multiplayer card game! Build custom decks with your own images, play against friends in real-time matches, and master strategic card battles. Features include life counters, deck builder, custom card creation, and competitive multiplayer gameplay.</p>
+                    </div>
+                </div>
+                <img src="screenshots/CardCake.png" alt="Card Cake Screenshot" class="project-screenshot" loading="lazy">
+                <a href="CardCake/index.html" class="project-link">
+                    <span>→</span>
+                </a>
+            </div>
+
+            <!-- SandSation Simulation Project Card -->
+            <div class="project">
+                <div class="project-content">
+                <div class="project-icon"><img src="Images/gem2.png" alt="SandSation Icon" loading="lazy"></div>
+                    <div class="project-body">
+                        <h2>SandSation - Sand Physics Simulation</h2>
+                        <p>Explore mesmerizing falling sand physics! Interact with virtual grains, create landscapes, and watch realistic sand flow and pile up. Perfect for relaxation, creativity, and experimenting with digital sand art.</p>
+                    </div>
+                </div>
+                <img src="screenshots/SandFall.png" alt="SandSation Screenshot" class="project-screenshot" loading="lazy">
+                <a href="SandSensation/sand_fall.html" class="project-link">
+                    <span>→</span>
+                </a>
+            </div>
+            
+
+            <div class="project">
+                <div class="project-content">
+                <div class="project-icon"><img src="Images/gem4.png" alt="Project Icon" loading="lazy"></div>
+                    <div class="project-body">
+                        <h2>Vertical Dot Matrix Marquee</h2>
+                        <p>Display custom scrolling messages in a retro dot-matrix style! Add your own text, pick colors, and watch your message scroll vertically in a glowing ticker. Great for fun, announcements, or digital signage.</p>
+                    </div>
+                </div>
+                <img src="screenshots/Marquee.png" alt="Marquee Screenshot" class="project-screenshot" loading="lazy">
+                <a href="Marquee/marquee.html" class="project-link">
+                    <span>→</span>
+                </a>
+            </div>
+            
+            <div class="project">
+                <div class="project-content">
+                <div class="project-icon"><img src="Images/gem3.png" alt="Project Icon"></div>
+                    <div class="project-body">
+                        <h2>Stoner Homepage - Relaxation Hub</h2>
+                        <p>Visit our chill homepage featuring live news feeds, weather widgets, relaxing content, and peaceful digital spaces. Perfect for unwinding with curated content designed for relaxation and mindfulness.</p>
+                    </div>
+                </div>
+                <img src="screenshots/stonerhome.png" alt="Stoner Homepage Screenshot" class="project-screenshot">
+                <a href="StonerHome/stonerhome.html" class="project-link">
+                    <span>→</span>
+                </a>
+            </div>
+
+
+            <div class="project">
+                <div class="project-content">
+                <div class="project-icon"><img src="Images/gem4.png" alt="Project Icon"></div>
+                    <div class="project-body">
+                        <h2>GIF Creator - Animated GIF Maker</h2>
+                        <p>Create custom animated GIFs with our free web-based GIF maker tool. Upload multiple images, adjust timing and effects, and generate high-quality animated GIFs perfect for social media, presentations, memes, and digital marketing.</p>
+                    </div>
+                </div>
+                <img src="screenshots/Gifcreator.png" alt="GIF Creator Screenshot" class="project-screenshot">
+                <a href="sandbox.html" class="project-link">
+                    <span>→</span>
+                </a>
+            </div>
+
+            <div class="project">
+                <div class="project-content">
+                <div class="project-icon"><img src="Images/gem5.png" alt="Project Icon"></div>
+                    <div class="project-body">
+                        <h2>Jody'sList - Community Marketplace</h2>
+                        <p>A community-driven trading platform specifically for Eastern Kentucky residents. Buy, sell, and trade items with your neighbors. Keep commerce local and build community connections with this simple, effective marketplace.</p>
+                    </div>
+                </div>
+                <img src="screenshots/Jody'slist.png" alt="Jody'sList Screenshot" class="project-screenshot">
+                <a href="EKYTrade/index.html" class="project-link">
+                    <span>→</span>
+                </a>
+            </div>
+
+            <div class="project">
+                <div class="project-content">
+                <div class="project-icon"><img src="Images/emrald.png" alt="Project Icon"></div>
+                    <div class="project-body">
+                        <h2>NeonPang - AI Pong Game</h2>
+                        <p>Play our vibrant neon-styled Pong game featuring an intelligent AI opponent, spectacular glowing visual effects, and modern gameplay mechanics. This classic arcade game gets a futuristic makeover with smooth animations and challenging AI.</p>
+                    </div>
+                </div>
+                <img src="screenshots/NeonPang.png" alt="NeonPang Screenshot" class="project-screenshot">
+                <a href="NeonPang/NeonPang.html" class="project-link">
+                    <span>→</span>
+                </a>
+            </div>
+
+            <div class="project">
+                <div class="project-content">
+                <div class="project-icon"><img src="Images/gem5.png" alt="Project Icon"></div>
+                    <div class="project-body">
+                        <h2>GalacticBrow - Space Combat Game</h2>
+                        <p>Engage in epic space battles in our scrolling space shooter! Fight dynamic enemy ships, navigate through asteroid fields, and experience thrilling interstellar combat with smooth controls, power-ups, and challenging boss battles.</p>
+                    </div>
+                </div>
+                <img src="screenshots/Galacticbrow.png" alt="GalacticBrow Screenshot" class="project-screenshot">
+                <a href="GalacticBrow/GB.html" class="project-link">
+                    <span>→</span>
+                </a>
+            </div>
+
+            <div class="project">
+                <div class="project-content">
+                <div class="project-icon"><img src="Images/emrald2.png" alt="Project Icon"></div>
+                    <div class="project-body">
+                        <h2>Prinko - Ball Drop Physics Game</h2>
+                        <p>Experience the satisfying physics of ball-dropping in Prinko! Drop balls through a pin-filled board, aim for multiplier slots, and watch mesmerizing ball physics in action. Features realistic physics simulation and addictive gameplay mechanics.</p>
+                    </div>
+                </div>
+                <img src="screenshots/Prinko.png" alt="Prinko Screenshot" class="project-screenshot">
+                <a href="Prinko/Prinko.html" class="project-link">
+                    <span>→</span>
+                </a>
+            </div>
+
+            <div class="project">
+                <div class="project-content">
+                <div class="project-icon"><img src="Images/gem3.png" alt="Project Icon"></div>
+                    <div class="project-body">
+                        <h2>Dad's Web Counter - Retro Counter</h2>
+                        <p>Relive web nostalgia with our retro-style web counter featuring rapid number increments, bouncing ball animations, and classic 90s web aesthetic. A fun throwback to early internet culture and vintage web design.</p>
+                    </div>
+                </div>
+                <img src="screenshots/DadSim.png" alt="Dad's Web Counter Screenshot" class="project-screenshot">
+                <a href="/jodylabs/DadSim/DadSim.html" class="project-link">
+                    <span>→</span>
+                </a>
+            </div>
+
+            <div class="project">
+                <div class="project-content">
+                <div class="project-icon"><img src="Images/emrald.png" alt="Project Icon"></div>
+                    <div class="project-body">
+                        <h2>Germ Sim - Microorganism Simulation</h2>
+                        <p>Explore the fascinating microscopic world with our educational germ simulation! Observe germs growing, reproducing, and evolving in real-time. Perfect for education, featuring realistic biological behaviors and interactive controls.</p>
+                    </div>
+                </div>
+                <img src="screenshots/GermSim.png" alt="Germ Sim Screenshot" class="project-screenshot">
+                <a href="GermSim/GermSim.html" class="project-link">
+                    <span>→</span>
+                </a>
+            </div>
+
+            <div class="project">
+                <div class="project-content">
+                <div class="project-icon"><img src="Images/emrald.png" alt="Project Icon"></div>
+                    <div class="project-body">
+                        <h2>AI Photobooth - Classic Booth Experience</h2>
+                        <p>Step into a virtual photobooth! Snap fun pictures, get instant photo strips, and enjoy the retro booth vibe—just like the classic mall experience. No editing, just pure photobooth nostalgia.</p>
+                    </div>
+                </div>
+                <img src="screenshots/photobooth.png" alt="AI Photobooth Screenshot" class="project-screenshot">
+                <a href="PhotoBooth/Photobooth.html" class="project-link">
+                    <span>→</span>
+                </a>
+            </div>
+
+            <div class="project">
+                <div class="project-content">
+                <div class="project-icon"><img src="Images/gem2.png" alt="Project Icon"></div>
+                    <div class="project-body">
+                        <h2>404Museum - Interactive Error Art Gallery</h2>
+                        <p>Transform boring 404 error pages into stunning interactive art galleries! This embeddable JavaScript library detects 404 errors and replaces them with generative art displays, creating engaging experiences from broken links. Perfect for developers who want to turn user frustration into artistic discovery.</p>
+                    </div>
+                </div>
+                <img src="screenshots/404museum.png" alt="404Museum Screenshot" class="project-screenshot">
+                <a href="404museum/index.html" class="project-link">
+                    <span>→</span>
+                </a>
+            </div>
+
+            <div class="project">
+                <div class="project-content">
+                <div class="project-icon"><img src="Images/gem4.png" alt="Project Icon"></div>
+                    <div class="project-body">
+                        <h2>Calfabochi - Virtual Pet Game</h2>
+                        <p>Raise and care for your own virtual calf pet! Feed it, play with it, and watch it grow in this interactive digital pet simulation. Track your pet's health, happiness, and hunger while bonding with your adorable pixel companion.</p>
+                    </div>
+                </div>
+                <img src="screenshots/Calf.png" alt="Calfabochi Screenshot" class="project-screenshot">
+                <a href="Calf/index.html" class="project-link">
+                    <span>→</span>
+                </a>
+            </div>
+
+            <div class="project">
+                <div class="project-content">
+                <div class="project-icon"><img src="Images/gem4.png" alt="Masker Icon"></div>
+                    <div class="project-body">
+                        <h2>Masker - Image Masking Application</h2>
+                        <p>Try our new Masker app for creative image masking and overlays! Upload your image, apply custom masks, and experiment with unique visual effects. Perfect for artists, designers, and anyone who loves digital creativity.</p>
+                    </div>
+                </div>
+                <img src="screenshots/Masker.png" alt="Masker Screenshot" class="project-screenshot">
+                <a href="Masker/MaskFill.html" class="project-link">
+                    <span>→</span>
+                </a>
+            </div>
+            <div class="project">
+                <div class="project-content">
+                <div class="project-icon"><img src="Images/gem2.png" alt="Project Icon"></div>
+                    <div class="project-body">
+                        <h2>Gtechbox - Ghost Box 2025</h2>
+                        <p>Experience the mysterious Ghost Box 2025! Listen to unique audio, explore interactive features, and discover the secrets of the Gtechbox. Perfect for fans of paranormal and experimental web audio.</p>
+                    </div>
+                </div>
+                <img src="screenshots/ghostbox.png" alt="Gtechbox Screenshot" class="project-screenshot">
+                <a href="Gtechbox/GhostBox2025swag.html" class="project-link">
+                    <span>→</span>
+                </a>
+            </div>
+
+            <div class="project">
+                <div class="project-content">
+                <div class="project-icon"><img src="Images/gem3.png" alt="Project Icon"></div>
+                    <div class="project-body">
+                        <h2>Sounds of Appa - Sound Experience</h2>
+                        <p>Immerse yourself in the Sounds of Appa! Enjoy a curated collection of relaxing and atmospheric sounds. Great for background ambiance, meditation, or creative inspiration.</p>
+                    </div>
+                </div>
+                <img src="screenshots/SoundsofAppa.png" alt="Sounds of Appa Screenshot" class="project-screenshot">
+                <a href="Soundsofappa/Sounds.html" class="project-link">
+                    <span>→</span>
+                </a>
+            </div>
+
+            <div class="project">
+                <div class="project-content">
+                <div class="project-icon"><img src="Images/emrald2.png" alt="Project Icon"></div>
+                    <div class="project-body">
+                        <h2>Spyropainter - Generative Art Tool</h2>
+                        <p>Create mesmerizing generative art with Spyropainter! Experiment with colors, shapes, and patterns to produce unique digital artwork. Perfect for artists and anyone who loves creative coding.</p>
+                    </div>
+                </div>
+                <img src="screenshots/spyropainter.png" alt="Spyropainter Screenshot" class="project-screenshot">
+                <a href="Spyropainter/SpyroPainter.html" class="project-link">
+                    <span>→</span>
+                </a>
+            </div>
+
+            <div class="project">
+                <div class="project-content">
+                <div class="project-icon"><img src="Images/gem4.png" alt="Project Icon"></div>
+                    <div class="project-body">
+                        <h2>Panel Whiteboard - Collaborative Drawing</h2>
+                        <p>Collaborate and draw together on the Panel Whiteboard! Share ideas, sketch diagrams, and brainstorm in real-time with friends or colleagues. Great for remote teamwork and creative sessions.</p>
+                    </div>
+                </div>
+                <img src="screenshots/PanelWhiteboard.png" alt="Panel Whiteboard Screenshot" class="project-screenshot">
+                <a href="Panelwhiteboard/test.html" class="project-link">
+                    <span>→</span>
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Array of available eyeball images (copied from index.html)
+        const eyeballImages = [
+            'Images/Snip/eye6.png',
+            'Images/Snip/eye7.png',
+            'Images/Snip/EyeballHueshift.png',
+            'Images/Snip/EyeballM1.png',
+            'Images/Snip/EyeballM2.png',
+            'Images/Snip/EyeballM3.png',
+            'Images/Snip/EyeballM4.png',
+            'Images/Snip/EyeballM5.png',
+            'Images/Snip/EyeballM6.png',
+            'Images/Snip/EyeballM7.png',
+            'Images/Snip/EyeballM8.png',
+            'Images/Snip/EyeballM9.png',
+            'Images/Snip/EyeballN1.png',
+            'Images/Snip/EyeballN2.png',
+            'Images/Snip/EyeballN3.png',
+            'Images/Snip/EyeballN4.png',
+            'Images/Snip/EyeballN5.png',
+            'Images/Snip/EyeballN6.png',
+            'Images/Snip/EyeballN7.png',
+            'Images/Snip/EyeballN8.png',
+            'Images/Snip/EyeballN9.png',
+            'Images/Snip/Eyenew1.png',
+            'Images/Snip/Eyenew2.png',
+            'Images/Snip/Eyenew3.png',
+            'Images/Snip/Eyenew5.png',
+            'Images/Snip/eyez1.png',
+            'Images/Snip/eyez2.png',
+            'Images/Snip/eyez3.png',
+            'Images/Snip/eyez4.png',
+            'Images/Snip/eyez5.png'
+        ];
+
+        // AnimatedEye logic from index.html
+        function setEyeballImage(imgUrl) {
+            const eyeball = document.getElementById('eyeball');
+            eyeball.style.backgroundImage = `url('${imgUrl}')`;
+            eyeball.style.backgroundColor = 'transparent';
+        }
+
+        function randomEyeballImage() {
+            return eyeballImages[Math.floor(Math.random() * eyeballImages.length)];
+        }
+
+        function moveEyeball(x, y) {
+            const eyeball = document.getElementById('eyeball');
+            eyeball.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
+        }
+
+        function resetEyeball() {
+            const eyeball = document.getElementById('eyeball');
+            eyeball.style.transform = 'translate(-50%, -50%)';
+        }
+
+        function blinkEye() {
+            const eyeContainer = document.getElementById('eyeContainer');
+            eyeContainer.classList.add('blinking');
+            setTimeout(() => {
+                eyeContainer.classList.remove('blinking');
+            }, 120);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initial eyeball image
+            setEyeballImage(randomEyeballImage());
+
+            // Change eyeball image every 30s
+            setInterval(() => {
+                setEyeballImage(randomEyeballImage());
+            }, 30000);
+
+            // Mouse tracking
+            let lastMouseMove = Date.now();
+            document.addEventListener('mousemove', (e) => {
+                lastMouseMove = Date.now();
+                const eyeContainer = document.getElementById('eyeContainer');
+                const eyeball = document.getElementById('eyeball');
+                // Clamp vertical position so eye stays in viewport
+                const eyeHeight = 100; // px, matches CSS
+                const minTop = 0;
+                const maxTop = window.innerHeight - eyeHeight;
+                let newTop = e.clientY - eyeHeight / 2;
+                newTop = Math.max(minTop, Math.min(maxTop, newTop));
+                eyeContainer.style.top = newTop + 'px';
+                // Eye stays flush left
+                // Horizontal position will be animated, so don't set here
+                // Eyeball tracks mouse within socket as before
+                const eyeRect = eyeContainer.getBoundingClientRect();
+                const eyeCenterX = eyeRect.left + eyeRect.width / 2;
+                const eyeCenterY = eyeRect.top + eyeRect.height / 2;
+                const mouseX = e.clientX;
+                const mouseY = e.clientY;
+                const deltaX = mouseX - eyeCenterX;
+                const deltaY = mouseY - eyeCenterY;
+                const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                const maxDistance = 15;
+                const limitedDistance = Math.min(distance, maxDistance);
+                const angle = Math.atan2(deltaY, deltaX);
+                const moveX = Math.cos(angle) * (limitedDistance / maxDistance) * 15;
+                const moveY = Math.sin(angle) * (limitedDistance / maxDistance) * 15;
+                moveEyeball(moveX, moveY);
+            });
+
+            // Animate the whole eye rig horizontally (gentle sine wave)
+            function animateEyeRig() {
+                const eyeContainer = document.getElementById('eyeContainer');
+                const baseLeft = 18; // px
+                const baseTop = parseFloat(eyeContainer.style.top) || 18; // px, set by mouse tracking
+                const hAmplitude = 10; // px horizontal
+                const hSpeed = 0.0012; // radians/ms
+                const vAmplitude = 6; // px vertical
+                const vSpeed = 0.0017; // radians/ms
+                const time = Date.now();
+                // Horizontal sine wave
+                const wiggleX = Math.sin(time * hSpeed) * hAmplitude;
+                // Vertical sine wave layered on mouse tracking
+                const wiggleY = Math.cos(time * vSpeed) * vAmplitude;
+                // Random jitter (subtle)
+                const jitterX = (Math.random() - 0.5) * 2.2;
+                const jitterY = (Math.random() - 0.5) * 2.2;
+                eyeContainer.style.left = (baseLeft + wiggleX + jitterX) + 'px';
+                eyeContainer.style.top = (baseTop + wiggleY + jitterY) + 'px';
+                requestAnimationFrame(animateEyeRig);
+            }
+            animateEyeRig();
+
+            // Blinking (random interval, always triggers)
+            function scheduleBlink() {
+                const delay = 3000 + Math.random() * 5000;
+                setTimeout(() => {
+                    blinkEye();
+                    scheduleBlink();
+                }, delay);
+            }
+            scheduleBlink();
+
+            // Idle look around
+            setInterval(() => {
+                if (Date.now() - lastMouseMove > 3000) {
+                    const randomX = (Math.random() - 0.5) * 20;
+                    const randomY = (Math.random() - 0.5) * 20;
+                    moveEyeball(randomX, randomY);
+                    setTimeout(() => {
+                        if (Date.now() - lastMouseMove > 2000) {
+                            resetEyeball();
+                        }
+                    }, 1200);
+                }
+            }, 2000);
+        });
+        // Create animated background particles
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            
+            for (let i = 0; i < 50; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                
+                // Random size between 1px and 4px
+                const size = Math.random() * 3 + 1;
+                particle.style.width = size + 'px';
+                particle.style.height = size + 'px';
+                
+                // Random horizontal position
+                particle.style.left = Math.random() * 100 + '%';
+                
+                // Random animation delay
+                particle.style.animationDelay = Math.random() * 15 + 's';
+                
+                // Random animation duration
+                particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
+                
+                particlesContainer.appendChild(particle);
+            }
+        }
+
+        // Staggered animation for project cards
+        function animateProjects() {
+            const projects = document.querySelectorAll('.project');
+            
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach((entry, index) => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.animationDelay = (index * 0.1) + 's';
+                        entry.target.classList.add('animate');
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            projects.forEach(project => {
+                observer.observe(project);
+            });
+        }
+
+        // Initialize animations when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            createParticles();
+            animateProjects();
+        });
+
+        // Add parallax effect to header
+        window.addEventListener('scroll', () => {
+            const scrolled = window.pageYOffset;
+            const header = document.querySelector('.header h1');
+            if (header) {
+                header.style.transform = `translateY(${scrolled * 0.5}px)`;
+            }
+        });
+    </script>
+
+    <!-- JodyLabs Hit Counter -->
+    <div class="hit-counter" id="hit-counter" style="position:fixed;bottom:20px;right:20px;font-size:0.9rem;font-weight:500;color:#e63946;background:rgba(20,20,20,0.9);padding:8px 15px;border-radius:12px;border:1px solid #e63946;backdrop-filter:blur(5px);z-index:1000;text-align:center;min-width:120px;">
+        <span class="counter-label">Page Hits</span>
+        <span class="counter-value" id="hit-count">0</span>
+        <span id="hit-error" style="display:none;color:#ff4444;font-size:0.7rem;margin-top:2px;"></span>
+    </div>
+    <script>
+    // Hit Counter with Supabase (Stoner Home logic)
+    (function() {
+        const apiUrl = 'https://omcwjmvdjswkfjkahchm.supabase.co';
+        const headers = {
+            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
+            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
+            'Content-Type': 'application/json'
+        };
+        const pagePath = 'aifun';
+        const hitCountEl = document.getElementById('hit-count');
+        const hitErrorEl = document.getElementById('hit-error');
+
+        async function recordHit() {
+            hitErrorEl.style.display = 'none';
+            hitErrorEl.textContent = '';
+            try {
+                // Get existing record
+                const getResponse = await fetch(`${apiUrl}/rest/v1/page_hits?page_path=eq.${pagePath}&select=id,hit_count`, {
+                    method: 'GET',
+                    headers: headers
+                });
+                if (getResponse.ok) {
+                    const existingData = await getResponse.json();
+                    if (existingData.length > 0) {
+                        // Try to update existing
+                        const record = existingData[0];
+                        const newCount = record.hit_count + 1;
+                        const updateResponse = await fetch(`${apiUrl}/rest/v1/page_hits?id=eq.${record.id}`, {
+                            method: 'PATCH',
+                            headers: headers,
+                            body: JSON.stringify({
+                                hit_count: newCount,
+                                last_hit: new Date().toISOString(),
+                                updated_at: new Date().toISOString()
+                            })
+                        });
+                        if (updateResponse.ok) {
+                            hitCountEl.textContent = newCount.toLocaleString();
+                        } else {
+                            hitCountEl.textContent = record.hit_count.toLocaleString();
+                            hitErrorEl.textContent = 'Could not update hit count.';
+                            hitErrorEl.style.display = 'block';
+                        }
+                    } else {
+                        // Create new record
+                        const createResponse = await fetch(`${apiUrl}/rest/v1/page_hits`, {
+                            method: 'POST',
+                            headers: headers,
+                            body: JSON.stringify({
+                                page_path: pagePath,
+                                hit_count: 1,
+                                first_hit: new Date().toISOString(),
+                                last_hit: new Date().toISOString(),
+                                last_ip_hash: 'browser-' + Math.random().toString(36).substring(7)
+                            })
+                        });
+                        if (createResponse.ok) {
+                            hitCountEl.textContent = '1';
+                        } else {
+                            hitCountEl.textContent = '---';
+                            hitErrorEl.textContent = 'Could not create hit record.';
+                            hitErrorEl.style.display = 'block';
+                        }
+                    }
+                } else {
+                    hitCountEl.textContent = '---';
+                    hitErrorEl.textContent = 'API error.';
+                    hitErrorEl.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Hit counter error:', error);
+                hitCountEl.textContent = '---';
+                hitErrorEl.textContent = 'Network or server error.';
+                hitErrorEl.style.display = 'block';
+            }
+        }
+        // Always show the latest count on page load
+        recordHit();
+    })();
+    </script>
+</body>
+</html>

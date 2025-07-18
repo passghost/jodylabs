@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scrolling Starfield with Player Ship</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: black;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="starfield"></canvas>
+    <script>
+        const canvas = document.getElementById('starfield');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const stars = [];
+        const numStars = 300; // Increased by 200%
+
+        for (let i = 0; i < numStars; i++) {
+            stars.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                speed: Math.random() * 12 + 4, // Increased speed by 200%
+                size: Math.random() * 2 + 1
+            });
+        }
+
+        const ship = new Image();
+        ship.src = 'Vibrex.png';
+        const shipWidth = 75; // Increased by 50%
+        const shipHeight = 75; // Increased by 50%
+        let shipX = canvas.width / 2 - shipWidth / 2;
+        let shipY = canvas.height / 2 - shipHeight / 2;
+        const shipSpeed = 15; // Increased by 200%
+        let playerHealth = 100;
+
+        const keys = {};
+        const lasers = [];
+        const laserSpeed = 10;
+        const laserCooldown = 40; // Slowed down fire rate by 200%
+        let laserCooldownCounter = 0;
+        const flames = [];
+        const enemies = [];
+        const enemyLasers = [];
+        const enemySpeed = 2;
+        const enemyFireRate = 100;
+        let enemyFireCounter = 0;
+
+        window.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+        });
+
+        window.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
+
+        function drawStars() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'white';
+            stars.forEach(star => {
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        function updateStars() {
+            stars.forEach(star => {
+                star.y += star.speed;
+                if (star.y > canvas.height) {
+                    star.y = 0;
+                    star.x = Math.random() * canvas.width;
+                }
+            });
+        }
+
+        function drawShip() {
+            ctx.drawImage(ship, shipX, shipY, shipWidth, shipHeight);
+        }
+
+        function updateShip() {
+            if (keys['w'] && shipY > 0) shipY -= shipSpeed;
+            if (keys['s'] && shipY < canvas.height - shipHeight) shipY += shipSpeed;
+            if (keys['a'] && shipX > 0) shipX -= shipSpeed;
+            if (keys['d'] && shipX < canvas.width - shipWidth) shipX += shipSpeed;
+        }
+
+        function drawLasers() {
+            ctx.fillStyle = 'blue';
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = 'green';
+            lasers.forEach(laser => {
+                ctx.fillRect(laser.x + 10, laser.y, 2, 10); // Adjusted spacing
+                ctx.fillRect(laser.x + shipWidth - 12, laser.y, 2, 10); // Adjusted spacing
+            });
+            ctx.shadowBlur = 0;
+        }
+
+        function updateLasers() {
+            lasers.forEach((laser, index) => {
+                laser.y -= laserSpeed;
+                if (laser.y < 0) {
+                    lasers.splice(index, 1);
+                }
+            });
+        }
+
+        function fireLasers() {
+            if (keys[' '] && laserCooldownCounter <= 0) {
+                lasers.push({ x: shipX, y: shipY });
+                laserCooldownCounter = laserCooldown;
+            }
+            if (laserCooldownCounter > 0) {
+                laserCooldownCounter--;
+            }
+        }
+
+        function drawFlames() {
+            flames.forEach(flame => {
+                const gradient = ctx.createRadialGradient(flame.x, flame.y, 0, flame.x, flame.y, flame.size);
+                gradient.addColorStop(0, 'purple');
+                gradient.addColorStop(1, 'blue');
+                ctx.fillStyle = gradient;
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = 'orange';
+                ctx.beginPath();
+                ctx.arc(flame.x, flame.y, flame.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.shadowBlur = 0;
+        }
+
+        function updateFlames() {
+            flames.forEach((flame, index) => {
+                flame.y += flame.speed;
+                flame.size -= 0.2; // Quicker life
+                if (flame.size <= 0) {
+                    flames.splice(index, 1);
+                }
+            });
+        }
+
+        function createFlame() {
+            if (keys['w']) {
+                flames.push({
+                    x: shipX + shipWidth / 2,
+                    y: shipY + shipHeight,
+                    size: Math.random() * 5 + 5,
+                    speed: Math.random() * 2 + 1
+                });
+            }
+        }
+
+        const enemyShip = new Image();
+        enemyShip.src = '/GalacticBrow/FatFly.png';
+
+        function drawEnemies() {
+            enemies.forEach(enemy => {
+                ctx.save();
+                ctx.translate(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2);
+                ctx.rotate(Math.PI); // Rotate 180 degrees
+                ctx.drawImage(enemyShip, -enemy.width / 2, -enemy.height / 2, enemy.width, enemy.height);
+                ctx.restore();
+            });
+        }
+
+        function updateEnemies() {
+            enemies.forEach(enemy => {
+                enemy.x += Math.cos(enemy.angle) * enemySpeed;
+                enemy.y += Math.sin(enemy.angle) * enemySpeed;
+                enemy.angle += 0.01; // Example geometric pattern
+            });
+        }
+
+        function drawEnemyLasers() {
+            ctx.fillStyle = 'red';
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = 'red';
+            enemyLasers.forEach(laser => {
+                ctx.fillRect(laser.x, laser.y, 2, 10);
+            });
+            ctx.shadowBlur = 0;
+        }
+
+        function updateEnemyLasers() {
+            enemyLasers.forEach((laser, index) => {
+                laser.y += laserSpeed; // Reverse direction
+                if (laser.y > canvas.height) {
+                    enemyLasers.splice(index, 1);
+                }
+            });
+        }
+
+        function fireEnemyLasers() {
+            if (enemyFireCounter <= 0) {
+                enemies.forEach(enemy => {
+                    enemyLasers.push({ x: enemy.x + enemy.width / 2, y: enemy.y + enemy.height });
+                });
+                enemyFireCounter = enemyFireRate;
+            }
+            if (enemyFireCounter > 0) {
+                enemyFireCounter--;
+            }
+        }
+
+        function spawnEnemies() {
+            for (let i = 0; i < 5; i++) {
+                enemies.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height / 2,
+                    width: 50,
+                    height: 50,
+                    angle: 0,
+                    health: 10
+                });
+            }
+        }
+
+        function drawHealthBar(x, y, width, height, health, maxHealth) {
+            ctx.fillStyle = 'red';
+            ctx.fillRect(x, y, width, height);
+            ctx.fillStyle = 'green';
+            ctx.fillRect(x, y, (health / maxHealth) * width, height);
+        }
+
+        function checkCollisions() {
+            lasers.forEach((laser, laserIndex) => {
+                enemies.forEach((enemy, enemyIndex) => {
+                    if (laser.x < enemy.x + enemy.width &&
+                        laser.x + 2 > enemy.x &&
+                        laser.y < enemy.y + enemy.height &&
+                        laser.y + 10 > enemy.y) {
+                        enemies.splice(enemyIndex, 1);
+                        lasers.splice(laserIndex, 1);
+                    }
+                });
+            });
+
+            enemyLasers.forEach((laser, laserIndex) => {
+                if (laser.x < shipX + shipWidth &&
+                    laser.x + 2 > shipX &&
+                    laser.y < shipY + shipHeight &&
+                    laser.y + 10 > shipY) {
+                    playerHealth -= 2;
+                    enemyLasers.splice(laserIndex, 1);
+                }
+            });
+        }
+
+                function animate() {
+            drawStars();
+            updateStars();
+            updateShip();
+            fireLasers();
+            updateLasers();
+            drawLasers();
+            createFlame();
+            updateFlames();
+            drawFlames();
+            drawShip();
+            updateEnemies();
+            drawEnemies();
+            fireEnemyLasers();
+            updateEnemyLasers();
+            drawEnemyLasers();
+            checkCollisions();
+            drawHealthBar(10, 10, 200, 20, playerHealth, 100);
+            requestAnimationFrame(animate);
+        }
+
+        ship.onload = () => {
+            spawnEnemies();
+            animate();
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calfagotchi</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="../favicon.ico" type="image/x-icon">
+</head>
+<body>
+    <div class="calfagotchi-container">
+        <div class="support-button">
+            <a href="https://www.paypal.com/donate/?business=TE5MW5QV6RRCS&amp;no_recurring=1&amp;item_name=Donations+encouraged%2C+but+of+course+not+expected.+Thanks+for+visiting!&amp;currency_code=USD" target="_blank">Support Me</a>
+        </div>
+        <div class="calfagotchi-shell">
+            <div class="screen">
+                <div class="status-bar">
+                    <div class="stat">
+                        <span class="stat-label">❤️</span>
+                        <div class="stat-bar">
+                            <div class="stat-fill" id="health-bar" style="width: 43.2949%;"></div>
+                        </div>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">🍔</span>
+                        <div class="stat-bar">
+                            <div class="stat-fill critical" id="hunger-bar" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">😊</span>
+                        <div class="stat-bar">
+                            <div class="stat-fill low" id="happiness-bar" style="width: 32.9784%;"></div>
+                        </div>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">🌡️</span>
+                        <div class="stat-bar">
+                            <div class="stat-fill" id="temp-bar" style="width: 70%;"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="pet-area">
+                    <div class="pet-sprite" id="pet-sprite" style="animation: 2s ease-in-out infinite idle; transform: translate(-50%, -50%) scaleX(1); left: 39.9576%; top: 69.7795%;"></div>
+                    <div class="food-item" id="food-item"></div>
+                    <div class="toy-item" id="toy-item"></div>
+                    <div class="poop-item" id="poop-item" style="left: 32.5724%; top: 40.4459%; display: block; animation: 0.5s forwards poop-appear;"></div>
+                    <div class="pee-puddle" id="pee-puddle"></div>
+                    <div class="mood-indicator" id="mood-indicator">😊</div>
+                    <div class="sleep-bubble" id="sleep-bubble">💤</div>
+                </div>
+                
+                <div class="age-display">
+                    Age: <span id="age">8</span> days | Weight: <span id="weight">5</span>kg
+                </div>
+                
+                <div id="menu-screen" class="menu-screen" style="display: none;">
+                    <h4>Menu</h4>
+                    <div class="menu-buttons">
+                        <button class="menu-item selected" id="feed-menu-btn">
+                            <span class="menu-icon"><img src="../Images/emrald.png" alt="Feed" style="height: 1.2em;"></span>
+                            <span class="menu-label">Feed</span>
+                        </button>
+                        <button class="menu-item" id="play-menu-btn">
+                            <span class="menu-icon"><img src="../Images/gem2.png" alt="Play" style="height: 1.2em;"></span>
+                            <span class="menu-label">Play</span>
+                        </button>
+                        <button class="menu-item" id="clean-menu-btn">
+                            <span class="menu-icon"><img src="../Images/gem3.png" alt="Clean" style="height: 1.2em;"></span>
+                            <span class="menu-label">Clean</span>
+                        </button>
+                        <button class="menu-item" id="medicine-menu-btn">
+                            <span class="menu-icon"><img src="../Images/gem4.png" alt="Medicine" style="height: 1.2em;"></span>
+                            <span class="menu-label">Medicine</span>
+                        </button>
+                        <button class="menu-item" id="discipline-menu-btn">
+                            <span class="menu-icon"><img src="../Images/emrald2.png" alt="Discipline" style="height: 1.2em;"></span>
+                            <span class="menu-label">Discipline</span>
+                        </button>
+                        <button class="menu-item" id="light-menu-btn">
+                            <span class="menu-icon"><img src="../Images/gem5.png" alt="Light" style="height: 1.2em;"></span>
+                            <span class="menu-label">Light</span>
+                        </button>
+                        <button class="menu-item" id="status-menu-btn">
+                            <span class="menu-icon"><img src="../Images/emrald3.png" alt="Status" style="height: 1.2em;"></span>
+                            <span class="menu-label">Status</span>
+                        </button>
+                        <button class="menu-item" id="game-menu-btn">
+                            <span class="menu-icon"><img src="../Images/gem4.png" alt="Mini-Game" style="height: 1.2em;"></span>
+                            <span class="menu-label">Mini-Game</span>
+                        </button>
+                        <button class="menu-item" id="screen-color-btn">
+                            <span class="menu-icon"><img src="../Images/gem2.png" alt="Screen Color" style="height: 1.2em;"></span>
+                            <span class="menu-label">Screen Color</span>
+                        </button>
+                        <button class="menu-item" id="skin-menu-btn">
+                            <span class="menu-icon"><img src="../Images/emrald.png" alt="Case Color" style="height: 1.2em;"></span>
+                            <span class="menu-label">Case Color</span>
+                        </button>
+                        <button class="menu-item" id="god-menu-btn">
+                            <span class="menu-icon"><img src="../Images/gem5.png" alt="God Power" style="height: 1.2em;"></span>
+                            <span class="menu-label">God Power</span>
+                        </button>
+                        <button class="menu-item" id="jodylabs-menu-btn">
+                            <span class="menu-icon"><img src="../Images/emrald3.png" alt="JodyLabs" style="height: 1.2em;"></span>
+                            <span class="menu-label">JodyLabs</span>
+                        </button>
+                        <button class="menu-item" id="support-menu-btn">
+                            <span class="menu-icon"><img src="../Images/gem3.png" alt="Support Me" style="height: 1.2em;"></span>
+                            <span class="menu-label">Support Me</span>
+                        </button>
+                    </div>
+                    <div class="menu-navigation">
+                        <div id="menu-selector">▶</div>
+                    </div>
+                </div>
+                
+                <div id="status-screen" class="status-screen" style="display: none;">
+                    <h4>Status Details</h4>
+                    <div class="status-details">
+                        <div>Evolution: <span id="evolution-level">Baby</span></div>
+                        <div>Discipline: <span id="discipline-level">0</span>/100</div>
+                        <div>Energy: <span id="energy-level">100</span>%</div>
+                        <div>Lifespan: <span id="max-age">30</span> days</div>
+                    </div>
+                </div>
+                
+                <div id="mini-game" class="mini-game" style="display: none;">
+                    <h3>Memory Game</h3>
+                    <div class="game-grid" id="game-grid"></div>
+                    <button id="close-game" class="close-button">Close</button>
+                </div>
+            </div>
+            
+            <div class="buttons">
+                <button class="game-button" id="feed-btn">
+                    <span class="button-icon"><img src="../Images/emrald.png" alt="Up" style="height: 1.2em; vertical-align: middle;"></span>
+                    <span class="button-label">UP</span>
+                </button>
+                <button class="game-button" id="play-btn">
+                    <span class="button-icon"><img src="../Images/gem2.png" alt="Select" style="height: 1.2em; vertical-align: middle;"></span>
+                    <span class="button-label">SELECT</span>
+                </button>
+                <button class="game-button" id="clean-btn">
+                    <span class="button-icon"><img src="../Images/gem3.png" alt="Down" style="height: 1.2em; vertical-align: middle;"></span>
+                    <span class="button-label">DOWN</span>
+                </button>
+            </div>
+        </div>
+        
+        <div class="game-over" id="game-over" style="display: none;">
+            <h2><img src="../Images/gem4.png" alt="Game Over" style="height: 2em; vertical-align: middle;"> Game Over</h2>
+            <div style="text-align:center; margin: 1em 0;"><img src="Calf1.png" alt="Dead Calf" style="height: 4em;"></div>
+            <p>Your pet has died...</p>
+            <button id="restart-btn">Start New Pet</button>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+    <script>
+    // On page load, start with a random case graphic using the same logic as the menu color swap
+    window.addEventListener('DOMContentLoaded', function() {
+        if (typeof swapCaseColor === 'function') {
+            swapCaseColor(true); // true: randomize on load
+        }
+    });
+    </script>
+
+
+<div id="buffer-extension-hover-container" style="font-family: &quot;Roboto&quot;, sans-serif; display: none; position: absolute; z-index: 8675309; cursor: pointer; width: 67px;"><div id="buffer-extension-button-hover-container" style="position: relative; z-index: 8675309; width: 67px; height: 24px;"><span id="buffer-extension-hover-button" style="width: 67px; height: 24px; background-image: url(&quot;moz-extension://19cdb6c6-1ddd-4b87-a9b1-48004a74cf19/buffer-hover-button.svg&quot;); background-size: 67px 24px; cursor: pointer; opacity: 0.9; display: block; position: relative; z-index: 8675309;"></span><div id="buffer-extension-button-menu" style="position: relative; z-index: 8675308; width: 140px; height: 94px; display: none; bottom: 94px; right: 75px;"><div style="font-size: 14px; width: 140px; display: block; cursor: pointer; padding: 0px 4px; color: rgb(61, 61, 61); line-height: 28px; background-color: rgba(255, 255, 255, 0.8); border-top-left-radius: 4px; border-top-right-radius: 4px; height: 4px;"></div><div id="buffer-extension-create" class="buffer-extension-hover-button" style="font-size: 14px; width: 140px; height: 28px; display: block; cursor: pointer; padding: 0px 4px; color: rgb(61, 61, 61); line-height: 28px;"><span>Create Post</span></div><div id="buffer-extension-save" class="buffer-extension-hover-button" style="font-size: 14px; width: 140px; height: 28px; display: block; cursor: pointer; padding: 0px 4px; color: rgb(61, 61, 61); line-height: 28px;"><span>Save Idea</span></div><div style="font-size: 14px; width: 140px; display: block; cursor: pointer; padding: 0px 4px; color: rgb(61, 61, 61); line-height: 28px; background-color: rgba(255, 255, 255, 0.8); border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; height: 4px;"></div><style>.buffer-extension-hover-button { background-color:rgba(255, 255, 255, 0.8); } .buffer-extension-hover-button span { display:block; padding: 0 4px; border-radius: 4px 4px 4px 4px; -webkit-border-radius: 4px 4px 4px 4px; -moz-border-radius: 4px 4px 4px 4px; } .buffer-extension-hover-button:hover span { background-color:#F5F5F5; }</style></div></div></div></body></html>

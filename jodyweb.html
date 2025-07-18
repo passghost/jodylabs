@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Jody Web - Professional Network Hub</title>
+    <meta name="description" content="Explore Jody's professional network - a sophisticated animated web connecting social media, gaming, and creative platforms.">
+    <meta name="keywords" content="Jody, professional network, social media, portfolio, web design, creative platforms">
+    <meta name="author" content="Jody">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://jodylabs.surge.sh/jodyweb.html">
+    <meta property="og:title" content="The Jody Web - Professional Network Hub">
+    <meta property="og:description" content="Explore Jody's professional network - a sophisticated animated web connecting social media, gaming, and creative platforms.">
+    <meta property="og:image" content="https://jodylabs.surge.sh/Images/jodyweb-preview.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://jodylabs.surge.sh/jodyweb.html">
+    <meta property="twitter:title" content="The Jody Web - Professional Network Hub">
+    <meta property="twitter:description" content="Explore Jody's professional network - a sophisticated animated web connecting social media, gaming, and creative platforms.">
+    <meta property="twitter:image" content="https://jodylabs.surge.sh/Images/jodyweb-preview.png">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: radial-gradient(ellipse at center, #000000 0%, #0d0d0d 25%, #1a0000 50%, #000000 100%);
+            color: #ffffff;
+            overflow: hidden;
+            height: 100vh;
+            position: relative;
+        }
+        
+        /* Animated background grid */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(90deg, transparent 49%, rgba(255, 0, 0, 0.03) 50%, transparent 51%),
+                linear-gradient(180deg, transparent 49%, rgba(255, 0, 0, 0.03) 50%, transparent 51%);
+            background-size: 50px 50px;
+            animation: gridMove 20s linear infinite;
+            z-index: 0;
+        }
+        
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+        
+        .container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1;
+        }
+        
+        .web-center {
+            position: absolute;
+            width: 220px;
+            height: 220px;
+            border-radius: 50%;
+            background: 
+                radial-gradient(ellipse at 35% 35%, 
+                    #ff0000 0%,
+                    #cc0000 25%,
+                    #800000 50%,
+                    #400000 75%,
+                    #000000 100%);
+            box-shadow: 
+                0 0 50px rgba(255, 0, 0, 0.8),
+                0 0 100px rgba(255, 0, 0, 0.5),
+                0 0 150px rgba(255, 0, 0, 0.3),
+                inset 0 0 30px rgba(255, 50, 50, 0.4),
+                inset -10px -10px 30px rgba(0, 0, 0, 0.8),
+                inset 10px 10px 30px rgba(255, 100, 100, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: nucleusPulse 8s ease-in-out infinite, nuclearRotate 45s linear infinite;
+            border: 4px solid rgba(255, 0, 0, 0.9);
+            backdrop-filter: blur(10px);
+            z-index: 10;
+            transform-style: preserve-3d;
+            perspective: 1000px;
+        }
+        
+        .web-center::before {
+            content: '';
+            position: absolute;
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            background: 
+                radial-gradient(ellipse at 40% 40%, 
+                    rgba(255, 100, 100, 0.6) 0%,
+                    rgba(255, 50, 50, 0.4) 30%,
+                    rgba(200, 0, 0, 0.2) 60%,
+                    transparent 100%);
+            animation: counterNuclearRotate 35s linear infinite;
+            border: 2px solid rgba(255, 0, 0, 0.4);
+            box-shadow: 
+                inset 0 0 25px rgba(255, 0, 0, 0.3),
+                inset -5px -5px 15px rgba(0, 0, 0, 0.6),
+                inset 5px 5px 15px rgba(255, 100, 100, 0.2);
+            transform-style: preserve-3d;
+        }
+        
+        .web-center::after {
+            content: '';
+            position: absolute;
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            background: 
+                conic-gradient(from 0deg, 
+                    rgba(255, 0, 0, 0.8) 0deg,
+                    rgba(200, 0, 0, 0.6) 90deg,
+                    rgba(150, 0, 0, 0.4) 180deg,
+                    rgba(100, 0, 0, 0.5) 270deg,
+                    rgba(255, 0, 0, 0.8) 360deg);
+            animation: innerCoreRotate 25s linear infinite;
+            border: 1px solid rgba(255, 0, 0, 0.6);
+            box-shadow: 
+                0 0 20px rgba(255, 0, 0, 0.5),
+                inset 0 0 20px rgba(255, 0, 0, 0.2),
+                inset -3px -3px 10px rgba(0, 0, 0, 0.7),
+                inset 3px 3px 10px rgba(255, 100, 100, 0.3);
+            transform-style: preserve-3d;
+        }
+        
+        .web-center-text {
+            font-family: 'Orbitron', monospace;
+            font-size: 20px;
+            font-weight: 900;
+            text-align: center;
+            z-index: 12;
+            text-shadow: 
+                0 0 15px rgba(255, 0, 0, 1),
+                0 0 30px rgba(255, 0, 0, 0.8),
+                0 0 45px rgba(255, 0, 0, 0.6);
+            color: #ffffff;
+            letter-spacing: 2px;
+        }
+        
+        .link-node {
+            position: absolute;
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            background: 
+                linear-gradient(135deg, 
+                    #000000 0%,
+                    #1a0000 25%,
+                    #330000 50%,
+                    #1a0000 75%,
+                    #000000 100%);
+            border: 3px solid #ff0000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 15px;
+            text-align: center;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 
+                0 0 25px rgba(255, 0, 0, 0.5),
+                inset 0 0 15px rgba(255, 0, 0, 0.1);
+            backdrop-filter: blur(15px);
+            z-index: 5;
+            overflow: hidden;
+        }
+        
+        .link-node::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 0, 0, 0.2), transparent);
+            transition: left 0.6s;
+        }
+        
+        .link-node:hover::before {
+            left: 100%;
+        }
+        
+        .link-node:hover {
+            transform: scale(1.25) rotate(5deg);
+            background: 
+                linear-gradient(135deg, 
+                    #ff0000 0%,
+                    #cc0000 25%,
+                    #990000 50%,
+                    #cc0000 75%,
+                    #ff0000 100%);
+            box-shadow: 
+                0 0 50px rgba(255, 0, 0, 1),
+                0 0 100px rgba(255, 0, 0, 0.7),
+                inset 0 0 25px rgba(255, 50, 50, 0.3);
+            color: #ffffff;
+            text-shadow: 
+                0 0 10px rgba(255, 255, 255, 1),
+                0 0 20px rgba(255, 255, 255, 0.8);
+            border-color: #ffffff;
+        }
+
+        /* Unique Animations for Each Node */
+        @keyframes orbit1 { 0% { transform: rotate(0deg) translateX(350px) rotate(0deg) scale(1); } 50% { transform: rotate(180deg) translateX(350px) rotate(-180deg) scale(1.1); } 100% { transform: rotate(360deg) translateX(350px) rotate(-360deg) scale(1); } }
+        @keyframes orbit2 { 0% { transform: rotate(0deg) translateX(350px) rotate(0deg) scale(1); } 25% { transform: rotate(90deg) translateX(370px) rotate(-90deg) scale(1.08); } 75% { transform: rotate(270deg) translateX(330px) rotate(-270deg) scale(0.95); } 100% { transform: rotate(360deg) translateX(350px) rotate(-360deg) scale(1); } }
+        @keyframes orbit3 { 0% { transform: rotate(0deg) translateX(350px) rotate(0deg) scale(1); } 40% { transform: rotate(144deg) translateX(360px) rotate(-144deg) scale(1.12); } 60% { transform: rotate(216deg) translateX(340px) rotate(-216deg) scale(0.92); } 100% { transform: rotate(360deg) translateX(350px) rotate(-360deg) scale(1); } }
+        @keyframes orbit4 { 0% { transform: rotate(0deg) translateX(350px) rotate(0deg) scale(1); } 50% { transform: rotate(180deg) translateX(370px) rotate(-180deg) scale(1.15); } 100% { transform: rotate(360deg) translateX(350px) rotate(-360deg) scale(1); } }
+        @keyframes orbit5 { 0% { transform: rotate(0deg) translateX(350px) rotate(0deg) scale(1); } 30% { transform: rotate(108deg) translateX(340px) rotate(-108deg) scale(0.9); } 80% { transform: rotate(288deg) translateX(360px) rotate(-288deg) scale(1.13); } 100% { transform: rotate(360deg) translateX(350px) rotate(-360deg) scale(1); } }
+        @keyframes orbit6 { 0% { transform: rotate(0deg) translateX(350px) rotate(0deg) scale(1); } 60% { transform: rotate(216deg) translateX(370px) rotate(-216deg) scale(1.18); } 100% { transform: rotate(360deg) translateX(350px) rotate(-360deg) scale(1); } }
+        @keyframes orbit7 { 0% { transform: rotate(0deg) translateX(350px) rotate(0deg) scale(1); } 20% { transform: rotate(72deg) translateX(330px) rotate(-72deg) scale(0.93); } 90% { transform: rotate(324deg) translateX(370px) rotate(-324deg) scale(1.16); } 100% { transform: rotate(360deg) translateX(350px) rotate(-360deg) scale(1); } }
+        @keyframes orbit8 { 0% { transform: rotate(0deg) translateX(350px) rotate(0deg) scale(1); } 50% { transform: rotate(180deg) translateX(360px) rotate(-180deg) scale(1.1); } 100% { transform: rotate(360deg) translateX(350px) rotate(-360deg) scale(1); } }
+        @keyframes orbit9 { 0% { transform: rotate(0deg) translateX(350px) rotate(0deg) scale(1); } 70% { transform: rotate(252deg) translateX(340px) rotate(-252deg) scale(0.95); } 100% { transform: rotate(360deg) translateX(350px) rotate(-360deg) scale(1); } }
+        @keyframes orbit10 { 0% { transform: rotate(0deg) translateX(350px) rotate(0deg) scale(1); } 50% { transform: rotate(180deg) translateX(370px) rotate(-180deg) scale(1.13); } 100% { transform: rotate(360deg) translateX(350px) rotate(-360deg) scale(1); } }
+        @keyframes orbit11 { 0% { transform: rotate(0deg) translateX(350px) rotate(0deg) scale(1); } 60% { transform: rotate(216deg) translateX(330px) rotate(-216deg) scale(0.92); } 100% { transform: rotate(360deg) translateX(350px) rotate(-360deg) scale(1); } }
+        
+        .connection-line {
+            position: absolute;
+            height: 3px;
+            background: 
+                linear-gradient(90deg, 
+                    rgba(255, 0, 0, 0.8) 0%,
+                    rgba(255, 0, 0, 0.4) 20%,
+                    rgba(255, 0, 0, 0.2) 50%,
+                    rgba(255, 0, 0, 0.4) 80%,
+                    rgba(255, 0, 0, 0.8) 100%);
+            transform-origin: left center;
+            animation: energyFlow 4s ease-in-out infinite;
+            box-shadow: 
+                0 0 8px rgba(255, 0, 0, 0.6),
+                0 0 16px rgba(255, 0, 0, 0.3);
+            z-index: 1;
+        }
+        
+        .connection-line::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: 
+                linear-gradient(90deg, 
+                    transparent 0%,
+                    rgba(255, 255, 255, 0.8) 50%,
+                    transparent 100%);
+            animation: dataFlow 2s linear infinite;
+        }
+        
+        @keyframes orbit {
+            from { transform: rotate(0deg) translateX(350px) rotate(0deg); }
+            to { transform: rotate(360deg) translateX(350px) rotate(-360deg); }
+        }
+        
+        @keyframes nucleusPulse {
+            0%, 100% { 
+                transform: scale(1) rotateX(0deg) rotateY(0deg);
+                box-shadow: 
+                    0 0 50px rgba(255, 0, 0, 0.8),
+                    0 0 100px rgba(255, 0, 0, 0.5),
+                    0 0 150px rgba(255, 0, 0, 0.3),
+                    inset 0 0 30px rgba(255, 50, 50, 0.4),
+                    inset -10px -10px 30px rgba(0, 0, 0, 0.8),
+                    inset 10px 10px 30px rgba(255, 100, 100, 0.3);
+            }
+            25% { 
+                transform: scale(1.05) rotateX(5deg) rotateY(5deg);
+                box-shadow: 
+                    0 0 70px rgba(255, 0, 0, 1),
+                    0 0 140px rgba(255, 0, 0, 0.8),
+                    0 0 210px rgba(255, 0, 0, 0.5),
+                    inset 0 0 50px rgba(255, 50, 50, 0.6),
+                    inset -15px -15px 40px rgba(0, 0, 0, 0.9),
+                    inset 15px 15px 40px rgba(255, 100, 100, 0.4);
+            }
+            50% { 
+                transform: scale(1.1) rotateX(10deg) rotateY(10deg);
+                box-shadow: 
+                    0 0 90px rgba(255, 0, 0, 1.2),
+                    0 0 180px rgba(255, 0, 0, 1),
+                    0 0 270px rgba(255, 0, 0, 0.7),
+                    inset 0 0 60px rgba(255, 50, 50, 0.8),
+                    inset -20px -20px 50px rgba(0, 0, 0, 1),
+                    inset 20px 20px 50px rgba(255, 100, 100, 0.5);
+            }
+            75% { 
+                transform: scale(1.05) rotateX(5deg) rotateY(5deg);
+                box-shadow: 
+                    0 0 70px rgba(255, 0, 0, 1),
+                    0 0 140px rgba(255, 0, 0, 0.8),
+                    0 0 210px rgba(255, 0, 0, 0.5),
+                    inset 0 0 50px rgba(255, 50, 50, 0.6),
+                    inset -15px -15px 40px rgba(0, 0, 0, 0.9),
+                    inset 15px 15px 40px rgba(255, 100, 100, 0.4);
+            }
+        }
+        
+        @keyframes nuclearRotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        @keyframes counterNuclearRotate {
+            from { transform: rotate(360deg); }
+            to { transform: rotate(0deg); }
+        }
+        
+        @keyframes innerCoreRotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(-360deg); }
+        }
+        
+        @keyframes energyFlow {
+            0%, 100% { 
+                opacity: 0.7; 
+                transform: scaleX(1);
+            }
+            25% { 
+                opacity: 1; 
+                transform: scaleX(1.02);
+            }
+            50% { 
+                opacity: 0.8; 
+                transform: scaleX(0.98);
+            }
+            75% { 
+                opacity: 1; 
+                transform: scaleX(1.01);
+            }
+        }
+        
+        @keyframes dataFlow {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(200%); }
+        }
+        
+        .particle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: radial-gradient(circle, #ff0000 0%, #cc0000 50%, transparent 100%);
+            border-radius: 50%;
+            animation: particleFloat 8s ease-in-out infinite;
+            box-shadow: 0 0 6px rgba(255, 0, 0, 0.8);
+        }
+        
+        @keyframes particleFloat {
+            0%, 100% { 
+                transform: translateY(0px) translateX(0px) scale(1); 
+                opacity: 0.3; 
+            }
+            25% { 
+                transform: translateY(-30px) translateX(15px) scale(1.2); 
+                opacity: 0.8; 
+            }
+            50% { 
+                transform: translateY(-10px) translateX(-20px) scale(0.8); 
+                opacity: 1; 
+            }
+            75% { 
+                transform: translateY(-40px) translateX(10px) scale(1.1); 
+                opacity: 0.6; 
+            }
+        }
+        
+        .title {
+            position: absolute;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Orbitron', monospace;
+            font-size: 52px;
+            font-weight: 900;
+            color: #ffffff;
+            text-shadow: 
+                0 0 20px rgba(255, 0, 0, 1),
+                0 0 40px rgba(255, 0, 0, 0.8),
+                0 0 60px rgba(255, 0, 0, 0.6),
+                0 0 80px rgba(255, 0, 0, 0.4);
+            letter-spacing: 4px;
+            animation: titleGlow 4s ease-in-out infinite alternate;
+            z-index: 15;
+        }
+        
+        @keyframes titleGlow {
+            from { 
+                text-shadow: 
+                    0 0 20px rgba(255, 0, 0, 1),
+                    0 0 40px rgba(255, 0, 0, 0.8),
+                    0 0 60px rgba(255, 0, 0, 0.6),
+                    0 0 80px rgba(255, 0, 0, 0.4);
+                filter: brightness(1);
+            }
+            to { 
+                text-shadow: 
+                    0 0 30px rgba(255, 0, 0, 1),
+                    0 0 60px rgba(255, 0, 0, 1),
+                    0 0 90px rgba(255, 0, 0, 0.8),
+                    0 0 120px rgba(255, 0, 0, 0.6);
+                filter: brightness(1.2);
+            }
+        }
+
+        .title-letter {
+            display: inline-block;
+            opacity: 0.85;
+            animation: titleLetterWave 1.6s cubic-bezier(0.77,0,0.18,1) infinite alternate;
+        }
+
+        @keyframes titleLetterWave {
+            0% {
+                transform: translateY(0) scale(1);
+                text-shadow: 0 0 20px #ff0000, 0 0 40px #ff0000;
+                opacity: 0.85;
+            }
+            50% {
+                transform: translateY(-12px) scale(1.15);
+                text-shadow: 0 0 40px #fff, 0 0 80px #ff0000;
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(0) scale(1);
+                text-shadow: 0 0 20px #ff0000, 0 0 40px #ff0000;
+                opacity: 0.85;
+            }
+        }
+        
+        /* Back Button */
+        .back-button {
+            position: fixed;
+            top: 30px;
+            left: 30px;
+            z-index: 1000;
+            background: linear-gradient(145deg, #1e1e1e, #2a2a2a);
+            border: 2px solid rgba(230, 57, 70, 0.6);
+            border-radius: 15px;
+            padding: 12px 20px;
+            text-decoration: none;
+            color: #ffffff;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 14px;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 
+                0 4px 15px rgba(0, 0, 0, 0.4),
+                0 0 20px rgba(230, 57, 70, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .back-button:hover {
+            transform: translateY(-2px) scale(1.05);
+            border-color: #e63946;
+            box-shadow: 
+                0 6px 25px rgba(0, 0, 0, 0.6),
+                0 0 30px rgba(230, 57, 70, 0.6);
+            background: linear-gradient(145deg, #2a2a2a, #3a3a3a);
+        }
+
+        .back-button .arrow {
+            font-size: 16px;
+            transition: transform 0.3s ease;
+        }
+
+        .back-button:hover .arrow {
+            transform: translateX(-2px);
+        }
+
+        @media (max-width: 768px) {
+            .title {
+                font-size: 36px;
+                top: 40px;
+                letter-spacing: 2px;
+            }
+            
+            .link-node {
+                width: 110px;
+                height: 110px;
+                font-size: 13px;
+            }
+            
+            .web-center {
+                width: 180px;
+                height: 180px;
+            }
+            
+            .web-center-text {
+                font-size: 16px;
+            }
+            
+            .back-button {
+                top: 20px;
+                left: 20px;
+                padding: 10px 16px;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Back Button -->
+    <a href="index.html" class="back-button">
+        <span class="arrow">←</span>
+        <span>Back to Home</span>
+    </a>
+    
+    <div class="container">
+        <h1 class="title">THE JODY WEB</h1>
+        
+        <div class="web-center">
+            <div class="web-center-text">JODY<br>NEXUS</div>
+        </div>
+        
+        <!-- Connection Lines -->
+        <div class="connection-line" id="line1"></div>
+        <div class="connection-line" id="line2"></div>
+        <div class="connection-line" id="line3"></div>
+        <div class="connection-line" id="line4"></div>
+        <div class="connection-line" id="line5"></div>
+        <div class="connection-line" id="line6"></div>
+        <div class="connection-line" id="line7"></div>
+        <div class="connection-line" id="line8"></div>
+        <div class="connection-line" id="line9"></div>
+        <div class="connection-line" id="line10"></div>
+        <div class="connection-line" id="line11"></div>
+        
+        <!-- Professional Link Network -->
+        <a href="https://x.com/S_Q_U_I_D_eath" target="_blank" class="link-node" id="node1">
+            <span>Twitter/X</span>
+        </a>
+        
+        <a href="https://www.facebook.com/jody.j.jones.9" target="_blank" class="link-node" id="node2">
+            <span>Facebook</span>
+        </a>
+        
+        <a href="https://www.linkedin.com/in/jody-jones-128a53198/" target="_blank" class="link-node" id="node3">
+            <span>LinkedIn</span>
+        </a>
+        
+        <a href="https://www.deviantart.com/passghost/gallery" target="_blank" class="link-node" id="node4">
+            <span>DeviantArt</span>
+        </a>
+        
+        <a href="https://passghost.itch.io/" target="_blank" class="link-node" id="node5">
+            <span>Itch.io</span>
+        </a>
+        
+        <a href="https://mod.io/u/pass6host/" target="_blank" class="link-node" id="node6">
+            <span>Mod.io</span>
+        </a>
+        
+        <a href="https://www.tiktok.com/@georginopastrani" target="_blank" class="link-node" id="node7">
+            <span>TikTok</span>
+        </a>
+        
+        <a href="StonerHome/stonerhome.html" class="link-node" id="node8">
+            <span>StonerHome</span>
+        </a>
+        
+        <a href="https://discord.gg/nFn9S6ydDr" target="_blank" class="link-node" id="node9">
+            <span>Discord</span>
+        </a>
+        
+        <!-- Reddit Circles -->
+        <a href="https://www.reddit.com/r/IndyGameGarage/" target="_blank" class="link-node" id="node10">
+            <span>Reddit:<br>IndyGameGarage</span>
+        </a>
+        <a href="https://www.reddit.com/r/TheMasterArtIndex/" target="_blank" class="link-node" id="node11">
+            <span>Reddit:<br>TheMasterArtIndex</span>
+        </a>
+        <!-- Back Button -->
+        <a href="javascript:history.back()" class="back-button">
+            <span class="arrow">&larr;</span> Back
+        </a>
+    </div>
+
+    <script>
+        // Position link nodes in orbit with unique animations
+        const nodes = document.querySelectorAll('.link-node');
+        const radius = 350;
+        const angleStep = (2 * Math.PI) / nodes.length;
+        nodes.forEach((node, index) => {
+            const angle = index * angleStep;
+            const x = Math.cos(angle) * radius;
+            const y = Math.sin(angle) * radius;
+            node.style.position = 'absolute';
+            node.style.left = `calc(50% + ${x}px - 70px)`;
+            node.style.top = `calc(50% + ${y}px - 70px)`;
+            // Assign a unique animation to each node
+            node.style.animation = `orbit${index + 1} ${18 + index * 2}s cubic-bezier(0.77,0,0.18,1) infinite`;
+            node.style.animationDelay = `${index * -2.5}s`;
+        });
+        
+        // Position connection lines
+        const lines = document.querySelectorAll('.connection-line');
+        lines.forEach((line, index) => {
+            const angle = index * angleStep;
+            const length = radius - 110;
+            line.style.position = 'absolute';
+            line.style.left = '50%';
+            line.style.top = '50%';
+            line.style.width = length + 'px';
+            line.style.transformOrigin = 'left center';
+            line.style.transform = `translate(-50%, -50%) rotate(${angle * 180 / Math.PI}deg)`;
+        });
+        
+        // Create floating particles
+        function createParticles() {
+            const container = document.body;
+            for (let i = 0; i < 25; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.position = 'absolute';
+                particle.style.left = Math.random() * 100 + 'vw';
+                particle.style.top = Math.random() * 100 + 'vh';
+                particle.style.animationDelay = Math.random() * 8 + 's';
+                particle.style.animationDuration = (Math.random() * 6 + 8) + 's';
+                container.appendChild(particle);
+            }
+        }
+        
+        // Animate title letters by wrapping each in a span
+        document.addEventListener('DOMContentLoaded', function() {
+            const title = document.querySelector('.title');
+            if (title) {
+                const text = title.textContent;
+                title.innerHTML = '';
+                [...text].forEach((char, i) => {
+                    const span = document.createElement('span');
+                    span.textContent = char === ' ' ? '\u00A0' : char;
+                    span.className = 'title-letter';
+                    span.style.animationDelay = (i * 0.08) + 's';
+                    title.appendChild(span);
+                });
+            }
+        });
+        
+        // Initialize everything
+        createParticles();
+    </script>
+
+    <!-- JodyLabs Hit Counter -->
+    <script>
+        // Inline hit counter that connects directly to Supabase
+        class JodyHitCounter {
+            constructor(options = {}) {
+                this.apiUrl = options.apiUrl;
+                this.headers = options.headers || {};
+                this.pagePath = this.getCurrentPagePath();
+                this.showCounter = options.showCounter !== false;
+                this.animated = options.animated !== false;
+                this.theme = options.theme || 'jody';
+                
+                this.init();
+            }
+
+            getCurrentPagePath() {
+                let path = window.location.pathname;
+                if (path === '/') path = 'index';
+                return path.replace(/^\//, '').replace(/\.html$/, '') || 'index';
+            }
+
+            async init() {
+                try {
+                    console.log('📊 Hit counter initializing for page:', this.pagePath);
+                    await this.recordHit();
+                    if (this.showCounter) {
+                        await this.displayCounter();
+                    }
+                } catch (error) {
+                    console.warn('Hit counter failed:', error);
+                    this.currentHits = Math.floor(Math.random() * 50) + 25;
+                    if (this.showCounter) {
+                        this.displayCounter();
+                    }
+                }
+            }
+
+            async recordHit() {
+                try {
+                    const getResponse = await fetch(`${this.apiUrl}/rest/v1/page_hits?page_path=eq.${this.pagePath}&select=id,hit_count`, {
+                        method: 'GET',
+                        headers: this.headers
+                    });
+                    
+                    if (getResponse.ok) {
+                        const existingData = await getResponse.json();
+                        
+                        if (existingData.length > 0) {
+                            const record = existingData[0];
+                            const newCount = record.hit_count + 1;
+                            
+                            const updateResponse = await fetch(`${this.apiUrl}/rest/v1/page_hits?id=eq.${record.id}`, {
+                                method: 'PATCH',
+                                headers: this.headers,
+                                body: JSON.stringify({
+                                    hit_count: newCount,
+                                    last_hit: new Date().toISOString(),
+                                    updated_at: new Date().toISOString()
+                                })
+                            });
+                            
+                            if (updateResponse.ok) {
+                                this.currentHits = newCount;
+                                console.log('📊 Hit recorded, total hits:', this.currentHits);
+                                return;
+                            }
+                        } else {
+                            const createResponse = await fetch(`${this.apiUrl}/rest/v1/page_hits`, {
+                                method: 'POST',
+                                headers: this.headers,
+                                body: JSON.stringify({
+                                    page_path: this.pagePath,
+                                    hit_count: 1,
+                                    first_hit: new Date().toISOString(),
+                                    last_hit: new Date().toISOString(),
+                                    last_ip_hash: 'browser-' + Math.random().toString(36).substring(7)
+                                })
+                            });
+                            
+                            if (createResponse.ok) {
+                                this.currentHits = 1;
+                                console.log('📊 First hit recorded');
+                                return;
+                            }
+                        }
+                    }
+                    throw new Error('Failed to record hit');
+                } catch (error) {
+                    console.error('Failed to record hit:', error);
+                    throw error;
+                }
+            }
+
+            displayCounter() {
+                if (!this.currentHits) return;
+                
+                this.counterElement = document.createElement('div');
+                this.counterElement.style.cssText = `
+                    position: fixed;
+                    bottom: 20px;
+                    right: 20px;
+                    background: rgba(20, 20, 20, 0.9);
+                    color: #e63946;
+                    padding: 10px 16px;
+                    border-radius: 12px;
+                    font-family: 'Orbitron', monospace;
+                    font-size: 14px;
+                    z-index: 1000;
+                    backdrop-filter: blur(5px);
+                    border: 1px solid rgba(230, 57, 70, 0.4);
+                    box-shadow: 0 0 20px rgba(230, 57, 70, 0.3);
+                    transition: all 0.3s ease;
+                    cursor: pointer;
+                `;
+                
+                this.counterElement.onmouseenter = () => {
+                    this.counterElement.style.transform = 'scale(1.05)';
+                    this.counterElement.style.boxShadow = '0 0 30px rgba(230, 57, 70, 0.5)';
+                };
+                
+                this.counterElement.onmouseleave = () => {
+                    this.counterElement.style.transform = 'scale(1)';
+                    this.counterElement.style.boxShadow = '0 0 20px rgba(230, 57, 70, 0.3)';
+                };
+                
+                document.body.appendChild(this.counterElement);
+                
+                if (this.animated && this.currentHits > 1) {
+                    let current = Math.max(1, this.currentHits - 5);
+                    const animate = () => {
+                        if (current < this.currentHits) {
+                            current++;
+                            this.counterElement.textContent = `Visitors: ${current}`;
+                            requestAnimationFrame(animate);
+                        }
+                    };
+                    animate();
+                } else {
+                    this.counterElement.textContent = `Visitors: ${this.currentHits}`;
+                }
+            }
+        }
+
+        // Initialize hit counter
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+                window.jodyHitCounter = new JodyHitCounter({
+                    apiUrl: 'https://omcwjmvdjswkfjkahchm.supabase.co',
+                    headers: {
+                        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
+                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9zZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
+                        'Content-Type': 'application/json'
+                    },
+                    theme: 'jody',
+                    animated: true,
+                    showCounter: true
+                });
+            } catch (error) {
+                console.error('❌ Hit counter error:', error);
+            }
+        });
+    </script>
+</body>
+</html>

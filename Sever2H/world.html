@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Fake Planet Simulation</title>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    #info { position: absolute; top: 10px; left: 10px; color: white; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 5px; z-index: 10; }
+  </style>
+</head>
+<body>
+  <div id="info">Zoom and rotate to explore the fake planet. Click on colored places!</div>
+  <!--
+    IMPORTANT: You must run this file from a local server for ES Modules to work.
+    Example: In this folder, run 'python -m http.server' and open http://localhost:8000/world.html
+  -->
+  <script type="module">
+    import * as THREE from 'https://cdn.skypack.dev/three@0.154.0';
+    // OrbitControls removed; using custom drag/zoom handlers
+    // Minimal Three.js sphere with OrbitControls (ES Modules)
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x222233);
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 0, 3);
+
+    const renderer = new THREE.WebGLRenderer({antialias: true});
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.insertBefore(renderer.domElement, document.getElementById('info').nextSibling);
+
+    // Generate pixelated planet texture with fake places
+    function generatePlanetTexture(size, places) {
+      const canvas = document.createElement('canvas');
+      canvas.width = canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      // Background (ocean)
+      ctx.fillStyle = '#2255aa';
+      ctx.fillRect(0, 0, size, size);
+      // Draw land (random green blobs)
+      for (let i = 0; i < 8; i++) {
+        ctx.fillStyle = '#44bb44';
+        const x = Math.random() * size;
+        const y = Math.random() * size;
+        const r = 20 + Math.random() * 30;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      // Draw places (colored pixels)
+      places.forEach(place => {
+        ctx.fillStyle = place.color;
+        ctx.fillRect(place.x, place.y, 8, 8);
+      });
+      return new THREE.CanvasTexture(canvas);
+    }
+
+    // Fake places
+    const places = [
+      {name: 'Red City', x: 60, y: 80, color: '#ff4444'},
+      {name: 'Blue Lake', x: 180, y: 120, color: '#44aaff'},
+      {name: 'Yellow Desert', x: 100, y: 200, color: '#ffff44'},
+      {name: 'Purple Mountain', x: 220, y: 60, color: '#aa44ff'}
+    ];
+
+    const geometry = new THREE.SphereGeometry(1, 64, 64);
+    const texture = generatePlanetTexture(256, places);
+    texture.magFilter = THREE.NearestFilter;
+    texture.minFilter = THREE.NearestFilter;
+    const material = new THREE.MeshStandardMaterial({ map: texture });
+    const sphere = new THREE.Mesh(geometry, material);
+    scene.add(sphere);
+
+    scene.add(new THREE.AmbientLight(0xffffff, 1.2));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.7);
+    dirLight.position.set(5, 3, 5);
+    scene.add(dirLight);
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // Raycaster for clicking places
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    function onClick(event) {
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObject(sphere);
+      if (intersects.length > 0) {
+        const uv = intersects[0].uv;
+        const x = Math.floor(uv.x * 256);
+        const y = Math.floor((1 - uv.y) * 256);
+        const found = places.find(p => Math.abs(p.x - x) < 8 && Math.abs(p.y - y) < 8);
+        if (found) {
+          document.getElementById('info').textContent = `You clicked on: ${found.name}`;
+        }
+      }
+    }
+    window.addEventListener('click', onClick);
+
+    // Custom drag rotation and wheel zoom
+    let isDragging = false, prevX = 0, prevY = 0;
+    let rotationY = 0, rotationX = 0;
+    renderer.domElement.addEventListener('mousedown', e => {
+      isDragging = true;
+      prevX = e.clientX;
+      prevY = e.clientY;
+    });
+    window.addEventListener('mouseup', () => { isDragging = false; });
+    window.addEventListener('mousemove', e => {
+      if (isDragging) {
+        const dx = e.clientX - prevX;
+        const dy = e.clientY - prevY;
+        rotationY += dx * 0.01;
+        rotationX += dy * 0.01;
+        rotationX = Math.max(-Math.PI/2, Math.min(Math.PI/2, rotationX));
+        prevX = e.clientX;
+        prevY = e.clientY;
+      }
+    });
+    // Touch support
+    renderer.domElement.addEventListener('touchstart', e => {
+      if (e.touches.length === 1) {
+        isDragging = true;
+        prevX = e.touches[0].clientX;
+        prevY = e.touches[0].clientY;
+      }
+    });
+    window.addEventListener('touchend', () => { isDragging = false; });
+    window.addEventListener('touchmove', e => {
+      if (isDragging && e.touches.length === 1) {
+        const dx = e.touches[0].clientX - prevX;
+        const dy = e.touches[0].clientY - prevY;
+        rotationY += dx * 0.01;
+        rotationX += dy * 0.01;
+        rotationX = Math.max(-Math.PI/2, Math.min(Math.PI/2, rotationX));
+        prevX = e.touches[0].clientX;
+        prevY = e.touches[0].clientY;
+      }
+    });
+    // Mouse wheel for zoom
+    renderer.domElement.addEventListener('wheel', e => {
+      camera.position.z += e.deltaY * 0.002;
+      camera.position.z = Math.max(1.2, Math.min(6, camera.position.z));
+    });
+
+    function animate() {
+      sphere.rotation.y = rotationY;
+      sphere.rotation.x = rotationX;
+      renderer.render(scene, camera);
+      requestAnimationFrame(animate);
+    }
+    animate();
+  </script>
+</body>
+</html>

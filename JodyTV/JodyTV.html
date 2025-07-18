@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>JodyTV</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #111;
+            color: #fff;
+            margin: 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2em;
+            background: #1a1a1a;
+            border-radius: 16px;
+            box-shadow: 0 0 40px 0 #900a0a99;
+        }
+        h1 {
+            color: #ff2a2a;
+            font-size: 2.5em;
+            text-align: center;
+            letter-spacing: 0.1em;
+            margin-bottom: 1.5em;
+            text-shadow: 0 0 10px #900a0a, 0 0 2px #fff;
+        }
+        .card {
+            background: linear-gradient(90deg, #900a0a 0%, #1a1a1a 100%);
+            border-radius: 10px;
+            box-shadow: 0 2px 12px #900a0a55;
+            margin-bottom: 1.5em;
+            padding: 1em;
+            display: flex;
+            align-items: center;
+            border: 2px solid #900a0a;
+            transition: box-shadow 0.2s;
+        }
+        .card:hover {
+            box-shadow: 0 4px 24px #ff2a2a99;
+        }
+        .thumb {
+            width: 120px;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-right: 1.5em;
+            background: #222;
+            border: 2px solid #ff2a2a;
+        }
+        .meta { flex: 1; }
+        .meta h3 {
+            margin: 0 0 0.5em 0;
+            font-size: 1.2em;
+            color: #ff2a2a;
+            text-shadow: 0 0 2px #fff;
+        }
+        .meta p {
+            margin: 0.2em 0;
+            color: #eee;
+        }
+        .meta a {
+            color: #ff2a2a;
+            text-decoration: underline;
+            word-break: break-all;
+        }
+        .meta strong {
+            color: #ff2a2a;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>JodyTV</h1>
+        <div id="cards"></div>
+    </div>
+    <script>
+    // Manifest links from manifest.txt
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    let links = [
+        "https://www.tiktok.com/@georginopastrani/video/7524183784393018655",
+        "https://www.tiktok.com/@georginopastrani/video/7515794324722912543",
+        "https://www.tiktok.com/@georginopastrani/video/7503332871004982558",
+        "https://www.tiktok.com/@georginopastrani/video/7502860979391204639",
+        "https://www.tiktok.com/@georginopastrani/video/7497690084968303902",
+        "https://www.tiktok.com/@georginopastrani/video/7495703954089643294",
+        "https://www.tiktok.com/@georginopastrani/video/7495694649286216991",
+        "https://www.tiktok.com/@georginopastrani/video/7486941357223742751",
+        "https://www.tiktok.com/@georginopastrani/video/7463527284570344735",
+        "https://www.tiktok.com/@georginopastrani/video/7449164866432126239",
+        "https://www.tiktok.com/@georginopastrani/video/7443231898438094110",
+        "https://www.tiktok.com/@georginopastrani/video/7436632887010626846",
+        "https://www.tiktok.com/@georginopastrani/video/7427908691615075615",
+        "https://www.tiktok.com/@georginopastrani/video/7423113928043007263",
+        "https://www.tiktok.com/@georginopastrani/video/7414361831965265182",
+        "https://www.tiktok.com/@georginopastrani/video/7407777636308634910",
+        "https://www.tiktok.com/@georginopastrani/video/7397565297399500062",
+        "https://www.tiktok.com/@georginopastrani/video/7396705154822589726",
+        "https://www.tiktok.com/@georginopastrani/video/7394088462527319326",
+        "https://www.tiktok.com/@georginopastrani/video/7387972653212126495",
+        "https://www.tiktok.com/@georginopastrani/video/7381290970211470623",
+        "https://www.tiktok.com/@georginopastrani/video/7381094254338264351",
+        "https://www.tiktok.com/@georginopastrani/video/7380689291837525278",
+        "https://www.tiktok.com/@georginopastrani/video/7379625735432047915",
+        "https://www.tiktok.com/@georginopastrani/video/7378128238859570475",
+        "https://www.tiktok.com/@georginopastrani/video/7371422424161881390",
+        "https://www.tiktok.com/@georginopastrani/video/7370764890866191647",
+        "https://www.tiktok.com/@georginopastrani/video/7367251615981784366",
+        "https://www.tiktok.com/@georginopastrani/video/7358608361580956959",
+        "https://www.tiktok.com/@georginopastrani/video/7348201841219505454",
+        "https://www.tiktok.com/@georginopastrani/video/7333414602354511134",
+        "https://www.tiktok.com/@georginopastrani/video/7327704195153399071",
+        "https://www.tiktok.com/@georginopastrani/video/7327574482543987998",
+        "https://www.tiktok.com/@georginopastrani/video/7326306152415825183",
+        "https://www.tiktok.com/@georginopastrani/video/7318794005070810399",
+        "https://www.tiktok.com/@georginopastrani/video/7301505214476078367",
+        "https://www.tiktok.com/@georginopastrani/video/7292472485054876959",
+        "https://www.tiktok.com/@georginopastrani/video/7280584054087470366",
+        "https://www.tiktok.com/@georginopastrani/video/7279987441090448683",
+        "https://www.tiktok.com/@georginopastrani/video/7271298898168237354",
+        "https://www.tiktok.com/@georginopastrani/video/7271296597412171054",
+        "https://www.tiktok.com/@georginopastrani/video/7270934540493851950",
+        "https://www.tiktok.com/@georginopastrani/video/7255589011622759722",
+        "https://www.tiktok.com/@georginopastrani/video/7255356735173545259",
+        "https://www.tiktok.com/@georginopastrani/video/7251739007179296046",
+        "https://www.tiktok.com/@georginopastrani/video/7251737084182924586",
+        "https://www.tiktok.com/@georginopastrani/video/7251532195741945134",
+        "https://www.tiktok.com/@georginopastrani/video/7247804863214701870",
+        "https://www.tiktok.com/@georginopastrani/video/7247024289633914154",
+        "https://www.tiktok.com/@georginopastrani/video/7241071235080244522",
+        "https://www.tiktok.com/@georginopastrani/video/7237878769611066667",
+        "https://www.tiktok.com/@georginopastrani/video/7235894656700255534",
+        "https://www.tiktok.com/@georginopastrani/video/7225923941955620139",
+        "https://www.tiktok.com/@georginopastrani/video/7225919738692717870",
+        "https://www.tiktok.com/@georginopastrani/video/7224653092669672747",
+        "https://www.tiktok.com/@georginopastrani/video/7223909823061085486",
+        "https://www.tiktok.com/@georginopastrani/video/7223200330194980138",
+        "https://www.tiktok.com/@georginopastrani/video/7220084354486193451",
+        "https://www.tiktok.com/@georginopastrani/video/7217880735967907115",
+        "https://www.tiktok.com/@georginopastrani/video/7217593521727982894",
+        "https://www.tiktok.com/@georginopastrani/video/7217116766047178027",
+        "https://www.tiktok.com/@georginopastrani/video/7213177576502857006",
+        "https://www.tiktok.com/@georginopastrani/video/7212633385418738987",
+        "https://www.tiktok.com/@georginopastrani/video/7212205845541670190",
+        "https://www.tiktok.com/@georginopastrani/video/7130314914333314347",
+        "https://www.tiktok.com/@georginopastrani/video/7126348437334871338",
+        "https://www.tiktok.com/@georginopastrani/video/7125080557045779758",
+        "https://www.tiktok.com/@georginopastrani/video/7115659531086056747",
+        "https://www.tiktok.com/@georginopastrani/video/7115656220211891502",
+        "https://www.tiktok.com/@georginopastrani/video/7086477661140241710",
+        "https://www.tiktok.com/@georginopastrani/video/7036976122013289775",
+        "https://www.tiktok.com/@georginopastrani/video/7030550148560227589",
+        "https://www.tiktok.com/@georginopastrani/video/7014316102046010630",
+        "https://www.tiktok.com/@georginopastrani/video/7011898939553205510",
+        "https://www.tiktok.com/@georginopastrani/video/7011458690184269062",
+        "https://www.tiktok.com/@georginopastrani/video/7010827873577651461",
+        "https://www.tiktok.com/@georginopastrani/video/7010241458082974982",
+        "https://www.tiktok.com/@georginopastrani/video/7010180393181678853",
+        "https://www.tiktok.com/@georginopastrani/video/7009082000955034885",
+        "https://www.tiktok.com/@georginopastrani/video/7009075826486414597",
+        "https://www.tiktok.com/@georginopastrani/video/7008855467321494789",
+        "https://www.tiktok.com/@georginopastrani/video/7008803822374079749",
+        "https://www.tiktok.com/@georginopastrani/video/7008799320774397190",
+        "https://www.tiktok.com/@georginopastrani/video/7007993576361708806",
+        "https://www.tiktok.com/@georginopastrani/video/7007932126662282502",
+        "https://www.tiktok.com/@georginopastrani/video/7007929510276451590",
+        "https://www.tiktok.com/@georginopastrani/video/7007873737475296518",
+        "https://www.tiktok.com/@georginopastrani/video/7007854874096438534",
+        "https://www.tiktok.com/@georginopastrani/video/7007851779002027269",
+        "https://www.tiktok.com/@georginopastrani/video/7007174636903435526",
+        "https://www.tiktok.com/@georginopastrani/video/7005481300706544901",
+        "https://www.tiktok.com/@georginopastrani/video/7005479161942822150",
+        "https://www.tiktok.com/@georginopastrani/video/7005477150111403270",
+        "https://www.tiktok.com/@georginopastrani/video/7005475848790887686",
+        "https://www.tiktok.com/@georginopastrani/video/7005314480401943814",
+        "https://www.tiktok.com/@georginopastrani/video/7005313812148620549",
+        "https://www.tiktok.com/@georginopastrani/video/7005289206968896773",
+        "https://www.tiktok.com/@georginopastrani/video/7005229246058614021",
+        "https://www.tiktok.com/@georginopastrani/video/7005084921693768966",
+        "https://www.tiktok.com/@georginopastrani/video/7005051972357328133",
+        "https://www.tiktok.com/@georginopastrani/video/7004961086894132485",
+        "https://www.tiktok.com/@georginopastrani/video/7004959694263536901",
+        "https://www.tiktok.com/@georginopastrani/video/7004950074006523141",
+        "https://www.tiktok.com/@georginopastrani/video/7004875051170319622",
+        "https://www.tiktok.com/@georginopastrani/video/7004730752071912710",
+        "https://www.tiktok.com/@georginopastrani/video/7004729670960729350",
+        "https://www.tiktok.com/@georginopastrani/video/7004725987271363846",
+        "https://www.tiktok.com/@georginopastrani/video/7003897602274086149",
+        "https://www.tiktok.com/@georginopastrani/video/7003888879061191941",
+        "https://www.tiktok.com/@georginopastrani/video/7003877661705604357",
+        "https://www.tiktok.com/@georginopastrani/video/7003875314094853382",
+        "https://www.tiktok.com/@georginopastrani/video/7003873334198881541",
+        "https://www.tiktok.com/@georginopastrani/video/7003868597885930757",
+        "https://www.tiktok.com/@georginopastrani/video/7003083464069106950",
+        "https://www.tiktok.com/@georginopastrani/video/7003026479877491973",
+        "https://www.tiktok.com/@georginopastrani/video/7002799412254657798",
+        "https://www.tiktok.com/@georginopastrani/video/7002708076696489221",
+        "https://www.tiktok.com/@georginopastrani/video/7002497960533658886",
+        "https://www.tiktok.com/@georginopastrani/video/7002478991210761477",
+        "https://www.tiktok.com/@georginopastrani/video/7002340511344233734",
+        "https://www.tiktok.com/@georginopastrani/video/7002307538821631238",
+        "https://www.tiktok.com/@georginopastrani/video/7001975787867983109",
+        "https://www.tiktok.com/@georginopastrani/video/7001971872720112902",
+        "https://www.tiktok.com/@georginopastrani/video/7001896937888746758",
+        "https://www.tiktok.com/@georginopastrani/video/7001891942170709253",
+        "https://www.tiktok.com/@georginopastrani/video/7001714428622261509",
+        "https://www.tiktok.com/@georginopastrani/video/7001712988566637830",
+        "https://www.tiktok.com/@georginopastrani/video/7001687202090536198",
+        "https://www.tiktok.com/@georginopastrani/video/7001663247078247686",
+        "https://www.tiktok.com/@georginopastrani/video/7001662068898286854",
+        "https://www.tiktok.com/@georginopastrani/video/7001661038840073477",
+        "https://www.tiktok.com/@georginopastrani/video/7001659080829930757",
+        "https://www.tiktok.com/@georginopastrani/video/7001539575956917509",
+        "https://www.tiktok.com/@georginopastrani/video/7001536910858423558",
+        "https://www.tiktok.com/@georginopastrani/video/7001535046314118405",
+        "https://www.tiktok.com/@georginopastrani/video/7001532452716023045",
+        "https://www.tiktok.com/@georginopastrani/video/7001531417217797381",
+        "https://www.tiktok.com/@georginopastrani/video/7001522219180412165",
+        "https://www.tiktok.com/@georginopastrani/video/7000823316328107270",
+        "https://www.tiktok.com/@georginopastrani/video/6998635826351574278",
+        "https://www.tiktok.com/@georginopastrani/video/6998613029600464134",
+        "https://www.tiktok.com/@georginopastrani/video/6998609887810850054",
+        "https://www.tiktok.com/@georginopastrani/video/6998607505207168261",
+        "https://www.tiktok.com/@georginopastrani/video/6998598596245425414",
+        "https://www.tiktok.com/@georginopastrani/video/6998579312542682374",
+        "https://www.tiktok.com/@georginopastrani/video/6998567573818281221",
+        "https://www.tiktok.com/@georginopastrani/video/6998565253642521862",
+        "https://www.tiktok.com/@georginopastrani/video/6998383214960069893",
+        "https://www.tiktok.com/@georginopastrani/video/6638659830078770437",
+        "https://www.tiktok.com/@georginopastrani/video/6638655375002307846",
+        "https://www.tiktok.com/@georginopastrani/video/6637606640252095750",
+        "https://www.tiktok.com/@georginopastrani/video/6637594271601921285",
+        "https://www.tiktok.com/@georginopastrani/video/6637565437112487173",
+        "https://www.tiktok.com/@failforward3/video/7526385862871960846",
+        "https://www.tiktok.com/@failforward3/video/7526382996329467191",
+        "https://www.tiktok.com/@failforward3/video/7525748972019911950",
+        "https://www.tiktok.com/@failforward3/video/7525665728628804877",
+        "https://www.tiktok.com/@failforward3/video/7525589446834572599",
+        "https://www.tiktok.com/@failforward3/video/7525587677538684215",
+        "https://www.tiktok.com/@failforward3/video/7525584431327841550",
+        "https://www.tiktok.com/@failforward3/video/7525521382134893879",
+        "https://www.tiktok.com/@failforward3/video/7525517826396785933",
+        "https://www.tiktok.com/@failforward3/video/7525497811547196727",
+        "https://www.tiktok.com/@failforward3/video/7525496473857821966",
+        "https://www.tiktok.com/@failforward3/video/7525487164835024183",
+        "https://www.tiktok.com/@failforward3/video/7525485637567352077",
+        "https://www.tiktok.com/@failforward3/video/7525484292886039822",
+        "https://www.tiktok.com/@failforward3/video/7525476473537318157",
+        "https://www.tiktok.com/@failforward3/video/7525471813640473869",
+        "https://www.tiktok.com/@failforward3/video/7525375626702884110",
+        "https://www.tiktok.com/@failforward3/video/7524138176026348855",
+        "https://www.tiktok.com/@failforward3/video/7524133264462777614",
+        "https://www.tiktok.com/@failforward3/video/7524123591768608055",
+        "https://www.tiktok.com/@failforward3/video/7523740993103940877",
+        "https://www.tiktok.com/@failforward3/video/7523612770869267726",
+        "https://www.tiktok.com/@failforward3/video/7523599613530508557",
+        "https://www.tiktok.com/@failforward3/video/7523352611915861262",
+        "https://www.tiktok.com/@failforward3/video/7523030826511076663",
+        "https://www.tiktok.com/@failforward3/video/7522964329721777422",
+        "https://www.tiktok.com/@failforward3/video/7522961487074299150",
+        "https://www.tiktok.com/@failforward3/video/7522960506701745463",
+        "https://www.tiktok.com/@failforward3/video/7522958906855918903",
+        "https://www.tiktok.com/@failforward3/video/7522819118865616142",
+        "https://www.tiktok.com/@failforward3/video/7522763991676882189",
+        "https://www.tiktok.com/@failforward3/video/7522763131509067022",
+        "https://www.tiktok.com/@failforward3/video/7522595283369217293",
+        "https://www.tiktok.com/@failforward3/video/7522392813141576973",
+        "https://www.tiktok.com/@failforward3/video/7522325430867709239",
+        "https://www.tiktok.com/@failforward3/video/7521119405372230925",
+        "https://www.tiktok.com/@failforward3/video/7521088283703643447",
+        "https://www.tiktok.com/@failforward3/video/7521085870556892429",
+        "https://www.tiktok.com/@failforward3/video/7521053084643101966",
+        "https://www.tiktok.com/@failforward3/video/7521044445257600270",
+        "https://www.tiktok.com/@failforward3/video/7520309003616800055",
+        "https://www.tiktok.com/@failforward3/video/7519986532833447181",
+        "https://www.tiktok.com/@failforward3/video/7519919355971325239",
+        "https://www.tiktok.com/@failforward3/video/7519918149475634445",
+        "https://www.tiktok.com/@failforward3/video/7519218220348362039",
+        "https://www.tiktok.com/@failforward3/video/7518135813800987918",
+        "https://www.tiktok.com/@failforward3/video/7517875973241507085",
+        "https://www.tiktok.com/@failforward3/video/7517870364270005517",
+        "https://www.tiktok.com/@failforward3/video/7517775320120905015",
+        "https://www.tiktok.com/@failforward3/video/7517174383366933774",
+        "https://www.tiktok.com/@failforward3/video/7517173699213085965",
+        "https://www.tiktok.com/@failforward3/video/7517166213592583479",
+        "https://www.tiktok.com/@failforward3/video/7517165416922336567",
+        "https://www.tiktok.com/@failforward3/video/7515332656817556779",
+        "https://www.tiktok.com/@failforward3/video/7515332019535203630",
+        "https://www.tiktok.com/@failforward3/video/7515326964098436398",
+        "https://www.tiktok.com/@failforward3/video/7515325591546547502",
+        "https://www.tiktok.com/@failforward3/video/7515324957560245550",
+        "https://www.tiktok.com/@failforward3/video/7515321415290359086",
+        "https://www.tiktok.com/@failforward3/video/7515146921615330602",
+        "https://www.tiktok.com/@failforward3/video/7515127651854634286",
+        "https://www.tiktok.com/@failforward3/video/7514984669654404394",
+        "https://www.tiktok.com/@failforward3/video/7514938742713503022",
+        "https://www.tiktok.com/@failforward3/video/7514936921026563370",
+        "https://www.tiktok.com/@failforward3/video/7514831964520631594",
+        "https://www.tiktok.com/@failforward3/video/7514727414434630958",
+        "https://www.tiktok.com/@failforward3/video/7514611355425508654",
+        "https://www.tiktok.com/@failforward3/video/7514608828835466538",
+        "https://www.tiktok.com/@failforward3/video/7514156522033876270",
+        "https://www.tiktok.com/@failforward3/video/7512388996564274478",
+        "https://www.tiktok.com/@failforward3/video/7511934052648193326",
+        "https://www.tiktok.com/@failforward3/video/7511932074555690283",
+        "https://www.tiktok.com/@failforward3/video/7511928721012706606",
+        "https://www.tiktok.com/@failforward3/video/7511924667003751723",
+        "https://www.tiktok.com/@failforward3/video/7511923457865747758",
+
+        // ...add the rest of the links from manifest.txt here...
+    ];
+
+    // Shuffle the links before loading
+    links = shuffle(links);
+
+    // Helper to get TikTok video ID
+    function getVideoId(url) {
+        const match = url.match(/video\/(\d+)/);
+        return match ? match[1] : null;
+    }
+
+    // Build cards
+    const cardsDiv = document.getElementById('cards');
+    async function buildCards() {
+    let loadedCount = 0;
+    const batchSize = 10;
+    let isLoading = false;
+
+    async function loadBatch() {
+        if (isLoading) return;
+        isLoading = true;
+        const end = Math.min(loadedCount + batchSize, links.length);
+        for (let idx = loadedCount; idx < end; idx++) {
+            const url = links[idx];
+            const videoId = getVideoId(url);
+            let thumbUrl = '';
+            let meta = { title: '', author: '', description: '', uploadDate: '', thumbnail_url: '' };
+            try {
+                const oembedUrl = `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`;
+                const resp = await fetch(oembedUrl);
+                if (resp.ok) {
+                    const data = await resp.json();
+                    meta.title = data.title || '';
+                    meta.author = data.author_name || '';
+                    meta.description = data.description || '';
+                    meta.uploadDate = data.upload_date || '';
+                    meta.thumbnail_url = data.thumbnail_url || '';
+                    if (meta.thumbnail_url) thumbUrl = meta.thumbnail_url;
+                    // Fallback: try to extract thumbnail from oEmbed html if thumbnail_url is missing
+                    if (!thumbUrl && data.html) {
+                        const match = data.html.match(/src="([^"]+)"/);
+                        if (match) thumbUrl = match[1];
+                    }
+                }
+            } catch (e) {
+                // If metadata fetch fails, keep fields as 'N/A'
+            }
+
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `
+                ${thumbUrl ? `<img class="thumb" src="${thumbUrl}" alt="Thumbnail" onerror="this.style.display='none'">` : '<div class="thumb" style="display:flex;align-items:center;justify-content:center;color:#aaa;">No Image</div>'}
+                <div class="meta">
+                    <p><a href="${url}" target="_blank">${url}</a></p>
+                    <p><strong>Title:</strong> ${meta.title ? meta.title : 'N/A'}</p>
+                    <p><strong>Author:</strong> ${meta.author ? meta.author : 'N/A'}</p>
+                    <p><strong>Description:</strong> ${meta.description ? meta.description : 'N/A'}</p>
+                    <p><strong>Upload Date:</strong> ${meta.uploadDate ? meta.uploadDate : 'N/A'}</p>
+                    <p><strong>Video ID:</strong> ${videoId ? videoId : 'N/A'}</p>
+                    <p><strong>Thumbnail:</strong><br>
+                        ${thumbUrl ? `<img src='${thumbUrl}' style='max-width:200px;max-height:200px;border-radius:6px;background:#eee;' alt='Thumbnail'>` : 'N/A'}
+                    </p>
+                </div>
+            `;
+            cardsDiv.appendChild(card);
+        }
+        loadedCount = end;
+        isLoading = false;
+    }
+
+    // Initial load
+    await loadBatch();
+
+    // Lazy load on scroll
+    window.addEventListener('scroll', async function() {
+        if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 100) {
+            if (loadedCount < links.length && !isLoading) {
+                await loadBatch();
+            }
+        }
+    });
+    }
+    buildCards();
+    </script>
+</body>
+</html>

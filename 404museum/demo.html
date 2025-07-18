@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404Museum Demo - Interactive Error Art Gallery</title>
+    <meta name="description" content="Live demo of 404Museum showing how error pages transform into beautiful interactive art galleries.">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            color: #ffffff;
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+        
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 20px;
+        }
+        
+        .demo-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 40px;
+            margin: 40px 0;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .demo-buttons {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: 30px 0;
+        }
+        
+        .demo-btn {
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            border: none;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .demo-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(255, 107, 107, 0.3);
+        }
+        
+        .demo-btn.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .demo-btn.secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 10px 25px rgba(255, 255, 255, 0.1);
+        }
+        
+        .code-section {
+            background: #1a1a1a;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #4ecdc4;
+            overflow-x: auto;
+        }
+        
+        .code-section pre {
+            color: #f8f8f2;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9rem;
+        }
+        
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .warning {
+            background: rgba(255, 107, 107, 0.1);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .success {
+            background: rgba(76, 205, 196, 0.1);
+            border: 1px solid rgba(76, 205, 196, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .demo-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-btn">← Back</a>
+    
+    <div class="container">
+        <div class="header">
+            <h1>404Museum Live Demo</h1>
+            <p>Experience how 404Museum transforms error pages into beautiful art galleries</p>
+        </div>
+        
+        <div class="demo-section">
+            <h2>🎨 Activate Art Gallery</h2>
+            <p>Click the button below to see how 404Museum would transform this page into an interactive art gallery:</p>
+            
+            <div class="demo-buttons">
+                <button class="demo-btn" onclick="activateMuseum()">Launch 404Museum</button>
+                <button class="demo-btn secondary" onclick="simulateError()">Simulate 404 Error</button>
+            </div>
+            
+            <div class="success">
+                <strong>✅ Demo Ready!</strong> The 404Museum library is loaded and ready to demonstrate. 
+                Click "Launch 404Museum" to see the full-screen art gallery experience.
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <h2>🔧 How It Works</h2>
+            <p>404Museum automatically detects error pages and replaces them with beautiful art. Here's what happens:</p>
+            
+            <ol style="margin: 20px 0; padding-left: 30px;">
+                <li><strong>Detection:</strong> The script checks for 404 indicators in the page title and content</li>
+                <li><strong>Replacement:</strong> If detected, it replaces the entire page with a full-screen art canvas</li>
+                <li><strong>Art Generation:</strong> Displays generative art using HTML5 canvas and JavaScript animations</li>
+                <li><strong>Interaction:</strong> Users can navigate between different art styles</li>
+                <li><strong>Analytics:</strong> Optionally logs 404 hits to your analytics endpoint</li>
+            </ol>
+        </div>
+        
+        <div class="demo-section">
+            <h2>📋 Installation Code</h2>
+            <p>Add this single line to your website's &lt;head&gt; section:</p>
+            
+            <div class="code-section">
+                <pre>&lt;script src="https://jodylabs.surge.sh/404museum/404museum.min.js"&gt;&lt;/script&gt;</pre>
+            </div>
+            
+            <p>That's it! 404Museum will automatically detect and transform any 404 pages on your site.</p>
+        </div>
+        
+        <div class="demo-section">
+            <h2>⚙️ Configuration Options</h2>
+            <p>Customize 404Museum by defining configuration before loading the script:</p>
+            
+            <div class="code-section">
+                <pre>&lt;script&gt;
+window.Museum404Config = {
+    theme: 'dark',
+    artTypes: ['generative', 'particles', 'fractals'],
+    customMessage: 'Page not found, but enjoy this art!',
+    colors: {
+        primary: '#4ecdc4',
+        secondary: '#ff6b6b',
+        background: '#0a0a0a'
+    },
+    showNavigation: true,
+    showBranding: true,
+    artDuration: 30000, // Switch art every 30 seconds
+    apiEndpoint: 'https://your-api.com/404-logs'
+};
+&lt;/script&gt;
+&lt;script src="https://jodylabs.surge.sh/404museum/404museum.min.js"&gt;&lt;/script&gt;</pre>
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <h2>🎯 Manual Control</h2>
+            <p>You can also manually control 404Museum with JavaScript:</p>
+            
+            <div class="code-section">
+                <pre>// Manually activate the art gallery
+window.Museum404.activate();
+
+// Switch to specific art type
+window.Museum404.switchArt('particles');
+
+// Deactivate and return to original page
+window.Museum404.deactivate();
+
+// Check if currently active
+if (window.Museum404.isActive()) {
+    console.log('Art gallery is active');
+}</pre>
+            </div>
+            
+            <div class="demo-buttons">
+                <button class="demo-btn secondary" onclick="testManualControl()">Test Manual Control</button>
+            </div>
+        </div>
+        
+        <div class="warning">
+            <strong>⚠️ Note:</strong> This demo page is not actually a 404 error, so auto-detection won't trigger. 
+            Use the manual activation buttons to see 404Museum in action!
+        </div>
+    </div>
+    
+    <!-- Configure 404Museum -->
+    <script>
+        window.Museum404Config = {
+            theme: 'dark',
+            artTypes: ['generative', 'particles', 'fractals', 'abstract'],
+            customMessage: 'This is a demo of 404Museum!',
+            colors: {
+                primary: '#4ecdc4',
+                secondary: '#ff6b6b',
+                background: '#0a0a0a'
+            },
+            showNavigation: true,
+            showBranding: true,
+            artDuration: 0, // Don't auto-switch for demo
+            autoDetect: false // Disable auto-detection for demo
+        };
+    </script>
+    
+    <!-- Load 404Museum -->
+    <script src="404museum.js"></script>
+    
+    <script>
+        function activateMuseum() {
+            if (window.Museum404) {
+                window.Museum404.activate();
+            } else {
+                alert('404Museum is not loaded yet. Please wait a moment and try again.');
+            }
+        }
+        
+        function simulateError() {
+            // Temporarily modify page to trigger 404 detection
+            const originalTitle = document.title;
+            document.title = '404 - Page Not Found';
+            
+            // Add 404 text to body
+            const errorDiv = document.createElement('div');
+            errorDiv.style.display = 'none';
+            errorDiv.textContent = '404 error page not found';
+            document.body.appendChild(errorDiv);
+            
+            // Reinitialize with auto-detection enabled
+            window.Museum404Config.autoDetect = true;
+            
+            // Small delay then activate
+            setTimeout(() => {
+                if (window.Museum404) {
+                    window.Museum404.activate();
+                }
+            }, 100);
+        }
+        
+        function testManualControl() {
+            const controls = [
+                () => window.Museum404.switchArt('generative'),
+                () => window.Museum404.switchArt('particles'),
+                () => window.Museum404.switchArt('fractals'),
+                () => window.Museum404.switchArt('abstract')
+            ];
+            
+            let index = 0;
+            const interval = setInterval(() => {
+                if (window.Museum404 && window.Museum404.isActive()) {
+                    controls[index]();
+                    index = (index + 1) % controls.length;
+                } else {
+                    clearInterval(interval);
+                }
+            }, 2000);
+        }
+    </script>
+</body>
+</html>

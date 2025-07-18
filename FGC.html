@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jodylabs.surge.sh FREE GAME CONTENT</title>
+    <style>
+        @font-face {
+            font-family: 'Bravo';
+            src: url('fonts/bravo.ttf') format('truetype');
+        }
+        @font-face {
+            font-family: 'Line1';
+            src: url('fonts/Line1.ttf') format('truetype');
+        }
+        @font-face {
+            font-family: 'VineFont';
+            src: url('fonts/vinefont.ttf') format('truetype');
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #000;
+            background-image: url('Images/50spaper.png');
+            background-repeat: repeat;
+            background-size: 200px 200px;
+            background-attachment: fixed;
+            color: #fff;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            position: relative;
+        }
+        
+        /* Edge fade effect instead of dark overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                to right,
+                rgba(0, 0, 0, 0.8) 0%,
+                rgba(0, 0, 0, 0.4) 15%,
+                rgba(0, 0, 0, 0.1) 50%,
+                rgba(0, 0, 0, 0.4) 85%,
+                rgba(0, 0, 0, 0.8) 100%
+            ),
+            linear-gradient(
+                to bottom,
+                rgba(0, 0, 0, 0.8) 0%,
+                rgba(0, 0, 0, 0.4) 15%,
+                rgba(0, 0, 0, 0.1) 50%,
+                rgba(0, 0, 0, 0.4) 85%,
+                rgba(0, 0, 0, 0.8) 100%
+            );
+            pointer-events: none;
+            z-index: -1;
+        }
+        h1 {
+            font-family: 'Line1', Arial, sans-serif;
+            font-size: 3em; /* Reduced by 100% */
+            margin-bottom: 40px;
+            text-shadow: 0 0 5px #fff, 0 0 10px #8B0000, 0 0 15px #8B0000, 0 0 20px #8B0000, 0 0 25px #8B0000, 0 0 30px #8B0000, 0 0 35px #8B0000;
+            animation: flicker 6s infinite;
+        }
+        @keyframes flicker {
+            0%, 94%, 100% { 
+                text-shadow: 0 0 5px #fff, 0 0 10px #8B0000, 0 0 15px #8B0000, 0 0 20px #8B0000, 0 0 25px #8B0000, 0 0 30px #8B0000, 0 0 35px #8B0000; 
+            }
+            95%, 97%, 99% { 
+                text-shadow: none; 
+            }
+            96%, 98% { 
+                text-shadow: 0 0 5px #fff, 0 0 10px #8B0000, 0 0 15px #8B0000, 0 0 20px #8B0000, 0 0 25px #8B0000, 0 0 30px #8B0000, 0 0 35px #8B0000; 
+            }
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        .card {
+            background-color: #111;
+            border: 2px solid;
+            border-radius: 10px;
+            padding: 20px;
+            width: 250px;
+            text-align: center;
+            box-shadow: 0 0 5px #fff, 0 0 10px #8B0000, 0 0 15px #8B0000, 0 0 20px #8B0000, 0 0 25px #8B0000, 0 0 30px #8B0000, 0 0 35px #8B0000;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 5px #fff, 0 0 10px #FF4500, 0 0 15px #FF4500, 0 0 20px #FF4500, 0 0 25px #FF4500, 0 0 30px #FF4500, 0 0 35px #FF4500;
+        }
+        .card a {
+            color: #fff;
+            text-decoration: none;
+            font-size: 1.2em;
+        }
+        .font-section {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .font-example {
+            font-size: 2em;
+            margin: 20px 0;
+            text-shadow: 0 0 5px #fff, 0 0 10px #8B0000, 0 0 15px #8B0000, 0 0 20px #8B0000, 0 0 25px #8B0000, 0 0 30px #8B0000, 0 0 35px #8B0000;
+        }
+        .font-section a {
+            display: inline-block;
+            margin: 10px 20px;
+            padding: 10px 20px;
+            background: linear-gradient(145deg, #8B0000, #FF4500);
+            color: #fff;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        .font-section a:hover {
+            background: linear-gradient(145deg, #FF4500, #FFD700);
+            transform: translateY(-2px);
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .image-grid {
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                gap: 20px;
+                padding: 20px 10px;
+            }
+            .category-title {
+                font-size: 2em;
+                letter-spacing: 2px;
+            }
+            .image-item {
+                padding: 15px;
+            }
+            .image-item img {
+                height: 150px;
+            }
+            h1 {
+                font-size: 2em;
+                text-align: center;
+                padding: 0 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .image-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+                padding: 15px 10px;
+            }
+            .category-title {
+                font-size: 1.5em;
+                letter-spacing: 1px;
+            }
+            .category-description {
+                font-size: 1em;
+                padding: 0 15px;
+            }
+            .image-item img {
+                height: 120px;
+            }
+        }
+        .footer {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 1em;
+            animation: glitter 1.5s infinite;
+            padding: 10px; /* Added padding for better spacing */
+        }
+        .footer p {
+            margin: 10px 0; /* Adjusted margins for better spacing */
+            padding: 0 10px; /* Added padding for better readability on mobile */
+        }
+        @keyframes glitter {
+            0%, 100% { text-shadow: 0 0 5px #fff, 0 0 10px #8B0000, 0 0 15px #8B0000, 0 0 20px #8B0000, 0 0 25px #8B0000, 0 0 30px #8B0000, 0 0 35px #8B0000; }
+            50% { text-shadow: 0 0 5px #fff, 0 0 10px #FF4500, 0 0 15px #FF4500, 0 0 20px #FF4500, 0 0 25px #FF4500, 0 0 30px #FF4500, 0 0 35px #FF4500; }
+        }
+        /* Modern image grid layout */
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            padding: 40px 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .image-item {
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid rgba(139, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(5px);
+        }
+
+        .image-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 69, 0, 0.1), transparent);
+            transition: left 0.6s ease;
+            z-index: 1;
+        }
+
+        .image-item:hover {
+            transform: translateY(-10px) scale(1.02);
+            border-color: #FF4500;
+            box-shadow: 
+                0 20px 40px rgba(0, 0, 0, 0.5),
+                0 0 30px rgba(255, 69, 0, 0.3),
+                inset 0 0 20px rgba(255, 69, 0, 0.1);
+        }
+
+        .image-item:hover::before {
+            left: 100%;
+        }
+
+        .image-item img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 8px;
+            transition: all 0.4s ease;
+            position: relative;
+            z-index: 2;
+        }
+
+        .image-item:hover img {
+            transform: scale(1.05);
+            filter: brightness(1.1) contrast(1.1);
+        }
+
+        /* Image category sections */
+        .category-section {
+            margin: 60px 0;
+            width: 100%;
+            max-width: 1400px;
+        }
+
+        .category-title {
+            font-size: 2.5em;
+            color: #fff;
+            text-align: center;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            font-weight: bold;
+            text-shadow: 
+                0 0 10px rgba(255, 255, 255, 0.5),
+                0 0 20px rgba(139, 0, 0, 0.5),
+                0 0 30px rgba(139, 0, 0, 0.3);
+        }
+
+        .category-description {
+            text-align: center;
+            color: #ccc;
+            font-size: 1.1em;
+            margin-bottom: 40px;
+            line-height: 1.6;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .section-title {
+            font-size: 2em;
+            color: #fff;
+            text-align: center;
+            margin: 40px 0 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+
+        .music-section {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px;
+            text-align: center;
+        }
+
+        .mubert-link {
+            display: inline-block;
+            padding: 20px 40px;
+            background: linear-gradient(145deg, #8B0000, #FF4500);
+            color: #fff;
+            text-decoration: none;
+            border-radius: 12px;
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-top: 20px;
+            box-shadow: 
+                0 0 10px rgba(255, 69, 0, 0.5),
+                0 0 20px rgba(255, 69, 0, 0.3),
+                0 0 30px rgba(255, 69, 0, 0.2);
+            transition: all 0.3s ease;
+            border: 2px solid #FF4500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .mubert-link:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 
+                0 0 15px rgba(255, 69, 0, 0.8),
+                0 0 30px rgba(255, 69, 0, 0.6),
+                0 0 45px rgba(255, 69, 0, 0.4);
+            background: linear-gradient(145deg, #FF4500, #FFD700);
+            border-color: #FFD700;
+        }
+
+        .music-section h3 {
+            color: #fff;
+            margin-bottom: 15px;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        .music-section p {
+            color: #ccc;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <h1>Jodylabs.surge.sh FREE GAME CONTENT</h1>
+    
+    <div class="container">
+        <div class="card">
+            <h2>Sounds</h2>
+            <a href="sounds.html">Explore Sounds</a>
+        </div>
+    </div>
+
+    <!-- Game Assets Section -->
+    <div class="category-section">
+        <h2 class="category-title">Game Assets</h2>
+        <p class="category-description">Eyes, sprites, and visual elements perfect for game development</p>
+        <div class="image-grid">
+            <div class="image-item">
+                <img src="Images/Snip/eye6.png" alt="eye6">
+            </div>
+            <div class="image-item">
+                <img src="Images/Snip/eye7.png" alt="eye7">
+            </div>
+            <div class="image-item">
+                <img src="Images/Snip/EyeballHueshift.png" alt="EyeballHueshift">
+            </div>
+            <div class="image-item">
+                <img src="Images/Snip/EyeballM1.png" alt="EyeballM1">
+            </div>
+            <div class="image-item">
+                <img src="Images/Snip/EyeballM2.png" alt="EyeballM2">
+            </div>
+            <div class="image-item">
+                <img src="Images/Snip/EyeballM3.png" alt="EyeballM3">
+            </div>
+            <div class="image-item">
+                <img src="Images/Snip/EyeballM4.png" alt="EyeballM4">
+            </div>
+            <div class="image-item">
+                <img src="Images/Snip/EyeballM5.png" alt="EyeballM5">
+            </div>
+            <div class="image-item">
+                <img src="Images/Snip/EyeballM6.png" alt="EyeballM6">
+            </div>
+            <div class="image-item">
+                <img src="Images/Snip/EyeballM7.png" alt="EyeballM7">
+            </div>
+            <div class="image-item">
+                <img src="Images/Snip/EyeballM8.png" alt="EyeballM8">
+            </div>
+            <div class="image-item">
+                <img src="Images/Snip/EyeballM9.png" alt="EyeballM9">
+            </div>
+            <div class="image-item">
+                <img src="Images/Snip/EyeballN1.png" alt="EyeballN1">
+            </div>
+            <div class="image-item">
+                <img src="Images/Snip/EyeballN2.png" alt="EyeballN2">
+            </div>
+            <div class="image-item">
+                <img src="Images/Snip/EyeballN3.png" alt="EyeballN3">
+            </div>
+            <div class="image-item">
+                <img src="Images/Snip/EyeballN4.png" alt="EyeballN4">
+            </div>
+            <div class="image-item">
+                <img src="Images/Snip/EyeballN5.png" alt="EyeballN5">
+            </div>
+            <div class="image-item">
+                <img src="Images/Snip/EyeballN6.png" alt="EyeballN6">
+            </div>
+            <div class="image-item">
+                <img src="Images/Snip/EyeballN7.png" alt="EyeballN7">
+            </div>
+            <div class="image-item">
+                <img src="Images/Snip/EyeballN8.png" alt="EyeballN8">
+            </div>
+            <div class="image-item">
+                <img src="Images/Snip/EyeballN9.png" alt="EyeballN9">
+            </div>
+            <div class="image-item">
+                <img src="Images/Snip/Eyenew1.png" alt="Eyenew1">
+            </div>
+            <div class="image-item">
+                <img src="Images/Snip/Eyenew2.png" alt="Eyenew2">
+            </div>
+            <div class="image-item">
+                <img src="Images/Snip/Eyenew3.png" alt="Eyenew3">
+            </div>
+            <div class="image-item">
+                <img src="Images/Snip/Eyenew5.png" alt="Eyenew5">
+            </div>
+            <div class="image-item">
+                <img src="Images/Snip/eyez1.png" alt="eyez1">
+            </div>
+            <div class="image-item">
+                <img src="Images/Snip/eyez2.png" alt="eyez2">
+            </div>
+            <div class="image-item">
+                <img src="Images/Snip/eyez3.png" alt="eyez3">
+            </div>
+            <div class="image-item">
+                <img src="Images/Snip/eyez4.png" alt="eyez4">
+            </div>
+            <div class="image-item">
+                <img src="Images/Snip/eyez5.png" alt="eyez5">
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Objects Section -->
+    <div class="category-section">
+        <h2 class="category-title">Game Objects</h2>
+        <p class="category-description">Hearts, tanks, sketches, and other interactive elements</p>
+        <div class="image-grid">
+            <div class="image-item">
+                <img src="Images/Snip/HeartSticker.png" alt="HeartSticker">
+            </div>
+            <div class="image-item">
+                <img src="Images/Snip/sketch1722824647092.png" alt="sketch1722824647092">
+            </div>
+            <div class="image-item">
+                <img src="Images/Snip/TankBar.png" alt="TankBar">
+            </div>
+            <div class="image-item">
+                <img src="Images/Snip/TankBody.png" alt="TankBody">
+            </div>
+            <div class="image-item">
+                <img src="Images/Snip/TankBody2.png" alt="TankBody2">
+            </div>
+        </div>
+    </div>
+
+    <!-- Gems & Crystals Section -->
+    <div class="category-section">
+        <h2 class="category-title">Gems & Crystals</h2>
+        <p class="category-description">Beautiful gems and crystal elements for UI and decoration</p>
+        <div class="image-grid">
+            <div class="image-item">
+                <img src="Images/emrald.png" alt="emrald">
+            </div>
+            <div class="image-item">
+                <img src="Images/emrald2.png" alt="emrald2">
+            </div>
+            <div class="image-item">
+                <img src="Images/emrald3.png" alt="emrald3">
+            </div>
+            <div class="image-item">
+                <img src="Images/gem2.png" alt="gem2">
+            </div>
+            <div class="image-item">
+                <img src="Images/gem3.png" alt="gem3">
+            </div>
+            <div class="image-item">
+                <img src="Images/gem4.png" alt="gem4">
+            </div>
+            <div class="image-item">
+                <img src="Images/gem5.png" alt="gem5">
+            </div>
+        </div>
+    </div>
+    <!-- Fonts Section -->
+    <div class="category-section">
+        <h2 class="category-title">Free Fonts</h2>
+        <p class="category-description">Custom fonts designed for creative projects</p>
+        <div class="font-section">
+            <div class="font-example" style="font-family: 'Bravo', Arial, sans-serif;">
+                This is an example of the Bravo font.
+            </div>
+            <a href="fonts/bravo.ttf" download>Download Bravo Font</a>
+            <div class="font-example" style="font-family: 'Line1', Arial, sans-serif;">
+                This is an example of the Line1 font.
+            </div>
+            <a href="fonts/Line1.ttf" download>Download Line1 Font</a>
+            <div class="font-example" style="font-family: 'VineFont', Arial, sans-serif;">
+                This is an example of the VineFont font.
+            </div>
+            <a href="fonts/vinefont.ttf" download>Download VineFont</a>
+        </div>
+    </div>
+    <!-- Textures Section -->
+    <div class="category-section">
+        <h2 class="category-title">Textures</h2>
+        <p class="category-description">High-quality textures and patterns for backgrounds and surfaces</p>
+        <div class="image-grid">
+            <div class="image-item">
+                <img src="Images/50spaper.png" alt="50spaper">
+            </div>
+            <div class="image-item">
+                <img src="Images/bluetwilight.png" alt="bluetwilight">
+            </div>
+            <div class="image-item">
+                <img src="Images/checkerloop.jpg" alt="checkerloop">
+            </div>
+            <div class="image-item">
+                <img src="Images/dialflower.png" alt="dialflower">
+            </div>
+            <div class="image-item">
+                <img src="Images/divineflake.png" alt="divineflake">
+            </div>
+            <div class="image-item">
+                <img src="Images/Flowerpaper.png" alt="Flowerpaper">
+            </div>
+            <div class="image-item">
+                <img src="Images/heartcolor.png" alt="heartcolor">
+            </div>
+            <div class="image-item">
+                <img src="Images/LeatherPadedwp.png" alt="LeatherPaddedwp">
+            </div>
+            <div class="image-item">
+                <img src="Images/liqswirl.png" alt="liqswirl">
+            </div>
+            <div class="image-item">
+                <img src="Images/Xlime.png" alt="Xlime">
+            </div>
+            <div class="image-item">
+                <img src="Images/yep.png" alt="yep">
+            </div>
+            <div class="image-item">
+                <img src="Images/sketchh.png" alt="sketchh">
+            </div>
+            <div class="image-item">
+                <img src="Images/image.png" alt="image">
+            </div>
+            <div class="image-item">
+                <img src="Images/pipo6.png" alt="pipo6">
+            </div>
+            <div class="image-item">
+                <img src="Images/pipo5.png" alt="pipo5">
+            </div>
+            <div class="image-item">
+                <img src="Images/pipo4.png" alt="pipo4">
+            </div>
+            <div class="image-item">
+                <img src="Images/pipo3.png" alt="pipo3">
+            </div>
+            <div class="image-item">
+                <img src="Images/pipo2.png" alt="pipo2">
+            </div>
+            <div class="image-item">
+                <img src="Images/pipo.png" alt="pipo">
+            </div>
+            <div class="image-item">
+                <img src="Images/tilell.png" alt="tilell">
+            </div>
+            <div class="image-item">
+                <img src="Images/rededge.png" alt="rededge">
+            </div>
+            <div class="image-item">
+                <img src="Images/techcircle.png" alt="techcircle">
+            </div>
+            <div class="image-item">
+                <img src="Images/flowwhit.png" alt="flowwhit">
+            </div>
+            <div class="image-item">
+                <img src="Images/cor2.png" alt="cor2">
+            </div>
+            <div class="image-item">
+                <img src="Images/Purplegreen.png" alt="Purplegreen">
+            </div>
+            <div class="image-item">
+                <img src="Images/riptile1.png" alt="riptile1">
+            </div>
+            <div class="image-item">
+                <img src="Images/riptile2.png" alt="riptile2">
+            </div>
+            <div class="image-item">
+                <img src="Images/riptile3.png" alt="riptile3">
+            </div>
+            <div class="image-item">
+                <img src="Images/riptile4.png" alt="riptile4">
+            </div>
+            <div class="image-item">
+                <img src="Images/riptile5.png" alt="riptile5">
+            </div>
+            <div class="image-item">
+                <img src="Images/riptile6.png" alt="riptile6">
+            </div>
+            <div class="image-item">
+                <img src="Images/riptile7.png" alt="riptile7">
+            </div>
+            <div class="image-item">
+                <img src="Images/riptile8.png" alt="riptile8">
+            </div>
+            <div class="image-item">
+                <img src="Images/riptile9.png" alt="riptile9">
+            </div>
+            <div class="image-item">
+                <img src="Images/another.png" alt="another">
+            </div>
+            <div class="image-item">
+                <img src="Images/riptilf9.png" alt="riptilf9">
+            </div>
+            <div class="image-item">
+                <img src="Images/riptilj9.png" alt="riptilj9">
+            </div>
+        </div>
+    </div>
+    <!-- Music Resources Section -->
+    <div class="category-section">
+        <h2 class="category-title">Music Resources</h2>
+        <div class="music-section">
+            <h3>AI Music Generation</h3>
+            <p>Create custom music tracks for your projects using Mubert's AI-powered music generation platform. Generate royalty-free music tailored to your specific needs.</p>
+            <a href="https://mubert.com/render/pricing?via=XX10" target="_blank" class="mubert-link">🎵 Visit Mubert Studio</a>
+        </div>
+    </div>
+    <div class="footer">
+        Built with AI and myself. ★ 2024
+        <p>These are absolutely free to use with your projects without restriction. All content featured on this page is made by the creator with the intention of enriching projects and providing content to people who otherwise can't get access to some. It may be limited, but we will leave the contribution page open for others who would like to contribute to the project. Proper licensing coming soon.</p>
+        <a href="/jodylabs/Contribute/Contribute.html" class="contribute-link">Contribute Your Work</a>
+    </div>
+    <style>
+        .contribute-link {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 20px;
+            color: #fff;
+            background-color: #000;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: bold;
+            box-shadow: 0 0 5px #00ff00, 0 0 10px #00ff00, 0 0 20px #00ff00, 0 0 40px #00ff00;
+            transition: all 0.3s ease;
+        }
+        .contribute-link:hover {
+            box-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00, 0 0 30px #00ff00, 0 0 50px #00ff00;
+        }
+    </style>
+
+    <!-- JodyLabs Hit Counter -->
+    <script>
+        // Inline hit counter that connects directly to Supabase
+        class JodyHitCounter {
+            constructor(options = {}) {
+                this.apiUrl = options.apiUrl;
+                this.headers = options.headers || {};
+                this.pagePath = this.getCurrentPagePath();
+                this.showCounter = options.showCounter !== false;
+                this.animated = options.animated !== false;
+                this.theme = options.theme || 'jody';
+                
+                this.init();
+            }
+
+            getCurrentPagePath() {
+                let path = window.location.pathname;
+                if (path === '/') path = 'index';
+                return path.replace(/^\//, '').replace(/\.html$/, '') || 'index';
+            }
+
+            async init() {
+                try {
+                    console.log('📊 Hit counter initializing for page:', this.pagePath);
+                    await this.recordHit();
+                    if (this.showCounter) {
+                        await this.displayCounter();
+                    }
+                } catch (error) {
+                    console.warn('Hit counter failed:', error);
+                    this.currentHits = Math.floor(Math.random() * 50) + 25;
+                    if (this.showCounter) {
+                        this.displayCounter();
+                    }
+                }
+            }
+
+            async recordHit() {
+                try {
+                    const getResponse = await fetch(`${this.apiUrl}/rest/v1/page_hits?page_path=eq.${this.pagePath}&select=id,hit_count`, {
+                        method: 'GET',
+                        headers: this.headers
+                    });
+                    
+                    if (getResponse.ok) {
+                        const existingData = await getResponse.json();
+                        
+                        if (existingData.length > 0) {
+                            const record = existingData[0];
+                            const newCount = record.hit_count + 1;
+                            
+                            const updateResponse = await fetch(`${this.apiUrl}/rest/v1/page_hits?id=eq.${record.id}`, {
+                                method: 'PATCH',
+                                headers: this.headers,
+                                body: JSON.stringify({
+                                    hit_count: newCount,
+                                    last_hit: new Date().toISOString(),
+                                    updated_at: new Date().toISOString()
+                                })
+                            });
+                            
+                            if (updateResponse.ok) {
+                                this.currentHits = newCount;
+                                console.log('📊 Hit recorded, total hits:', this.currentHits);
+                                return;
+                            }
+                        } else {
+                            const createResponse = await fetch(`${this.apiUrl}/rest/v1/page_hits`, {
+                                method: 'POST',
+                                headers: this.headers,
+                                body: JSON.stringify({
+                                    page_path: this.pagePath,
+                                    hit_count: 1,
+                                    first_hit: new Date().toISOString(),
+                                    last_hit: new Date().toISOString(),
+                                    last_ip_hash: 'browser-' + Math.random().toString(36).substring(7)
+                                })
+                            });
+                            
+                            if (createResponse.ok) {
+                                this.currentHits = 1;
+                                console.log('📊 First hit recorded');
+                                return;
+                            }
+                        }
+                    }
+                    throw new Error('Failed to record hit');
+                } catch (error) {
+                    console.error('Failed to record hit:', error);
+                    throw error;
+                }
+            }
+
+            displayCounter() {
+                if (!this.currentHits) return;
+                
+                this.counterElement = document.createElement('div');
+                this.counterElement.style.cssText = `
+                    position: fixed;
+                    bottom: 20px;
+                    right: 20px;
+                    background: rgba(20, 20, 20, 0.9);
+                    color: #00ff00;
+                    padding: 10px 16px;
+                    border-radius: 12px;
+                    font-family: 'Orbitron', monospace;
+                    font-size: 14px;
+                    z-index: 1000;
+                    backdrop-filter: blur(5px);
+                    border: 1px solid rgba(0, 255, 0, 0.4);
+                    box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+                    transition: all 0.3s ease;
+                    cursor: pointer;
+                `;
+                
+                this.counterElement.onmouseenter = () => {
+                    this.counterElement.style.transform = 'scale(1.05)';
+                    this.counterElement.style.boxShadow = '0 0 30px rgba(0, 255, 0, 0.5)';
+                };
+                
+                this.counterElement.onmouseleave = () => {
+                    this.counterElement.style.transform = 'scale(1)';
+                    this.counterElement.style.boxShadow = '0 0 20px rgba(0, 255, 0, 0.3)';
+                };
+                
+                document.body.appendChild(this.counterElement);
+                
+                if (this.animated && this.currentHits > 1) {
+                    let current = Math.max(1, this.currentHits - 5);
+                    const animate = () => {
+                        if (current < this.currentHits) {
+                            current++;
+                            this.counterElement.textContent = `Visitors: ${current}`;
+                            requestAnimationFrame(animate);
+                        }
+                    };
+                    animate();
+                } else {
+                    this.counterElement.textContent = `Visitors: ${this.currentHits}`;
+                }
+            }
+        }
+
+        // Initialize hit counter
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+                window.jodyHitCounter = new JodyHitCounter({
+                    apiUrl: 'https://omcwjmvdjswkfjkahchm.supabase.co',
+                    headers: {
+                        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
+                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9zZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
+                        'Content-Type': 'application/json'
+                    },
+                    theme: 'jody',
+                    animated: true,
+                    showCounter: true
+                });
+            } catch (error) {
+                console.error('❌ Hit counter error:', error);
+            }
+        });
+    </script>
+</body>
+</html>

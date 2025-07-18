@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JodyLabs</title>
+    <style>
+        @font-face {
+            font-family: 'Candy';
+            src: url('/fonts/candy.ttf') format('truetype');
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(to bottom, #ffccff, #ff99ff, #ff66ff, #ff33ff, #ff00ff);
+            margin: 0;
+            font-family: 'Candy', Arial, sans-serif;
+            color: #ffffff;
+            overflow: hidden;
+        }
+        .title {
+            font-size: 3em;
+            text-align: center;
+            margin-bottom: 20px;
+            color: #ffccff;
+            text-shadow: 0 0 10px #ffccff, 0 0 20px #ff99ff;
+            z-index: 2;
+        }
+        .link-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 20px;
+            z-index: 2;
+        }
+        .link {
+            display: inline-block;
+            padding: 15px 30px;
+            background-color: #ff99ff;
+            color: #fff;
+            text-decoration: none;
+            font-size: 1.5em;
+            border-radius: 10px;
+            margin: 10px 0;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+            box-shadow: 0 5px #cc66cc;
+            position: relative;
+        }
+        .link:hover {
+            background-color: #ff66ff;
+            transform: translateY(-2px);
+            box-shadow: 0 7px #cc33cc;
+        }
+        .link:active {
+            transform: translateY(2px);
+            box-shadow: 0 3px #cc99cc;
+        }
+        .bg-image {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 60%;
+            height: 60%;
+            transform: translate(-50%, -50%);
+            background: url('/Images/glitter.gif') no-repeat center center;
+            background-size: contain;
+            opacity: 0.8;
+            z-index: 1;
+        }
+        .clock {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 1.5em;
+            color: #ffccff;
+            text-shadow: 0 0 10px #ffccff, 0 0 20px #ff99ff;
+            z-index: 2;
+        }
+        .footer {
+            position: absolute;
+            bottom: 10px;
+            text-align: center;
+            font-size: 1.2em;
+            color: #ffccff;
+            z-index: 2;
+        }
+        .heart {
+            position: absolute;
+            background: url('/Images/Snip/HeartSticker.png') no-repeat center center;
+            background-size: contain;
+            opacity: 0.8;
+            animation: float 10s linear infinite;
+        }
+        .heart.left {
+            left: 10px;
+        }
+        .heart.right {
+            right: 10px;
+        }
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+            }
+            50% {
+                transform: translateY(50vh) rotate(15deg);
+            }
+            100% {
+                transform: translateY(-100vh) rotate(0deg);
+            }
+        }
+        .hearts-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 1;
+        }
+        .circle {
+            position: absolute;
+            background-color: #ff99ff;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #ff99ff;
+        }
+        .circle.left {
+            left: -30px;
+        }
+        .circle.right {
+            right: -30px;
+        }
+        .circle.small {
+            width: 10px;
+            height: 10px;
+        }
+        .circle.medium {
+            width: 20px;
+            height: 20px;
+        }
+        .circle.large {
+            width: 30px;
+            height: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-image"></div>
+    <div class="clock">
+        <script>
+            document.write(new Date().toLocaleTimeString());
+        </script>
+    </div>
+    <div class="title">
+        JodyLabs.surge.sh
+    </div>
+    <div class="link-container">
+        <a href="aifun.html" class="link">
+            AI Fun
+            <div class="circle left small"></div>
+            <div class="circle left medium"></div>
+            <div class="circle left large"></div>
+            <div class="circle right small"></div>
+            <div class="circle right medium"></div>
+            <div class="circle right large"></div>
+        </a>
+        <a href="FGC.html" class="link">
+            Free Game Content
+            <div class="circle left small"></div>
+            <div class="circle left medium"></div>
+            <div class="circle left large"></div>
+            <div class="circle right small"></div>
+            <div class="circle right medium"></div>
+            <div class="circle right large"></div>
+        </a>
+    </div>
+    <div class="footer">
+        Built with AI and myself. ★ 2024 ---------------
+        <a href="https://www.cutercounter.com/" target="_blank"><img src="https://www.cutercounter.com/hits.php?id=hxpcocn&nd=6&style=2" border="0" alt="hit counter"></a>
+    </div>
+    <div class="hearts-container">
+        <div class="heart left" style="animation-delay: 0s; width: 40px; height: 40px;"></div>
+        <div class="heart left" style="animation-delay: 1s; width: 50px; height: 50px;"></div>
+        <div class="heart left" style="animation-delay: 2s; width: 60px; height: 60px;"></div>
+        <div class="heart left" style="animation-delay: 3s; width: 45px; height: 45px;"></div>
+        <div class="heart left" style="animation-delay: 4s; width: 55px; height: 55px;"></div>
+        <div class="heart left" style="animation-delay: 5s; width: 50px; height: 50px;"></div>
+        <div class="heart left" style="animation-delay: 6s; width: 40px; height: 40px;"></div>
+        <div class="heart left" style="animation-delay: 7s; width: 60px; height: 60px;"></div>
+        <div class="heart left" style="animation-delay: 8s; width: 45px; height: 45px;"></div>
+        <div class="heart left" style="animation-delay: 9s; width: 55px; height: 55px;"></div>
+        <div class="heart right" style="animation-delay: 0.5s; width: 50px; height: 50px;"></div>
+        <div class="heart right" style="animation-delay: 1.5s; width: 40px; height: 40px;"></div>
+        <div class="heart right" style="animation-delay: 2.5s; width: 60px; height: 60px;"></div>
+        <div class="heart right" style="animation-delay: 3.5s; width: 45px; height: 45px;"></div>
+        <div class="heart right" style="animation-delay: 4.5s; width: 55px; height: 55px;"></div>
+        <div class="heart right" style="animation-delay: 5.5s; width: 50px; height: 50px;"></div>
+        <div class="heart right" style="animation-delay: 6.5s; width: 40px; height: 40px;"></div>
+        <div class="heart right" style="animation-delay: 7.5s; width: 60px; height: 60px;"></div>
+        <div class="heart right" style="animation-delay: 8.5s; width: 45px; height: 45px;"></div>
+        <div class="heart right" style="animation-delay: 9.5s; width: 55px; height: 55px;"></div>
+    </div>
+    <script>
+        const hearts = document.querySelectorAll('.heart');
+        hearts.forEach(heart => {
+            heart.style.animationDuration = `${Math.random() *

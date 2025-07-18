@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photobooth</title>
+    <style>
+        #photobooth {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 20px;
+        }
+        #strip {
+            display: flex;
+            flex-direction: column;
+            border: 10px solid white;
+            padding: 10px;
+            background-color: white;
+        }
+        .photo {
+            margin-bottom: 10px;
+        }
+        video {
+            display: none;
+        }
+        #countdown {
+            font-size: 2em;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="photobooth">
+        <video id="video" width="320" height="240" autoplay></video>
+        <button id="start">Start Photobooth</button>
+        <div id="countdown"></div>
+        <div id="strip"></div>
+        <button id="save">Save Photos</button>
+    </div>
+
+    <script>
+        const video = document.getElementById('video');
+        const startButton = document.getElementById('start');
+        const saveButton = document.getElementById('save');
+        const strip = document.getElementById('strip');
+        const countdown = document.getElementById('countdown');
+        let photoCount = 0;
+
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                video.srcObject = stream;
+                video.play();
+            })
+            .catch(err => {
+                console.error("Error accessing webcam: ", err);
+            });
+
+        startButton.addEventListener('click', () => {
+            photoCount = 0;
+            strip.innerHTML = '';
+            countdown.innerHTML = '';
+            takePhoto();
+        });
+
+        function takePhoto() {
+            if (photoCount < 3) {
+                let count = 5;
+                countdown.innerHTML = count;
+                const interval = setInterval(() => {
+                    count--;
+                    countdown.innerHTML = count;
+                    if (count === 0) {
+                        clearInterval(interval);
+                        countdown.innerHTML = '';
+                        const canvas = document.createElement('canvas');
+                        canvas.width = 320;
+                        canvas.height = 240;
+                        const context = canvas.getContext('2d');
+                        context.filter = 'grayscale(100%)';
+                        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                        const img = document.createElement('img');
+                        img.src = canvas.toDataURL('image/png');
+                        img.classList.add('photo');
+                        strip.appendChild(img);
+                        photoCount++;
+                        setTimeout(takePhoto, 1000); // Wait 1 second before starting the next countdown
+                    }
+                }, 1000);
+            }
+        }
+
+        saveButton.addEventListener('click', () => {
+            const images = strip.getElementsByTagName('img');
+            for (let i = 0; i < images.length; i++) {
+                const link = document.createElement('a');
+                link.href = images[i].src;
+                link.download = `photo${i + 1}.png`;
+                link.click();
+            }
+        });
+    </script>
+</body>
+</html>

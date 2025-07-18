@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JodyLabs</title>
+    <style>
+        @font-face {
+            font-family: 'Bravo';
+            src: url('/fonts/bravo.ttf') format('truetype');
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #000;
+            margin: 0;
+            font-family: 'Bravo', Arial, sans-serif;
+            color: #fff;
+            overflow: hidden;
+        }
+        .glitter {
+            font-size: 2em;
+            position: relative;
+            animation: glitter 1.5s infinite;
+            text-align: center;
+            z-index: 1;
+            text-shadow: 0 0 5px #ff0000, 0 0 10px #ff0000; /* Red glow */
+        }
+        .glitter::before, .glitter::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle, rgba(255,255,255,0.5) 20%, transparent 20%);
+            background-size: 10px 10px;
+            animation: sparkle 1.5s infinite;
+        }
+        .glitter::after {
+            background-size: 5px 5px;
+            animation-duration: 1s;
+        }
+        @keyframes glitter {
+            0%, 100% { text-shadow: 0 0 5px #ff0000, 0 0 10px #ff0000; }
+            50% { text-shadow: 0 0 5px #ffffff, 0 0 10px #ffffff; }
+        }
+        @keyframes sparkle {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+        .button-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 20px;
+            z-index: 2;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #000;
+            color: #fff;
+            text-decoration: none;
+            font-size: 1.2em;
+            border-radius: 5px;
+            border: 2px solid;
+            margin: 10px 0;
+            animation: borderGlow 3s infinite;
+            transition: box-shadow 0.3s ease; /* Added transition for smooth effect */
+        }
+        .button:hover {
+            background-color: #333;
+            transform: scale(1.1);
+            box-shadow: 0 0 10px #ff0000, 0 0 20px #ff0000; /* Glowing effect on hover */
+        }
+        @keyframes borderGlow {
+            0%, 100% { border-color: #ff0000; box-shadow: 0 0 5px #ff0000, 0 0 10px #ff0000; }
+            50% { border-color: #ffffff; box-shadow: 0 0 5px #ffffff, 0 0 10px #ffffff; }
+        }
+        .background-image {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 50%;
+            height: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 0;
+            background: url('/Images/newcomer3.gif') no-repeat center center;
+            background-size: contain;
+            opacity: 1; /* Set opacity to 1 */
+            box-shadow: 0 0 20px #ff0000, 0 0 30px #ff0000; /* Red glow behind the GIF */
+        }
+        .time {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 1.2em;
+            animation: glitter 1.5s infinite;
+        }
+        .footer {
+            position: absolute;
+            bottom: 10px;
+            text-align: center;
+            font-size: 1em;
+            animation: glitter 1.5s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="background-image"></div>
+    <div class="time">
+        <script>
+            document.write(new Date().toLocaleTimeString());
+        </script>
+    </div>
+    <div class="glitter">
+        JodyLabs.surge.sh
+    </div>
+    <div class="button-container">
+        <a href="aifun.html" class="button">AI Fun</a>
+        <a href="FGC.html" class="button">Free Game Content</a>
+        <a href="Gdev.html" class="button">Gdev Links</a> <!-- New button added -->
+    </div>
+    <div class="footer">
+        Built with AI and myself. ★ 2024
+    </div>
+</body>
+</html>

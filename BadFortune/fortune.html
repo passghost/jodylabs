@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Experimental Web Page with Particle Burst and Fortunes</title>
+    <style>
+        body {
+            display: grid;
+            place-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #ff7e5f, #feb47b);
+            color: white;
+            overflow: hidden;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            width: 80%;
+        }
+        .box {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            transition: transform 0.3s ease;
+            position: relative;
+        }
+        .box:hover {
+            transform: scale(1.1);
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .box {
+            animation: fadeIn 2s ease-in-out;
+        }
+        #particles-js {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: -1;
+        }
+        .time {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 1.2em;
+        }
+        .signature {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            font-size: 1em;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div id="particles-js"></div>
+    <div class="time" id="time"></div>
+    <div class="container">
+        <div class="box">Click me!</div>
+        <div class="box">Click me!</div>
+        <div class="box">Click me!</div>
+        <div class="box">Click me!</div>
+        <div class="box">Click me!</div>
+        <div class="box">Click me!</div>
+    </div>
+    <div class="signature">Created by Copilot</div>
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script>
+        const positiveFortunes = [
+            // Add your positive fortunes here...
+        ];
+
+        const negativeFortunes = [
+            "You will stub your toe.",
+    "You will lose your keys.",
+    "You will spill your coffee.",
+    "You will miss your bus.",
+    "You will forget an important task.",
+    "You will get caught in the rain without an umbrella.",
+    "You will have a bad hair day.",
+    "You will step in a puddle.",
+    "You will get a paper cut.",
+    "You will burn your toast.",
+    "You will lose a sock in the laundry.",
+    "You will get stuck in traffic.",
+    "You will misplace your phone.",
+    "You will have a wardrobe malfunction.",
+    "You will get a parking ticket.",
+    "You will forget your lunch at home.",
+    "You will run out of battery on your device.",
+    "You will get a stain on your favorite shirt.",
+    "You will have a minor argument with a friend.",
+    "You will miss an important call.",
+    "You will sit on a wet bench.",
+    "You will drop your ice cream cone.",
+    "You will get a parking ticket while you're still in the car.",
+    "You will accidentally send a text to the wrong person.",
+    "You will find out your favorite show got canceled.",
+    "You will get a stain on your shirt right before a meeting.",
+    "You will step in gum with your favorite shoes.",
+    "You will get a splinter from a wooden spoon.",
+    "You will have a bird poop on you.",
+    "You will get stuck in an elevator with someone who just ate garlic.",
+    "You will lose your wallet and find it in the fridge.",
+    "You will get a sunburn on a cloudy day.",
+    "You will drop your phone in the toilet.",
+    "You will get a flat tire in the middle of nowhere.",
+    "You will spill red wine on a white carpet.",
+    "You will get a haircut that you immediately regret.",
+    "You will have your umbrella turn inside out in the wind.",
+    "You will get a bug in your drink.",
+    "You will find out your flight is delayed after arriving at the airport.",
+    "You will get a cramp in your leg during an important presentation.",
+            "You will stub your toe.",
+            "You will lose your keys.",
+            "You will spill your coffee.",
+            "You will miss your bus.",
+            "You will forget an important task.",
+            "You will get caught in the rain without an umbrella.",
+            "You will have a bad hair day.",
+            "You will step in a puddle.",
+            "You will get a paper cut.",
+            "You will burn your toast.",
+            "You will lose a sock in the laundry.",
+            "You will get stuck in traffic.",
+            "You will misplace your phone.",
+            "You will have a wardrobe malfunction.",
+            "You will get a parking ticket.",
+            "You will forget your lunch at home.",
+            "You will run out of battery on your device.",
+            "You will get a stain on your favorite shirt.",
+            "You will have a minor argument with a friend.",
+            "You will miss an important call."
+        ];
+
+        const fortunes = [...positiveFortunes, ...negativeFortunes];
+
+        particlesJS('particles-js', {
+            particles: {
+                number: {
+                    value: 50,
+                    density: {
+                        enable: true,
+                        value_area: 800
+                    }
+                },
+                shape: {
+                    type: 'triangle',
+                    stroke: {
+                        width: 0,
+                        color: '#000000'
+                    }
+                },
+                opacity: {
+                    value: 0.5,
+                    random: true,
+                    anim: {
+                        enable: false,
+                        speed: 1,
+                        opacity_min: 0.1,
+                        sync: false
+                    }
+                },
+                size: {
+                    value: 10,
+                    random: true,
+                    anim: {
+                        enable: false,
+                        speed: 40,
+                        size_min: 0.1,
+                        sync: false
+                    }
+                },
+                line_linked: {
+                    enable: false
+                },
+                move: {
+                    enable: true,
+                    speed: 6,
+                    direction: 'none',
+                    random: false,
+                    straight: false,
+                    out_mode: 'out',
+                    bounce: false,
+                    attract: {
+                        enable: false,
+                        rotateX: 600,
+                        rotateY: 1200
+                    }
+                }
+            },
+            interactivity: {
+                detect_on: 'canvas',
+                events: {
+                    onhover: {
+                        enable: true,
+                        mode: 'repulse'
+                    },
+                    onclick: {
+                        enable: true,
+                        mode: 'push'
+                    },
+                    resize: true
+                },
+                modes: {
+                    grab: {
+                        distance: 400,
+                        line_linked: {
+                            opacity: 1
+                        }
+                    },
+                    bubble: {
+                        distance: 400,
+                        size: 40,
+                        duration: 2,
+                        opacity: 8,
+                        speed: 3
+                    },
+                    repulse: {
+                        distance: 200,
+                        duration: 0.4
+                    },
+                    push: {
+                        particles_nb: 4
+                    },
+                    remove: {
+                        particles_nb: 2
+                    }
+                }
+            },
+            retina_detect: true
+        });
+
+        document.querySelectorAll('.box').forEach(box => {
+            box.addEventListener('click', (e) => {
+                box.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
+                box.textContent = fortunes[Math.floor(Math.random() * fortunes.length)];
+                changeBackgroundGradient();
+                particlesJS('particles-js', {
+                    particles: {
+                        number: {
+                            value: 50,
+                            density: {
+                                enable: true,
+                                value_area: 800
+                            }
+                        },
+                        shape: {
+                            type: 'triangle',
+                            stroke: {
+                                width: 0,
+                                color: '#000000'
+                            }
+                        },
+                        opacity: {
+                            value: 0.5,
+                            random: true,
+                            anim: {
+                                enable: false,
+                                speed: 1,
+                                opacity_min: 0.1,
+                                sync: false
+                            }
+                        },
+                        size: {
+                            value: 10,
+                            random: true,
+                            anim: {
+                                enable: false,
+                                speed: 40,
+                                size_min: 0.1,
+                                sync: false
+                            }
+                        },
+                        line_linked: {
+                            enable: false
+                        },
+                        move: {
+                            enable: true,
+                            speed: 6,
+                            direction: 'none',
+                            random: false,
+                            straight: false,
+                            out_mode: 'out',
+                            bounce: false,
+                            attract: {
+                                enable: false,
+                                rotateX: 600,
+                                rotateY: 1200
+                            }
+                        }
+                    },
+                    interactivity: {
+                        detect_on: 'canvas',
+                        events: {
+                            onhover: {
+                                enable: true,
+                                mode: 'repulse'
+                            },
+                            onclick: {
+                                enable: true,
+                                mode: 'push'
+                            },
+                            resize: true
+                        },
+                        modes: {
+                            grab: {
+                                distance: 400,
+                                line_linked: {
+                                    opacity: 1
+                                }
+                            },
+                            bubble: {
+                                distance: 400,
+                                size: 40,
+                                duration: 2,
+                                opacity: 8,
+                                speed: 3
+                            },
+                            repulse: {
+                                distance: 200,
+                                duration: 0.4
+                            },
+                            push: {
+                                particles_nb: 4
+                            },
+                            remove: {
+                                particles_nb: 2
+                            }
+                        }
+                    },
+                    retina_detect: true
+                });
+            });
+        });
+
+        function changeBackgroundGradient() {
+            const color1 = `hsl(${Math.random() * 360}, 100%, 50%)`;
+            const color2 = `hsl(${Math.random() * 360}, 100%, 50%)`;
+            document.body.style.background = `linear-gradient(135deg, ${color1}, ${color2})`;
+        }
+
+        function updateTime() {
+            const now = new Date();
+            const options = { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+            const timeString = now.toLocaleTimeString('en-US', options);
+            document.getElementById('time').textContent = timeString;
+        }
+
+        setInterval(updateTime, 1000);
+        updateTime();
+    </script>
+</body>
+</html>

@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Wake'n'bake Homepage</title>
+    <meta name="description" content="The Wake'n'bake Homepage - Search, chat, weather, crypto, comics, and hemp store directory.">
+    <meta name="theme-color" content="#145c2a">
+    <style>
+        /* Spinner fix: force perfect circle */
+        #spinner-container {
+            width: 180px !important;
+            height: 180px !important;
+            min-width: 180px !important;
+            min-height: 180px !important;
+            max-width: 180px !important;
+            max-height: 180px !important;
+            aspect-ratio: 1 / 1 !important;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        #spinner-img-container {
+            width: 180px !important;
+            height: 180px !important;
+            min-width: 180px !important;
+            min-height: 180px !important;
+            max-width: 180px !important;
+            max-height: 180px !important;
+            aspect-ratio: 1 / 1 !important;
+            border-radius: 50% !important;
+            box-shadow: 0 8px 32px 0 rgba(31,38,135,0.18),0 2px 8px 0 #a5b4fc;
+            background: linear-gradient(145deg,#f1f5f9 60%,#e0e7ff 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+        #spinner-img {
+            width: 100% !important;
+            height: 100% !important;
+            min-width: 0 !important;
+            min-height: 0 !important;
+            max-width: 100% !important;
+            max-height: 100% !important;
+            aspect-ratio: 1 / 1 !important;
+            object-fit: cover !important;
+            border-radius: 50% !important;
+            background: #fff;
+            box-shadow: 0 0 0 6px #fff,0 0 0 12px #e0e7ff;
+            display: block;
+        }
+        /* Spinner controls green theme */
+        .spinner-controls button {
+            background: #1ec16b !important;
+            color: #fff !important;
+            box-shadow: 0 1px 4px 0 #145c2a !important;
+            border: none !important;
+        }
+
+        .spinner-controls button:hover {
+            background: #00ff88 !important;
+            color: #145c2a !important;
+        }
+
+        #img-upload-btn {
+            background: #1ec16b !important;
+            color: #fff !important;
+            box-shadow: 0 1px 4px 0 #145c2a !important;
+            border: none !important;
+        }
+
+        #img-upload-btn:hover {
+            background: #00ff88 !important;
+            color: #145c2a !important;
+        }
+
+        #img-upload-btn svg path,
+        #img-upload-btn svg rect {
+            stroke: #fff !important;
+            fill: #fff !important;
+        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #000;
+            min-height: 100vh;
+            color: #1ec16b;
+            line-height: 1.6;
+            overflow-x: hidden;
+            position: relative;
+        }
+        body::before {
+            content: "";
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            -webkit-mask-image: url('Wmask.png');
+            mask-image: url('Wmask.png');
+            -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
+            -webkit-mask-position: center;
+            mask-position: center;
+            -webkit-mask-size: 80vmin;
+            mask-size: 80vmin;
+            z-index: 100;
+            pointer-events: none;
+            filter: drop-shadow(0 0 40px #00ff88);
+            opacity: 0.8;
+        }
+        :focus {
+            outline: 2px solid #00ff88;
+            outline-offset: 2px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 20px 0;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px;
+            background: rgba(0, 0, 0, 0.9);
+            border-radius: 20px;
+            border: 2px solid #00ff88;
+            box-shadow: 0 20px 40px rgba(0, 255, 136, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            animation: glow 3s infinite ease-in-out;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        @keyframes glow {
+            0%, 100% { 
+                filter: drop-shadow(0 0 20px #00ff88) brightness(1.2);
+                transform: scale(1);
+            }
+            50% { 
+                filter: drop-shadow(0 0 30px #00ffaa) brightness(1.4);
+                transform: scale(1.05);
+            }
+        }
+
+        h1 {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 700;
+            background: linear-gradient(45deg, #00ff88, #00ffaa, #44ff99);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px rgba(0, 255, 136, 0.5);
+            margin: 0;
+        }
+
+        .clock {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1ec16b;
+            background: rgba(20, 60, 30, 0.85);
+            padding: 10px 20px;
+            border-radius: 15px;
+            border: 1px solid #145c2a;
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+        }
+
+        .hit-counter {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #1ec16b;
+            background: rgba(20, 60, 30, 0.85);
+            padding: 8px 15px;
+            border-radius: 15px;
+            border: 1px solid #145c2a;
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            text-align: center;
+            min-width: 120px;
+        }
+
+        .hit-counter .counter-label {
+            display: block;
+            font-size: 0.7rem;
+            opacity: 0.8;
+            margin-bottom: 2px;
+        }
+
+        .hit-counter .counter-value {
+            display: block;
+            font-weight: 600;
+            color: #145c2a;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            grid-template-rows: auto auto auto;
+            gap: 2vw;
+            margin-bottom: 2vw;
+            width: 100%;
+        }
+
+        .widgets-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2vw;
+            margin-bottom: 2vw;
+            width: 100%;
+        }
+
+        .adult-swim-widget {
+            min-height: 600px;
+        }
+
+        .adult-swim-widget iframe {
+            height: 500px;
+        }
+
+        .left-widgets {
+            grid-column: 1;
+            display: grid;
+            gap: 25px;
+        }
+
+        .right-widgets {
+            grid-column: 3;
+            display: grid;
+            gap: 25px;
+        }
+
+        .bottom-widgets {
+            grid-column: 1 / span 3;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+        }
+
+        .widget {
+            background: rgba(20, 60, 30, 0.92);
+            border-radius: 20px;
+            padding: 25px;
+            border: 2px solid #145c2a;
+            box-shadow: 0 10px 30px rgba(20, 92, 60, 0.18);
+            backdrop-filter: blur(10px);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .widget::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 136, 0.1), transparent);
+            transition: left 0.6s;
+        }
+
+        .widget:hover::before {
+            left: 100%;
+        }
+
+        .widget:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(20, 92, 60, 0.28);
+            border-color: #1ec16b;
+        }
+
+        .widget h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1ec16b;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .widget-icon {
+            width: 24px;
+            height: 24px;
+            filter: hue-rotate(80deg) brightness(1.1);
+        }
+
+        iframe {
+            width: 100%;
+            border: none;
+            border-radius: 10px;
+            background: #000;
+        }
+
+        .search-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .search-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(20, 92, 60, 0.13);
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid #145c2a;
+        }
+
+        .search-group img {
+            width: 20px;
+            height: 20px;
+        }
+
+        .search-group form {
+            display: flex;
+            flex: 1;
+            gap: 10px;
+        }
+
+        .search-group input[type="text"] {
+            flex: 1;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 1px solid #145c2a;
+            background: rgba(20, 60, 30, 0.85);
+            color: #1ec16b;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .search-group input[type="text"]:focus {
+            border-color: #1ec16b;
+            box-shadow: 0 0 10px rgba(20, 92, 60, 0.22);
+        }
+
+        .search-group button {
+            padding: 12px 20px;
+            border-radius: 8px;
+            background: linear-gradient(45deg, #145c2a, #1ec16b);
+            color: #fff;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .search-group button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(20, 92, 60, 0.28);
+        }
+
+        .widget-button {
+            display: block;
+            width: 100%;
+            padding: 12px 20px;
+            margin-top: 15px;
+            background: linear-gradient(45deg, #145c2a, #1ec16b);
+            color: #fff;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+        }
+
+        .widget-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(20, 92, 60, 0.28);
+            background: linear-gradient(45deg, #1ec16b, #145c2a);
+        }
+
+        .entertainment-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .large-widget {
+            min-height: 500px;
+        }
+
+        .large-widget iframe {
+            height: 400px;
+        }
+
+        .menu-section {
+            background: rgba(20, 60, 30, 0.97);
+            border-radius: 20px;
+            padding: 30px;
+            border: 2px solid #145c2a;
+            box-shadow: 0 15px 35px rgba(20, 92, 60, 0.22);
+            backdrop-filter: blur(15px);
+        }
+
+        .menu-section h2 {
+            font-size: 2.8rem;
+            font-weight: 700;
+            color: #1ec16b;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .menu-widget {
+            margin-bottom: 30px;
+            background: rgba(20, 92, 60, 0.09);
+            border-radius: 15px;
+            padding: 25px;
+            border: 1px solid #145c2a;
+            text-align: center;
+        }
+
+        .menu-widget h3 {
+            color: #145c2a;
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .menu-widget p {
+            color: #cccccc;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .shop-button {
+            display: inline-block;
+            padding: 15px 30px;
+            background: linear-gradient(45deg, #145c2a, #1ec16b);
+            color: #fff;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(20, 92, 60, 0.22);
+        }
+
+        .shop-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(20, 92, 60, 0.32);
+            background: linear-gradient(45deg, #1ec16b, #145c2a);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            .main-grid {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto;
+            }
+
+            .adult-swim-widget {
+                grid-column: 1;
+                grid-row: auto;
+            }
+
+            .left-widgets,
+            .right-widgets,
+            .bottom-widgets {
+                grid-column: 1;
+            }
+
+            .widgets-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .entertainment-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .clock {
+                position: relative;
+                top: auto;
+                right: auto;
+                margin-bottom: 20px;
+                display: inline-block;
+            }
+
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            h1 {
+                font-size: 2.5rem;
+            }
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(45deg, #145c2a, #1ec16b);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(45deg, #1ec16b, #145c2a);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <div style="display: flex; align-items: center; gap: 18px;">
+                  <div id="spinner-container" style="margin-top:22px;">
+                    <div id="spinner-img-container" style="width:90px;height:90px;position:relative;border-radius:50%;box-shadow:0 4px 16px 0 rgba(31,38,135,0.18),0 1px 4px 0 #a5b4fc;background:linear-gradient(145deg,#f1f5f9 60%,#e0e7ff 100%);display:flex;align-items:center;justify-content:center;overflow:hidden;">
+                        <img id="spinner-img" src="Wmask.png" alt="Profile Spinner">
+                    </div>
+                    <input type="file" id="img-upload" accept="image/*" style="display:none;">
+                    <div style="height:18px;"></div>
+                    <div class="spinner-controls" style="display:flex;flex-direction:row;align-items:center;justify-content:center;gap:6px;margin-top:0;">
+                      <button id="spin-btn" title="Speed up" style="padding:0 0;font-size:1.1rem;border-radius:50%;border:none;background:#e0e7ff;color:#6366f1;cursor:pointer;width:24px;height:24px;box-shadow:0 1px 4px 0 #c7d2fe;display:flex;align-items:center;justify-content:center;">+</button>
+                      <button id="slow-btn" title="Slow down" style="padding:0 0;font-size:1.1rem;border-radius:50%;border:none;background:#e0e7ff;color:#6366f1;cursor:pointer;width:24px;height:24px;box-shadow:0 1px 4px 0 #c7d2fe;display:flex;align-items:center;justify-content:center;">-</button>
+                    </div>
+                    <button id="img-upload-btn" title="Upload Image" style="margin-top:4px;padding:0;border-radius:50%;border:none;background:#e0e7ff;color:#6366f1;cursor:pointer;width:22px;height:22px;box-shadow:0 1px 4px 0 #c7d2fe;display:flex;align-items:center;justify-content:center;font-size:1rem;">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 16 16"><path d="M8 1v10M8 11l-3-3m3 3l3-3" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><rect x="2" y="13" width="12" height="2" rx="1" fill="#fff"/></svg>
+                    </button>
+                  </div>
+                </div>
+                <!-- Replace title with GIF -->
+                <img src="jodylabsgif.gif" alt="JodyLabs GIF" style="display:block;margin:0 auto;max-width:420px;width:100%;height:auto;box-sizing:border-box;">
+            </div>
+        <script>
+        // Fidget spinner logic for header with tiny controls and upload button
+        (function() {
+            const spinnerImgContainer = document.getElementById('spinner-img-container');
+            const spinnerImg = document.getElementById('spinner-img');
+            const imgUpload = document.getElementById('img-upload');
+            const imgUploadBtn = document.getElementById('img-upload-btn');
+            const spinBtn = document.getElementById('spin-btn');
+            const slowBtn = document.getElementById('slow-btn');
+            let angle = 0;
+            let speed = 0.5;
+            let animationFrame;
+            let spinInterval = null;
+            let slowInterval = null;
+            function animate() {
+                angle = (angle + speed) % 360;
+                spinnerImgContainer.style.transform = `rotate(${angle}deg)`;
+                animationFrame = requestAnimationFrame(animate);
+            }
+            animate();
+            spinnerImgContainer.onclick = function() {
+                speed += 1;
+            };
+            spinnerImgContainer.oncontextmenu = function(e) {
+                e.preventDefault();
+                speed = Math.max(0, speed - 0.5);
+            };
+            imgUploadBtn.onclick = function() {
+                imgUpload.click();
+            };
+            imgUpload.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(ev) {
+                        spinnerImg.src = ev.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+            // Controls
+            spinBtn.onclick = () => { speed += 1; };
+            slowBtn.onclick = () => { speed = Math.max(0, speed - 0.5); };
+            spinBtn.onmousedown = () => {
+                if (spinInterval) return;
+                spinInterval = setInterval(() => { speed += 0.2; }, 50);
+            };
+            spinBtn.onmouseup = spinBtn.onmouseleave = () => {
+                clearInterval(spinInterval); spinInterval = null;
+            };
+            slowBtn.onmousedown = () => {
+                if (slowInterval) return;
+                slowInterval = setInterval(() => { speed = Math.max(0, speed - 0.15); }, 50);
+            };
+            slowBtn.onmouseup = slowBtn.onmouseleave = () => {
+                clearInterval(slowInterval); slowInterval = null;
+            };
+        })();
+        </script>
+        </div>
+        
+        <div class="clock" id="clock"></div>
+        <div class="hit-counter" id="hit-counter">
+            <span class="counter-label">Page Hits</span>
+            <span class="counter-value" id="hit-count">0</span>
+            <button id="refresh-hit" style="margin-top:4px;padding:2px 8px;font-size:0.8rem;border-radius:8px;border:none;background:#145c2a;color:#fff;cursor:pointer;">↻</button>
+            <span id="hit-error" style="display:none;color:#ff4444;font-size:0.7rem;margin-top:2px;"></span>
+        </div>
+
+        <!-- 3-Row Grid Layout -->
+        <main id="main-content" tabindex="-1">
+          <div class="main-grid">
+            <!-- Row 1: Search Engines (full width) -->
+            <section aria-label="Search Engines" class="widget wide-widget" style="grid-column: 1 / span 3;">
+              <h2>
+                <img src="../Images/gem3.png" alt="Search" class="widget-icon">
+                Search Engines
+              </h2>
+              <div class="search-container">
+                <div class="search-group">
+                  <img src="https://www.google.com/favicon.ico" alt="Google">
+                  <form method="GET" action="https://www.google.com/search" aria-label="Google Search">
+                    <input type="text" name="q" maxlength="255" placeholder="Search Google" aria-label="Search Google">
+                    <button type="submit">Search</button>
+                  </form>
+                </div>
+                <div class="search-group">
+                  <img src="https://duckduckgo.com/favicon.ico" alt="DuckDuckGo">
+                  <form method="GET" action="https://duckduckgo.com/" aria-label="DuckDuckGo Search">
+                    <input type="text" name="q" maxlength="255" placeholder="Search DuckDuckGo" aria-label="Search DuckDuckGo">
+                    <button type="submit">Search</button>
+                  </form>
+                </div>
+                <div class="search-group">
+                  <img src="https://you.com/favicon.ico" alt="You.com">
+                  <form method="GET" action="https://you.com/search" aria-label="You.com Search">
+                    <input type="text" name="q" maxlength="255" placeholder="Search You.com" aria-label="Search You.com">
+                    <button type="submit">Search</button>
+                  </form>
+                </div>
+              </div>
+            </section>
+
+            <div class="left-widgets">
+              <article class="widget" style="min-height:220px;" aria-label="Discord Chat">
+                <h2 style="margin-bottom:10px;">
+                  <img src="../Images/gem4.png" alt="Discord" class="widget-icon" style="width:32px;height:32px;filter:drop-shadow(0 0 8px #00ff88);margin-right:8px;">
+                  <span style="font-size:1.2rem;font-family:'Inter',sans-serif;background:linear-gradient(90deg,#00ff88 10%,#44ff99 90%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Discord</span>
+                </h2>
+                <iframe src="https://discord.com/widget?id=1129507156585041920&theme=dark" title="Discord Chat" height="180" allowtransparency="true" frameborder="0" sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"></iframe>
+                <a href="https://discord.gg/nFn9S6ydDr" target="_blank" class="widget-button" style="margin-top:0;font-size:1.1rem;">Open Discord</a>
+              </article>
+              <article class="widget" style="min-height:220px;" aria-label="Weather">
+                <h2>
+                  <img src="../Images/gem2.png" alt="Weather" class="widget-icon">
+                  Lexington Weather
+                </h2>
+                <a class="weatherwidget-io" href="https://forecast7.com/en/38d04n84d50/lexington/" data-label_1="LEXINGTON" data-label_2="WEATHER" data-theme="ruby">LEXINGTON WEATHER</a>
+                <script>
+                  !function(d,s,id){
+                    var js,fjs=d.getElementsByTagName(s)[0];
+                    if(!d.getElementById(id)){
+                      js=d.createElement(s);
+                      js.id=id;
+                      js.src='https://weatherwidget.io/js/widget.min.js';
+                      fjs.parentNode.insertBefore(js,fjs);
+                    }
+                  }(document,'script','weatherwidget-io-js');
+                </script>
+                <a href="https://forecast7.com/en/38d04n84d50/lexington/" target="_blank" class="widget-button">View Forecast</a>
+              </article>
+              <article class="widget" style="min-height:320px;" aria-label="Calfagotchi">
+                <h2>
+                  <img src="../Images/emrald.png" alt="Calfagotchi" class="widget-icon">
+                  Calfagotchi
+                </h2>
+                <iframe src="../Calf/index.html" title="Calfagotchi Virtual Pet" style="height:300px;border-radius:14px;border:2px solid #1ec16b;box-shadow:0 4px 24px 0 #1ec16b40;" sandbox="allow-scripts allow-same-origin"></iframe>
+                <a href="../Calf/index.html" target="_blank" class="widget-button" style="margin-top:0;font-size:1.1rem;">Open Full Calfagotchi</a>
+              </article>
+            </div>
+
+            <!-- Adult Swim between left and right widgets -->
+            <section aria-label="Adult Swim Streams" class="widget adult-swim-widget wide-widget" style="grid-column: 2;min-height:480px;">
+              <h2>
+                <img src="../Images/gem3.png" alt="Adult Swim" class="widget-icon">
+                <span style="font-size:1.6rem;font-family:'Inter',sans-serif;background:linear-gradient(90deg,#00ff88 10%,#44ff99 90%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Adult Swim Streams</span>
+              </h2>
+              <iframe src="https://www.adultswim.com/streams/" title="Adult Swim Live Streams" style="height:380px;margin-bottom:10px;border-radius:14px;border:2px solid #1ec16b;box-shadow:0 4px 24px 0 #1ec16b40;" sandbox="allow-scripts allow-same-origin allow-forms" referrerpolicy="no-referrer"></iframe>
+              <a href="https://www.adultswim.com/streams/" target="_blank" class="widget-button" style="margin-top:0;font-size:1.1rem;">Watch Adult Swim</a>
+            </section>
+
+            <div class="right-widgets">
+              <div class="widget" style="min-height:220px;" aria-label="Kaspa Crypto">
+                <h2>
+                  <img src="../Images/emrald.png" alt="Crypto" class="widget-icon">
+                  Kaspa
+                </h2>
+                <script src="https://widget.coinlore.com/widgets/new-widget.js"></script>
+                <div class="coinlore-coin-widget" data-mcap="1" data-mcurrency="usd" data-d7="1" data-cwidth="100%" data-rank="1" data-vol="1" data-id="kaspa" data-bcolor="#1e1e1e" data-tcolor="#00ff00" data-ccolor="#00ff00" data-pcolor="#00ff00"></div>
+                <a href="https://coinlore.com/coin/kaspa" target="_blank" class="widget-button">Kaspa Stats</a>
+              </div>
+              <div class="widget" style="min-height:220px;" aria-label="Comics">
+                <h2>
+                  <img src="../Images/gem2.png" alt="Comics" class="widget-icon">
+                  Comics
+                </h2>
+                <iframe src="https://readcomiconline.li/" title="Read Comics Online" sandbox="allow-scripts allow-same-origin allow-forms" referrerpolicy="no-referrer" style="height:120px;"></iframe>
+                <a href="https://readcomiconline.li/" target="_blank" class="widget-button">Read Comics</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Row: Empty for spacing or future widgets -->
+          <div class="bottom-widgets" style="grid-column: 1 / span 3;"></div>
+        </main>
+
+        <!-- Hemp Store Directory (No Embeds - Links Only) -->
+        <div class="menu-section">
+            <h2>Hemp Store Directory</h2>
+            <div class="menu-widget">
+                <h3>🌿 THCa Flower</h3>
+                <p>Premium THCa flower products and affordable ounce deals. High-quality hemp with lab testing and fast shipping.</p>
+                <a href="https://www.thcaflower.online/product/cheap-thca-flower-ounces/15" target="_blank" class="shop-button">Visit THCa Store</a>
+            </div>
+            <div class="menu-widget">
+                <h3>📦 Wholesale Hemp</h3>
+                <p>Bulk THCa flower pounds for retailers and distributors. Competitive wholesale pricing with quality assurance.</p>
+                <a href="https://discountpharms.com/wholesale/hemp-flower/thca-flower-pounds/" target="_blank" class="shop-button">Visit Wholesale Store</a>
+            </div>
+            <div class="menu-widget">
+                <h3>💎 Premium Hemp Wholesale</h3>
+                <p>Top-tier THCa flower wholesale with premium genetics and exceptional potency for discerning customers.</p>
+                <a href="https://highthcahempflower.com/thca-flower-wholesale/" target="_blank" class="shop-button">Visit Premium Store</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function updateClock() {
+            const now = new Date();
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const seconds = now.getSeconds().toString().padStart(2, '0');
+            document.getElementById('clock').textContent = `${hours}:${minutes}:${seconds}`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Hit Counter with Supabase
+        (function() {
+            const apiUrl = 'https://omcwjmvdjswkfjkahchm.supabase.co';
+            const headers = {
+                'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
+                'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
+                'Content-Type': 'application/json'
+            };
+            const pagePath = 'stonerhome';
+            const hitCountEl = document.getElementById('hit-count');
+            const hitErrorEl = document.getElementById('hit-error');
+            const refreshBtn = document.getElementById('refresh-hit');
+
+            async function recordHit() {
+                hitErrorEl.style.display = 'none';
+                hitErrorEl.textContent = '';
+                try {
+                    // Get existing record
+                    const getResponse = await fetch(`${apiUrl}/rest/v1/page_hits?page_path=eq.${pagePath}&select=id,hit_count`, {
+                        method: 'GET',
+                        headers: headers
+                    });
+                    if (getResponse.ok) {
+                        const existingData = await getResponse.json();
+                        if (existingData.length > 0) {
+                            // Try to update existing
+                            const record = existingData[0];
+                            const newCount = record.hit_count + 1;
+                            const updateResponse = await fetch(`${apiUrl}/rest/v1/page_hits?id=eq.${record.id}`, {
+                                method: 'PATCH',
+                                headers: headers,
+                                body: JSON.stringify({
+                                    hit_count: newCount,
+                                    last_hit: new Date().toISOString(),
+                                    updated_at: new Date().toISOString()
+                                })
+                            });
+                            if (updateResponse.ok) {
+                                hitCountEl.textContent = newCount.toLocaleString();
+                            } else {
+                                hitCountEl.textContent = record.hit_count.toLocaleString();
+                                hitErrorEl.textContent = 'Could not update hit count.';
+                                hitErrorEl.style.display = 'block';
+                            }
+                        } else {
+                            // Create new record
+                            const createResponse = await fetch(`${apiUrl}/rest/v1/page_hits`, {
+                                method: 'POST',
+                                headers: headers,
+                                body: JSON.stringify({
+                                    page_path: pagePath,
+                                    hit_count: 1,
+                                    first_hit: new Date().toISOString(),
+                                    last_hit: new Date().toISOString(),
+                                    last_ip_hash: 'browser-' + Math.random().toString(36).substring(7)
+                                })
+                            });
+                            if (createResponse.ok) {
+                                hitCountEl.textContent = '1';
+                            } else {
+                                hitCountEl.textContent = '---';
+                                hitErrorEl.textContent = 'Could not create hit record.';
+                                hitErrorEl.style.display = 'block';
+                            }
+                        }
+                    } else {
+                        hitCountEl.textContent = '---';
+                        hitErrorEl.textContent = 'API error.';
+                        hitErrorEl.style.display = 'block';
+                    }
+                } catch (error) {
+                    console.error('Hit counter error:', error);
+                    hitCountEl.textContent = '---';
+                    hitErrorEl.textContent = 'Network or server error.';
+                    hitErrorEl.style.display = 'block';
+                }
+            }
+            // Manual refresh button
+            refreshBtn.onclick = function() {
+                recordHit();
+            };
+            // Always show the latest count on page load
+            recordHit();
+        })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dad's Web Counter</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between; /* Adjusts spacing between columns */
+            align-items: flex-start; /* Aligns numbers to start */
+            font-family: 'Arial', sans-serif;
+            background-color: #282c34;
+            color: #61dafb;
+            font-size: 20px; /* Adjust font size for better visibility */
+            position: relative; /* Required for absolute positioning of the numbers */
+        }
+        .number {
+            flex: 0 0 4%; /* Size of each number block */
+            text-align: center;
+            padding: 10px;
+            min-height: 30px; /* Ensures consistent height for alignment */
+            box-sizing: border-box; /* Ensures padding is included in the width */
+            position: relative; /* Required for gravity effect */
+            cursor: pointer; /* Change cursor to pointer on hover */
+            text-shadow: 0 0 10px #61dafb, 0 0 20px #61dafb; /* Glow effect for numbers */
+        }
+        .wingding {
+            font-size: 24px; /* Size of the wingding */
+            display: inline-block; /* Ensure wingding is treated as a block */
+            margin-right: 5px; /* Space between wingding and number */
+        }
+        .particle {
+            position: absolute;
+            width: 5px; /* Size of particles */
+            height: 5px;
+            background-color: #61dafb; /* Particle color */
+            border-radius: 50%; /* Make particles circular */
+            pointer-events: none; /* Prevent particles from interfering with clicks */
+            animation: particle-animation 0.5s forwards; /* Animation for particles */
+        }
+        @keyframes particle-animation {
+            0% {
+                transform: translate(0, 0);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(var(--x), var(--y));
+                opacity: 0;
+            }
+        }
+        .title {
+            position: absolute;
+            top: 20px; /* Position the title at the top */
+            left: 50%; /* Center the title horizontally */
+            transform: translateX(-50%); /* Centering adjustment */
+            font-size: 24px; /* Increased font size for visibility */
+            color: #61dafb; /* Text color */
+            text-shadow: 0 0 10px #61dafb, 0 0 20px #61dafb; /* Glow effect for the title */
+            z-index: 10; /* Ensures the title is above other elements */
+        }
+        .total-value {
+            position: absolute;
+            top: 20px; /* Align with title */
+            left: 60%; /* Position next to the title */
+            transform: translateX(-50%); /* Centering adjustment */
+            font-size: 24px; /* Increased font size for visibility */
+            color: #61dafb; /* Text color */
+            text-shadow: 0 0 10px #61dafb, 0 0 20px #61dafb; /* Glow effect for the total value */
+        }
+        .button-container {
+            position: absolute;
+            top: 20px; /* Align with title */
+            left: 10px; /* Position to the left */
+            z-index: 10; /* Ensure buttons are above other elements */
+        }
+        .button {
+            background-color: #61dafb; /* Button color */
+            border: none;
+            color: #282c34; /* Text color */
+            padding: 10px 15px;
+            margin: 5px;
+            font-size: 16px; /* Increased font size for buttons */
+            cursor: pointer; /* Change cursor to pointer on hover */
+            border-radius: 5px; /* Rounded corners for buttons */
+            text-shadow: 0 0 5px #282c34; /* Subtle shadow for button text */
+        }
+    </style>
+</head>
+<body>
+    <div class="button-container">
+        <button class="button" onclick="resetCounter(1)">Reset 1s</button>
+        <button class="button" onclick="resetCounter(10)">Reset 10s</button>
+        <button class="button" onclick="resetCounter(100)">Reset 100s</button>
+    </div>
+    <div class="title">Dad's Web Counter</div> <!-- Title Added -->
+    <div class="total-value">Total: 0</div> <!-- Total Value Display -->
+    <script src="/jodylabs/counter-script.js"></script>
+    <script>
+        const body = document.body;
+        const countElements = 700; // Increased number of elements for more rows
+        let counters = Array(countElements).fill(0); // Initialize counters to 0
+        let clickCount = 0; // Track clicks for explosion effect
+        let totalValue = 0; // Total value of clicked numbers
+        let incrementValue = 0; // Value to increment by
+        let intervalId;
+
+        // Array of wingdings with different glow colors
+        const wingdings = [
+            { char: '✈', color: '#ff6347' }, // Tomato color
+            { char: '☀', color: '#ffd700' }, // Gold color
+            { char: '☂', color: '#00bfff' }, // Deep Sky Blue
+            { char: '✿', color: '#8a2be2' }, // Blue Violet
+            { char: '★', color: '#ff1493' }, // Deep Pink
+            { char: '✉', color: '#00ff7f' }, // Spring Green
+            { char: '✧', color: '#ff4500' }, // Orange Red
+            { char: '❄', color: '#1e90ff' }  // Dodger Blue
+        ];
+
+        // Function to create and display numbers
+        function displayNumbers() {
+            for (let i = 0; i < countElements; i++) {
+                const div = document.createElement('div');
+                div.className = 'number';
+                div.style.top = `${Math.floor(i / 25) * 30}px`; // Set initial position
+
+                // Randomly select a wingding and its glow color
+                const randomWingding = wingdings[Math.floor(Math.random() * wingdings.length)];
+                const wingdingSpan = document.createElement('span');
+                wingdingSpan.className = 'wingding';
+                wingdingSpan.innerText = randomWingding.char;
+                wingdingSpan.style.textShadow = `0 0 10px ${randomWingding.color}, 0 0 20px ${randomWingding.color}`; // Set glow color
+
+                // Create a text node for the number
+                const numberText = document.createTextNode(counters[i]);
+
+                // Append wingding and number to the div
+                div.appendChild(wingdingSpan);
+                div.appendChild(numberText);
+
+                // Check if the number's position overlaps with the title
+                const numberTopPosition = Math.floor(i / 25) * 30; // Calculate vertical position based on index
+                if (numberTopPosition < 60) { // If it overlaps with title area
+                    continue; // Skip creating this number
+                }
+
+                // Add click event to make the number fall
+                div.addEventListener('click', () => {
+                    clickCount++; // Increment click count
+                    totalValue += counters[i]; // Add clicked number to total value
+                    updateTotalValue(); // Update the displayed total value
+
+                    let fallSpeed = 0; // Initial fall speed
+                    const fallInterval = setInterval(() => {
+                        fallSpeed += 0.5; // Increase fall speed due to gravity
+                        const currentTop = parseFloat(getComputedStyle(div).top) || 0;
+                        div.style.top = (currentTop + fallSpeed) + 'px';
+
+                        // Stop falling if it reaches the bottom of the viewport
+                        if (currentTop + div.offsetHeight >= window.innerHeight) {
+                            clearInterval(fallInterval); // Clear the interval
+                        }
+                    }, 20); // Update fall position every 20 milliseconds
+
+                    // Destroy number after 5 seconds
+                    setTimeout(() => {
+                        if (clickCount % 5 === 0) {
+                            explode(div); // Explode on the fifth click
+                        } else {
+                            div.remove(); // Just remove for other clicks
+                        }
+                    }, 5000);
+                });
+
+                body.appendChild(div);
+                
+                // Update counter and display every 10 milliseconds
+                setInterval(() => {
+                    if (!div.classList.contains('falling')) { // Only update if not falling
+                        counters[i] += 10; // Increment by 10
+                        div.lastChild.nodeValue = counters[i]; // Update the displayed number
+                    }
+                }, 10); // Fast counting every 10 milliseconds
+            }
+        }
+
+        // Function to update the total value display
+        function updateTotalValue() {
+            const totalDisplay = document.querySelector('.total-value');
+            totalDisplay.innerText = `Total: ${totalValue}`;
+        }
+
+        // Function to create explosion effect
+        function explode(element) {
+                        const explosionCount = 30; // Number of particles
+            const rect = element.getBoundingClientRect(); // Get the position of the element
+            const centerX = rect.left + rect.width / 2; // Center X of the element
+            const centerY = rect.top + rect.height / 2; // Center Y of the element
+
+            for (let i = 0; i < explosionCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = `${centerX}px`;
+                particle.style.top = `${centerY}px`;
+
+                // Random direction for the particles
+                const angle = Math.random() * 2 * Math.PI; // Random angle
+                const distance = Math.random() * 50 + 20; // Random distance
+                particle.style.setProperty('--x', `${Math.cos(angle) * distance}px`);
+                particle.style.setProperty('--y', `${Math.sin(angle) * distance}px`);
+
+                body.appendChild(particle);
+
+                // Remove particle after animation ends
+                particle.addEventListener('animationend', () => {
+                    particle.remove();
+                });
+            }
+
+            // Remove the number after explosion
+            element.remove();
+        }
+
+        // Function to reset counters and total value
+        function resetCounter(increment) {
+            clearInterval(intervalId); // Stop the current counting interval
+            totalValue = 0; // Reset total value
+            updateTotalValue(); // Update the displayed total value
+            counters = Array(countElements).fill(0); // Reset counters to 0
+            incrementValue = increment; // Set the increment value
+
+            // Start counting at the specified increment value
+            intervalId = setInterval(() => {
+                for (let i = 0; i < countElements; i++) {
+                    counters[i] += increment; // Increment counters
+                    const numberDiv = document.querySelectorAll('.number')[i];
+                    if (numberDiv) {
+                        numberDiv.lastChild.nodeValue = counters[i]; // Update the displayed number
+                    }
+                }
+            }, 1000); // Update every second
+        }
+
+        // Initialize the display and number movement
+        displayNumbers();
+    </script>
+</body>
+</html>

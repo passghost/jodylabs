@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dual Eyes</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: black;
+        }
+
+        .eye-frame {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin: 0 70px; /* Move eyes 100px farther apart */
+            overflow: hidden;
+        }
+
+        .eye-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 200px;
+            overflow: hidden;
+        }
+
+        .eye {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            transition: transform 0.5s ease-in-out;
+        }
+
+        .eyelid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 30%; /* Cover at least 30% */
+            background: black; /* Match the background color */
+            transition: height 0.2s ease-in-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="eye-frame">
+        <div class="eye-container">
+            <img src="/Images/Snip/eye7.png" alt="Eyeball" class="eye" id="eye1">
+            <div class="eyelid" id="eyelid1"></div>
+        </div>
+    </div>
+    <div class="eye-frame">
+        <div class="eye-container">
+            <img src="/Images/Snip/eye7.png" alt="Eyeball" class="eye" id="eye2">
+            <div class="eyelid" id="eyelid2"></div>
+        </div>
+    </div>
+    <script>
+        const eyeImages = [
+            "/Images/Snip/EyeballM1.png", "/Images/Snip/EyeballM2.png", "/Images/Snip/EyeballM3.png",
+            "/Images/Snip/EyeballM4.png", "/Images/Snip/EyeballM5.png", "/Images/Snip/EyeballM6.png",
+            "/Images/Snip/EyeballM7.png", "/Images/Snip/EyeballM8.png", "/Images/Snip/EyeballM9.png",
+            "/Images/Snip/EyeballN1.png", "/Images/Snip/EyeballN2.png", "/Images/Snip/EyeballN3.png",
+            "/Images/Snip/EyeballN4.png", "/Images/Snip/EyeballN5.png", "/Images/Snip/EyeballN6.png",
+            "/Images/Snip/EyeballN7.png", "/Images/Snip/EyeballN8.png", "/Images/Snip/EyeballN9.png",
+            "/Images/Snip/Eyenew1.png", "/Images/Snip/Eyenew2.png", "/Images/Snip/Eyenew3.png",
+            "/Images/Snip/Eyenew5.png", "/Images/Snip/eyez1.png", "/Images/Snip/eyez2.png",
+            "/Images/Snip/eyez3.png", "/Images/Snip/eyez4.png", "/Images/Snip/eyez5.png"
+        ];
+
+        function blink(eyeId) {
+            const eyelid = document.querySelector(`#${eyeId} ~ .eyelid`);
+            eyelid.style.height = '100%'; // Close the eyelid
+            setTimeout(() => {
+                eyelid.style.height = '30%'; // Open the eyelid
+            }, 200); // Blink duration
+        }
+
+        function moveEyes() {
+            const eyes = document.querySelectorAll('.eye');
+            const randomX = Math.floor(Math.random() * 9) - 4; // Random movement between -4 and 4 pixels
+            const randomY = Math.floor(Math.random() * 9) - 4; // Random movement between -4 and 4 pixels
+            eyes.forEach(eye => {
+                eye.style.transform = `translate(${randomX}px, ${randomY}px)`;
+            });
+        }
+
+        function changeEyeImage(eyeId) {
+            const eye = document.getElementById(eyeId);
+            const randomIndex = Math.floor(Math.random() * eyeImages.length);
+            eye.src = eyeImages[randomIndex];
+        }
+
+        function adjustAngles() {
+            const eye1 = document.getElementById('eye1');
+            const eye2 = document.getElementById('eye2');
+            const eyelid1 = document.getElementById('eyelid1');
+            const eyelid2 = document.getElementById('eyelid2');
+            const randomAngle = Math.floor(Math.random() * 21) - 10; // Random angle between -10 and 10 degrees
+            eye1.style.transform = `rotate(${randomAngle}deg)`;
+            eye2.style.transform = `rotate(${-randomAngle}deg)`;
+            eyelid1.style.transform = `rotate(${randomAngle}deg)`;
+            eyelid2.style.transform = `rotate(${-randomAngle}deg)`;
+        }
+
+        document.getElementById('eye1').addEventListener('click', () => changeEyeImage('eye1'));
+        document.getElementById('eye2').addEventListener('click', () => changeEyeImage('eye2'));
+
+        setInterval(() => blink('eye1'), 5000); // Blink every 5 seconds
+        setInterval(() => blink('eye2'), 5000); // Blink every 5 seconds
+        setInterval(moveEyes, 2000); // Move eyes every 2 seconds
+        setInterval(adjustAngles, 10000); // Adjust angles every 10 seconds
+    </script>
+</body>
+</html>

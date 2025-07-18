@@ -1,0 +1,2675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404Museum - Transform Error Pages into Art Galleries</title>
+    <meta name="description" content="Embeddable JavaScript library that transforms 404 error pages into interactive art galleries with generative art and beautiful visuals.">
+    <meta name="keywords" content="404 error, JavaScript library, generative art, web development, error pages, interactive art">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Rajdhani', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(230, 57, 70, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(230, 57, 70, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, rgba(230, 57, 70, 0.06) 0%, transparent 50%),
+                linear-gradient(135deg, #000000 0%, #0d0d0d 25%, #1a0a0a 50%, #000000 100%);
+            color: #ffffff;
+            line-height: 1.6;
+            overflow-x: hidden;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* Animated background particles */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(2px 2px at 20px 30px, rgba(230, 57, 70, 0.3), transparent),
+                radial-gradient(2px 2px at 40px 70px, rgba(255, 255, 255, 0.1), transparent),
+                radial-gradient(1px 1px at 90px 40px, rgba(230, 57, 70, 0.2), transparent),
+                radial-gradient(1px 1px at 130px 80px, rgba(255, 255, 255, 0.05), transparent),
+                radial-gradient(2px 2px at 160px 30px, rgba(230, 57, 70, 0.1), transparent);
+            background-repeat: repeat;
+            background-size: 200px 100px;
+            animation: sparkle 20s linear infinite;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        @keyframes sparkle {
+            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 1; }
+            50% { transform: translateY(-10px) rotate(180deg); opacity: 0.8; }
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            padding: 80px 0 60px;
+        }
+        
+        .header h1 {
+            font-family: 'Orbitron', monospace;
+            font-size: 3.5rem;
+            font-weight: 900;
+            background: linear-gradient(45deg, #ffffff, #e63946, #ffffff);
+            background-size: 400% 400%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 6s ease-in-out infinite;
+            margin-bottom: 20px;
+            text-shadow: 
+                0 0 20px rgba(230, 57, 70, 0.4),
+                0 0 40px rgba(230, 57, 70, 0.4),
+                0 0 60px rgba(230, 57, 70, 0.3);
+        }
+        
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        
+        .subtitle {
+            font-size: 1.3rem;
+            color: #cccccc;
+            margin-bottom: 40px;
+        }
+        
+        .demo-section {
+            background: linear-gradient(145deg, #1e1e1e, #2a2a2a);
+            border-radius: 20px;
+            padding: 40px;
+            margin: 40px 0;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(230, 57, 70, 0.2);
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.4),
+                0 0 0 1px rgba(255, 255, 255, 0.05),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+        
+        .demo-title {
+            font-size: 2rem;
+            margin-bottom: 20px;
+            color: #e63946;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+        }
+        
+        .demo-buttons {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin: 30px 0;
+        }
+        
+        .demo-btn {
+            background: linear-gradient(45deg, #e63946, #ff4757);
+            border: none;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            font-family: 'Rajdhani', sans-serif;
+            box-shadow: 0 4px 15px rgba(230, 57, 70, 0.3);
+        }
+        
+        .demo-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 
+                0 10px 25px rgba(230, 57, 70, 0.4),
+                0 0 40px rgba(230, 57, 70, 0.3);
+            background: linear-gradient(45deg, #ff4757, #e63946);
+        }
+        
+        .demo-display {
+            width: 100%;
+            height: 400px;
+            background: #000;
+            border-radius: 15px;
+            border: 2px solid rgba(230, 57, 70, 0.3);
+            position: relative;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        
+        .installation-section {
+            background: linear-gradient(145deg, #1a1a1a, #252525);
+            border-radius: 20px;
+            padding: 40px;
+            margin: 40px 0;
+            border: 2px solid rgba(230, 57, 70, 0.15);
+            backdrop-filter: blur(10px);
+        }
+        
+        .code-block {
+            background: #1a1a1a;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #e63946;
+            overflow-x: auto;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+        
+        .code-block pre {
+            color: #f8f8f2;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9rem;
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin: 40px 0;
+        }
+        
+        .feature-card {
+            background: linear-gradient(145deg, #1e1e1e, #2a2a2a);
+            padding: 30px;
+            border-radius: 15px;
+            border: 2px solid rgba(230, 57, 70, 0.2);
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.4),
+                0 0 0 1px rgba(255, 255, 255, 0.05),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            border-color: #e63946;
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.6),
+                0 0 40px rgba(230, 57, 70, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+        
+        .feature-icon {
+            width: 3rem;
+            height: 3rem;
+            margin-bottom: 20px;
+            filter: drop-shadow(0 0 8px rgba(230, 57, 70, 0.4));
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+        
+        .feature-card:hover .feature-icon {
+            transform: scale(1.15) rotate(5deg);
+            filter: drop-shadow(0 0 15px #e63946) brightness(1.2);
+        }
+        
+        .feature-title {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: #e63946;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+        }
+        
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: linear-gradient(145deg, #1e1e1e, #2a2a2a);
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(230, 57, 70, 0.3);
+            transition: all 0.3s ease;
+            z-index: 1000;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 600;
+        }
+        
+        .back-btn:hover {
+            background: linear-gradient(145deg, #2a2a2a, #3a3a3a);
+            border-color: #e63946;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(230, 57, 70, 0.3);
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2.5rem;
+            }
+            
+            .demo-buttons {
+                flex-direction: column;
+            }
+            
+            .demo-btn {
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="../VibeCode.html" class="back-btn">← Back to Vibe Code Registry</a>
+    
+    <div class="container">
+        <div class="header">
+            <h1>404MUSEUM</h1>
+            <p class="subtitle">Transform boring 404 error pages into stunning interactive art galleries</p>
+        </div>
+        
+        <div class="demo-section">
+            <h2 class="demo-title">🎨 Live Art Gallery Demo</h2>
+            <p>Experience how 404Museum transforms error pages into beautiful art displays:</p>
+            
+            <div class="demo-buttons">
+                <button class="demo-btn" onclick="showGenerativeArt()">Generative Art</button>
+                <button class="demo-btn" onclick="showAbstractPatterns()">Abstract Patterns</button>
+                <button class="demo-btn" onclick="showParticleSystem()">Particle System</button>
+                <button class="demo-btn" onclick="showFractalArt()">Fractal Art</button>
+                <button class="demo-btn" onclick="showGeometricMandala()">Geometric Mandala</button>
+                <button class="demo-btn" onclick="showWaveInterference()">Wave Interference</button>
+                <button class="demo-btn" onclick="showNeonGrid()">Neon Grid</button>
+                <button class="demo-btn" onclick="showPlasmaField()">Plasma Field</button>
+                <button class="demo-btn" onclick="showSpiralGalaxy()">Spiral Galaxy</button>
+                <button class="demo-btn" onclick="showMatrixGlitch()">Matrix Glitch</button>
+                <button class="demo-btn" onclick="showCyberpunkCity()">Cyberpunk City</button>
+                <button class="demo-btn" onclick="showDigitalRain()">Digital Rain</button>
+                <button class="demo-btn" onclick="showHolographicMesh()">Holographic Mesh</button>
+                <button class="demo-btn" onclick="showQuantumField()">Quantum Field</button>
+                <button class="demo-btn" onclick="showVoronoiShatter()">Voronoi Shatter</button>
+            </div>
+            
+            <div class="demo-display" id="artDisplay">
+                <canvas id="artCanvas" width="800" height="400"></canvas>
+            </div>
+        </div>
+        
+        <div class="feature-grid">
+            <div class="feature-card">
+                <img src="../Images/gem2.png" alt="Auto-Detection" class="feature-icon">
+                <h3 class="feature-title">Auto-Detection</h3>
+                <p>Automatically detects 404 error pages and replaces them with beautiful art displays without any configuration.</p>
+            </div>
+            
+            <div class="feature-card">
+                <img src="../Images/emrald.png" alt="Generative Art" class="feature-icon">
+                <h3 class="feature-title">Generative Art</h3>
+                <p>Features multiple generative art algorithms including fractals, particle systems, and abstract patterns.</p>
+            </div>
+            
+            <div class="feature-card">
+                <img src="../Images/gem3.png" alt="Analytics" class="feature-icon">
+                <h3 class="feature-title">Analytics</h3>
+                <p>Logs anonymous 404 hits with timestamps and referrer data to help you understand broken links.</p>
+            </div>
+            
+            <div class="feature-card">
+                <img src="../Images/gem4.png" alt="Lightweight" class="feature-icon">
+                <h3 class="feature-title">Lightweight</h3>
+                <p>Ultra-lightweight library (less than 15KB) that loads fast and doesn't impact your site's performance.</p>
+            </div>
+            
+            <div class="feature-card">
+                <img src="../Images/emrald2.png" alt="Responsive" class="feature-icon">
+                <h3 class="feature-title">Responsive</h3>
+                <p>Fully responsive design that works beautifully on desktop, tablet, and mobile devices.</p>
+            </div>
+            
+            <div class="feature-card">
+                <img src="../Images/gem5.png" alt="Easy Setup" class="feature-icon">
+                <h3 class="feature-title">Easy Setup</h3>
+                <p>Single script tag installation - no complex configuration or dependencies required.</p>
+            </div>
+        </div>
+        
+        <div class="installation-section">
+            <h2 class="demo-title">📌 Installation Instructions</h2>
+            <p>Add the 404Museum script to your website to transform any 404 error pages into beautiful art galleries. Just add this single line to your site's <code>&lt;head&gt;</code> section:</p>
+            
+            <div class="code-block">
+                <pre><code>&lt;script src="https://jodylabs.surge.sh/404museum/404museum.min.js"&gt;&lt;/script&gt;</code></pre>
+            </div>
+            
+            <p>That's it! 404Museum will automatically detect and transform any 404 pages on your site.</p>
+            
+            <h3 style="color: #e63946; margin-top: 30px; margin-bottom: 15px;">✨ Advanced Configuration</h3>
+            <p>Customize 404Museum by defining configuration before loading the script:</p>
+            
+            <div class="code-block">
+                <pre><code>&lt;script&gt;
+window.Museum404Config = {
+    theme: 'dark', // 'light' or 'dark'
+    artTypes: ['generative', 'particles', 'fractals', 'abstract'],
+    customMessage: 'Page not found, but enjoy this art instead!',
+    colors: {
+        primary: '#4ecdc4',
+        secondary: '#ff6b6b',
+        background: '#0a0a0a',
+        text: '#ffffff'
+    },
+    showNavigation: true,
+    showBranding: true,
+    artDuration: 30000, // Switch art every 30 seconds (0 = manual only)
+    particleCount: 100,
+    animationSpeed: 1
+};
+&lt;/script&gt;
+&lt;script src="https://jodylabs.surge.sh/404museum/404museum.min.js"&gt;&lt;/script&gt;</code></pre>
+            </div>
+            
+            <h3 style="color: #e63946; margin-top: 30px; margin-bottom: 15px;">🎮 Manual Control</h3>
+            <p>You can also manually control 404Museum with JavaScript:</p>
+            
+            <div class="code-block">
+                <pre><code>// Manually activate the art gallery
+window.Museum404.activate();
+
+// Switch to specific art type
+window.Museum404.switchArt('particles');
+
+// Deactivate and return to original page
+window.Museum404.deactivate();
+
+// Check if currently active
+if (window.Museum404.isActive()) {
+    console.log('Art gallery is active');
+}</code></pre>
+            </div>
+            
+            <h3 style="color: #e63946; margin-top: 30px; margin-bottom: 15px;">🎨 Available Art Types</h3>
+            <p>404Museum includes several beautiful art generators that you can specify in the configuration:</p>
+            
+            <ul style="list-style-type: none; margin: 20px 0; padding-left: 20px;">
+                <li style="margin-bottom: 10px;">✅ <strong>Generative Waves</strong> (<code>'generative'</code>) - Flowing sine wave patterns</li>
+                <li style="margin-bottom: 10px;">✅ <strong>Particle System</strong> (<code>'particles'</code>) - Animated floating particles</li>
+                <li style="margin-bottom: 10px;">✅ <strong>Fractal Trees</strong> (<code>'fractals'</code>) - Recursive branching patterns</li>
+                <li style="margin-bottom: 10px;">✅ <strong>Abstract Patterns</strong> (<code>'abstract'</code>) - Geometric orbital designs</li>
+                <li style="margin-bottom: 10px;">✅ <strong>Neon Grid</strong> (<code>'neonGrid'</code>) - Retro-futuristic grid patterns</li>
+                <li style="margin-bottom: 10px;">✅ <strong>Plasma Field</strong> (<code>'plasmaField'</code>) - Dynamic plasma-like patterns</li>
+                <li style="margin-bottom: 10px;">✅ <strong>Matrix Glitch</strong> (<code>'matrixGlitch'</code>) - Digital falling characters</li>
+                <li style="margin-bottom: 10px;">✅ <strong>Cosmic Dust</strong> (<code>'cosmicDust'</code>) - Space-like dust particles</li>
+            </ul>
+            
+            <h3 style="color: #e63946; margin-top: 30px; margin-bottom: 15px;">📱 Browser Compatibility</h3>
+            <p>404Museum works on all modern browsers with Canvas support:</p>
+            
+            <ul style="list-style-type: none; margin: 20px 0; padding-left: 20px;">
+                <li style="margin-bottom: 10px;">✅ Chrome 60+</li>
+                <li style="margin-bottom: 10px;">✅ Firefox 55+</li>
+                <li style="margin-bottom: 10px;">✅ Safari 12+</li>
+                <li style="margin-bottom: 10px;">✅ Edge 79+</li>
+                <li style="margin-bottom: 10px;">✅ Mobile browsers with Canvas support</li>
+            </ul>
+            
+            <div style="margin-top: 40px; text-align: center;">
+                <p>Need more information? Check out the <a href="https://github.com/JodyLabs/404museum" style="color: #e63946; text-decoration: none; font-weight: 600;">GitHub repository</a> or <a href="demo.html" style="color: #e63946; text-decoration: none; font-weight: 600;">try the live demo</a>.</p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Demo art generation functions
+        let animationId;
+        
+        // Helper function to draw 404 text
+        function draw404Text(ctx, canvas) {
+            ctx.save();
+            
+            // Draw large faded 404 on the left edge, rotated 90 degrees left
+            ctx.translate(60, canvas.height / 2); // Position for vertical text
+            ctx.rotate(-90 * Math.PI / 180); // Rotate 90 degrees to the left
+            
+            ctx.font = 'bold 120px Orbitron, monospace';
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            const leftText = '404';
+            ctx.fillText(leftText, 0, 0);
+            
+            ctx.restore();
+        }
+        
+        function showGenerativeArt() {
+            const canvas = document.getElementById('artCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Resize canvas to container
+            const container = canvas.parentElement;
+            canvas.width = container.offsetWidth;
+            canvas.height = container.offsetHeight;
+            
+            cancelAnimationFrame(animationId);
+            
+            function animate() {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Generate flowing lines
+                const time = Date.now() * 0.001;
+                for (let i = 0; i < 5; i++) {
+                    ctx.beginPath();
+                    ctx.strokeStyle = `hsl(${(time * 50 + i * 72) % 360}, 70%, 60%)`;
+                    ctx.lineWidth = 2;
+                    
+                    for (let x = 0; x < canvas.width; x += 10) {
+                        const y = canvas.height / 2 + Math.sin(x * 0.01 + time + i) * 100 * Math.sin(time * 0.5);
+                        if (x === 0) {
+                            ctx.moveTo(x, y);
+                        } else {
+                            ctx.lineTo(x, y);
+                        }
+                    }
+                    ctx.stroke();
+                }
+                
+                // Draw 404 text
+                draw404Text(ctx, canvas);
+                
+                animationId = requestAnimationFrame(animate);
+            }
+            animate();
+        }
+        
+        function showAbstractPatterns() {
+            const canvas = document.getElementById('artCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = canvas.parentElement.offsetWidth;
+            canvas.height = canvas.parentElement.offsetHeight;
+            
+            cancelAnimationFrame(animationId);
+            
+            function animate() {
+                ctx.fillStyle = 'rgba(10, 10, 30, 0.1)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                const time = Date.now() * 0.002;
+                
+                for (let i = 0; i < 20; i++) {
+                    const x = canvas.width / 2 + Math.cos(time + i * 0.5) * (100 + i * 10);
+                    const y = canvas.height / 2 + Math.sin(time + i * 0.3) * (80 + i * 8);
+                    
+                    ctx.beginPath();
+                    ctx.arc(x, y, 5 + Math.sin(time * 2 + i) * 3, 0, Math.PI * 2);
+                    ctx.fillStyle = `hsl(${(time * 100 + i * 18) % 360}, 80%, 60%)`;
+                    ctx.fill();
+                }
+                
+                // Draw 404 text
+                draw404Text(ctx, canvas);
+                
+                animationId = requestAnimationFrame(animate);
+            }
+            animate();
+        }
+        
+        function showParticleSystem() {
+            const canvas = document.getElementById('artCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = canvas.parentElement.offsetWidth;
+            canvas.height = canvas.parentElement.offsetHeight;
+            
+            cancelAnimationFrame(animationId);
+            
+            const particles = [];
+            for (let i = 0; i < 100; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    vx: (Math.random() - 0.5) * 2,
+                    vy: (Math.random() - 0.5) * 2,
+                    size: Math.random() * 3 + 1,
+                    hue: Math.random() * 360
+                });
+            }
+            
+            function animate() {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                particles.forEach(particle => {
+                    particle.x += particle.vx;
+                    particle.y += particle.vy;
+                    
+                    if (particle.x < 0 || particle.x > canvas.width) particle.vx *= -1;
+                    if (particle.y < 0 || particle.y > canvas.height) particle.vy *= -1;
+                    
+                    ctx.beginPath();
+                    ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+                    ctx.fillStyle = `hsl(${particle.hue}, 70%, 60%)`;
+                    ctx.fill();
+                    
+                    particle.hue += 0.5;
+                });
+                
+                // Draw 404 text
+                draw404Text(ctx, canvas);
+                
+                animationId = requestAnimationFrame(animate);
+            }
+            animate();
+        }
+        
+        function showFractalArt() {
+            const canvas = document.getElementById('artCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = canvas.parentElement.offsetWidth;
+            canvas.height = canvas.parentElement.offsetHeight;
+            
+            cancelAnimationFrame(animationId);
+            
+            function drawFractal(x, y, size, depth, angle) {
+                if (depth === 0 || size < 2) return;
+                
+                const endX = x + Math.cos(angle) * size;
+                const endY = y + Math.sin(angle) * size;
+                
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(endX, endY);
+                ctx.strokeStyle = `hsl(${depth * 30}, 70%, 60%)`;
+                ctx.lineWidth = depth * 0.5;
+                ctx.stroke();
+                
+                drawFractal(endX, endY, size * 0.7, depth - 1, angle - 0.5);
+                drawFractal(endX, endY, size * 0.7, depth - 1, angle + 0.5);
+            }
+            
+            function animate() {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                const time = Date.now() * 0.001;
+                drawFractal(canvas.width / 2, canvas.height, 100, 8, -Math.PI / 2 + Math.sin(time) * 0.5);
+                
+                // Draw 404 text
+                draw404Text(ctx, canvas);
+                
+                animationId = requestAnimationFrame(animate);
+            }
+            animate();
+        }
+        
+        // NEW PATTERN 1: Geometric Mandala
+        function showGeometricMandala() {
+            const canvas = document.getElementById('artCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = canvas.parentElement.offsetWidth;
+            canvas.height = canvas.parentElement.offsetHeight;
+            
+            cancelAnimationFrame(animationId);
+            
+            function animate() {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                const time = Date.now() * 0.001;
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+                
+                // Draw concentric geometric patterns
+                for (let ring = 1; ring <= 8; ring++) {
+                    const radius = ring * 25;
+                    const sides = ring + 4;
+                    
+                    ctx.beginPath();
+                    ctx.strokeStyle = `hsl(${(time * 50 + ring * 45) % 360}, 80%, 60%)`;
+                    ctx.lineWidth = 2;
+                    
+                    for (let i = 0; i <= sides; i++) {
+                        const angle = (i / sides) * Math.PI * 2 + time + ring * 0.1;
+                        const x = centerX + Math.cos(angle) * radius;
+                        const y = centerY + Math.sin(angle) * radius;
+                        
+                        if (i === 0) {
+                            ctx.moveTo(x, y);
+                        } else {
+                            ctx.lineTo(x, y);
+                        }
+                    }
+                    ctx.stroke();
+                    
+                    // Add rotating triangles
+                    for (let i = 0; i < sides; i++) {
+                        const angle = (i / sides) * Math.PI * 2 + time * 0.5;
+                        const x = centerX + Math.cos(angle) * radius;
+                        const y = centerY + Math.sin(angle) * radius;
+                        
+                        ctx.save();
+                        ctx.translate(x, y);
+                        ctx.rotate(angle + time);
+                        ctx.beginPath();
+                        ctx.moveTo(0, -8);
+                        ctx.lineTo(-6, 4);
+                        ctx.lineTo(6, 4);
+                        ctx.closePath();
+                        ctx.fillStyle = `hsl(${(time * 100 + ring * 60) % 360}, 90%, 70%)`;
+                        ctx.fill();
+                        ctx.restore();
+                    }
+                }
+                
+                // Draw 404 text
+                draw404Text(ctx, canvas);
+                
+                animationId = requestAnimationFrame(animate);
+            }
+            animate();
+        }
+        
+        // NEW PATTERN 2: Wave Interference
+        function showWaveInterference() {
+            const canvas = document.getElementById('artCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = canvas.parentElement.offsetWidth;
+            canvas.height = canvas.parentElement.offsetHeight;
+            
+            cancelAnimationFrame(animationId);
+            
+            function animate() {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                const time = Date.now() * 0.001;
+                const imageData = ctx.createImageData(canvas.width, canvas.height);
+                const data = imageData.data;
+                
+                // Create wave interference pattern
+                for (let x = 0; x < canvas.width; x += 4) {
+                    for (let y = 0; y < canvas.height; y += 4) {
+                        // Multiple wave sources
+                        const wave1 = Math.sin((x * 0.02 + time * 2) + (y * 0.01)) * 50;
+                        const wave2 = Math.sin((x * 0.015 - time * 1.5) + (y * 0.02)) * 50;
+                        const wave3 = Math.sin(Math.sqrt((x - canvas.width/3) ** 2 + (y - canvas.height/3) ** 2) * 0.03 + time * 3) * 30;
+                        
+                        const interference = wave1 + wave2 + wave3;
+                        const intensity = Math.abs(interference) / 130;
+                        
+                        const hue = (interference + time * 50) % 360;
+                        const sat = 80;
+                        const light = intensity * 60 + 20;
+                        
+                        // Convert HSL to RGB (simplified)
+                        const c = (1 - Math.abs(2 * light/100 - 1)) * sat/100;
+                        const x1 = c * (1 - Math.abs((hue / 60) % 2 - 1));
+                        const m = light/100 - c/2;
+                        
+                        let r, g, b;
+                        if (hue < 60) { r = c; g = x1; b = 0; }
+                        else if (hue < 120) { r = x1; g = c; b = 0; }
+                        else if (hue < 180) { r = 0; g = c; b = x1; }
+                        else if (hue < 240) { r = 0; g = x1; b = c; }
+                        else if (hue < 300) { r = x1; g = 0; b = c; }
+                        else { r = c; g = 0; b = x1; }
+                        
+                        for (let dx = 0; dx < 4; dx++) {
+                            for (let dy = 0; dy < 4; dy++) {
+                                const px = x + dx;
+                                const py = y + dy;
+                                if (px < canvas.width && py < canvas.height) {
+                                    const index = (py * canvas.width + px) * 4;
+                                    data[index] = (r + m) * 255;
+                                    data[index + 1] = (g + m) * 255;
+                                    data[index + 2] = (b + m) * 255;
+                                    data[index + 3] = 255;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                ctx.putImageData(imageData, 0, 0);
+                
+                // Draw 404 text
+                draw404Text(ctx, canvas);
+                
+                animationId = requestAnimationFrame(animate);
+            }
+            animate();
+        }
+        
+        // NEW PATTERN 3: Neon Grid
+        function showNeonGrid() {
+            const canvas = document.getElementById('artCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = canvas.parentElement.offsetWidth;
+            canvas.height = canvas.parentElement.offsetHeight;
+            
+            cancelAnimationFrame(animationId);
+            
+            function animate() {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                const time = Date.now() * 0.001;
+                const gridSize = 40;
+                
+                // Draw perspective grid
+                ctx.strokeStyle = `hsl(${(time * 30) % 360}, 100%, 50%)`;
+                ctx.lineWidth = 2;
+                ctx.shadowColor = ctx.strokeStyle;
+                ctx.shadowBlur = 10;
+                
+                // Horizontal lines with perspective
+                for (let y = 0; y < canvas.height; y += gridSize) {
+                    const perspective = y / canvas.height;
+                    const wave = Math.sin(y * 0.02 + time * 2) * 20 * perspective;
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(0, y + wave);
+                    
+                    for (let x = 0; x < canvas.width; x += 10) {
+                        const xWave = Math.sin(x * 0.01 + time) * 5;
+                        ctx.lineTo(x, y + wave + xWave * perspective);
+                    }
+                    ctx.stroke();
+                }
+                
+                // Vertical lines with perspective
+                for (let x = 0; x < canvas.width; x += gridSize) {
+                    const centerDist = Math.abs(x - canvas.width / 2) / (canvas.width / 2);
+                    const wave = Math.sin(x * 0.02 + time * 1.5) * 15;
+                    
+                    ctx.strokeStyle = `hsl(${((time * 30) + 180) % 360}, 100%, ${50 + centerDist * 30}%)`;
+                    ctx.shadowColor = ctx.strokeStyle;
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(x + wave, 0);
+                    
+                    for (let y = 0; y < canvas.height; y += 10) {
+                        const perspective = y / canvas.height;
+                        const yWave = Math.sin(y * 0.01 + time * 0.8) * 10 * perspective;
+                        ctx.lineTo(x + wave + yWave, y);
+                    }
+                    ctx.stroke();
+                }
+                
+                // Add flowing particles on grid intersections
+                for (let x = 0; x < canvas.width; x += gridSize) {
+                    for (let y = 0; y < canvas.height; y += gridSize) {
+                        const pulse = Math.sin(time * 3 + x * 0.01 + y * 0.01) * 0.5 + 0.5;
+                        if (pulse > 0.8) {
+                            ctx.fillStyle = `hsl(${(time * 100 + x + y) % 360}, 100%, 80%)`;
+                            ctx.shadowColor = ctx.fillStyle;
+                            ctx.shadowBlur = 15;
+                            ctx.beginPath();
+                            ctx.arc(x, y, 4 + pulse * 3, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                    }
+                }
+                
+                ctx.shadowBlur = 0;
+                
+                // Draw 404 text
+                draw404Text(ctx, canvas);
+                
+                animationId = requestAnimationFrame(animate);
+            }
+            animate();
+        }
+        
+        // NEW PATTERN 4: Plasma Field
+        function showPlasmaField() {
+            const canvas = document.getElementById('artCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = canvas.parentElement.offsetWidth;
+            canvas.height = canvas.parentElement.offsetHeight;
+            
+            cancelAnimationFrame(animationId);
+            
+            function animate() {
+                const time = Date.now() * 0.001;
+                const imageData = ctx.createImageData(canvas.width, canvas.height);
+                const data = imageData.data;
+                
+                // Generate plasma field
+                for (let x = 0; x < canvas.width; x += 2) {
+                    for (let y = 0; y < canvas.height; y += 2) {
+                        // Multiple sine waves for plasma effect
+                        const value1 = Math.sin(x * 0.01 + time);
+                        const value2 = Math.sin(y * 0.013 + time * 0.8);
+                        const value3 = Math.sin((x + y) * 0.01 + time * 1.2);
+                        const value4 = Math.sin(Math.sqrt(x * x + y * y) * 0.008 + time * 0.6);
+                        
+                        const plasma = (value1 + value2 + value3 + value4) / 4;
+                        
+                        // Convert to color
+                        const hue = (plasma + 1) * 180 + time * 50;
+                        const sat = 80 + plasma * 20;
+                        const light = 40 + Math.abs(plasma) * 40;
+                        
+                        // HSL to RGB conversion
+                        const c = (1 - Math.abs(2 * light/100 - 1)) * sat/100;
+                        const x1 = c * (1 - Math.abs((hue / 60) % 2 - 1));
+                        const m = light/100 - c/2;
+                        
+                        let r, g, b;
+                        const h = hue % 360;
+                        if (h < 60) { r = c; g = x1; b = 0; }
+                        else if (h < 120) { r = x1; g = c; b = 0; }
+                        else if (h < 180) { r = 0; g = c; b = x1; }
+                        else if (h < 240) { r = 0; g = x1; b = c; }
+                        else if (h < 300) { r = x1; g = 0; b = c; }
+                        else { r = c; g = 0; b = x1; }
+                        
+                        // Fill 2x2 pixel block
+                        for (let dx = 0; dx < 2; dx++) {
+                            for (let dy = 0; dy < 2; dy++) {
+                                const px = x + dx;
+                                const py = y + dy;
+                                if (px < canvas.width && py < canvas.height) {
+                                    const index = (py * canvas.width + px) * 4;
+                                    data[index] = (r + m) * 255;
+                                    data[index + 1] = (g + m) * 255;
+                                    data[index + 2] = (b + m) * 255;
+                                    data[index + 3] = 255;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                ctx.putImageData(imageData, 0, 0);
+                
+                // Draw 404 text
+                draw404Text(ctx, canvas);
+                
+                animationId = requestAnimationFrame(animate);
+            }
+            animate();
+        }
+        
+        // NEW PATTERN 5: Spiral Galaxy
+        function showSpiralGalaxy() {
+            const canvas = document.getElementById('artCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = canvas.parentElement.offsetWidth;
+            canvas.height = canvas.parentElement.offsetHeight;
+            
+            cancelAnimationFrame(animationId);
+            
+            const stars = [];
+            for (let i = 0; i < 200; i++) {
+                stars.push({
+                    angle: Math.random() * Math.PI * 2,
+                    distance: Math.random() * 200,
+                    speed: 0.5 + Math.random() * 1.5,
+                    size: Math.random() * 3 + 1,
+                    hue: Math.random() * 60 + 200 // Blues and purples
+                });
+            }
+            
+            function animate() {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                const time = Date.now() * 0.001;
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+                
+                // Draw spiral arms
+                for (let arm = 0; arm < 3; arm++) {
+                    const armOffset = (arm * Math.PI * 2) / 3;
+                    
+                    ctx.beginPath();
+                    ctx.strokeStyle = `hsl(${240 + arm * 20}, 80%, 40%)`;
+                    ctx.lineWidth = 3;
+                    
+                    for (let r = 10; r < 200; r += 5) {
+                        const angle = armOffset + (r * 0.03) + time * 0.5;
+                        const x = centerX + Math.cos(angle) * r;
+                        const y = centerY + Math.sin(angle) * r;
+                        
+                        if (r === 10) {
+                            ctx.moveTo(x, y);
+                        } else {
+                            ctx.lineTo(x, y);
+                        }
+                    }
+                    ctx.stroke();
+                }
+                
+                // Animate stars along spiral
+                stars.forEach(star => {
+                    star.angle += star.speed * 0.01;
+                    
+                    // Spiral calculation
+                    const spiralAngle = star.angle + (star.distance * 0.02);
+                    const x = centerX + Math.cos(spiralAngle) * star.distance;
+                    const y = centerY + Math.sin(spiralAngle) * star.distance;
+                    
+                    // Draw star with glow
+                    const pulseSize = star.size + Math.sin(time * 3 + star.angle) * 1;
+                    
+                    ctx.beginPath();
+                    ctx.arc(x, y, pulseSize, 0, Math.PI * 2);
+                    ctx.fillStyle = `hsl(${star.hue + Math.sin(time + star.angle) * 30}, 90%, 70%)`;
+                    ctx.shadowColor = ctx.fillStyle;
+                    ctx.shadowBlur = 8;
+                    ctx.fill();
+                    
+                    // Add twinkle effect
+                    if (Math.random() < 0.1) {
+                        ctx.beginPath();
+                        ctx.arc(x, y, pulseSize * 2, 0, Math.PI * 2);
+                        ctx.fillStyle = `hsl(${star.hue}, 100%, 90%)`;
+                        ctx.shadowBlur = 15;
+                        ctx.fill();
+                    }
+                });
+                
+                ctx.shadowBlur = 0;
+                
+                // Draw central black hole
+                const blackHoleSize = 15 + Math.sin(time * 2) * 5;
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, blackHoleSize, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+                ctx.fill();
+                
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, blackHoleSize + 5, 0, Math.PI * 2);
+                ctx.strokeStyle = 'hsl(280, 100%, 60%)';
+                ctx.lineWidth = 2;
+                ctx.shadowColor = 'hsl(280, 100%, 60%)';
+                ctx.shadowBlur = 10;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+                
+                // Draw 404 text
+                draw404Text(ctx, canvas);
+                
+                animationId = requestAnimationFrame(animate);
+            }
+            animate();
+        }
+        
+        // NEW PATTERN 6: Matrix Glitch
+        function showMatrixGlitch() {
+            const canvas = document.getElementById('artCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = canvas.parentElement.offsetWidth;
+            canvas.height = canvas.parentElement.offsetHeight;
+            
+            cancelAnimationFrame(animationId);
+            
+            const matrixChars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()_+-=[]{}|;:,.<>?'.split('');
+            const columns = Math.floor(canvas.width / 20);
+            const drops = [];
+            
+            // Initialize drops
+            for (let i = 0; i < columns; i++) {
+                drops[i] = Math.random() * canvas.height;
+            }
+            
+            function animate() {
+                // Create glitch effect background
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.04)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                const time = Date.now() * 0.001;
+                
+                // Matrix rain effect
+                ctx.font = '18px monospace';
+                ctx.fillStyle = '#00ff00';
+                
+                for (let i = 0; i < drops.length; i++) {
+                    const char = matrixChars[Math.floor(Math.random() * matrixChars.length)];
+                    const x = i * 20;
+                    const y = drops[i];
+                    
+                    // Add glitch distortion
+                    const glitchOffset = Math.sin(time * 10 + i) * 3;
+                    
+                    // Random color shifts for glitch effect
+                    if (Math.random() < 0.1) {
+                        ctx.fillStyle = Math.random() < 0.5 ? '#ff0000' : '#0000ff';
+                    } else {
+                        ctx.fillStyle = `hsl(120, 100%, ${50 + Math.sin(time + i) * 25}%)`;
+                    }
+                    
+                    ctx.fillText(char, x + glitchOffset, y);
+                    
+                    // Reset drop to top if it's fallen off screen
+                    if (y > canvas.height && Math.random() > 0.975) {
+                        drops[i] = 0;
+                    }
+                    
+                    drops[i] += Math.random() * 10 + 5;
+                }
+                
+                // Add scan lines for glitch effect
+                ctx.globalAlpha = 0.1;
+                for (let i = 0; i < canvas.height; i += 4) {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, i, canvas.width, 1);
+                }
+                ctx.globalAlpha = 1;
+                
+                // Random screen corruption
+                if (Math.random() < 0.05) {
+                    ctx.fillStyle = `rgba(${Math.random() * 255}, 0, 0, 0.3)`;
+                    ctx.fillRect(Math.random() * canvas.width, Math.random() * canvas.height, 
+                                Math.random() * 200, Math.random() * 50);
+                }
+                
+                // Draw 404 text
+                draw404Text(ctx, canvas);
+                
+                animationId = requestAnimationFrame(animate);
+            }
+            animate();
+        }
+        
+        // NEW PATTERN 7: Cyberpunk City
+        function showCyberpunkCity() {
+            const canvas = document.getElementById('artCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = canvas.parentElement.offsetWidth;
+            canvas.height = canvas.parentElement.offsetHeight;
+            
+            cancelAnimationFrame(animationId);
+            
+            const buildings = [];
+            for (let i = 0; i < 15; i++) {
+                buildings.push({
+                    x: i * (canvas.width / 15),
+                    width: canvas.width / 15,
+                    height: Math.random() * canvas.height * 0.6 + canvas.height * 0.2,
+                    windows: Math.floor(Math.random() * 8) + 3,
+                    color: Math.random() * 60 + 180 // Blue to purple range
+                });
+            }
+            
+            function animate() {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                const time = Date.now() * 0.001;
+                
+                // Draw cyberpunk cityscape
+                buildings.forEach((building, index) => {
+                    // Building silhouette
+                    ctx.fillStyle = `hsl(${building.color}, 80%, 20%)`;
+                    ctx.fillRect(building.x, canvas.height - building.height, building.width, building.height);
+                    
+                    // Neon outline
+                    ctx.strokeStyle = `hsl(${building.color + Math.sin(time + index) * 30}, 100%, 60%)`;
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(building.x, canvas.height - building.height, building.width, building.height);
+                    
+                    // Windows with flickering lights
+                    const windowWidth = building.width / 4;
+                    const windowHeight = building.height / (building.windows * 2);
+                    
+                    for (let w = 0; w < 3; w++) {
+                        for (let h = 0; h < building.windows; h++) {
+                            if (Math.random() < 0.7) {
+                                const windowX = building.x + w * windowWidth + windowWidth * 0.2;
+                                const windowY = canvas.height - building.height + h * windowHeight * 2 + windowHeight * 0.5;
+                                
+                                const flicker = Math.sin(time * 5 + w + h + index) * 0.5 + 0.5;
+                                ctx.fillStyle = `rgba(0, 255, 255, ${0.3 + flicker * 0.4})`;
+                                ctx.fillRect(windowX, windowY, windowWidth * 0.6, windowHeight);
+                                
+                                // Neon glow
+                                ctx.shadowColor = 'cyan';
+                                ctx.shadowBlur = 10;
+                                ctx.fillRect(windowX, windowY, windowWidth * 0.6, windowHeight);
+                                ctx.shadowBlur = 0;
+                            }
+                        }
+                    }
+                });
+                
+                // Flying cars/lights
+                for (let i = 0; i < 3; i++) {
+                    const carX = (time * 100 + i * 200) % (canvas.width + 100);
+                    const carY = canvas.height * 0.3 + Math.sin(time + i) * 50;
+                    
+                    ctx.fillStyle = `hsl(${(time * 50 + i * 120) % 360}, 100%, 60%)`;
+                    ctx.shadowColor = ctx.fillStyle;
+                    ctx.shadowBlur = 15;
+                    ctx.fillRect(carX, carY, 30, 8);
+                    ctx.shadowBlur = 0;
+                }
+                
+                // Draw 404 text
+                draw404Text(ctx, canvas);
+                
+                animationId = requestAnimationFrame(animate);
+            }
+            animate();
+        }
+        
+        // NEW PATTERN 8: Digital Rain
+        function showDigitalRain() {
+            const canvas = document.getElementById('artCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = canvas.parentElement.offsetWidth;
+            canvas.height = canvas.parentElement.offsetHeight;
+            
+            cancelAnimationFrame(animationId);
+            
+            const drops = [];
+            const numDrops = 50;
+            
+            for (let i = 0; i < numDrops; i++) {
+                drops.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    length: Math.random() * 100 + 50,
+                    speed: Math.random() * 5 + 2,
+                    opacity: Math.random() * 0.8 + 0.2
+                });
+            }
+            
+            function animate() {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                const time = Date.now() * 0.001;
+                
+                // Draw digital rain drops
+                drops.forEach(drop => {
+                    const gradient = ctx.createLinearGradient(drop.x, drop.y, drop.x, drop.y + drop.length);
+                    gradient.addColorStop(0, `rgba(0, 255, 150, 0)`);
+                    gradient.addColorStop(0.5, `rgba(0, 255, 150, ${drop.opacity})`);
+                    gradient.addColorStop(1, `rgba(0, 255, 150, ${drop.opacity * 0.3})`);
+                    
+                    ctx.fillStyle = gradient;
+                    ctx.fillRect(drop.x, drop.y, 3, drop.length);
+                    
+                    // Add sparkle at the tip
+                    ctx.fillStyle = `rgba(255, 255, 255, ${Math.sin(time * 10 + drop.x) * 0.5 + 0.5})`;
+                    ctx.fillRect(drop.x, drop.y, 3, 5);
+                    
+                    drop.y += drop.speed;
+                    
+                    if (drop.y > canvas.height) {
+                        drop.y = -drop.length;
+                        drop.x = Math.random() * canvas.width;
+                    }
+                });
+                
+                // Add horizontal data streams
+                for (let i = 0; i < 5; i++) {
+                    const streamY = (time * 30 + i * 80) % canvas.height;
+                    const gradient = ctx.createLinearGradient(0, streamY, canvas.width, streamY);
+                    gradient.addColorStop(0, 'rgba(0, 255, 200, 0)');
+                    gradient.addColorStop(0.5, 'rgba(0, 255, 200, 0.6)');
+                    gradient.addColorStop(1, 'rgba(0, 255, 200, 0)');
+                    
+                    ctx.fillStyle = gradient;
+                    ctx.fillRect(0, streamY, canvas.width, 2);
+                }
+                
+                // Draw 404 text
+                draw404Text(ctx, canvas);
+                
+                animationId = requestAnimationFrame(animate);
+            }
+            animate();
+        }
+        
+        // NEW PATTERN 9: Holographic Mesh
+        function showHolographicMesh() {
+            const canvas = document.getElementById('artCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = canvas.parentElement.offsetWidth;
+            canvas.height = canvas.parentElement.offsetHeight;
+            
+            cancelAnimationFrame(animationId);
+            
+            function animate() {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                const time = Date.now() * 0.001;
+                const gridSize = 40;
+                
+                // Draw holographic mesh
+                ctx.strokeStyle = `hsl(${(time * 30) % 360}, 100%, 60%)`;
+                ctx.lineWidth = 1;
+                ctx.shadowColor = ctx.strokeStyle;
+                ctx.shadowBlur = 5;
+                
+                // Vertical lines with wave distortion
+                for (let x = 0; x < canvas.width; x += gridSize) {
+                    ctx.beginPath();
+                    for (let y = 0; y < canvas.height; y += 5) {
+                        const wave = Math.sin(y * 0.02 + time * 2 + x * 0.01) * 20;
+                        const holo = Math.sin(y * 0.05 + time) * 10;
+                        
+                        if (y === 0) {
+                            ctx.moveTo(x + wave + holo, y);
+                        } else {
+                            ctx.lineTo(x + wave + holo, y);
+                        }
+                    }
+                    ctx.stroke();
+                }
+                
+                // Horizontal lines with wave distortion
+                for (let y = 0; y < canvas.height; y += gridSize) {
+                    ctx.beginPath();
+                    for (let x = 0; x < canvas.width; x += 5) {
+                        const wave = Math.sin(x * 0.02 + time * 1.5 + y * 0.01) * 15;
+                        const holo = Math.sin(x * 0.03 + time * 0.8) * 8;
+                        
+                        if (x === 0) {
+                            ctx.moveTo(x, y + wave + holo);
+                        } else {
+                            ctx.lineTo(x, y + wave + holo);
+                        }
+                    }
+                    ctx.stroke();
+                }
+                
+                // Add floating holographic particles
+                for (let i = 0; i < 20; i++) {
+                    const x = canvas.width / 2 + Math.cos(time + i * 0.5) * (100 + i * 15);
+                    const y = canvas.height / 2 + Math.sin(time * 0.8 + i * 0.3) * (80 + i * 10);
+                    
+                    ctx.fillStyle = `hsl(${(time * 50 + i * 30) % 360}, 100%, 70%)`;
+                    ctx.shadowColor = ctx.fillStyle;
+                    ctx.shadowBlur = 15;
+                    
+                    ctx.beginPath();
+                    ctx.arc(x, y, 3 + Math.sin(time * 3 + i) * 2, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Add holographic trails
+                    const trailLength = 5;
+                    for (let t = 1; t <= trailLength; t++) {
+                        const trailX = canvas.width / 2 + Math.cos(time - t * 0.1 + i * 0.5) * (100 + i * 15);
+                        const trailY = canvas.height / 2 + Math.sin(time * 0.8 - t * 0.1 + i * 0.3) * (80 + i * 10);
+                        
+                        ctx.fillStyle = `hsla(${(time * 50 + i * 30) % 360}, 100%, 70%, ${1 - t / trailLength})`;
+                        ctx.beginPath();
+                        ctx.arc(trailX, trailY, (3 + Math.sin(time * 3 + i) * 2) * (1 - t / trailLength), 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+                
+                ctx.shadowBlur = 0;
+                
+                // Draw 404 text
+                draw404Text(ctx, canvas);
+                
+                animationId = requestAnimationFrame(animate);
+            }
+            animate();
+        }
+        
+        // NEW PATTERN 10: Quantum Field
+        function showQuantumField() {
+            const canvas = document.getElementById('artCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = canvas.parentElement.offsetWidth;
+            canvas.height = canvas.parentElement.offsetHeight;
+            
+            cancelAnimationFrame(animationId);
+            
+            const particles = [];
+            const numParticles = 100;
+            
+            for (let i = 0; i < numParticles; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    vx: (Math.random() - 0.5) * 2,
+                    vy: (Math.random() - 0.5) * 2,
+                    phase: Math.random() * Math.PI * 2,
+                    frequency: Math.random() * 0.02 + 0.01,
+                    amplitude: Math.random() * 50 + 25
+                });
+            }
+            
+            function animate() {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                const time = Date.now() * 0.001;
+                
+                // Draw quantum field connections
+                for (let i = 0; i < particles.length; i++) {
+                    const p1 = particles[i];
+                    
+                    for (let j = i + 1; j < particles.length; j++) {
+                        const p2 = particles[j];
+                        const distance = Math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2);
+                        
+                        if (distance < 150) {
+                            const opacity = 1 - distance / 150;
+                            const quantumPhase = Math.sin(time * 3 + distance * 0.1) * 0.5 + 0.5;
+                            
+                            ctx.strokeStyle = `rgba(100, 200, 255, ${opacity * quantumPhase * 0.6})`;
+                            ctx.lineWidth = 1;
+                            ctx.beginPath();
+                            ctx.moveTo(p1.x, p1.y);
+                            ctx.lineTo(p2.x, p2.y);
+                            ctx.stroke();
+                        }
+                    }
+                }
+                
+                // Update and draw particles
+                particles.forEach((particle, index) => {
+                    // Quantum tunneling effect
+                    const quantum = Math.sin(time * particle.frequency + particle.phase) * particle.amplitude;
+                    
+                    particle.x += particle.vx + Math.cos(time + index) * 0.5;
+                    particle.y += particle.vy + Math.sin(time + index) * 0.5;
+                    
+                    // Wrap around edges
+                    if (particle.x < 0) particle.x = canvas.width;
+                    if (particle.x > canvas.width) particle.x = 0;
+                    if (particle.y < 0) particle.y = canvas.height;
+                    if (particle.y > canvas.height) particle.y = 0;
+                    
+                    // Draw particle with quantum uncertainty
+                    const uncertainty = Math.sin(time * 5 + index) * 3;
+                    const hue = (time * 20 + index * 10) % 360;
+                    
+                    // Multiple quantum states
+                    for (let state = 0; state < 3; state++) {
+                        const stateOffset = state * 5;
+                        const stateOpacity = 0.3 + Math.sin(time * 2 + state + index) * 0.2;
+                        
+                        ctx.fillStyle = `hsla(${hue + state * 60}, 80%, 60%, ${stateOpacity})`;
+                        ctx.shadowColor = ctx.fillStyle;
+                        ctx.shadowBlur = 8;
+                        
+                        ctx.beginPath();
+                        ctx.arc(
+                            particle.x + uncertainty + stateOffset, 
+                            particle.y + quantum * 0.1 + stateOffset, 
+                            2 + Math.sin(time * 4 + index) * 1, 
+                            0, 
+                            Math.PI * 2
+                        );
+                        ctx.fill();
+                    }
+                });
+                
+                ctx.shadowBlur = 0;
+                
+                // Draw 404 text
+                draw404Text(ctx, canvas);
+                
+                animationId = requestAnimationFrame(animate);
+            }
+            animate();
+        }
+        
+        // NEW PATTERN 11: Voronoi Shatter
+        function showVoronoiShatter() {
+            const canvas = document.getElementById('artCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = canvas.parentElement.offsetWidth;
+            canvas.height = canvas.parentElement.offsetHeight;
+            
+            cancelAnimationFrame(animationId);
+            
+            const sites = [];
+            const numSites = 25;
+            
+            // Generate random voronoi sites
+            for (let i = 0; i < numSites; i++) {
+                sites.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    vx: (Math.random() - 0.5) * 1,
+                    vy: (Math.random() - 0.5) * 1,
+                    color: Math.random() * 360
+                });
+            }
+            
+            function animate() {
+                ctx.fillStyle = 'black';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                const time = Date.now() * 0.001;
+                
+                // Update site positions
+                sites.forEach(site => {
+                    site.x += site.vx + Math.sin(time + site.y * 0.01) * 0.5;
+                    site.y += site.vy + Math.cos(time + site.x * 0.01) * 0.5;
+                    
+                    // Bounce off walls
+                    if (site.x < 0 || site.x > canvas.width) site.vx *= -1;
+                    if (site.y < 0 || site.y > canvas.height) site.vy *= -1;
+                    
+                    site.x = Math.max(0, Math.min(canvas.width, site.x));
+                    site.y = Math.max(0, Math.min(canvas.height, site.y));
+                });
+                
+                // Draw voronoi diagram
+                const imageData = ctx.createImageData(canvas.width, canvas.height);
+                const data = imageData.data;
+                
+                for (let x = 0; x < canvas.width; x += 2) {
+                    for (let y = 0; y < canvas.height; y += 2) {
+                        let minDist = Infinity;
+                        let closestSite = 0;
+                        
+                        sites.forEach((site, index) => {
+                            const dist = Math.sqrt((x - site.x) ** 2 + (y - site.y) ** 2);
+                            if (dist < minDist) {
+                                minDist = dist;
+                                closestSite = index;
+                            }
+                        });
+                        
+                        const hue = (sites[closestSite].color + time * 30) % 360;
+                        const shatter = Math.sin(minDist * 0.1 + time * 2) * 0.5 + 0.5;
+                        const intensity = Math.max(0.2, 1 - minDist / 100) * shatter;
+                        
+                        // Convert HSL to RGB
+                        const c = intensity * 0.8;
+                        const x1 = c * (1 - Math.abs((hue / 60) % 2 - 1));
+                        const m = intensity - c/2;
+                        
+                        let r, g, b;
+                        if (hue < 60) { r = c; g = x1; b = 0; }
+                        else if (hue < 120) { r = x1; g = c; b = 0; }
+                        else if (hue < 180) { r = 0; g = c; b = x1; }
+                        else if (hue < 240) { r = 0; g = x1; b = c; }
+                        else if (hue < 300) { r = x1; g = 0; b = c; }
+                        else { r = c; g = 0; b = x1; }
+                        
+                        for (let dx = 0; dx < 2; dx++) {
+                            for (let dy = 0; dy < 2; dy++) {
+                                const px = x + dx;
+                                const py = y + dy;
+                                if (px < canvas.width && py < canvas.height) {
+                                    const index = (py * canvas.width + px) * 4;
+                                    data[index] = (r + m) * 255;
+                                    data[index + 1] = (g + m) * 255;
+                                    data[index + 2] = (b + m) * 255;
+                                    data[index + 3] = 255;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                ctx.putImageData(imageData, 0, 0);
+                
+                // Draw shatter lines
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.lineWidth = 1;
+                sites.forEach(site => {
+                    ctx.shadowColor = `hsl(${site.color}, 100%, 50%)`;
+                    ctx.shadowBlur = 5;
+                    ctx.beginPath();
+                    ctx.arc(site.x, site.y, 3, 0, Math.PI * 2);
+                    ctx.stroke();
+                });
+                
+                ctx.shadowBlur = 0;
+                
+                // Draw 404 text
+                draw404Text(ctx, canvas);
+                
+                animationId = requestAnimationFrame(animate);
+            }
+            animate();
+        }
+        
+        // NEW PATTERN 12: Neural Network
+        function showNeuralNetwork() {
+            const canvas = document.getElementById('artCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = canvas.parentElement.offsetWidth;
+            canvas.height = canvas.parentElement.offsetHeight;
+            
+            cancelAnimationFrame(animationId);
+            
+            const nodes = [];
+            const numLayers = 5;
+            const nodesPerLayer = 8;
+            
+            // Create neural network structure
+            for (let layer = 0; layer < numLayers; layer++) {
+                for (let node = 0; node < nodesPerLayer; node++) {
+                    nodes.push({
+                        x: (layer / (numLayers - 1)) * (canvas.width - 100) + 50,
+                        y: (node / (nodesPerLayer - 1)) * (canvas.height - 100) + 50,
+                        layer: layer,
+                        activation: Math.random(),
+                        bias: Math.random() * 2 - 1
+                    });
+                }
+            }
+            
+            function animate() {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                const time = Date.now() * 0.001;
+                
+                // Update activations
+                nodes.forEach((node, index) => {
+                    node.activation = (Math.sin(time * 2 + index * 0.5) + 1) / 2;
+                    node.activation += Math.sin(time * 0.5 + node.layer * 0.8) * 0.3;
+                    node.activation = Math.max(0, Math.min(1, node.activation));
+                });
+                
+                // Draw connections
+                nodes.forEach((node1, i) => {
+                    nodes.forEach((node2, j) => {
+                        if (node2.layer === node1.layer + 1) {
+                            const strength = node1.activation * node2.activation;
+                            const pulse = Math.sin(time * 5 + i + j) * 0.3 + 0.7;
+                            
+                            ctx.strokeStyle = `rgba(0, 150, 255, ${strength * pulse * 0.6})`;
+                            ctx.lineWidth = strength * 3 + 0.5;
+                            ctx.shadowColor = ctx.strokeStyle;
+                            ctx.shadowBlur = 3;
+                            
+                            ctx.beginPath();
+                            ctx.moveTo(node1.x, node1.y);
+                            
+                            // Add curve to connections
+                            const midX = (node1.x + node2.x) / 2;
+                            const midY = (node1.y + node2.y) / 2 + Math.sin(time + i) * 20;
+                            ctx.quadraticCurveTo(midX, midY, node2.x, node2.y);
+                            ctx.stroke();
+                        }
+                    });
+                });
+                
+                // Draw nodes
+                nodes.forEach((node, index) => {
+                    const pulse = Math.sin(time * 3 + index * 0.3) * 0.3 + 0.7;
+                    const size = 4 + node.activation * 8 * pulse;
+                    
+                    ctx.shadowColor = `hsl(${200 + node.layer * 30}, 100%, 60%)`;
+                    ctx.shadowBlur = 10;
+                    ctx.fillStyle = `hsla(${200 + node.layer * 30}, 100%, 60%, ${node.activation})`;
+                    
+                    ctx.beginPath();
+                    ctx.arc(node.x, node.y, size, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Inner core
+                    ctx.fillStyle = 'white';
+                    ctx.beginPath();
+                    ctx.arc(node.x, node.y, size * 0.3, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                
+                ctx.shadowBlur = 0;
+                
+                // Draw 404 text
+                draw404Text(ctx, canvas);
+                
+                animationId = requestAnimationFrame(animate);
+            }
+            animate();
+        }
+        
+        // NEW PATTERN 13: Fluid Dynamics
+        function showFluidDynamics() {
+            const canvas = document.getElementById('artCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = canvas.parentElement.offsetWidth;
+            canvas.height = canvas.parentElement.offsetHeight;
+            
+            cancelAnimationFrame(animationId);
+            
+            const particles = [];
+            const numParticles = 150;
+            
+            for (let i = 0; i < numParticles; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    vx: 0,
+                    vy: 0,
+                    density: Math.random() * 0.5 + 0.5,
+                    pressure: 0,
+                    size: Math.random() * 3 + 2
+                });
+            }
+            
+            function animate() {
+                ctx.fillStyle = 'rgba(0, 5, 15, 0.2)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                const time = Date.now() * 0.001;
+                const gravity = 0.05;
+                const damping = 0.98;
+                
+                // Update fluid dynamics
+                particles.forEach((p1, i) => {
+                    p1.pressure = 0;
+                    let neighbors = 0;
+                    
+                    // Calculate pressure from nearby particles
+                    particles.forEach((p2, j) => {
+                        if (i !== j) {
+                            const dx = p2.x - p1.x;
+                            const dy = p2.y - p1.y;
+                            const dist = Math.sqrt(dx * dx + dy * dy);
+                            
+                            if (dist < 50) {
+                                const influence = 1 - dist / 50;
+                                p1.pressure += influence * p2.density;
+                                neighbors++;
+                                
+                                // Repulsion force
+                                const force = influence * 0.5;
+                                p1.vx -= (dx / dist) * force;
+                                p1.vy -= (dy / dist) * force;
+                            }
+                        }
+                    });
+                    
+                    // Add flow field
+                    const flowX = Math.sin(p1.y * 0.01 + time) * 0.2;
+                    const flowY = Math.cos(p1.x * 0.01 + time) * 0.2;
+                    p1.vx += flowX;
+                    p1.vy += flowY;
+                    
+                    // Add gravity
+                    p1.vy += gravity;
+                    
+                    // Apply damping
+                    p1.vx *= damping;
+                    p1.vy *= damping;
+                    
+                    // Update position
+                    p1.x += p1.vx;
+                    p1.y += p1.vy;
+                    
+                    // Boundary collisions
+                    if (p1.x < 0 || p1.x > canvas.width) {
+                        p1.vx *= -0.5;
+                        p1.x = Math.max(0, Math.min(canvas.width, p1.x));
+                    }
+                    if (p1.y < 0 || p1.y > canvas.height) {
+                        p1.vy *= -0.5;
+                        p1.y = Math.max(0, Math.min(canvas.height, p1.y));
+                    }
+                });
+                
+                // Draw fluid particles
+                particles.forEach((particle, index) => {
+                    const hue = (180 + particle.pressure * 60 + time * 20) % 360;
+                    const alpha = 0.6 + particle.pressure * 0.4;
+                    
+                    ctx.fillStyle = `hsla(${hue}, 80%, 60%, ${alpha})`;
+                    ctx.shadowColor = ctx.fillStyle;
+                    ctx.shadowBlur = particle.size * 2;
+                    
+                    ctx.beginPath();
+                    ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Draw velocity trails
+                    ctx.strokeStyle = `hsla(${hue}, 100%, 70%, 0.3)`;
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(particle.x, particle.y);
+                    ctx.lineTo(particle.x - particle.vx * 10, particle.y - particle.vy * 10);
+                    ctx.stroke();
+                });
+                
+                ctx.shadowBlur = 0;
+                
+                // Draw 404 text
+                draw404Text(ctx, canvas);
+                
+                animationId = requestAnimationFrame(animate);
+            }
+            animate();
+        }
+        
+        // NEW PATTERN 14: Crystal Growth
+        function showCrystalGrowth() {
+            const canvas = document.getElementById('artCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = canvas.parentElement.offsetWidth;
+            canvas.height = canvas.parentElement.offsetHeight;
+            
+            cancelAnimationFrame(animationId);
+            
+            const crystals = [];
+            const numCrystals = 5;
+            
+            // Initialize crystal seeds
+            for (let i = 0; i < numCrystals; i++) {
+                crystals.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    branches: [],
+                    color: Math.random() * 360,
+                    age: 0
+                });
+            }
+            
+            function animate() {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.02)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                const time = Date.now() * 0.001;
+                
+                crystals.forEach((crystal, crystalIndex) => {
+                    crystal.age += 0.016;
+                    
+                    // Grow new branches occasionally
+                    if (Math.random() < 0.1 && crystal.branches.length < 50) {
+                        const baseAngle = Math.random() * Math.PI * 2;
+                        crystal.branches.push({
+                            x: crystal.x,
+                            y: crystal.y,
+                            angle: baseAngle,
+                            length: 0,
+                            maxLength: Math.random() * 80 + 20,
+                            segments: [],
+                            generation: 0
+                        });
+                    }
+                    
+                    // Update branches
+                    crystal.branches.forEach((branch, branchIndex) => {
+                        if (branch.length < branch.maxLength) {
+                            branch.length += 0.5;
+                            
+                            // Add segments to branch
+                            const segments = Math.floor(branch.length / 5);
+                            while (branch.segments.length < segments) {
+                                const segmentIndex = branch.segments.length;
+                                const segmentLength = 5;
+                                const noise = Math.sin(time + segmentIndex + crystalIndex) * 0.2;
+                                
+                                branch.segments.push({
+                                    x: crystal.x + Math.cos(branch.angle + noise) * segmentIndex * segmentLength,
+                                    y: crystal.y + Math.sin(branch.angle + noise) * segmentIndex * segmentLength,
+                                    thickness: Math.max(1, 4 - segmentIndex * 0.2),
+                                    hue: (crystal.color + segmentIndex * 10) % 360
+                                });
+                            }
+                            
+                            // Create sub-branches
+                            if (branch.generation < 2 && Math.random() < 0.05 && branch.segments.length > 5) {
+                                const lastSegment = branch.segments[branch.segments.length - 1];
+                                crystal.branches.push({
+                                    x: lastSegment.x,
+                                    y: lastSegment.y,
+                                    angle: branch.angle + (Math.random() - 0.5) * Math.PI / 3,
+                                    length: 0,
+                                    maxLength: Math.random() * 30 + 10,
+                                    segments: [],
+                                    generation: branch.generation + 1
+                                });
+                            }
+                        }
+                    });
+                    
+                    // Draw crystal
+                    crystal.branches.forEach(branch => {
+                        branch.segments.forEach((segment, segmentIndex) => {
+                            const pulse = Math.sin(time * 2 + segmentIndex + crystalIndex) * 0.3 + 0.7;
+                            
+                            ctx.strokeStyle = `hsla(${segment.hue}, 100%, 60%, ${0.8 * pulse})`;
+                            ctx.lineWidth = segment.thickness;
+                            ctx.shadowColor = ctx.strokeStyle;
+                            ctx.shadowBlur = 5;
+                            
+                            if (segmentIndex > 0) {
+                                const prevSegment = branch.segments[segmentIndex - 1];
+                                ctx.beginPath();
+                                ctx.moveTo(prevSegment.x, prevSegment.y);
+                                ctx.lineTo(segment.x, segment.y);
+                                ctx.stroke();
+                            }
+                            
+                            // Draw crystal facets
+                            const facetSize = segment.thickness;
+                            ctx.fillStyle = `hsla(${segment.hue + 30}, 100%, 80%, 0.4)`;
+                            ctx.beginPath();
+                            for (let i = 0; i < 6; i++) {
+                                const angle = (i / 6) * Math.PI * 2;
+                                const x = segment.x + Math.cos(angle) * facetSize;
+                                const y = segment.y + Math.sin(angle) * facetSize;
+                                if (i === 0) ctx.moveTo(x, y);
+                                else ctx.lineTo(x, y);
+                            }
+                            ctx.closePath();
+                            ctx.fill();
+                        });
+                    });
+                });
+                
+                ctx.shadowBlur = 0;
+                
+                // Draw 404 text
+                draw404Text(ctx, canvas);
+                
+                animationId = requestAnimationFrame(animate);
+            }
+            animate();
+        }
+        
+        // NEW PATTERN 15: Electric Storm
+        function showElectricStorm() {
+            const canvas = document.getElementById('artCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = canvas.parentElement.offsetWidth;
+            canvas.height = canvas.parentElement.offsetHeight;
+            
+            cancelAnimationFrame(animationId);
+            
+            const lightning = [];
+            const charges = [];
+            const numCharges = 8;
+            
+            // Create electrical charges
+            for (let i = 0; i < numCharges; i++) {
+                charges.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    charge: Math.random() > 0.5 ? 1 : -1,
+                    intensity: Math.random() * 0.5 + 0.5,
+                    vx: (Math.random() - 0.5) * 0.5,
+                    vy: (Math.random() - 0.5) * 0.5
+                });
+            }
+            
+            function animate() {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                const time = Date.now() * 0.001;
+                
+                // Update charges
+                charges.forEach(charge => {
+                    charge.x += charge.vx + Math.sin(time + charge.y * 0.01) * 0.2;
+                    charge.y += charge.vy + Math.cos(time + charge.x * 0.01) * 0.2;
+                    
+                    // Wrap around edges
+                    if (charge.x < 0) charge.x = canvas.width;
+                    if (charge.x > canvas.width) charge.x = 0;
+                    if (charge.y < 0) charge.y = canvas.height;
+                    if (charge.y > canvas.height) charge.y = 0;
+                });
+                
+                // Generate lightning between opposite charges
+                for (let i = 0; i < charges.length; i++) {
+                    for (let j = i + 1; j < charges.length; j++) {
+                        const c1 = charges[i];
+                        const c2 = charges[j];
+                        
+                        if (c1.charge !== c2.charge) {
+                            const distance = Math.sqrt((c1.x - c2.x) ** 2 + (c1.y - c2.y) ** 2);
+                            
+                            if (distance < 200 && Math.random() < 0.3) {
+                                // Create lightning path
+                                const steps = Math.floor(distance / 20);
+                                const path = [];
+                                
+                                for (let step = 0; step <= steps; step++) {
+                                    const progress = step / steps;
+                                    const x = c1.x + (c2.x - c1.x) * progress;
+                                    const y = c1.y + (c2.y - c1.y) * progress;
+                                    
+                                    // Add randomness to lightning path
+                                    const deviation = (Math.random() - 0.5) * 40 * (1 - Math.abs(progress - 0.5) * 2);
+                                    const perpX = -(c2.y - c1.y) / distance;
+                                    const perpY = (c2.x - c1.x) / distance;
+                                    
+                                    path.push({
+                                        x: x + perpX * deviation,
+                                        y: y + perpY * deviation
+                                    });
+                                }
+                                
+                                lightning.push({
+                                    path: path,
+                                    life: 1,
+                                    decay: 0.05,
+                                    color: Math.random() * 60 + 180 // Blue to cyan range
+                                });
+                            }
+                        }
+                    }
+                }
+                
+                // Update and draw lightning
+                lightning.forEach((bolt, index) => {
+                    bolt.life -= bolt.decay;
+                    
+                    if (bolt.life <= 0) {
+                        lightning.splice(index, 1);
+                        return;
+                    }
+                    
+                    const alpha = bolt.life;
+                    const thickness = bolt.life * 3 + 1;
+                    
+                    // Main lightning bolt
+                    ctx.strokeStyle = `hsla(${bolt.color}, 100%, 90%, ${alpha})`;
+                    ctx.lineWidth = thickness;
+                    ctx.shadowColor = ctx.strokeStyle;
+                    ctx.shadowBlur = 15;
+                    
+                    ctx.beginPath();
+                    bolt.path.forEach((point, i) => {
+                        if (i === 0) ctx.moveTo(point.x, point.y);
+                        else ctx.lineTo(point.x, point.y);
+                    });
+                    ctx.stroke();
+                    
+                    // Secondary glow
+                    ctx.strokeStyle = `hsla(${bolt.color}, 100%, 60%, ${alpha * 0.5})`;
+                    ctx.lineWidth = thickness * 2;
+                    ctx.shadowBlur = 25;
+                    
+                    ctx.beginPath();
+                    bolt.path.forEach((point, i) => {
+                        if (i === 0) ctx.moveTo(point.x, point.y);
+                        else ctx.lineTo(point.x, point.y);
+                    });
+                    ctx.stroke();
+                });
+                
+                // Draw electrical charges
+                charges.forEach((charge, index) => {
+                    const pulse = Math.sin(time * 4 + index) * 0.3 + 0.7;
+                    const size = 8 + charge.intensity * 12 * pulse;
+                    const hue = charge.charge > 0 ? 60 : 240; // Yellow for positive, blue for negative
+                    
+                    // Charge aura
+                    ctx.fillStyle = `hsla(${hue}, 100%, 60%, 0.3)`;
+                    ctx.shadowColor = `hsl(${hue}, 100%, 60%)`;
+                    ctx.shadowBlur = 20;
+                    
+                    ctx.beginPath();
+                    ctx.arc(charge.x, charge.y, size * 1.5, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Core charge
+                    ctx.fillStyle = `hsla(${hue}, 100%, 90%, 0.9)`;
+                    ctx.shadowBlur = 10;
+                    
+                    ctx.beginPath();
+                    ctx.arc(charge.x, charge.y, size * 0.5, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Charge symbol
+                    ctx.font = '16px Arial';
+                    ctx.fillStyle = 'white';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(charge.charge > 0 ? '+' : '-', charge.x, charge.y);
+                });
+                
+                ctx.shadowBlur = 0;
+                
+                // Draw 404 text
+                draw404Text(ctx, canvas);
+                
+                animationId = requestAnimationFrame(animate);
+            }
+            animate();
+        }
+        
+        // NEW PATTERN 16: DNA Helix
+        function showDNAHelix() {
+            const canvas = document.getElementById('artCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = canvas.parentElement.offsetWidth;
+            canvas.height = canvas.parentElement.offsetHeight;
+            
+            cancelAnimationFrame(animationId);
+            
+            const helixPoints = [];
+            const numPoints = 200;
+            
+            function animate() {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                const time = Date.now() * 0.001;
+                
+                // Clear and regenerate helix points
+                helixPoints.length = 0;
+                
+                for (let i = 0; i < numPoints; i++) {
+                    const progress = i / numPoints;
+                    const angle1 = progress * Math.PI * 8 + time;
+                    const angle2 = angle1 + Math.PI;
+                    
+                    const radius = 80 + Math.sin(time + progress * 4) * 20;
+                    const centerX = canvas.width / 2 + Math.sin(time * 0.3) * 50;
+                    const y = progress * canvas.height;
+                    
+                    // First strand
+                    const x1 = centerX + Math.cos(angle1) * radius;
+                    const z1 = Math.sin(angle1) * radius;
+                    
+                    // Second strand
+                    const x2 = centerX + Math.cos(angle2) * radius;
+                    const z2 = Math.sin(angle2) * radius;
+                    
+                    helixPoints.push({
+                        x1, y, z1, x2, z2,
+                        progress,
+                        connected: i % 15 === 0 // Connect every 15th point
+                    });
+                }
+                
+                // Draw helix strands
+                ctx.lineWidth = 3;
+                
+                // First strand
+                ctx.strokeStyle = `hsl(${200 + Math.sin(time) * 30}, 100%, 60%)`;
+                ctx.shadowColor = ctx.strokeStyle;
+                ctx.shadowBlur = 10;
+                
+                ctx.beginPath();
+                helixPoints.forEach((point, index) => {
+                    if (index === 0) ctx.moveTo(point.x1, point.y);
+                    else ctx.lineTo(point.x1, point.y);
+                });
+                ctx.stroke();
+                
+                // Second strand
+                ctx.strokeStyle = `hsl(${280 + Math.sin(time + 1) * 30}, 100%, 60%)`;
+                ctx.shadowColor = ctx.strokeStyle;
+                
+                ctx.beginPath();
+                helixPoints.forEach((point, index) => {
+                    if (index === 0) ctx.moveTo(point.x2, point.y);
+                    else ctx.lineTo(point.x2, point.y);
+                });
+                ctx.stroke();
+                
+                // Draw connecting base pairs
+                ctx.lineWidth = 2;
+                helixPoints.forEach(point => {
+                    if (point.connected) {
+                        const intensity = (Math.sin(time * 3 + point.progress * 10) + 1) / 2;
+                        ctx.strokeStyle = `hsla(${120 + intensity * 60}, 100%, 70%, ${0.8 * intensity})`;
+                        ctx.shadowColor = ctx.strokeStyle;
+                        ctx.shadowBlur = 5;
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(point.x1, point.y);
+                        ctx.lineTo(point.x2, point.y);
+                        ctx.stroke();
+                        
+                        // Draw nucleotide bases
+                        [point.x1, point.x2].forEach(x => {
+                            ctx.fillStyle = ctx.strokeStyle;
+                            ctx.beginPath();
+                            ctx.arc(x, point.y, 4, 0, Math.PI * 2);
+                            ctx.fill();
+                        });
+                    }
+                });
+                
+                ctx.shadowBlur = 0;
+                
+                // Draw 404 text
+                draw404Text(ctx, canvas);
+                
+                animationId = requestAnimationFrame(animate);
+            }
+            animate();
+        }
+        
+        // NEW PATTERN 17: Gravity Wells
+        function showGravityWells() {
+            const canvas = document.getElementById('artCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = canvas.parentElement.offsetWidth;
+            canvas.height = canvas.parentElement.offsetHeight;
+            
+            cancelAnimationFrame(animationId);
+            
+            const wells = [];
+            const particles = [];
+            const numWells = 4;
+            const numParticles = 300;
+            
+            // Create gravity wells
+            for (let i = 0; i < numWells; i++) {
+                wells.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    mass: Math.random() * 500 + 200,
+                    vx: (Math.random() - 0.5) * 0.5,
+                    vy: (Math.random() - 0.5) * 0.5
+                });
+            }
+            
+            // Create particles
+            for (let i = 0; i < numParticles; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    vx: (Math.random() - 0.5) * 2,
+                    vy: (Math.random() - 0.5) * 2,
+                    trail: []
+                });
+            }
+            
+            function animate() {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                const time = Date.now() * 0.001;
+                
+                // Update wells
+                wells.forEach(well => {
+                    well.x += well.vx;
+                    well.y += well.vy;
+                    
+                    // Bounce off walls
+                    if (well.x < 0 || well.x > canvas.width) well.vx *= -1;
+                    if (well.y < 0 || well.y > canvas.height) well.vy *= -1;
+                    
+                    well.x = Math.max(0, Math.min(canvas.width, well.x));
+                    well.y = Math.max(0, Math.min(canvas.height, well.y));
+                });
+                
+                // Update particles
+                particles.forEach(particle => {
+                    // Apply gravity from all wells
+                    wells.forEach(well => {
+                        const dx = well.x - particle.x;
+                        const dy = well.y - particle.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (distance > 5) {
+                            const force = well.mass / (distance * distance);
+                            particle.vx += (dx / distance) * force * 0.0001;
+                            particle.vy += (dy / distance) * force * 0.0001;
+                        }
+                    });
+                    
+                    // Update position
+                    particle.x += particle.vx;
+                    particle.y += particle.vy;
+                    
+                    // Add to trail
+                    particle.trail.push({ x: particle.x, y: particle.y });
+                    if (particle.trail.length > 20) {
+                        particle.trail.shift();
+                    }
+                    
+                    // Wrap around edges
+                    if (particle.x < 0) particle.x = canvas.width;
+                    if (particle.x > canvas.width) particle.x = 0;
+                    if (particle.y < 0) particle.y = canvas.height;
+                    if (particle.y > canvas.height) particle.y = 0;
+                });
+                
+                // Draw gravity wells
+                wells.forEach((well, index) => {
+                    const pulse = Math.sin(time * 2 + index) * 0.3 + 0.7;
+                    const hue = (time * 20 + index * 60) % 360;
+                    
+                    // Well event horizon
+                    ctx.strokeStyle = `hsla(${hue}, 100%, 60%, 0.8)`;
+                    ctx.lineWidth = 3;
+                    ctx.shadowColor = ctx.strokeStyle;
+                    ctx.shadowBlur = 20;
+                    
+                    ctx.beginPath();
+                    ctx.arc(well.x, well.y, Math.sqrt(well.mass) * pulse, 0, Math.PI * 2);
+                    ctx.stroke();
+                    
+                    // Central mass
+                    ctx.fillStyle = `hsla(${hue}, 100%, 80%, 0.9)`;
+                    ctx.beginPath();
+                    ctx.arc(well.x, well.y, 8, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                
+                // Draw particles and trails
+                particles.forEach(particle => {
+                    // Draw trail
+                    if (particle.trail.length > 1) {
+                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        particle.trail.forEach((point, index) => {
+                            if (index === 0) ctx.moveTo(point.x, point.y);
+                            else ctx.lineTo(point.x, point.y);
+                        });
+                        ctx.stroke();
+                    }
+                    
+                    // Draw particle
+                    ctx.fillStyle = 'white';
+                    ctx.beginPath();
+                    ctx.arc(particle.x, particle.y, 1, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                
+                ctx.shadowBlur = 0;
+                
+                // Draw 404 text
+                draw404Text(ctx, canvas);
+                
+                animationId = requestAnimationFrame(animate);
+            }
+            animate();
+        }
+        
+        // NEW PATTERN 18: Tunnel Vision
+        function showTunnelVision() {
+            const canvas = document.getElementById('artCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = canvas.parentElement.offsetWidth;
+            canvas.height = canvas.parentElement.offsetHeight;
+            
+            cancelAnimationFrame(animationId);
+            
+            function animate() {
+                ctx.fillStyle = 'black';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                const time = Date.now() * 0.001;
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+                
+                // Draw concentric tunnel rings
+                for (let ring = 0; ring < 50; ring++) {
+                    const baseRadius = ring * 20;
+                    const radius = baseRadius + Math.sin(time * 2 + ring * 0.2) * 10;
+                    const progress = ring / 50;
+                    
+                    // Perspective effect
+                    const perspective = 1 - progress * 0.8;
+                    const actualRadius = radius * perspective;
+                    
+                    if (actualRadius > 5) {
+                        const hue = (time * 50 + ring * 10) % 360;
+                        const intensity = Math.sin(time * 3 + ring * 0.3) * 0.5 + 0.5;
+                        
+                        ctx.strokeStyle = `hsla(${hue}, 100%, 60%, ${intensity * perspective})`;
+                        ctx.lineWidth = 2 * perspective;
+                        ctx.shadowColor = ctx.strokeStyle;
+                        ctx.shadowBlur = 10;
+                        
+                        ctx.beginPath();
+                        ctx.arc(centerX, centerY, actualRadius, 0, Math.PI * 2);
+                        ctx.stroke();
+                        
+                        // Add tunnel segments
+                        const segments = 12;
+                        for (let i = 0; i < segments; i++) {
+                            const angle = (i / segments) * Math.PI * 2 + time + ring * 0.1;
+                            const x1 = centerX + Math.cos(angle) * actualRadius;
+                            const y1 = centerY + Math.sin(angle) * actualRadius;
+                            
+                            if (ring < 49) {
+                                const nextRadius = (baseRadius + 20) * (1 - (progress + 0.02) * 0.8);
+                                const x2 = centerX + Math.cos(angle) * nextRadius;
+                                const y2 = centerY + Math.sin(angle) * nextRadius;
+                                
+                                ctx.strokeStyle = `hsla(${hue + 180}, 80%, 50%, ${intensity * perspective * 0.5})`;
+                                ctx.lineWidth = 1;
+                                ctx.beginPath();
+                                ctx.moveTo(x1, y1);
+                                ctx.lineTo(x2, y2);
+                                ctx.stroke();
+                            }
+                            
+                            // Add floating particles in tunnel
+                            if (Math.random() < 0.1) {
+                                const particleRadius = actualRadius + (Math.random() - 0.5) * 40;
+                                const particleAngle = angle + (Math.random() - 0.5) * 0.5;
+                                const px = centerX + Math.cos(particleAngle) * particleRadius;
+                                const py = centerY + Math.sin(particleAngle) * particleRadius;
+                                
+                                ctx.fillStyle = `hsla(${hue + 90}, 100%, 80%, ${perspective})`;
+                                ctx.beginPath();
+                                ctx.arc(px, py, 2 * perspective, 0, Math.PI * 2);
+                                ctx.fill();
+                            }
+                        }
+                    }
+                }
+                
+                ctx.shadowBlur = 0;
+                
+                // Draw 404 text
+                draw404Text(ctx, canvas);
+                
+                animationId = requestAnimationFrame(animate);
+            }
+            animate();
+        }
+        
+        // NEW PATTERN 19: Data Stream
+        function showDataStream() {
+            const canvas = document.getElementById('artCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = canvas.parentElement.offsetWidth;
+            canvas.height = canvas.parentElement.offsetHeight;
+            
+            cancelAnimationFrame(animationId);
+            
+            const streams = [];
+            const numStreams = 20;
+            
+            // Create data streams
+            for (let i = 0; i < numStreams; i++) {
+                streams.push({
+                    x: (i / numStreams) * canvas.width,
+                    characters: [],
+                    speed: Math.random() * 3 + 1,
+                    hue: Math.random() * 360
+                });
+            }
+            
+            const binaryChars = ['0', '1', '█', '▓', '▒', '░', '▼', '▲', '●', '○'];
+            
+            function animate() {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                const time = Date.now() * 0.001;
+                
+                streams.forEach((stream, streamIndex) => {
+                    // Add new characters at the top
+                    if (Math.random() < 0.3) {
+                        stream.characters.push({
+                            char: binaryChars[Math.floor(Math.random() * binaryChars.length)],
+                            y: -20,
+                            opacity: 1,
+                            size: Math.random() * 10 + 12,
+                            isSpecial: Math.random() < 0.1
+                        });
+                    }
+                    
+                    // Update and draw characters
+                    stream.characters.forEach((char, charIndex) => {
+                        char.y += stream.speed;
+                        char.opacity -= 0.01;
+                        
+                        if (char.y > canvas.height + 50 || char.opacity <= 0) {
+                            stream.characters.splice(charIndex, 1);
+                            return;
+                        }
+                        
+                        // Data packet glow effect
+                        const intensity = Math.sin(time * 5 + char.y * 0.01) * 0.3 + 0.7;
+                        const hue = char.isSpecial ? 
+                            (stream.hue + time * 50) % 360 : 
+                            stream.hue;
+                        
+                        ctx.font = `${char.size}px 'Courier New', monospace`;
+                        ctx.fillStyle = `hsla(${hue}, 100%, ${char.isSpecial ? 90 : 60}%, ${char.opacity * intensity})`;
+                        ctx.shadowColor = ctx.fillStyle;
+                        ctx.shadowBlur = char.isSpecial ? 15 : 8;
+                        
+                        ctx.textAlign = 'center';
+                        ctx.fillText(char.char, stream.x, char.y);
+                        
+                        // Data flow connections
+                        if (charIndex > 0 && Math.random() < 0.3) {
+                            const prevChar = stream.characters[charIndex - 1];
+                            ctx.strokeStyle = `hsla(${hue}, 80%, 50%, 0.3)`;
+                            ctx.lineWidth = 1;
+                            ctx.beginPath();
+                            ctx.moveTo(stream.x, char.y);
+                            ctx.lineTo(stream.x, prevChar.y);
+                            ctx.stroke();
+                        }
+                    });
+                    
+                    // Stream pulse effect
+                    const pulse = Math.sin(time * 2 + streamIndex) * 0.2 + 0.8;
+                    ctx.strokeStyle = `hsla(${stream.hue}, 50%, 30%, 0.5)`;
+                    ctx.lineWidth = 2;
+                    ctx.shadowBlur = 5;
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(stream.x, 0);
+                    ctx.lineTo(stream.x, canvas.height);
+                    ctx.stroke();
+                });
+                
+                // Network connection lines between streams
+                for (let i = 0; i < streams.length - 1; i++) {
+                    if (Math.random() < 0.1) {
+                        const stream1 = streams[i];
+                        const stream2 = streams[i + 1];
+                        const y = Math.random() * canvas.height;
+                        
+                        ctx.strokeStyle = `hsla(180, 100%, 50%, 0.2)`;
+                        ctx.lineWidth = 1;
+                        ctx.shadowBlur = 3;
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(stream1.x, y);
+                        ctx.lineTo(stream2.x, y);
+                        ctx.stroke();
+                    }
+                }
+                
+                ctx.shadowBlur = 0;
+                
+                // Draw 404 text
+                draw404Text(ctx, canvas);
+                
+                animationId = requestAnimationFrame(animate);
+            }
+            animate();
+        }
+        
+        // NEW PATTERN 20: Cosmic Dust
+        function showCosmicDust() {
+            const canvas = document.getElementById('artCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = canvas.parentElement.offsetWidth;
+            canvas.height = canvas.parentElement.offsetHeight;
+            
+            cancelAnimationFrame(animationId);
+            
+            const dustParticles = [];
+            const numParticles = 500;
+            const nebulaClouds = [];
+            const numClouds = 8;
+            
+            // Create dust particles
+            for (let i = 0; i < numParticles; i++) {
+                dustParticles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    z: Math.random() * 1000,
+                    vx: (Math.random() - 0.5) * 0.2,
+                    vy: (Math.random() - 0.5) * 0.2,
+                    size: Math.random() * 2 + 0.5,
+                    hue: Math.random() * 60 + 200, // Blue to purple range
+                    twinkle: Math.random() * Math.PI * 2
+                });
+            }
+            
+            // Create nebula clouds
+            for (let i = 0; i < numClouds; i++) {
+                nebulaClouds.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    radius: Math.random() * 100 + 50,
+                    hue: Math.random() * 60 + 280, // Purple to pink range
+                    drift: Math.random() * 0.5,
+                    expansion: Math.random() * 0.02 + 0.01
+                });
+            }
+            
+            function animate() {
+                ctx.fillStyle = 'rgba(0, 0, 5, 0.1)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                const time = Date.now() * 0.001;
+                
+                // Draw nebula clouds
+                nebulaClouds.forEach((cloud, index) => {
+                    cloud.x += Math.sin(time * 0.3 + index) * cloud.drift;
+                    cloud.y += Math.cos(time * 0.2 + index) * cloud.drift;
+                    cloud.radius += Math.sin(time + index) * cloud.expansion;
+                    
+                    // Wrap around
+                    if (cloud.x < -cloud.radius) cloud.x = canvas.width + cloud.radius;
+                    if (cloud.x > canvas.width + cloud.radius) cloud.x = -cloud.radius;
+                    if (cloud.y < -cloud.radius) cloud.y = canvas.height + cloud.radius;
+                    if (cloud.y > canvas.height + cloud.radius) cloud.y = -cloud.radius;
+                    
+                    const intensity = Math.sin(time * 2 + index) * 0.3 + 0.4;
+                    
+                    // Create gradient for nebula
+                    const gradient = ctx.createRadialGradient(
+                        cloud.x, cloud.y, 0,
+                        cloud.x, cloud.y, cloud.radius
+                    );
+                    gradient.addColorStop(0, `hsla(${cloud.hue}, 100%, 60%, ${intensity * 0.3})`);
+                    gradient.addColorStop(0.5, `hsla(${cloud.hue + 30}, 80%, 50%, ${intensity * 0.2})`);
+                    gradient.addColorStop(1, 'transparent');
+                    
+                    ctx.fillStyle = gradient;
+                    ctx.beginPath();
+                    ctx.arc(cloud.x, cloud.y, cloud.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                
+                // Update and draw dust particles
+                dustParticles.forEach((particle, index) => {
+                    // Parallax movement based on z-depth
+                    const depthFactor = particle.z / 1000;
+                    particle.x += particle.vx * (1 - depthFactor);
+                    particle.y += particle.vy * (1 - depthFactor);
+                    
+                    // Cosmic wind effect
+                    particle.x += Math.sin(time * 0.5 + particle.y * 0.01) * 0.1;
+                    particle.y += Math.cos(time * 0.3 + particle.x * 0.01) * 0.1;
+                    
+                    // Wrap around edges
+                    if (particle.x < 0) particle.x = canvas.width;
+                    if (particle.x > canvas.width) particle.x = 0;
+                    if (particle.y < 0) particle.y = canvas.height;
+                    if (particle.y > canvas.height) particle.y = 0;
+                    
+                    // Twinkling effect
+                    particle.twinkle += 0.05;
+                    const twinkleIntensity = Math.sin(particle.twinkle) * 0.5 + 0.5;
+                    
+                    // Size based on distance (perspective)
+                    const perspectiveSize = particle.size * (1 - depthFactor * 0.8);
+                    const alpha = (1 - depthFactor) * twinkleIntensity;
+                    
+                    ctx.fillStyle = `hsla(${particle.hue}, 100%, 80%, ${alpha})`;
+                    ctx.shadowColor = ctx.fillStyle;
+                    ctx.shadowBlur = perspectiveSize * 2;
+                    
+                    ctx.beginPath();
+                    ctx.arc(particle.x, particle.y, perspectiveSize, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Draw particle trails for brighter particles
+                    if (twinkleIntensity > 0.7 && perspectiveSize > 1) {
+                        ctx.strokeStyle = `hsla(${particle.hue}, 100%, 60%, ${alpha * 0.3})`;
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(particle.x, particle.y);
+                        ctx.lineTo(
+                            particle.x - particle.vx * 20,
+                            particle.y - particle.vy * 20
+                        );
+                        ctx.stroke();
+                    }
+                });
+                
+                // Connect nearby particles with cosmic threads
+                for (let i = 0; i < dustParticles.length; i++) {
+                    const p1 = dustParticles[i];
+                    for (let j = i + 1; j < dustParticles.length; j++) {
+                        const p2 = dustParticles[j];
+                        const distance = Math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2);
+                        
+                        if (distance < 100 && Math.random() < 0.02) {
+                            const opacity = (100 - distance) / 100 * 0.1;
+                            ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
+                            ctx.lineWidth = 0.5;
+                            ctx.beginPath();
+                            ctx.moveTo(p1.x, p1.y);
+                            ctx.lineTo(p2.x, p2.y);
+                            ctx.stroke();
+                        }
+                    }
+                }
+                
+                ctx.shadowBlur = 0;
+                
+                // Draw 404 text
+                draw404Text(ctx, canvas);
+                
+                animationId = requestAnimationFrame(animate);
+            }
+            animate();
+        }
+        
+        // Start with generative art
+        setTimeout(showGenerativeArt, 500);
+    </script>
+</body>
+</html>

@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Card Cake - Online Card Game</title>
+    <link rel="stylesheet" href="styles_simple.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="app">
+        <!-- Login/Lobby Screen -->
+        <div id="lobby-screen" class="screen active">
+            <div class="lobby-container">
+                <div class="game-logo">
+                    <img src="cake.png" alt="Card Cake Logo" class="logo-image">
+                    <h1>Card Cake</h1>
+                </div>
+                <div class="hit-counter" style="text-align: center; margin-bottom: 10px; font-size: 0.8rem; color: #666;">
+                    <span>Visitors: </span><span id="hit-count">0</span>
+                </div>
+                <div class="lobby-form">
+                    <input type="text" id="player-name" placeholder="Enter your name" maxlength="20">
+                    <div class="pfp-upload">
+                        <label for="pfp-upload">Profile Picture:</label>
+                        <input type="file" id="pfp-upload" accept="image/*">
+                        <div id="pfp-preview" class="pfp-preview"></div>
+                    </div>
+                    <div class="lobby-options">
+                        <button id="create-room-btn" class="btn primary">Create Room</button>
+                        <button id="join-room-btn" class="btn secondary">Join Room</button>
+                    </div>
+                    <div class="multiplayer-note">
+                        <p><strong>How to Play Online Multiplayer:</strong></p>
+                        <p>1. Player 1: Click "Create Room" and share the 6-character room code</p>
+                        <p>2. Player 2: Open this game on any device/browser, click "Join Room" and enter the code</p>
+                        <p>3. Both players can be anywhere in the world with internet connection!</p>
+                        <p><em>Room codes are short and easy to share - just 6 characters!</em></p>
+                    </div>
+                    <div id="join-room-form" class="hidden">
+                        <input type="text" id="room-code" placeholder="Enter room code" maxlength="8">
+                        <button id="join-btn" class="btn primary">Join</button>
+                    </div>
+                </div>
+                <div id="room-info" class="hidden">
+                    <h3>Room Code: <span id="current-room-code"></span></h3>
+                    <p>Waiting for opponent...</p>
+                    <div id="connection-status">Connecting...</div>
+                    <!-- Debug info -->
+                    <div style="margin-top: 10px;">
+                        <button id="show-stats-btn" style="font-size: 12px; padding: 2px 6px; margin-bottom: 5px;">Show Connection Stats</button>
+                        <button id="clear-debug-btn" style="font-size: 12px; padding: 2px 6px; margin-bottom: 5px; margin-left: 5px;">Clear Debug</button>
+                    </div>
+                    <div id="debug-info" style="margin-top: 10px; font-size: 12px; opacity: 0.7; max-height: 200px; overflow-y: auto; border: 1px solid #ccc; padding: 5px;">
+                        <div>Debug info will appear here...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card Creator Screen -->
+        <div id="card-creator-screen" class="screen">
+            <div class="creator-container">
+                <h2>Create Your Deck</h2>
+                <div class="creator-content">
+                    <div class="card-preview-section">
+                        <div class="card-preview" id="card-preview">
+                            <div class="card-front" id="card-front">
+                                <div class="card-image-container">
+                                    <img id="preview-image" alt="Card preview">
+                                    <div class="upload-placeholder">
+                                        <i class="upload-icon">📁</i>
+                                        <p>Upload Image</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-back" id="card-back">
+                                <div class="card-back-pattern"></div>
+                            </div>
+                        </div>
+                        <div class="card-controls">
+                            <input type="file" id="image-upload" accept="image/*" class="hidden">
+                            <button id="upload-btn" class="btn secondary">Upload Image</button>
+                            <button id="flip-card-btn" class="btn secondary">Flip Card</button>
+                            <button id="add-to-deck-btn" class="btn primary">Add to Deck</button>
+                        </div>
+                    </div>
+                    
+                    <div class="deck-builder-section">
+                        <h3>Your Deck (<span id="deck-count">0</span> cards)</h3>
+                        <div class="deck-grid" id="deck-grid"></div>
+                        <div class="deck-actions">
+                            <button id="save-deck-btn" class="btn secondary">Save Deck</button>
+                            <button id="load-deck-btn" class="btn secondary">Load Deck</button>
+                            <button id="clear-deck-btn" class="btn danger">Clear Deck</button>
+                            <button id="start-game-btn" class="btn primary">Start Game</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="screen">
+            <div class="game-header">
+                <div class="player-info">
+                    <div class="player-avatar" id="player-avatar"></div>
+                    <div class="player-details">
+                        <span id="player-name-display"></span>
+                        <div class="life-counter">
+                            <button class="life-btn" id="player-life-minus">-</button>
+                            <span id="player-life">20</span>
+                            <button class="life-btn" id="player-life-plus">+</button>
+                        </div>
+                        <div class="counters">
+                            <span class="counter">⚡<span id="player-poison">0</span></span>
+                            <span class="counter">🔋<span id="player-energy">0</span></span>
+                            <span class="counter">⭐<span id="player-experience">0</span></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="game-info">
+                    <span id="room-code-display"></span>
+                    <button id="leave-game-btn" class="btn danger small">Leave Game</button>
+                </div>
+                <div class="opponent-info">
+                    <div class="player-avatar" id="opponent-avatar"></div>
+                    <div class="player-details">
+                        <span id="opponent-name-display">Opponent</span>
+                        <div class="life-counter">
+                            <span id="opponent-life">20</span>
+                        </div>
+                        <div class="counters">
+                            <span class="counter">⚡<span id="opponent-poison">0</span></span>
+                            <span class="counter">🔋<span id="opponent-energy">0</span></span>
+                            <span class="counter">⭐<span id="opponent-experience">0</span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="game-board" id="game-board">
+                <!-- Simplified Game Table -->
+                <div class="game-table">
+                    <!-- Player Area (Bottom) -->
+                    <div class="player-area">
+                        <div class="deck-pile" id="player-deck">
+                            <div class="pile-label">Your Deck</div>
+                            <div class="pile-count" id="player-deck-count">0</div>
+                        </div>
+                        <div class="player-controls">
+                            <button id="draw-1-btn" class="btn draw-btn">Draw 1</button>
+                            <button id="draw-7-btn" class="btn draw-btn">Draw 7</button>
+                        </div>
+                        <div class="hand-area" id="player-hand">
+                            <div class="area-label">Your Hand (Hidden from Opponent)</div>
+                        </div>
+                        <div class="graveyard-pile" id="player-graveyard">
+                            <div class="pile-label">Your Discard</div>
+                            <div class="pile-count" id="player-graveyard-count">0</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Open Battlefield -->
+                    <div class="battlefield" id="battlefield">
+                        <div class="battlefield-label">Play Area - Active Cards</div>
+                    </div>
+                    
+                    <!-- Opponent Area (Top) -->
+                    <div class="opponent-area">
+                        <div class="deck-pile" id="opponent-deck">
+                            <div class="pile-label">Opponent Deck</div>
+                            <div class="pile-count" id="opponent-deck-count">0</div>
+                        </div>
+                        <div class="hand-area" id="opponent-hand">
+                            <div class="area-label">Opponent Hand</div>
+                            <div class="hand-count" id="opponent-hand-count">Cards: 0</div>
+                        </div>
+                        <div class="graveyard-pile" id="opponent-graveyard">
+                            <div class="pile-label">Opponent Discard</div>
+                            <div class="pile-count" id="opponent-graveyard-count">0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Game Context Menu -->
+            <div id="context-menu" class="context-menu hidden">
+                <div class="context-item" data-action="to-hand">To Hand</div>
+                <div class="context-item" data-action="to-battlefield">To Play Area</div>
+                <div class="context-item" data-action="to-graveyard">To Discard</div>
+                <div class="context-item" data-action="to-library">To Deck (Bottom)</div>
+                <div class="context-item" data-action="to-library-top">To Deck (Top)</div>
+                <div class="context-item" data-action="tap-untap">Tap/Untap</div>
+                <div class="context-item" data-action="flip">Flip Card</div>
+                <div class="context-item" data-action="draw">Draw Card</div>
+                <div class="context-item" data-action="shuffle">Shuffle Deck</div>
+                <div class="context-separator"></div>
+                <div class="context-item" data-action="add-poison">+1 Poison Counter</div>
+                <div class="context-item" data-action="add-energy">+1 Energy Counter</div>
+                <div class="context-item" data-action="add-experience">+1 Experience Counter</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/utils.js"></script>
+    <script src="js/card.js"></script>
+    <script src="js/deck.js"></script>
+    <script src="js/game.js"></script>
+    <script src="js/networking.js"></script>
+    <script src="js/app_simple.js"></script>
+
+    <!-- Hit Counter -->
+    <script>
+        (function() {
+            const apiUrl = 'https://omcwjmvdjswkfjkahchm.supabase.co';
+            const headers = {
+                'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
+                'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
+                'Content-Type': 'application/json'
+            };
+            const pagePath = 'cardcake';
+
+            async function recordHit() {
+                try {
+                    // Get existing record
+                    const getResponse = await fetch(`${apiUrl}/rest/v1/page_hits?page_path=eq.${pagePath}&select=id,hit_count`, {
+                        method: 'GET',
+                        headers: headers
+                    });
+                    
+                    if (getResponse.ok) {
+                        const existingData = await getResponse.json();
+                        
+                        if (existingData.length > 0) {
+                            // Update existing
+                            const record = existingData[0];
+                            const newCount = record.hit_count + 1;
+                            
+                            const updateResponse = await fetch(`${apiUrl}/rest/v1/page_hits?id=eq.${record.id}`, {
+                                method: 'PATCH',
+                                headers: headers,
+                                body: JSON.stringify({
+                                    hit_count: newCount,
+                                    last_hit: new Date().toISOString(),
+                                    updated_at: new Date().toISOString()
+                                })
+                            });
+                            
+                            if (updateResponse.ok) {
+                                document.getElementById('hit-count').textContent = newCount.toLocaleString();
+                                return;
+                            }
+                        } else {
+                            // Create new record
+                            const createResponse = await fetch(`${apiUrl}/rest/v1/page_hits`, {
+                                method: 'POST',
+                                headers: headers,
+                                body: JSON.stringify({
+                                    page_path: pagePath,
+                                    hit_count: 1,
+                                    first_hit: new Date().toISOString(),
+                                    last_hit: new Date().toISOString(),
+                                    last_ip_hash: 'browser-' + Math.random().toString(36).substring(7)
+                                })
+                            });
+                            
+                            if (createResponse.ok) {
+                                document.getElementById('hit-count').textContent = '1';
+                                return;
+                            }
+                        }
+                    }
+                    throw new Error('Failed to record hit');
+                } catch (error) {
+                    console.error('Hit counter error:', error);
+                    document.getElementById('hit-count').textContent = '---';
+                }
+            }
+
+            // Initialize on page load
+            recordHit();
+        })();
+    </script>
+</body>
+</html>
