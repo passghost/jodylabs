@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Glowing Dragonfly</title>
+  <style>
+    /* Layout */
+    body {
+      background: #181c2b;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    /* Dragonfly Container */
+    #dragonfly-container {
+      position: absolute;
+      left: 50vw;
+      top: 40vh;
+      width: 75px;
+      height: 75px;
+    }
+
+    .dragonfly {
+      position: relative;
+      width: 75px;
+      height: 75px;
+      animation: glow 2s infinite alternate;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .dragonfly.player {
+      animation: player-glow 2s infinite alternate;
+    }
+
+    /* Glow Animation */
+    @keyframes glow {
+      0% { filter: drop-shadow(0 0 20px #00ffe7); }
+      100% { filter: drop-shadow(0 0 40px #00ffe7); }
+    }
+    @keyframes player-glow {
+      0% { filter: drop-shadow(0 0 20px #ff9900); }
+      100% { filter: drop-shadow(0 0 40px #ff9900); }
+    }
+
+    /* Wings */
+    .wings {
+      position: absolute;
+      width: 96px; /* match new total wingspan: 48px left + 48px right */
+      height: 32px;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 1;
+    }
+    .wing {
+      position: absolute;
+      width: 48px; /* was 32px, make wings longer */
+      height: 5.5px;
+      background: rgba(0,255,231,0.18);
+      border-radius: 24px 24px 24px 24px / 3.5px 3.5px 3.5px 3.5px;
+      border: 1px solid #00ffe7;
+      box-shadow: 0 0 7.5px 1.25px #00ffe7;
+      z-index: 2;
+    }
+    /* Overhead view: two wings on left, two on right, no overlap */
+    .wing.left-top {
+      left: 0;
+      top: 2px;
+      transform-origin: 100% 50%;
+      animation: flap-left-top 0.03s infinite alternate cubic-bezier(.4,0,.6,1);
+      z-index: 2;
+      animation-delay: 0s;
+    }
+    .wing.left-bottom {
+      left: 0;
+      top: 22px;
+      transform-origin: 100% 50%;
+      animation: flap-left-bottom 0.03s infinite alternate cubic-bezier(.4,0,.6,1);
+      z-index: 2;
+      animation-delay: 0.015s;
+    }
+    .wing.right-top {
+      left: 48px;
+      /* was 32px, shift right wings to match new width */
+      top: 2px;
+      transform-origin: 0 50%;
+      animation: flap-right-top 0.03s infinite alternate cubic-bezier(.4,0,.6,1);
+      z-index: 2;
+      animation-delay: 0.015s;
+    }
+    .wing.right-bottom {
+      left: 48px;
+      top: 22px;
+      transform-origin: 0 50%;
+      animation: flap-right-bottom 0.03s infinite alternate cubic-bezier(.4,0,.6,1);
+      z-index: 2;
+      animation-delay: 0s;
+    }
+
+    @keyframes flap-left-top {
+      0% { transform: rotate(-55deg); }
+      100% { transform: rotate(0deg); }
+    }
+    @keyframes flap-left-bottom {
+      0% { transform: rotate(-5deg); }
+      100% { transform: rotate(-60deg); }
+    }
+    @keyframes flap-right-top {
+      0% { transform: rotate(55deg); }
+      100% { transform: rotate(0deg); }
+    }
+    @keyframes flap-right-bottom {
+      0% { transform: rotate(5deg); }
+      100% { transform: rotate(60deg); }
+    }
+
+    /* Body */
+    .body {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 4px;
+      height: 30px;
+      background: linear-gradient(to bottom, #00ffe7 60%, #0fffc0 100%);
+      border-radius: 2px 2px 5px 5px;
+      transform: translate(-50%, -50%) rotate(0deg);
+      box-shadow: 0 0 7.5px #00ffe7, 0 0 2.5px #0fffc0 inset;
+      z-index: 3;
+    }
+
+    /* Tail */
+    .tail {
+      position: absolute;
+      left: 50%;
+      top: 92%;
+      width: 2px;
+      height: 17.5px;
+      background: linear-gradient(to bottom, #00ffe7 60%, #0fffc0 100%);
+      border-radius: 2.5px 2.5px 7.5px 7.5px;
+      transform: translate(-50%, -90%) rotate(0deg);
+      box-shadow: 0 0 5px #00ffe7, 0 0 2.5px #0fffc0 inset;
+      z-index: 2;
+    }
+
+    /* Head */
+    .head {
+      position: absolute;
+      left: 50%;
+      top: 20%; /* was 10%, move closer to body */
+      width: 9.5px;
+      height: 9.5px;
+      background: radial-gradient(circle, #00ffe7 70%, #0fffc0 100%);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 5px #00ffe7, 0 0 2.5px #0fffc0 inset;
+      z-index: 3;
+    }
+
+    /* Antennae */
+    .antenna {
+      position: absolute;
+      width: 1px;
+      height: 10px;
+      background: linear-gradient(to top, #00ffe7 60%, #0fffc0 100%);
+      border-radius: 1px 1px 2.5px 2.5px;
+      top: 28%;
+      z-index: 4;
+    }
+    .antenna.left {
+      left: 47%;
+      transform: rotate(-20deg);
+    }
+    .antenna.right {
+      left: 53%;
+      transform: rotate(20deg);
+    }
+
+    #orbs, #enemies {
+      position: fixed;
+      left: 0; top: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 10;
+    }
+    .orb {
+      position: absolute;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #ff2a2a 60%, #000 100%);
+      box-shadow: 0 0 6px 1.5px #ff2a2a, 0 0 2px 0.5px #000;
+      pointer-events: none;
+      transition: opacity 0.3s, filter 0.3s;
+      animation: orb-pulse 0.7s infinite alternate cubic-bezier(.4,0,.6,1);
+    }
+
+    @keyframes orb-pulse {
+      0% { transform: scale(1); filter: brightness(1); }
+      100% { transform: scale(1.18); filter: brightness(1.25); }
+    }
+    .enemy-dragonfly {
+      width: 75px;
+      height: 75px;
+      pointer-events: none;
+      position: absolute;
+      z-index: 10;
+      filter: drop-shadow(0 0 2px #fff) drop-shadow(0 0 3px #ff9900) drop-shadow(0 0 1.5px #ff7a00);
+    }
+    .dragonfly.enemy {
+      filter: none;
+      animation: none;
+    }
+    .enemy-body {
+      background: linear-gradient(to bottom, #ff2a2a 60%, #ff7a7a 100%) !important;
+      box-shadow: 0 0 7.5px #ff2a2a, 0 0 2.5px #ff7a7a inset !important;
+    }
+    .enemy-tail {
+      background: linear-gradient(to bottom, #ff2a2a 60%, #ff7a7a 100%) !important;
+      box-shadow: 0 0 5px #ff2a2a, 0 0 2.5px #ff7a7a inset !important;
+    }
+    .enemy-head {
+      background: radial-gradient(circle, #ff2a2a 70%, #ff7a7a 100%) !important;
+      box-shadow: 0 0 5px #ff2a2a, 0 0 2.5px #ff7a7a inset !important;
+    }
+    .enemy-antenna {
+      background: linear-gradient(to top, #ff2a2a 60%, #ff7a7a 100%) !important;
+    }
+    .enemy-wing {
+      background: rgba(255,42,42,0.18) !important;
+      border: 1px solid #ff2a2a !important;
+      box-shadow: 0 0 7.5px 1.25px #ff2a2a !important;
+      width: 48px !important;
+      border-radius: 24px 24px 24px 24px / 3.5px 3.5px 3.5px 3.5px !important;
+    }
+
+    /* Player dragonfly - red color, no glow */
+    .dragonfly.player {
+      filter: none;
+    }
+    .dragonfly.player .body {
+      background: linear-gradient(to bottom, #ff2a2a 60%, #ff7a7a 100%);
+      box-shadow: 0 0 7.5px #ff2a2a, 0 0 2.5px #ff7a7a inset;
+    }
+    .dragonfly.player .tail {
+      background: linear-gradient(to bottom, #ff2a2a 60%, #ff7a7a 100%);
+      box-shadow: 0 0 5px #ff2a2a, 0 0 2.5px #ff7a7a inset;
+    }
+    .dragonfly.player .head {
+      background: radial-gradient(circle, #ff2a2a 70%, #ff7a7a 100%);
+      box-shadow: 0 0 5px #ff2a2a, 0 0 2.5px #ff7a7a inset;
+    }
+    .dragonfly.player .antenna {
+      background: linear-gradient(to top, #ff2a2a 60%, #ff7a7a 100%);
+    }
+    .dragonfly.player .wing {
+      background: #fff !important;
+      border: 1px solid #000 !important;
+      box-shadow: 0 0 12px 2px #ff2a2a, 0 0 4px 1px #ff7a7a !important;
+    }
+  </style>
+</head>
+<body>
+  <div id="dragonfly-container">
+    <div class="dragonfly player">
+      <div class="wings">
+        <div class="wing left-top"></div>
+        <div class="wing right-top"></div>
+        <div class="wing left-bottom"></div>
+        <div class="wing right-bottom"></div>
+      </div>
+      <div class="body"></div>
+      <div class="tail"></div>
+      <div class="head"></div>
+      <div class="antenna left"></div>
+      <div class="antenna right"></div>
+    </div>
+  </div>
+  <div id="orbs"></div>
+  <div id="enemies"></div>
+</body>
+<script>
+// Dragonfly movement and physics
+const container = document.getElementById('dragonfly-container');
+const dragonflyHeight = 75;
+const dragonflyWidth = 75;
+let posX = window.innerWidth / 2 - dragonflyWidth / 2;
+let posY = window.innerHeight * 0.4;
+let velX = 0;
+let velY = 0;
+let gravity = 0.12;
+let thrust = 0.7; // much higher base thrust for a/d/s
+let thrustUp = 0.7; // much higher up force for w
+let maxVel = 8;
+let landed = false;
+
+function clamp(val, min, max) {
+  return Math.max(min, Math.min(max, val));
+}
+
+document.addEventListener('keydown', (e) => {
+  if (landed && (e.key === 'w' || e.key === 'a' || e.key === 's' || e.key === 'd')) {
+    landed = false;
+  }
+  // Prevent key repeat delay by always applying force, even if key is held
+  if (e.repeat) {
+    // Do nothing, let the main loop handle velocity
+    return;
+  }
+  switch (e.key.toLowerCase()) {
+    case 'w':
+      velY -= thrustUp;
+      break;
+    case 'a':
+      velX -= thrust;
+      break;
+    case 'd':
+      velX += thrust;
+      break;
+    case 's':
+      velY += thrust;
+      break;
+  }
+});
+
+// Add continuous force while key is held
+const keys = { w: false, a: false, s: false, d: false };
+document.addEventListener('keydown', (e) => {
+  if (e.key in keys) keys[e.key] = true;
+});
+document.addEventListener('keyup', (e) => {
+  if (e.key in keys) keys[e.key] = false;
+});
+
+function updatePosition() {
+  if (!landed) {
+    velY += gravity;
+    velY = clamp(velY, -maxVel, maxVel);
+    velX = clamp(velX, -maxVel, maxVel);
+    posX += velX;
+    posY += velY;
+    // Collision with bottom
+    const bottom = window.innerHeight - dragonflyHeight;
+    if (posY >= bottom) {
+      posY = bottom;
+      velY = 0;
+      landed = true;
+    }
+    // Collision with left/right
+    if (posX < 0) { posX = 0; velX = 0; }
+    if (posX > window.innerWidth - dragonflyWidth) { posX = window.innerWidth - dragonflyWidth; velX = 0; }
+  }
+  // Apply continuous force for held keys
+  if (keys.w) velY -= thrustUp;
+  if (keys.a) velX -= thrust;
+  if (keys.d) velX += thrust;
+  if (keys.s) velY += thrust;
+
+  container.style.left = posX + 'px';
+  container.style.top = posY + 'px';
+  requestAnimationFrame(updatePosition);
+}
+
+window.addEventListener('resize', () => {
+  // Prevent dragonfly from being out of bounds after resize
+  posX = clamp(posX, 0, window.innerWidth - dragonflyWidth);
+  posY = clamp(posY, 0, window.innerHeight - dragonflyHeight);
+});
+
+updatePosition();
+
+// Orb and enemy logic
+const orbCount = 10;
+const enemyCount = 8; // fewer red dragonflies
+const orbRadius = 3.5; // tiny orbs
+const enemyRadius = 12; // base radius, will scale per enemy
+const orbs = [];
+const enemies = [];
+const orbContainer = document.getElementById('orbs');
+const enemyContainer = document.getElementById('enemies');
+
+// Helper to create a glowing orb
+function createOrb(x, y) {
+  const el = document.createElement('div');
+  el.className = 'orb';
+  el.style.left = x + 'px';
+  el.style.top = y + 'px';
+  orbContainer.appendChild(el);
+  return { x, y, el, collected: false };
+}
+
+// Helper to create a red enemy
+function createEnemy(x, y) {
+  const el = document.createElement('div');
+  el.className = 'enemy-dragonfly';
+  // Randomize scale between 0.25 and 0.4 (tiny)
+  const scale = 0.25 + Math.random() * 0.15;
+  el.style.transform = `scale(${scale})`;
+  el.innerHTML = `
+    <div class="dragonfly enemy">
+      <div class="wings">
+        <div class="wing left-top enemy-wing"></div>
+        <div class="wing right-top enemy-wing"></div>
+        <div class="wing left-bottom enemy-wing"></div>
+        <div class="wing right-bottom enemy-wing"></div>
+      </div>
+      <div class="body enemy-body"></div>
+      <div class="tail enemy-tail"></div>
+      <div class="head enemy-head"></div>
+      <div class="antenna left enemy-antenna"></div>
+      <div class="antenna right enemy-antenna"></div>
+    </div>
+  `;
+  el.style.left = x + 'px';
+  el.style.top = y + 'px';
+  el.style.position = 'absolute';
+  enemyContainer.appendChild(el);
+  // Store scale for collision and boids logic
+  return { x, y, el, velX: (Math.random()-0.5)*2, velY: (Math.random()-0.5)*2, scale };
+}
+
+// Place orbs randomly
+for (let i = 0; i < orbCount; ++i) {
+  const x = Math.random() * (window.innerWidth - orbRadius*2);
+  const y = Math.random() * (window.innerHeight - orbRadius*2);
+  orbs.push(createOrb(x, y));
+}
+// Place enemies randomly
+for (let i = 0; i < enemyCount; ++i) {
+  const x = Math.random() * (window.innerWidth - enemyRadius*2);
+  const y = Math.random() * (window.innerHeight - enemyRadius*2);
+  enemies.push(createEnemy(x, y));
+}
+
+// Boids parameters
+const boidSeparation = 60;
+const boidAlignment = 0.04;
+const boidCohesion = 0.13;
+const boidTargetAttract = 0.5; // much stronger attraction toward player
+const boidMaxSpeed = 8;
+const boidMaxForce = 0.28;
+
+function limitVec(x, y, max) {
+  const mag = Math.sqrt(x*x + y*y);
+  if (mag > max) {
+    return [x * max / mag, y * max / mag];
+  }
+  return [x, y];
+}
+
+function updateOrbsAndEnemies() {
+  // Boids for enemies
+  for (let i = 0; i < enemies.length; ++i) {
+    const e = enemies[i];
+    // Flocking vectors
+    let sepX = 0, sepY = 0, alignX = 0, alignY = 0, cohX = 0, cohY = 0;
+    let count = 0;
+    for (let j = 0; j < enemies.length; ++j) {
+      if (i === j) continue;
+      const other = enemies[j];
+      const dx = e.x - other.x;
+      const dy = e.y - other.y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist < boidSeparation && dist > 0.01) {
+        sepX += dx / dist;
+        sepY += dy / dist;
+      }
+      if (dist < 120) {
+        alignX += other.velX;
+        alignY += other.velY;
+        cohX += other.x;
+        cohY += other.y;
+        count++;
+      }
+    }
+    // Separation
+    if (sepX !== 0 || sepY !== 0) {
+      [sepX, sepY] = limitVec(sepX, sepY, boidMaxForce * 2);
+      e.velX += sepX * 0.5;
+      e.velY += sepY * 0.5;
+    }
+    // Alignment & Cohesion
+    if (count > 0) {
+      alignX /= count; alignY /= count;
+      cohX /= count; cohY /= count;
+      // Alignment
+      alignX -= e.velX; alignY -= e.velY;
+      [alignX, alignY] = limitVec(alignX, alignY, boidMaxForce);
+      e.velX += alignX * boidAlignment;
+      e.velY += alignY * boidAlignment;
+      // Cohesion
+      let toCenterX = cohX - e.x;
+      let toCenterY = cohY - e.y;
+      [toCenterX, toCenterY] = limitVec(toCenterX, toCenterY, boidMaxForce * 2);
+      e.velX += toCenterX * boidCohesion;
+      e.velY += toCenterY * boidCohesion;
+    }
+    // Attract to player
+    // Use scaled radius for each enemy
+    let thisRadius = enemyRadius * (e.scale || 1);
+    let toPlayerX = (posX + dragonflyWidth/2) - (e.x + thisRadius);
+    let toPlayerY = (posY + dragonflyHeight/2) - (e.y + thisRadius);
+    [toPlayerX, toPlayerY] = limitVec(toPlayerX, toPlayerY, boidMaxForce * 2);
+    e.velX += toPlayerX * boidTargetAttract;
+    e.velY += toPlayerY * boidTargetAttract;
+    // Limit speed
+    [e.velX, e.velY] = limitVec(e.velX, e.velY, boidMaxSpeed);
+    // REMOVE programmatic movement: do not add gravity or bounce
+    // Speed up movement dramatically in both axes for proper schooling, but preserve boids logic
+    e.x += e.velX * 3.5;
+    e.y += e.velY * 3.5;
+    // Keep in bounds
+    let maxX = window.innerWidth - (enemyRadius*2) * (e.scale || 1);
+    let maxY = window.innerHeight - (enemyRadius*2) * (e.scale || 1);
+    if (e.x < 0) { e.x = 0; e.velX *= -1; }
+    if (e.x > maxX) { e.x = maxX; e.velX *= -1; }
+    if (e.y < 0) { e.y = 0; e.velY *= -1; }
+    if (e.y > maxY) { e.y = maxY; e.velY *= -1; }
+    e.el.style.left = e.x + 'px';
+    e.el.style.top = e.y + 'px';
+    // Enemy collects orbs
+    for (const orb of orbs) {
+      if (!orb.collected) {
+        // Use true center points for both enemy and orb
+        const enemyCenterX = e.x + enemyRadius * (e.scale || 1);
+        const enemyCenterY = e.y + enemyRadius * (e.scale || 1);
+        const orbCenterX = orb.x + orbRadius;
+        const orbCenterY = orb.y + orbRadius;
+        const dx = enemyCenterX - orbCenterX;
+        const dy = enemyCenterY - orbCenterY;
+        // Add a small buffer to make collection more forgiving
+        const buffer = 3;
+        if (Math.sqrt(dx*dx + dy*dy) < orbRadius + enemyRadius * (e.scale || 1) + buffer) {
+          orb.collected = true;
+          orb.el.style.opacity = 0.2;
+          orb.el.style.filter = 'blur(2px)';
+          // Respawn orb after 1 second
+          setTimeout(() => {
+            orb.collected = false;
+            orb.x = Math.random() * (window.innerWidth - orbRadius*2);
+            orb.y = Math.random() * (window.innerHeight - orbRadius*2);
+            orb.el.style.left = orb.x + 'px';
+            orb.el.style.top = orb.y + 'px';
+            orb.el.style.opacity = 1;
+            orb.el.style.filter = '';
+          }, 1000);
+        }
+      }
+    }
+  }
+}
+
+setInterval(updateOrbsAndEnemies, 1000 / 30); // 30 FPS for orbs and enemies
+</script>
+</html>
