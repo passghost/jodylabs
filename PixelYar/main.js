@@ -22,16 +22,26 @@ let interactionHistory = [];
 let extraMovePending = false;
 // --- Islands/Ports ---
 const ISLANDS = [];
+// --- Deterministic PRNG for map generation ---
+function mulberry32(seed) {
+  return function() {
+    let t = seed += 0x6D2B79F5;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
 function generateIslands() {
-  // Place 6-10 islands, each a brown blob (ellipse) with a green port pixel
-  const numIslands = Math.floor(Math.random() * 5) + 6;
+  // Use a fixed seed so all players get the same map
+  const rand = mulberry32(1337); // Change 1337 to any number for a new map
+  const numIslands = Math.floor(rand() * 5) + 6;
   for (let i = 0; i < numIslands; i++) {
-    const cx = Math.floor(Math.random() * (OCEAN_WIDTH - 100) + 50);
-    const cy = Math.floor(Math.random() * (OCEAN_HEIGHT - 100) + 50);
-    const rx = Math.floor(Math.random() * 20) + 20;
-    const ry = Math.floor(Math.random() * 20) + 20;
+    const cx = Math.floor(rand() * (OCEAN_WIDTH - 100) + 50);
+    const cy = Math.floor(rand() * (OCEAN_HEIGHT - 100) + 50);
+    const rx = Math.floor(rand() * 20) + 20;
+    const ry = Math.floor(rand() * 20) + 20;
     // Port is always on the edge of the island
-    const angle = Math.random() * 2 * Math.PI;
+    const angle = rand() * 2 * Math.PI;
     const portX = Math.round(cx + Math.cos(angle) * rx);
     const portY = Math.round(cy + Math.sin(angle) * ry);
     ISLANDS.push({ cx, cy, rx, ry, portX, portY });
@@ -112,12 +122,16 @@ async function initPlayer(user) {
   } else {
     player = data;
   }
+  // Always fetch all players after login/creation
+  await fetchPlayers();
 }
 
 // --- Game Loop ---
 function startGameLoop() {
-  if (ISLANDS.length === 0) generateIslands();
-  fetchPlayers();
+  // Always clear and regenerate islands with the same seed for all clients
+  ISLANDS.length = 0;
+  generateIslands();
+  // Do NOT call fetchPlayers() here; only after player is initialized
   drawOcean();
   drawPlayers();
   updateHUD();
@@ -204,28 +218,23 @@ function drawOcean() {
 }
 
 function drawPlayers() {
-  // Draw all other pirates first (no glow)
+  // Debug: log all player IDs and positions
+  console.log('[DEBUG] Drawing players. Current player:', player ? player.id : null, 'All:', allPlayers.map(p => ({id: p.id, x: p.x, y: p.y})));
+
+  // Draw all pirates (including self) with different color for self
   allPlayers.forEach(p => {
-    if (p.id !== player.id) {
-      ctx.fillStyle = p.color || '#8B5C2A';
-      ctx.fillRect(p.x, p.y, PIXEL_SIZE, PIXEL_SIZE);
-    }
+    console.log('[DEBUG] Drawing player:', p);
+    ctx.save();
+    // All players: 1x1 pixel, brown with gold outline and glow
+    ctx.shadowColor = '#FFD700';
+    ctx.shadowBlur = 6;
+    ctx.fillStyle = '#8B5C2A';
+    ctx.fillRect(p.x, p.y, 1, 1);
+    ctx.strokeStyle = '#FFD700';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(p.x - 1, p.y - 1, 3, 3);
+    ctx.restore();
   });
-
-  // Draw the player's own pixel with glow
-  ctx.save();
-  ctx.shadowColor = '#FFD700';
-  ctx.shadowBlur = 12;
-  ctx.fillStyle = '#8B5C2A'; // brown
-  ctx.fillRect(player.x, player.y, PIXEL_SIZE, PIXEL_SIZE);
-  ctx.restore();
-
-  // Optional: Draw a gold outline for extra clarity
-  ctx.save();
-  ctx.strokeStyle = '#FFD700';
-  ctx.lineWidth = 2;
-  ctx.strokeRect(player.x - 1, player.y - 1, PIXEL_SIZE + 2, PIXEL_SIZE + 2);
-  ctx.restore();
 }
 
 function updateHUD() {
@@ -249,6 +258,7 @@ function updateInteractionLog(msg) {
 let canMove = true;
 function setupInput() {
   window.onkeydown = async (e) => {
+    console.log('[DEBUG] Keydown event:', e.key, 'canMove:', canMove);
     if (!canMove) return;
     let dx = 0, dy = 0;
     if (e.key === 'w') dy = -1;
@@ -272,6 +282,7 @@ function setupInput() {
 }
 
 async function movePlayer(dx, dy) {
+  console.log('[DEBUG] movePlayer called with', dx, dy, 'player:', player);
   const newX = Math.max(0, Math.min(OCEAN_WIDTH - 1, player.x + dx));
   const newY = Math.max(0, Math.min(OCEAN_HEIGHT - 1, player.y + dy));
   if (isIsland(newX, newY) || isPort(newX, newY)) {
@@ -283,7 +294,12 @@ async function movePlayer(dx, dy) {
   }
   player.x = newX;
   player.y = newY;
-  await sb.from('pirates').update({ x: player.x, y: player.y }).eq('id', player.id);
+  const { error } = await sb.from('pirates').update({ x: player.x, y: player.y }).eq('id', player.id);
+  if (error) {
+    console.error('[DEBUG] Error updating player position:', error);
+  }
+  // Always fetch latest players after move
+  await fetchPlayers();
   drawOcean();
   drawPlayers();
   setZoom();
@@ -432,12 +448,51 @@ function handleInteraction() {
 
 // --- Multiplayer ---
 async function fetchPlayers() {
+  // Force a fresh fetch to avoid client-side cache issues
   let { data, error } = await sb.from('pirates').select('*');
+  if (error) {
+    console.error('[DEBUG] fetchPlayers error:', error);
+  }
   if (data) {
-    allPlayers = data;
+    // Debug: log raw data and current player
+    console.log('[DEBUG] fetchPlayers raw data:', data);
+    console.log('[DEBUG] Current player ID:', player ? player.id : null);
+    // Remove duplicates and log all IDs
+    const seen = new Set();
+    allPlayers = data.filter(p => {
+      if (!p || !p.id || seen.has(p.id)) return false;
+      seen.add(p.id);
+      return true;
+    });
+    console.log('[DEBUG] fetchPlayers got', allPlayers.length, 'players:', allPlayers.map(p => ({id: p.id, x: p.x, y: p.y})));
+    // Show a visible warning if only one player is found
+    let warnDiv = document.getElementById('playerWarning');
+    if (!warnDiv) {
+      warnDiv = document.createElement('div');
+      warnDiv.id = 'playerWarning';
+      warnDiv.style.position = 'fixed';
+      warnDiv.style.top = '0';
+      warnDiv.style.left = '0';
+      warnDiv.style.width = '100vw';
+      warnDiv.style.background = 'rgba(255,0,0,0.8)';
+      warnDiv.style.color = 'white';
+      warnDiv.style.fontSize = '20px';
+      warnDiv.style.zIndex = '9999';
+      warnDiv.style.textAlign = 'center';
+      document.body.appendChild(warnDiv);
+    }
+    if (allPlayers.length <= 1) {
+      warnDiv.innerText = 'WARNING: Only one player found! Other players are not being returned from the database.\n' +
+        'Player list: ' + JSON.stringify(allPlayers);
+      warnDiv.style.display = 'block';
+    } else {
+      warnDiv.style.display = 'none';
+    }
     drawOcean();
     drawPlayers();
     setZoom();
+  } else {
+    console.warn('[DEBUG] fetchPlayers: No data returned');
   }
 }
 
@@ -447,7 +502,7 @@ function zoomIn() {
   setZoom();
 }
 function zoomOut() {
-  zoom = Math.max(zoom / 2, 1);
+  zoom = Math.max(zoom / 2, 0.05); // Allow zooming out to 5% (see almost whole map)
   setZoom();
 }
 function setZoom() {
@@ -471,6 +526,41 @@ function centerOnPlayer() {
 
 // --- On Load ---
 window.onload = () => {
+  // Always clear and regenerate islands on load for consistency
+  ISLANDS.length = 0;
+  generateIslands();
   // Only set zoom if player is initialized
   if (player) setZoom();
+  // Add warp button to HUD if present
+  const hud = document.getElementById('hud');
+  if (hud && !document.getElementById('warpBtn')) {
+    const btn = document.createElement('button');
+    btn.id = 'warpBtn';
+    btn.innerText = 'Warp';
+    btn.style.marginLeft = '12px';
+    btn.onclick = async () => {
+      const input = prompt('Enter coordinates as x,y (0-3839,0-2159):');
+      if (!input) return;
+      const [xStr, yStr] = input.split(',');
+      const x = parseInt(xStr, 10);
+      const y = parseInt(yStr, 10);
+      if (isNaN(x) || isNaN(y) || x < 0 || x >= OCEAN_WIDTH || y < 0 || y >= OCEAN_HEIGHT) {
+        alert('Invalid coordinates!');
+        return;
+      }
+      if (isIsland(x, y) || isPort(x, y)) {
+        alert('Cannot warp onto land or port!');
+        return;
+      }
+      player.x = x;
+      player.y = y;
+      await sb.from('pirates').update({ x: player.x, y: player.y }).eq('id', player.id);
+      await fetchPlayers();
+      drawOcean();
+      drawPlayers();
+      setZoom();
+      updateInteractionLog(`Warped to (${x},${y})`);
+    };
+    hud.appendChild(btn);
+  }
 };
