@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pirate Pixel Yar</title>
+  <style>
+    html, body { height: 100%; margin: 0; overflow: hidden; background: #222; }
+    #oceanCanvas { display: block; margin: 0 auto; background: #1e3f66; }
+    #login { position: absolute; top: 20px; left: 20px; background: #fff3; padding: 20px; border-radius: 8px; }
+    #hud { position: absolute; top: 20px; right: 20px; background: #fff3; padding: 20px; border-radius: 8px; color: #222; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+</head>
+<body>
+  <div style="position:relative; width:100vw; height:100vh; overflow:hidden; font-family: 'Pirata One', 'Treasure Map Deadhand', 'Papyrus', cursive;">
+  <div id="movePopup" style="display:none; position:absolute; left:50%; top:30%; transform:translate(-50%,-50%); background:#2d1a06ee; color:#FFD700; border:4px solid #8B5C2A; border-radius:16px; padding:32px 48px; font-size:2em; z-index:100; box-shadow:0 0 32px #000b; text-align:center;">
+    <div style="font-size:2.2em; margin-bottom:10px;">☠️ YARRR! Time to move yer ship, matey! ☠️</div>
+    <div style="font-size:1.2em;">Press W, A, S, or D to set sail!</div>
+  </div>
+  <div id="login" style="z-index:2; position:absolute;">
+    <input type="email" id="email" placeholder="Email"><br>
+    <input type="password" id="password" placeholder="Password"><br>
+    <button onclick="login()">Login</button>
+    <button onclick="register()">Register</button>
+    <div id="loginStatus"></div>
+    <div style="margin-top:10px;color:#fff;font-size:0.9em;">Enter your Supabase credentials in <b>main.js</b> before launching!</div>
+  </div>
+  <div id="hud" style="display:none; z-index:2; position:absolute; background: #2d1a06ee; border: 3px solid #FFD700; border-radius: 12px; box-shadow: 0 0 16px #000b; color: #FFD700; font-family: inherit;">
+    <div style="font-size:1.3em; font-weight:bold; letter-spacing:2px; text-shadow: 2px 2px 0 #8B5C2A;">🏴‍☠️ Pirate Stats 🏴‍☠️</div>
+    <div id="playerStats" style="margin-bottom:10px;"></div>
+    <div id="moveTimer" style="font-size:1.1em; margin-bottom:10px; color:#FFD700; text-shadow:1px 1px 0 #8B5C2A;"></div>
+    <div id="interactionLog" style="min-height:90px; max-height:140px; overflow-y:auto; background:#1e3f66cc; border:2px solid #8B5C2A; border-radius:8px; margin-bottom:10px; padding:8px 10px; color:#FFD700; font-size:1em; font-family:inherit; box-shadow:0 0 8px #000a;"></div>
+    <button onclick="zoomIn()" style="background:#8B5C2A; color:#FFD700; border:2px solid #FFD700; border-radius:6px; font-size:1em; margin-right:6px; cursor:pointer;">🔍 Zoom In</button>
+    <button onclick="zoomOut()" style="background:#8B5C2A; color:#FFD700; border:2px solid #FFD700; border-radius:6px; font-size:1em; cursor:pointer;">🔎 Zoom Out</button>
+  </div>
+  <link href="https://fonts.googleapis.com/css2?family=Pirata+One&display=swap" rel="stylesheet">
+  <canvas id="oceanCanvas" width="3840" height="2160" style="z-index:1; position:absolute; left:0; top:0;"></canvas>
+  </div>
+  <script src="main.js"></script>
+</body>
+</html>
