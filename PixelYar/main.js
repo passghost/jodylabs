@@ -126,7 +126,14 @@ function startGameLoop() {
   zoom = 16;
   setZoom();
   startMoveCountdown();
-  setInterval(fetchPlayers, 2000); // Poll for other players
+
+  // --- Real-time multiplayer: subscribe to pirates table changes ---
+  sb.channel('public:pirates')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'pirates' }, payload => {
+      // On any insert/update/delete, re-fetch all players
+      fetchPlayers();
+    })
+    .subscribe();
 }
 
 function startMoveCountdown() {
