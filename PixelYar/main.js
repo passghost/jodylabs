@@ -135,12 +135,14 @@ function startMoveCountdown() {
   moveCountdown = MOVE_INTERVAL / 1000;
   updateMoveTimer();
   canMove = false;
+  document.getElementById('movePopup').style.display = 'none';
   if (moveIntervalId) clearInterval(moveIntervalId);
   moveIntervalId = setInterval(() => {
     moveCountdown--;
     updateMoveTimer();
     if (moveCountdown <= 0) {
       clearInterval(moveIntervalId);
+      document.getElementById('movePopup').style.display = 'block';
       canMove = true;
     }
   }, 1000);
@@ -149,9 +151,17 @@ function startMoveCountdown() {
 function updateMoveTimer() {
   const timerDiv = document.getElementById('moveTimer');
   if (moveCountdown > 0) {
-    timerDiv.innerHTML = `⏳ Next move in: <b>${moveCountdown}</b> seconds`;
+    timerDiv.innerHTML = `
+      <div style="font-size:15px; margin-bottom:2px;">⏳ Next move in: <b>${moveCountdown}</b> seconds</div>
+      <div style="font-size:11px; color:#aaa; margin-top:8px;">WASD to move</div>
+    `;
+    timerDiv.style.textAlign = 'right';
   } else {
-    timerDiv.innerHTML = `<span style="color:#FFD700; font-weight:bold;">YARRR! Move now!</span>`;
+    timerDiv.innerHTML = `
+      <div style="font-size:13px; color:#FFD700; font-weight:bold; margin-bottom:2px;">YARRR! Move now!</div>
+      <div style="font-size:10px; color:#bbb; margin-top:8px;">WASD to move</div>
+    `;
+    timerDiv.style.textAlign = 'right';
   }
 }
 
@@ -252,11 +262,13 @@ function setupInput() {
     if (e.key === 'd') dx = 1;
     if (dx !== 0 || dy !== 0) {
       canMove = false;
+      document.getElementById('movePopup').style.display = 'none';
       await movePlayer(dx, dy);
       if (extraMovePending) {
         extraMovePending = false;
         updateInteractionLog('Ye get an extra move!');
         canMove = true;
+        document.getElementById('movePopup').style.display = 'block';
       } else {
         setTimeout(() => startMoveCountdown(), 100);
       }
