@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>RuneKing</title>
+  <style>
+    body {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      background: radial-gradient(ellipse at center, #1a0900 0%, #0a0500 100%);
+      color: #ffecb3;
+      text-align: center;
+      min-height: 100vh;
+      margin: 0;
+      letter-spacing: 0.04em;
+      box-shadow: 0 0 80px 10px #ff8000 inset;
+    }
+    h1 {
+      font-family: 'Impact', 'Georgia', serif;
+      font-size: 3em;
+      color: #fff6d5;
+      letter-spacing: 0.15em;
+      text-shadow:
+        0 0 18px #ffb300,
+        0 0 32px #ff6600,
+        0 0 60px #fff,
+        0 0 8px #ffecb3;
+      margin-top: 32px;
+      margin-bottom: 10px;
+    }
+    .controls {
+      margin: 24px auto 18px auto;
+      display: inline-block;
+      padding: 18px 32px 18px 32px;
+      border-radius: 18px;
+      background: rgba(30, 10, 0, 0.85);
+      box-shadow: 0 0 32px 6px #ff8000b0, 0 0 0 2px #ffb30060 inset;
+      border: 1.5px solid #ffb30080;
+    }
+    label {
+      margin: 0 16px;
+      font-size: 1.1em;
+      color: #ffecb3;
+      text-shadow: 0 0 6px #ffb300, 0 0 2px #fff;
+      display: inline-block;
+    }
+    input[type="file"] {
+      margin: 0 10px;
+      color: #ffb300;
+      background: #1a0900;
+      border: 1px solid #ffb30080;
+      border-radius: 6px;
+      padding: 3px 8px;
+    }
+    input[type="range"] {
+      accent-color: #ff8000;
+      background: linear-gradient(90deg, #fff6d5 0%, #ff8000 100%);
+      border-radius: 8px;
+      height: 4px;
+      margin: 0 6px;
+    }
+    input[type="text"] {
+      background: #1a0900;
+      color: #fff6d5;
+      border: 1.5px solid #ffb30080;
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 1em;
+      box-shadow: 0 0 8px #ff8000a0 inset;
+    }
+    button {
+      margin: 0 10px;
+      padding: 7px 22px;
+      font-size: 1.1em;
+      font-family: 'Impact', 'Georgia', serif;
+      color: #fff6d5;
+      background: linear-gradient(90deg, #ff8000 0%, #ffb300 100%);
+      border: none;
+      border-radius: 8px;
+      box-shadow: 0 0 18px #ff8000, 0 0 2px #fff;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+    }
+    button:hover {
+      background: linear-gradient(90deg, #ffb300 0%, #ff8000 100%);
+      color: #fff;
+      box-shadow: 0 0 32px #ffb300, 0 0 8px #fff;
+    }
+    #canvas {
+      border: 2.5px solid #ffb300;
+      margin-top: 24px;
+      background: #000;
+      box-shadow: 0 0 60px 10px #ff8000b0, 0 0 0 2px #ffb30060 inset;
+      border-radius: 12px;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    #densityValue, #hueValue {
+      color: #fff6d5;
+      font-weight: bold;
+      text-shadow: 0 0 6px #ffb300, 0 0 2px #fff;
+    }
+  </style>
+</head>
+<body>
+  <h1>RuneKing</h1>
+  <div class="controls">
+    <input type="file" id="maskInput" accept="image/*">
+    <label>
+      <input type="checkbox" id="fillWhite" checked>
+      Fill White Areas
+    </label>
+    <label>
+      Font Density:
+      <input type="range" id="densitySlider" min="4" max="30" value="10">
+      <span id="densityValue">10</span>
+    </label>
+    <label>
+      Hide Words:
+      <input type="text" id="hiddenWord" placeholder="Type words to hide (comma or space separated)..." style="width:200px;">
+    </label>
+    <label>
+      Hue:
+      <input type="range" id="hueSlider" min="0" max="360" value="30">
+      <span id="hueValue">30</span>
+    </label>
+    <button id="renderBtn">Render</button>
+  </div>
+  <canvas id="canvas" width="512" height="512" style="background:#000;"></canvas>
+  <script>
+    // Characters and fonts to use
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*';
+    const fonts = [
+      'Arial', 'Courier New', 'Georgia', 'Times New Roman', 'Verdana', 'Comic Sans MS', 'Impact', 'Lucida Console'
+    ];
+
+    const maskInput = document.getElementById('maskInput');
+    const fillWhite = document.getElementById('fillWhite');
+    const renderBtn = document.getElementById('renderBtn');
+    const densitySlider = document.getElementById('densitySlider');
+    const densityValue = document.getElementById('densityValue');
+    const hiddenWordInput = document.getElementById('hiddenWord');
+    const hueSlider = document.getElementById('hueSlider');
+    const hueValue = document.getElementById('hueValue');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    let maskImg = null;
+    let currentHue = parseInt(hueSlider.value, 10);
+
+    hueSlider.addEventListener('input', () => {
+      hueValue.textContent = hueSlider.value;
+      currentHue = parseInt(hueSlider.value, 10);
+    });
+
+    densitySlider.addEventListener('input', () => {
+      densityValue.textContent = densitySlider.value;
+    });
+
+    maskInput.addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const img = new Image();
+      img.onload = () => {
+        maskImg = img;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      };
+      img.src = URL.createObjectURL(file);
+    });
+
+    // Animation state for burning characters
+    let burnChars = [];
+    let animationId = null;
+
+    function renderBurningChars() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      const now = performance.now();
+      for (const c of burnChars) {
+        // Flicker and drift (time-based)
+        const flicker = 0.8 + 0.25 * Math.sin(now * 0.008 + c.seed);
+        const driftX = c.x + Math.sin(now * 0.001 + c.seed) * 2.2;
+        const driftY = c.y + Math.cos(now * 0.0012 + c.seed) * 2.2;
+        ctx.save();
+        ctx.font = `${c.fontSize * flicker}px ${c.font}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.translate(driftX, driftY);
+        ctx.rotate(c.rotation + Math.sin(now * 0.001 + c.seed) * 0.12);
+        // Colorize with current hue
+        const hue = currentHue;
+        // Outer glow
+        const glowAlpha = 0.7 + 0.2 * Math.sin(now * 0.004 + c.seed);
+        ctx.shadowColor = `hsla(${hue}, 100%, 50%, ${glowAlpha})`;
+        ctx.shadowBlur = c.fontSize * 2.2 * flicker;
+        ctx.fillStyle = `hsl(${hue}, 100%, 85%)`;
+        ctx.fillText(c.char, 0, 0);
+        // Burn
+        const burnAlpha = 0.6 + 0.2 * Math.cos(now * 0.006 + c.seed);
+        ctx.shadowColor = `hsla(${(hue+20)%360}, 100%, 40%, ${burnAlpha})`;
+        ctx.shadowBlur = c.fontSize * 0.7 * flicker;
+        ctx.fillStyle = `hsl(${(hue+20)%360}, 100%, 55%)`;
+        ctx.fillText(c.char, 0, 0);
+        // White hot core
+        const coreAlpha = 0.4 + 0.2 * Math.sin(now * 0.01 + c.seed);
+        ctx.shadowColor = `hsla(0,0%,100%,${coreAlpha})`;
+        ctx.shadowBlur = c.fontSize * 0.3 * flicker;
+        ctx.fillStyle = '#fff';
+        ctx.fillText(c.char, 0, 0);
+        // Particle sparks (animated)
+        for (let p = 0; p < 4; ++p) {
+          const baseAngle = (p / 4) * Math.PI * 2;
+          const angle = baseAngle + now * 0.001 + c.seed + Math.sin(now * 0.002 + c.seed + p) * 0.5;
+          const dist = c.fontSize * (1.2 + Math.abs(Math.sin(now * 0.002 + c.seed + p)) * 1.5);
+          const px = Math.cos(angle) * dist;
+          const py = Math.sin(angle) * dist;
+          ctx.beginPath();
+          ctx.arc(px, py, 1.1 + Math.abs(Math.sin(now * 0.004 + c.seed + p)) * 1.2, 0, 2 * Math.PI);
+          ctx.fillStyle = `hsla(${hue}, 100%, 50%, ${0.18+Math.abs(Math.sin(now*0.002+p+c.seed))*0.22})`;
+          ctx.shadowColor = `hsla(${hue}, 100%, 50%, 0.7)`;
+          ctx.shadowBlur = 8 + Math.abs(Math.sin(now * 0.005 + c.seed + p)) * 8;
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+      animationId = requestAnimationFrame(renderBurningChars);
+    }
+
+    renderBtn.addEventListener('click', () => {
+      if (!maskImg) return alert('Please upload a mask image.');
+      // Draw mask to hidden canvas to get pixel data
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = canvas.width;
+      tempCanvas.height = canvas.height;
+      const tempCtx = tempCanvas.getContext('2d');
+      tempCtx.drawImage(maskImg, 0, 0, canvas.width, canvas.height);
+      const imgData = tempCtx.getImageData(0, 0, canvas.width, canvas.height);
+      // Prepare burning chars array
+      burnChars = [];
+      const step = parseInt(densitySlider.value, 10);
+      // Collect all fillable positions
+      let fillPositions = [];
+      for (let y = 0; y < canvas.height; y += step) {
+        for (let x = 0; x < canvas.width; x += step) {
+          const i = (y * canvas.width + x) * 4;
+          const r = imgData.data[i];
+          const g = imgData.data[i+1];
+          const b = imgData.data[i+2];
+          const isWhite = (r + g + b) / 3 > 128;
+          const fill = fillWhite.checked ? isWhite : !isWhite;
+          if (fill) {
+            fillPositions.push({x, y});
+          }
+        }
+      }
+      // Hide words logic
+      let words = hiddenWordInput.value.trim().split(/[, ]+/).filter(Boolean);
+      let usedPositions = new Set();
+      // Place each word at random positions (horizontal, vertical, diagonal)
+      function placeWordRandomly(wordChars) {
+        if (!wordChars.length || fillPositions.length < wordChars.length) return;
+        for (let attempt = 0; attempt < 20; ++attempt) {
+          const dirOptions = [
+            {dx:1,dy:0}, // horizontal
+            {dx:0,dy:1}, // vertical
+            {dx:1,dy:1}, // diagonal
+            {dx:-1,dy:1} // anti-diagonal
+          ];
+          const dir = dirOptions[Math.floor(Math.random()*dirOptions.length)];
+          const startIdx = Math.floor(Math.random() * (fillPositions.length - wordChars.length));
+          let ok = true;
+          let positions = [];
+          let px = fillPositions[startIdx].x;
+          let py = fillPositions[startIdx].y;
+          for (let i = 0; i < wordChars.length; ++i) {
+            const pos = fillPositions.find(p => p.x === px && p.y === py);
+            if (!pos) { ok = false; break; }
+            const key = `${px},${py}`;
+            if (usedPositions.has(key)) { ok = false; break; }
+            positions.push({x: px, y: py, char: wordChars[i]});
+            px += dir.dx * step;
+            py += dir.dy * step;
+          }
+          if (ok) {
+            for (let i = 0; i < positions.length; ++i) {
+              usedPositions.add(`${positions[i].x},${positions[i].y}`);
+            }
+            return positions;
+          }
+        }
+        return null;
+      }
+      let wordPlacements = [];
+      for (let w = 0; w < words.length; ++w) {
+        const wordChars = words[w].split('');
+        // Place each word up to 3 times if possible
+        for (let t = 0; t < 3; ++t) {
+          const placement = placeWordRandomly(wordChars);
+          if (placement) wordPlacements = wordPlacements.concat(placement);
+        }
+      }
+      // Fill the chars, using the word placements if any
+      for (let i = 0; i < fillPositions.length; ++i) {
+        const {x, y} = fillPositions[i];
+        let char = null;
+        // Check if this position is part of a word placement
+        const wordCharObj = wordPlacements.find(p => p.x === x && p.y === y);
+        if (wordCharObj) {
+          char = wordCharObj.char;
+        } else {
+          char = chars[Math.floor(Math.random() * chars.length)];
+        }
+        const font = fonts[Math.floor(Math.random() * fonts.length)];
+        const fontSize = Math.max(4, step - 3 + Math.floor(Math.random() * 3));
+        burnChars.push({
+          char,
+          font,
+          fontSize,
+          x: x + step/2,
+          y: y + step/2,
+          rotation: (Math.random() - 0.5) * 0.4,
+          seed: Math.random() * 10000
+        });
+      }
+      if (animationId) cancelAnimationFrame(animationId);
+      renderBurningChars();
+    });
+  </script>
+</body>
+</html>

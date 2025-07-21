@@ -1,0 +1,1746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>WordBind</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', 'Arial', 'Helvetica Neue', sans-serif;
+      background: linear-gradient(135deg, #18191a 0%, #101012 100%);
+      color: #e0e0e0;
+      min-height: 100vh;
+      margin: 0;
+      letter-spacing: 0.04em;
+      box-shadow: 0 0 120px 0 #222 inset;
+      display: flex;
+      flex-direction: row;
+      align-items: flex-start;
+      justify-content: flex-start;
+    }
+    h1 {
+      font-family: 'Segoe UI Black', 'Arial Black', 'Impact', sans-serif;
+      font-size: 2.3em;
+      color: #e6e6e6;
+      letter-spacing: 0.18em;
+      text-shadow:
+        0 0 16px #fff,
+        0 0 32px #b6b6b6,
+        0 0 60px #222,
+        0 0 8px #fff;
+      margin-top: 32px;
+      margin-bottom: 24px;
+      filter: brightness(1.2) drop-shadow(0 0 8px #fff8);
+      text-align: left;
+    }
+    .controls {
+      position: relative;
+      top: 60px;
+      left: -60px;
+      /* Negative left pulls overlay closer to canvas */
+      width: 340px;
+      min-width: 240px;
+      max-width: 400px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: flex-start;
+      padding: 38px 34px 34px 34px;
+      border-radius: 60px 32px 60px 120px / 80px 120px 60px 120px;
+      background: linear-gradient(135deg, rgba(24,25,26,0.92) 70%, rgba(35,35,37,0.96) 100%);
+      box-shadow: 0 8px 48px 0 #000b, 0 0 0 2px #444a inset, 0 0 60px 0 #fff2 inset, 0 0 0 1.5px #fff1;
+      border: 1.5px solid #333a;
+      border-right: 2.5px solid #fff2;
+      border-bottom: 2.5px solid #fff2;
+      backdrop-filter: blur(8px) saturate(1.2);
+      z-index: 100;
+      gap: 18px;
+      transition: box-shadow 0.3s, background 0.3s, left 0.3s;
+      overflow: visible;
+    }
+    @media (max-width: 900px) {
+      .controls {
+        right: 10px;
+        top: 10px;
+        width: 96vw;
+        min-width: 0;
+        max-width: 98vw;
+        border-radius: 40px 20px 40px 60px / 40px 60px 40px 60px;
+        padding: 18px 10px 18px 18px;
+      }
+    }
+    label {
+      margin: 0 0 8px 0;
+      font-size: 1.08em;
+      color: #e0e0e0;
+      text-shadow: 0 0 6px #fff2, 0 0 2px #222;
+      display: flex;
+      align-items: center;
+      font-weight: 500;
+      width: 100%;
+      gap: 10px;
+    }
+    input[type="file"] {
+      margin: 0 10px;
+      color: #b6b6b6;
+      background: #18191a;
+      border: 1px solid #444a;
+      border-radius: 6px;
+      padding: 3px 8px;
+      box-shadow: 0 0 8px #fff1 inset;
+    }
+    input[type="range"] {
+      accent-color: #b6b6b6;
+      background: linear-gradient(90deg, #232325 0%, #444a 100%);
+      border-radius: 8px;
+      height: 4px;
+      margin: 0 6px;
+      box-shadow: 0 0 8px #fff2 inset;
+    }
+    input[type="text"] {
+      background: #101012;
+      color: #e6e6e6;
+      border: 1.5px solid #444a;
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 1em;
+      box-shadow: 0 0 8px #fff1 inset;
+    }
+    button {
+      margin: 12px 0 0 0;
+      padding: 10px 0;
+      width: 100%;
+      font-size: 1.1em;
+      font-family: 'Segoe UI Black', 'Arial Black', 'Impact', sans-serif;
+      color: #fff;
+      background: linear-gradient(90deg, #232325 0%, #444a 100%);
+      border: none;
+      border-radius: 8px;
+      box-shadow: 0 0 18px #fff2, 0 0 2px #222;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s, box-shadow 0.2s, filter 0.2s;
+      filter: brightness(1.1) drop-shadow(0 0 6px #fff8);
+    }
+    button:hover {
+      background: linear-gradient(90deg, #444a 0%, #232325 100%);
+      color: #fff;
+      box-shadow: 0 0 32px #fff4, 0 0 8px #fff;
+      filter: brightness(1.3) drop-shadow(0 0 12px #fff8);
+    }
+    #main-content {
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-width: 0;
+      margin-right: 0;
+    }
+    #canvas {
+      border: 2.5px solid #444a;
+      margin-top: 32px;
+      background: #000;
+      box-shadow: 0 0 60px 10px #fff2, 0 0 0 2px #444a inset, 0 0 120px 0 #fff4 inset;
+      border-radius: 12px;
+      display: block;
+      filter: brightness(1.1) drop-shadow(0 0 16px #fff8);
+      width: 1024px;
+      height: 1024px;
+      max-width: 98vw;
+      max-height: 98vh;
+    }
+    #densityValue, #hueValue {
+      color: #e6e6e6;
+      font-weight: bold;
+      text-shadow: 0 0 6px #fff2, 0 0 2px #222;
+    }
+    ::selection {
+      background: #444a;
+      color: #fff;
+    }
+    /* Subtle shine effect for controls */
+    .controls, button, #canvas {
+      position: relative;
+      overflow: hidden;
+    }
+    .controls::before, button::before, #canvas::before {
+      content: '';
+      position: absolute;
+      top: -60%;
+      left: -60%;
+      width: 220%;
+      height: 220%;
+      background: linear-gradient(120deg, transparent 60%, #fff2 80%, transparent 100%);
+      opacity: 0.13;
+      pointer-events: none;
+      transform: rotate(-8deg);
+    }
+  </style>
+</head>
+<body>
+  <div id="main-content">
+    <h1>WordBind</h1>
+    <canvas id="canvas" width="1024" height="1024" style="background:#000;"></canvas>
+  </div>
+  <div class="controls">
+    <label>
+      <input type="checkbox" id="multicolorToggle">
+      Multicolor
+    </label>
+    <label>
+      Animation Style:
+      <select id="animationStyle">
+        <option value="burning">Burning</option>
+        <option value="mystic">Mystic Pulse</option>
+        <option value="neonwave">Neon Wave</option>
+        <option value="rainbow">Rainbow Flow</option>
+        <option value="matrix">Matrix Code</option>
+        <option value="shatter">Shatter</option>
+        <option value="ghost">Ghost Fade</option>
+        <option value="ice">Ice Shards</option>
+        <option value="bubble">Bubble Pop</option>
+        <option value="warp">Warp Tunnel</option>
+        <option value="sparkle">Sparkle Flicker</option>
+        <option value="pulse">Pulse Glow</option>
+        <option value="firefly">Firefly Drift</option>
+        <option value="liquid">Liquid Ripple</option>
+        <option value="glitch">Glitch Flicker</option>
+        <option value="orbit">Orbit Halo</option>
+        <option value="storm">Storm Surge</option>
+        <option value="blood">Blood Drip</option>
+        <option value="fracture">Fracture Glass</option>
+        <option value="smoke">Smoke Wisp</option>
+        <option value="hyper">Hyper Flash</option>
+        <option value="vortex">Vortex Spiral</option>
+        <option value="depthpop">Depth Pop</option>
+        <option value="tunnelzoom">Tunnel Zoom</option>
+        <option value="parallax">Parallax</option>
+        <option value="floatdepth">Float Depth</option>
+        <option value="depthpulse">Depth Pulse</option>
+      </select>
+    </label>
+    <label>
+      <input type="file" id="maskInput" accept="image/*">
+      Mask Image
+    </label>
+    <label>
+      <input type="checkbox" id="fillWhite" checked>
+      Fill White Areas
+    </label>
+    <label>
+      Font Density:
+      <input type="range" id="densitySlider" min="4" max="30" value="10">
+      <span id="densityValue">10</span>
+    </label>
+    <label>
+      Hide Words:
+      <input type="text" id="hiddenWord" placeholder="Type words to hide (comma or space separated)..." style="width:180px;">
+    </label>
+    <label>
+      <input type="checkbox" id="fillWithWordToggle">
+      Fill Entire Mask With Word
+    </label>
+    <label>
+      Hue:
+      <input type="range" id="hueSlider" min="0" max="360" value="30">
+      <span id="hueValue">30</span>
+    </label>
+    <label>
+      Canvas Size:
+      <select id="canvasSize">
+        <option value="256">256 x 256</option>
+        <option value="512">512 x 512</option>
+        <option value="1024">1024 x 1024</option>
+        <option value="1080">1080 x 1080</option>
+        <option value="3840">4K (3840 x 3840)</option>
+      </select>
+    </label>
+    <button id="renderBtn">Render</button>
+    <label style="margin-top:8px;display:block;">
+      GIF Frames:
+      <select id="gifFrameCount">
+        <option value="16">16</option>
+        <option value="32" selected>32</option>
+        <option value="64">64</option>
+        <option value="128">128</option>
+      </select>
+    </label>
+    <button id="exportGifBtn" style="margin-top:8px;">Export GIF</button>
+    <div id="gifProgressModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000a;z-index:9999;align-items:center;justify-content:center;">
+      <div style="background:#222;padding:32px 40px 32px 40px;border-radius:24px;box-shadow:0 0 32px #000b,0 0 0 2px #fff2;display:flex;flex-direction:column;align-items:center;">
+        <span id="gifProgressText" style="color:#fff;font-size:1.2em;margin-bottom:12px;">Exporting GIF...</span>
+        <progress id="gifProgressBar" value="0" max="32" style="width:260px;height:18px;"></progress>
+      </div>
+    </div>
+    <label>
+      <input type="file" id="bgInput" accept="image/*">
+      Background Image (optional)
+    </label>
+    <label id="bgModeLabel" style="display:flex;align-items:center;gap:8px;">
+      BG Mode:
+      <select id="bgMode">
+        <option value="under">Underlay</option>
+        <option value="over">Overlay</option>
+      </select>
+    </label>
+  </div>
+  <!--
+    To enable GIF export, download gif.js and gif.worker.js from:
+    https://github.com/jnordberg/gif.js
+    Place both files in this folder. Do not load gif.worker.js directly; gif.js will load it as a worker.
+  -->
+  <script src="gif.js"></script>
+  <script>
+    // Export GIF logic
+    const exportGifBtn = document.getElementById('exportGifBtn');
+    const gifProgressModal = document.getElementById('gifProgressModal');
+    const gifProgressText = document.getElementById('gifProgressText');
+    const gifProgressBar = document.getElementById('gifProgressBar');
+
+    const gifFrameCountSelect = document.getElementById('gifFrameCount');
+    exportGifBtn.addEventListener('click', async () => {
+      if (!maskImg) return alert('Please upload a mask image.');
+      if (typeof window.GIF !== 'function') {
+        alert('GIF export requires gif.js and gif.worker.js.\n\nMake sure gif.js is the real minified library, not a placeholder or a file with only a path. Open gif.js and ensure it contains minified JavaScript code.');
+        return;
+      }
+      exportGifBtn.disabled = true;
+      gifProgressModal.style.display = 'flex';
+      gifProgressText.textContent = 'Exporting GIF...';
+      gifProgressBar.value = 0;
+      // Prepare GIF
+      const size = canvas.width;
+      const gif = new window.GIF({
+        workers: 2,
+        quality: 8,
+        width: size,
+        height: size,
+        workerScript: 'gif.worker.js', // This file must exist in the same folder
+        transparent: null,
+        background: '#000',
+        repeat: 0,
+        dither: false
+      });
+      // Save current animation state
+      const oldBurnChars = JSON.parse(JSON.stringify(burnChars));
+      const oldAnimation = currentAnimation;
+      let frameCount = parseInt(gifFrameCountSelect.value, 10) || 32;
+      let frameDelay = 1000/24; // ~24fps
+      const halfFrames = Math.floor(frameCount / 2);
+      const startTime = performance.now();
+      const frameImages = [];
+      // Render first halfFrames and store image data
+      for (let f = 0; f < halfFrames; ++f) {
+        const now = startTime + f * frameDelay;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const pad = Math.floor(canvas.width * 0.04);
+        if (bgImg && bgMode === 'under') {
+          ctx.drawImage(bgImg, pad, pad, canvas.width - 2 * pad, canvas.height - 2 * pad);
+        } else {
+          ctx.fillStyle = '#000';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+        for (const c of burnChars) {
+          renderCharForGif(ctx, c, now);
+        }
+        if (bgImg && bgMode === 'over') {
+          ctx.save();
+          ctx.globalAlpha = 0.85;
+          ctx.drawImage(bgImg, pad, pad, canvas.width - 2 * pad, canvas.height - 2 * pad);
+          ctx.restore();
+        }
+        // Store frame image data
+        frameImages.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+        gifProgressBar.value = f+1;
+        gifProgressText.textContent = `Exporting GIF... (${f+1}/${frameCount})`;
+        await new Promise(r => setTimeout(r, 10));
+      }
+      // Add all forward frames
+      for (let f = 0; f < halfFrames; ++f) {
+        ctx.putImageData(frameImages[f], 0, 0);
+        gif.addFrame(ctx, {copy:true, delay:frameDelay});
+        gifProgressBar.value = halfFrames + f + 1;
+        gifProgressText.textContent = `Exporting GIF... (${halfFrames + f + 1}/${frameCount})`;
+        await new Promise(r => setTimeout(r, 0));
+      }
+      // Add reversed frames for smooth loop (skip first and last to avoid duplicate frames)
+      for (let f = halfFrames - 2; f > 0; --f) {
+        ctx.putImageData(frameImages[f], 0, 0);
+        gif.addFrame(ctx, {copy:true, delay:frameDelay});
+        gifProgressBar.value = halfFrames * 2 + (halfFrames - f);
+        gifProgressText.textContent = `Exporting GIF... (${halfFrames * 2 + (halfFrames - f)}/${frameCount})`;
+        await new Promise(r => setTimeout(r, 0));
+      }
+      // Restore state
+      burnChars = oldBurnChars;
+      currentAnimation = oldAnimation;
+      // Render GIF
+      gif.on('finished', function(blob) {
+        gifProgressModal.style.display = 'none';
+        exportGifBtn.disabled = false;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'wordbind.gif';
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
+      });
+      gif.render();
+    });
+
+    // Helper to render a single char for GIF export (simulate animation at a given time)
+    function renderCharForGif(ctx, c, now) {
+      // Full animation support for GIF export
+      if (currentAnimation === 'burning') {
+        // ...burning code (unchanged)...
+        const driftX = c.x + Math.sin(now * 0.001 + c.seed) * 2.2;
+        const driftY = c.y + Math.cos(now * 0.0012 + c.seed) * 2.2;
+        ctx.save();
+        ctx.font = `${c.fontSize}px ${c.font}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.translate(driftX, driftY);
+        ctx.rotate(c.rotation + Math.sin(now * 0.001 + c.seed) * 0.12);
+        let hue = currentHue;
+        if (useMulticolor) {
+          hue = Math.floor((c.seed * 360 + now * 0.04 + c.x + c.y) % 360);
+        }
+        const glowAlpha = 0.7 + 0.2 * Math.sin(now * 0.004 + c.seed);
+        ctx.shadowColor = `hsla(${hue}, 100%, 50%, ${glowAlpha})`;
+        ctx.shadowBlur = c.fontSize * 2.2;
+        ctx.fillStyle = `hsl(${hue}, 100%, 85%)`;
+        ctx.fillText(c.char, 0, 0);
+        const burnAlpha = 0.6 + 0.2 * Math.cos(now * 0.006 + c.seed);
+        ctx.shadowColor = `hsla(${(hue+20)%360}, 100%, 40%, ${burnAlpha})`;
+        ctx.shadowBlur = c.fontSize * 0.7;
+        ctx.fillStyle = `hsl(${(hue+20)%360}, 100%, 55%)`;
+        ctx.fillText(c.char, 0, 0);
+        const coreAlpha = 0.4 + 0.2 * Math.sin(now * 0.01 + c.seed);
+        ctx.shadowColor = `hsla(0,0%,100%,${coreAlpha})`;
+        ctx.shadowBlur = c.fontSize * 0.3;
+        ctx.fillStyle = '#fff';
+        ctx.fillText(c.char, 0, 0);
+        ctx.restore();
+      } else if (currentAnimation === 'mystic') {
+        let baseHue = (currentHue + 180) % 360;
+        if (useMulticolor) {
+          baseHue = Math.floor((c.seed * 360 + now * 0.04 + c.x + c.y) % 360);
+        }
+        const t = (now / 1000 + c.seed) % 10;
+        ctx.save();
+        ctx.font = `${c.fontSize}px ${c.font}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.translate(c.x, c.y);
+        ctx.globalAlpha = 0.18;
+        ctx.fillStyle = `hsl(${baseHue}, 100%, 80%)`;
+        ctx.shadowColor = `hsla(${baseHue}, 100%, 80%, 0.15)`;
+        ctx.shadowBlur = c.fontSize * 1.2;
+        ctx.fillText(c.char, 0, 0);
+        ctx.globalAlpha = 1.0;
+        const numParticles = 12;
+        for (let p = 0; p < numParticles; ++p) {
+          const angle = (p / numParticles) * Math.PI * 2 + c.seed;
+          const speed = 18 + 12 * Math.abs(Math.sin(now * 0.0007 + c.seed + p));
+          const phase = (now * 0.0005 + c.seed + p) % 1;
+          const progress = (t * 0.18 + p * 0.07) % 1;
+          const dist = progress * speed;
+          const px = Math.cos(angle) * dist;
+          const py = Math.sin(angle) * dist;
+          ctx.save();
+          ctx.globalAlpha = 0.7 * (1 - progress);
+          let partHue = baseHue;
+          if (useMulticolor) {
+            partHue = Math.floor((c.seed * 360 + now * 0.09 + p * 90) % 360);
+          }
+          ctx.font = `${c.fontSize * (0.7 + 0.2 * (1 - progress))}px ${c.font}`;
+          ctx.shadowColor = `hsla(${partHue}, 100%, 80%, 0.5)`;
+          ctx.shadowBlur = 8 + 8 * (1 - progress);
+          ctx.fillStyle = `hsl(${partHue}, 100%, ${70 + 20 * (1 - progress)}%)`;
+          ctx.translate(px, py);
+          ctx.rotate(angle + Math.sin(now * 0.001 + c.seed + p) * 0.2);
+          ctx.fillText(c.char, 0, 0);
+          ctx.restore();
+        }
+        ctx.restore();
+      } else if (currentAnimation === 'neonwave') {
+        ctx.save();
+        const wave = Math.sin(now * 0.004 + c.x * 0.01 + c.y * 0.01 + c.seed) * 8;
+        ctx.font = `${c.fontSize}px ${c.font}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.translate(c.x, c.y + wave);
+        let hue = (currentHue + wave * 6) % 360;
+        if (useMulticolor) hue = Math.floor((c.seed * 360 + now * 0.08 + c.x + c.y) % 360);
+        ctx.shadowColor = `hsl(${hue},100%,60%)`;
+        ctx.shadowBlur = 16;
+        ctx.fillStyle = `hsl(${hue},100%,70%)`;
+        ctx.globalAlpha = 0.92;
+        ctx.fillText(c.char, 0, 0);
+        ctx.restore();
+      } else if (currentAnimation === 'rainbow') {
+        ctx.save();
+        const t = now * 0.06 + c.x + c.y + c.seed * 10;
+        let hue = (t % 360);
+        ctx.font = `${c.fontSize}px ${c.font}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.translate(c.x, c.y);
+        for (let i = 0; i < 4; ++i) {
+          ctx.globalAlpha = 0.18 + 0.18 * i;
+          ctx.shadowColor = `hsl(${(hue + i * 18) % 360},100%,60%)`;
+          ctx.shadowBlur = 8 + i * 4;
+          ctx.fillStyle = `hsl(${(hue + i * 18) % 360},100%,70%)`;
+          ctx.fillText(c.char, 0, 0);
+        }
+        ctx.restore();
+      } else if (currentAnimation === 'matrix') {
+        // ...matrix code (unchanged)...
+        ctx.save();
+        ctx.font = `${c.fontSize}px ${c.font}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.translate(c.x, c.y);
+        ctx.shadowColor = 'lime';
+        ctx.shadowBlur = 10;
+        ctx.globalAlpha = 0.92;
+        ctx.fillStyle = '#b6ffb6';
+        ctx.fillText(c.char, 0, 0);
+        ctx.restore();
+        for (let i = 1; i < 4; ++i) {
+          ctx.save();
+          const t = (now * 0.12 + c.seed * 1000) % (canvas.height + 4 * c.fontSize * 1.1);
+          const y = (c.y + t + i * c.fontSize * 1.1) % canvas.height;
+          ctx.font = `${c.fontSize}px ${c.font}`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.translate(c.x, y);
+          ctx.shadowColor = 'lime';
+          ctx.shadowBlur = 6;
+          ctx.globalAlpha = 0.08 + 0.25 * Math.max(0, 1 - i / 4);
+          let symbol = chars[Math.floor(Math.random() * chars.length)];
+          ctx.fillStyle = '#3f7';
+          ctx.fillText(symbol, 0, 0);
+          ctx.restore();
+        }
+      } else if (currentAnimation === 'ghost') {
+        ctx.save();
+        const fade = 0.5 + 0.5 * Math.sin(now * 0.002 + c.seed);
+        ctx.font = `${c.fontSize}px ${c.font}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.translate(c.x, c.y);
+        ctx.globalAlpha = 0.18 + 0.7 * fade;
+        ctx.shadowColor = `hsl(${currentHue},100%,90%)`;
+        ctx.shadowBlur = 18;
+        ctx.fillStyle = '#fff';
+        ctx.fillText(c.char, 0, 0);
+        ctx.restore();
+      } else if (currentAnimation === 'ice') {
+        ctx.save();
+        const flicker = 0.7 + 0.3 * Math.sin(now * 0.004 + c.seed * 2);
+        ctx.font = `${c.fontSize}px ${c.font}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.translate(c.x, c.y);
+        ctx.rotate(Math.sin(now * 0.001 + c.seed) * 0.18);
+        ctx.globalAlpha = 0.7 + 0.3 * flicker;
+        ctx.shadowColor = `rgba(180,220,255,0.8)`;
+        ctx.shadowBlur = 22;
+        ctx.fillStyle = `hsl(${200 + 30 * Math.sin(c.seed)}, 100%, ${80 + 10 * flicker}%)`;
+        ctx.fillText(c.char, 0, 0);
+        for (let s = 0; s < 3; ++s) {
+          ctx.save();
+          ctx.rotate((s - 1) * 0.5 + Math.sin(now * 0.002 + c.seed + s) * 0.2);
+          ctx.globalAlpha = 0.18 * flicker;
+          ctx.strokeStyle = '#e0f7ff';
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.lineTo(0, -c.fontSize * (1.2 + 0.5 * Math.abs(Math.sin(now * 0.003 + c.seed + s))));
+          ctx.stroke();
+          ctx.restore();
+        }
+        ctx.restore();
+      } else if (currentAnimation === 'bubble') {
+        ctx.save();
+        const float = Math.sin(now * 0.002 + c.seed * 2) * 8;
+        const scale = 0.9 + 0.18 * Math.sin(now * 0.003 + c.seed * 3);
+        ctx.translate(c.x, c.y + float);
+        ctx.scale(scale, scale);
+        ctx.globalAlpha = 0.7 + 0.3 * Math.abs(scale - 1);
+        ctx.beginPath();
+        ctx.arc(0, 0, c.fontSize * 0.8, 0, 2 * Math.PI);
+        ctx.fillStyle = 'rgba(180,220,255,0.13)';
+        ctx.fill();
+        ctx.lineWidth = 2.2;
+        ctx.strokeStyle = 'rgba(200,240,255,0.25)';
+        ctx.stroke();
+        ctx.font = `${c.fontSize}px ${c.font}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor = '#fff';
+        ctx.shadowBlur = 8;
+        ctx.fillStyle = '#fff';
+        ctx.fillText(c.char, 0, 0);
+        ctx.restore();
+      } else if (currentAnimation === 'warp') {
+        ctx.save();
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const dx = c.x - centerX;
+        const dy = c.y - centerY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const phase = Math.sin(now * 0.002 + c.seed + dist * 0.01);
+        const scale = 1.0 + 0.5 * phase;
+        ctx.translate(centerX + dx * scale, centerY + dy * scale);
+        ctx.globalAlpha = 0.5 + 0.5 * Math.abs(phase);
+        ctx.font = `${c.fontSize * (1.1 + 0.2 * phase)}px ${c.font}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor = `hsl(${currentHue},100%,80%)`;
+        ctx.shadowBlur = 12 + 8 * Math.abs(phase);
+        ctx.fillStyle = `hsl(${currentHue},100%,${60 + 30 * Math.abs(phase)}%)`;
+        ctx.fillText(c.char, 0, 0);
+        ctx.restore();
+      } else if (currentAnimation === 'sparkle') {
+        ctx.save();
+        const sparkle = Math.random() < 0.04 + 0.04 * Math.abs(Math.sin(now * 0.003 + c.seed)) ? 1 : 0;
+        ctx.font = `${c.fontSize}px ${c.font}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.translate(c.x, c.y);
+        ctx.globalAlpha = 0.18 + 0.7 * sparkle;
+        ctx.shadowColor = sparkle ? '#fff' : `hsl(${currentHue},100%,80%)`;
+        ctx.shadowBlur = sparkle ? 24 : 8;
+        ctx.fillStyle = sparkle ? '#fff' : `hsl(${currentHue},100%,90%)`;
+        ctx.fillText(c.char, 0, 0);
+        ctx.restore();
+      } else if (currentAnimation === 'pulse') {
+        ctx.save();
+        const pulse = 0.7 + 0.3 * Math.sin(now * 0.004 + c.seed);
+        ctx.font = `${c.fontSize}px ${c.font}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.translate(c.x, c.y);
+        ctx.globalAlpha = 0.5 + 0.5 * pulse;
+        ctx.shadowColor = `hsl(${currentHue},100%,90%)`;
+        ctx.shadowBlur = 18 + 12 * pulse;
+        ctx.fillStyle = `hsl(${currentHue},100%,${70 + 20 * pulse}%)`;
+        ctx.fillText(c.char, 0, 0);
+        ctx.restore();
+      } else if (currentAnimation === 'firefly') {
+        ctx.save();
+        const driftX = c.x + Math.sin(now * 0.001 + c.seed * 2) * 12;
+        const driftY = c.y + Math.cos(now * 0.0012 + c.seed * 3) * 12;
+        const flicker = 0.7 + 0.3 * Math.sin(now * 0.006 + c.seed * 4);
+        ctx.font = `${c.fontSize}px ${c.font}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.translate(driftX, driftY);
+        ctx.globalAlpha = 0.18 + 0.7 * flicker;
+        ctx.shadowColor = `hsl(${currentHue},100%,80%)`;
+        ctx.shadowBlur = 24;
+        ctx.fillStyle = `hsl(${currentHue},100%,90%)`;
+        ctx.fillText(c.char, 0, 0);
+        ctx.restore();
+      } else if (currentAnimation === 'liquid') {
+        ctx.save();
+        const ripple = Math.sin(now * 0.003 + c.x * 0.02 + c.y * 0.02 + c.seed) * 8;
+        ctx.font = `${c.fontSize}px ${c.font}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.translate(c.x + ripple, c.y + ripple);
+        ctx.globalAlpha = 0.7;
+        ctx.shadowColor = `hsl(${(currentHue + 180) % 360},100%,80%)`;
+        ctx.shadowBlur = 14;
+        ctx.fillStyle = `hsl(${(currentHue + 180) % 360},100%,${70 + 20 * Math.abs(ripple/8)}%)`;
+        ctx.fillText(c.char, 0, 0);
+        ctx.restore();
+      } else if (currentAnimation === 'glitch') {
+        ctx.save();
+        const jitterX = (Math.random() - 0.5) * 6;
+        const jitterY = (Math.random() - 0.5) * 6;
+        const colorShift = (currentHue + Math.floor(Math.random() * 120)) % 360;
+        ctx.font = `${c.fontSize}px ${c.font}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.translate(c.x + jitterX, c.y + jitterY);
+        ctx.globalAlpha = 0.5 + 0.5 * Math.random();
+        ctx.shadowColor = `hsl(${colorShift},100%,80%)`;
+        ctx.shadowBlur = 10 + Math.random() * 10;
+        ctx.fillStyle = `hsl(${colorShift},100%,${60 + Math.random() * 30}%)`;
+        ctx.fillText(c.char, 0, 0);
+        ctx.restore();
+      } else if (currentAnimation === 'orbit') {
+        ctx.save();
+        const orbitR = c.fontSize * 0.9;
+        const orbitA = now * 0.002 + c.seed * 2;
+        ctx.font = `${c.fontSize}px ${c.font}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.translate(c.x, c.y);
+        ctx.save();
+        ctx.globalAlpha = 0.18;
+        ctx.beginPath();
+        ctx.arc(Math.cos(orbitA) * orbitR, Math.sin(orbitA) * orbitR, c.fontSize * 0.7, 0, 2 * Math.PI);
+        ctx.fillStyle = `hsl(${currentHue},100%,80%)`;
+        ctx.shadowColor = `hsl(${currentHue},100%,90%)`;
+        ctx.shadowBlur = 18;
+        ctx.fill();
+        ctx.restore();
+        ctx.globalAlpha = 1.0;
+        ctx.shadowColor = `hsl(${currentHue},100%,90%)`;
+        ctx.shadowBlur = 10;
+        ctx.fillStyle = '#fff';
+        ctx.fillText(c.char, 0, 0);
+        ctx.restore();
+      } else if (currentAnimation === 'storm') {
+        ctx.save();
+        const surge = Math.abs(Math.sin(now * 0.008 + c.seed * 3));
+        ctx.font = `${c.fontSize}px ${c.font}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.translate(c.x, c.y);
+        ctx.globalAlpha = 0.4 + 0.6 * surge;
+        ctx.shadowColor = `hsl(${(currentHue + 220) % 360},100%,90%)`;
+        ctx.shadowBlur = 24 + 16 * surge;
+        ctx.fillStyle = `hsl(${(currentHue + 220) % 360},100%,${70 + 20 * surge}%)`;
+        ctx.fillText(c.char, 0, 0);
+        if (surge > 0.95) {
+          ctx.save();
+          ctx.globalAlpha = 0.5 * surge;
+          ctx.strokeStyle = '#fff';
+          ctx.lineWidth = 2.2;
+          ctx.beginPath();
+          ctx.moveTo(-c.fontSize * 0.7, 0);
+          ctx.lineTo(c.fontSize * 0.7, 0);
+          ctx.stroke();
+          ctx.restore();
+        }
+        ctx.restore();
+      } else if (currentAnimation === 'blood') {
+        // ...blood code (unchanged)...
+        const drip = Math.max(0, Math.sin(now * 0.002 + c.seed * 3)) * c.fontSize * 1.2;
+        ctx.save();
+        ctx.font = `${c.fontSize}px ${c.font}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.translate(c.x, c.y + drip * 0.3);
+        ctx.globalAlpha = 0.8;
+        ctx.shadowColor = 'rgba(120,0,0,0.7)';
+        ctx.shadowBlur = 18;
+        ctx.fillStyle = `hsl(0,100%,${30 + 20 * Math.abs(Math.sin(now * 0.003 + c.seed))}%)`;
+        ctx.fillText(c.char, 0, 0);
+        if (drip > c.fontSize * 0.7) {
+          ctx.save();
+          ctx.globalAlpha = 0.5;
+          ctx.beginPath();
+          ctx.arc(0, drip, c.fontSize * 0.18, 0, 2 * Math.PI);
+          ctx.fillStyle = 'rgba(120,0,0,0.8)';
+          ctx.shadowColor = 'rgba(255,0,0,0.7)';
+          ctx.shadowBlur = 8;
+          ctx.fill();
+          ctx.restore();
+        }
+        ctx.restore();
+      } else if (currentAnimation === 'fracture') {
+        ctx.save();
+        const angle = Math.sin(now * 0.002 + c.seed) * 0.3;
+        ctx.font = `${c.fontSize}px ${c.font}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.translate(c.x, c.y);
+        ctx.rotate(angle);
+        ctx.globalAlpha = 0.7;
+        ctx.shadowColor = '#bff';
+        ctx.shadowBlur = 16;
+        ctx.fillStyle = `hsl(190,100%,${80 + 10 * Math.abs(angle)}%)`;
+        ctx.fillText(c.char, 0, 0);
+        for (let s = 0; s < 2; ++s) {
+          ctx.save();
+          ctx.rotate((s - 0.5) * 0.7 + Math.sin(now * 0.003 + c.seed + s) * 0.2);
+          ctx.globalAlpha = 0.13;
+          ctx.strokeStyle = '#fff8';
+          ctx.lineWidth = 1.1;
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.lineTo(0, -c.fontSize * (1.1 + 0.5 * Math.abs(Math.sin(now * 0.004 + c.seed + s))));
+          ctx.stroke();
+          ctx.restore();
+        }
+        ctx.restore();
+      } else if (currentAnimation === 'smoke') {
+        ctx.save();
+        const drift = Math.sin(now * 0.002 + c.seed * 2) * 10;
+        ctx.font = `${c.fontSize}px ${c.font}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.translate(c.x + drift, c.y - Math.abs(drift) * 0.5);
+        ctx.globalAlpha = 0.18 + 0.5 * Math.abs(Math.sin(now * 0.003 + c.seed));
+        ctx.shadowColor = '#fff2';
+        ctx.shadowBlur = 22;
+        ctx.fillStyle = `hsl(0,0%,${70 + 20 * Math.abs(drift/10)}%)`;
+        ctx.fillText(c.char, 0, 0);
+        ctx.restore();
+      } else if (currentAnimation === 'hyper') {
+        ctx.save();
+        const flashHue = (now * 0.7 + c.seed * 360) % 360;
+        ctx.font = `${c.fontSize}px ${c.font}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.translate(c.x, c.y);
+        ctx.globalAlpha = 0.7 + 0.3 * Math.sin(now * 0.02 + c.seed);
+        ctx.shadowColor = `hsl(${flashHue},100%,90%)`;
+        ctx.shadowBlur = 18;
+        ctx.fillStyle = `hsl(${flashHue},100%,70%)`;
+        ctx.fillText(c.char, 0, 0);
+        ctx.restore();
+      } else if (currentAnimation === 'vortex') {
+        ctx.save();
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const dx = c.x - centerX;
+        const dy = c.y - centerY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const spiral = Math.sin(now * 0.002 + c.seed + dist * 0.02);
+        const angle = Math.atan2(dy, dx) + spiral * 0.25;
+        const radius = dist * (0.98 + 0.01 * spiral);
+        ctx.translate(centerX + Math.cos(angle) * radius, centerY + Math.sin(angle) * radius);
+        ctx.font = `${c.fontSize}px ${c.font}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.globalAlpha = 0.8;
+        ctx.shadowColor = `hsl(${currentHue},100%,80%)`;
+        ctx.shadowBlur = 10;
+        ctx.fillStyle = `hsl(${currentHue},100%,${60 + 20 * Math.abs(spiral)}%)`;
+        ctx.fillText(c.char, 0, 0);
+        ctx.restore();
+      } else if (currentAnimation === 'depthpop') {
+        ctx.save();
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const dx = c.x - centerX;
+        const dy = c.y - centerY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const maxDist = Math.sqrt(centerX * centerX + centerY * centerY);
+        const scale = 0.7 + 1.2 * (1 - dist / maxDist) * (0.7 + 0.3 * Math.sin(now * 0.002 + c.seed));
+        ctx.translate(c.x, c.y);
+        ctx.scale(scale, scale);
+        ctx.globalAlpha = 0.5 + 0.5 * scale;
+        ctx.font = `${c.fontSize}px ${c.font}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor = `hsl(${currentHue},100%,80%)`;
+        ctx.shadowBlur = 10 + 10 * scale;
+        ctx.fillStyle = `hsl(${currentHue},100%,${60 + 30 * scale}%)`;
+        ctx.fillText(c.char, 0, 0);
+        ctx.restore();
+      } else if (currentAnimation === 'tunnelzoom') {
+        ctx.save();
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const dx = c.x - centerX;
+        const dy = c.y - centerY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const maxDist = Math.sqrt(centerX * centerX + centerY * centerY);
+        const phase = Math.sin(now * 0.002 + c.seed + dist * 0.01);
+        const scale = 0.7 + 1.5 * (1 - dist / maxDist) * (0.7 + 0.3 * phase);
+        ctx.translate(centerX + dx * scale, centerY + dy * scale);
+        ctx.scale(scale, scale);
+        ctx.globalAlpha = 0.3 + 0.7 * (1 - dist / maxDist);
+        ctx.font = `${c.fontSize}px ${c.font}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor = `hsl(${currentHue},100%,90%)`;
+        ctx.shadowBlur = 10 + 10 * scale;
+        ctx.fillStyle = `hsl(${currentHue},100%,${60 + 30 * scale}%)`;
+        ctx.fillText(c.char, 0, 0);
+        ctx.restore();
+      } else if (currentAnimation === 'parallax') {
+        ctx.save();
+        const relY = c.y / canvas.height;
+        const scale = 0.7 + 1.5 * (1 - relY) * (0.7 + 0.3 * Math.sin(now * 0.002 + c.seed));
+        ctx.translate(c.x + (relY - 0.5) * 40, c.y);
+        ctx.scale(scale, scale);
+        ctx.globalAlpha = 0.4 + 0.6 * scale;
+        ctx.font = `${c.fontSize}px ${c.font}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor = `hsl(${currentHue},100%,80%)`;
+        ctx.shadowBlur = 8 + 10 * scale;
+        ctx.fillStyle = `hsl(${currentHue},100%,${60 + 30 * scale}%)`;
+        ctx.fillText(c.char, 0, 0);
+        ctx.restore();
+      } else if (currentAnimation === 'floatdepth') {
+        ctx.save();
+        const float = Math.sin(now * 0.003 + c.seed * 2) * 16;
+        const scale = 0.8 + 0.7 * (0.7 + 0.3 * Math.sin(now * 0.002 + c.seed));
+        ctx.translate(c.x, c.y + float);
+        ctx.scale(scale, scale);
+        ctx.globalAlpha = 0.5 + 0.5 * scale;
+        ctx.font = `${c.fontSize}px ${c.font}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor = `hsl(${currentHue},100%,80%)`;
+        ctx.shadowBlur = 10 + 10 * scale;
+        ctx.fillStyle = `hsl(${currentHue},100%,${60 + 30 * scale}%)`;
+        ctx.fillText(c.char, 0, 0);
+        ctx.restore();
+      } else if (currentAnimation === 'depthpulse') {
+        ctx.save();
+        const pulse = 0.7 + 0.5 * Math.sin(now * 0.004 + c.seed);
+        ctx.translate(c.x, c.y);
+        ctx.scale(pulse, pulse);
+        ctx.globalAlpha = 0.5 + 0.5 * pulse;
+        ctx.font = `${c.fontSize}px ${c.font}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor = `hsl(${currentHue},100%,90%)`;
+        ctx.shadowBlur = 10 + 10 * pulse;
+        ctx.fillStyle = `hsl(${currentHue},100%,${60 + 30 * pulse}%)`;
+        ctx.fillText(c.char, 0, 0);
+        ctx.restore();
+      } else {
+        // Fallback: just draw the char
+        ctx.save();
+        ctx.font = `${c.fontSize}px ${c.font}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.translate(c.x, c.y);
+        ctx.fillStyle = '#fff';
+        ctx.fillText(c.char, 0, 0);
+        ctx.restore();
+      }
+    }
+    // Characters and fonts to use
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*';
+    const fonts = [
+      'Arial', 'Courier New', 'Georgia', 'Times New Roman', 'Verdana', 'Comic Sans MS', 'Impact', 'Lucida Console'
+    ];
+
+    const maskInput = document.getElementById('maskInput');
+    const fillWhite = document.getElementById('fillWhite');
+    const renderBtn = document.getElementById('renderBtn');
+    const densitySlider = document.getElementById('densitySlider');
+    const densityValue = document.getElementById('densityValue');
+    const hiddenWordInput = document.getElementById('hiddenWord');
+    const fillWithWordToggle = document.getElementById('fillWithWordToggle');
+    const hueSlider = document.getElementById('hueSlider');
+    const hueValue = document.getElementById('hueValue');
+    const animationStyle = document.getElementById('animationStyle');
+    const multicolorToggle = document.getElementById('multicolorToggle');
+    const canvas = document.getElementById('canvas');
+    const canvasSize = document.getElementById('canvasSize');
+    let ctx = canvas.getContext('2d');
+    let maskImg = null;
+    let bgImg = null;
+    let bgMode = 'under';
+    let currentHue = parseInt(hueSlider.value, 10);
+    let currentAnimation = animationStyle.value;
+    let useMulticolor = false;
+    // BG mode dropdown
+    const bgModeSelect = document.getElementById('bgMode');
+    bgModeSelect.addEventListener('change', () => {
+      bgMode = bgModeSelect.value;
+    });
+    // Handle background image upload
+    const bgInput = document.getElementById('bgInput');
+    bgInput.addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) { bgImg = null; return; }
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        bgImg = img;
+        URL.revokeObjectURL(url);
+      };
+      img.src = url;
+    });
+
+    multicolorToggle.addEventListener('change', () => {
+      useMulticolor = multicolorToggle.checked;
+      hueSlider.disabled = useMulticolor;
+      hueValue.style.opacity = useMulticolor ? 0.5 : 1;
+    });
+
+    animationStyle.addEventListener('change', () => {
+      currentAnimation = animationStyle.value;
+    });
+
+    hueSlider.addEventListener('input', () => {
+      hueValue.textContent = hueSlider.value;
+      currentHue = parseInt(hueSlider.value, 10);
+    });
+
+    densitySlider.addEventListener('input', () => {
+      densityValue.textContent = densitySlider.value;
+    });
+
+    maskInput.addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        maskImg = img;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // Draw image with padding inside the canvas
+        const pad = Math.floor(canvas.width * 0.04); // 4% padding on each side
+        ctx.drawImage(img, pad, pad, canvas.width - 2 * pad, canvas.height - 2 * pad);
+        URL.revokeObjectURL(url); // Clean up object URL
+      };
+      img.src = url;
+    });
+
+    // Animation state for burning characters
+    let burnChars = [];
+    let animationId = null;
+
+    function renderBurningChars() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const pad = Math.floor(canvas.width * 0.04);
+      // Draw background image underlay if present and mode is 'under', else fill black
+      if (bgImg && bgMode === 'under') {
+        ctx.drawImage(bgImg, pad, pad, canvas.width - 2 * pad, canvas.height - 2 * pad);
+      } else {
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+      const now = performance.now();
+      for (const c of burnChars) {
+        if (currentAnimation === 'burning') {
+          // Burning animation (no scaling/flicker)
+          const driftX = c.x + Math.sin(now * 0.001 + c.seed) * 2.2;
+          const driftY = c.y + Math.cos(now * 0.0012 + c.seed) * 2.2;
+          ctx.save();
+          ctx.font = `${c.fontSize}px ${c.font}`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.translate(driftX, driftY);
+          ctx.rotate(c.rotation + Math.sin(now * 0.001 + c.seed) * 0.12);
+          // Colorize with current hue or multicolor
+          let hue = currentHue;
+          if (useMulticolor) {
+            hue = Math.floor((c.seed * 360 + now * 0.04 + c.x + c.y) % 360);
+          }
+          // Outer glow
+          const glowAlpha = 0.7 + 0.2 * Math.sin(now * 0.004 + c.seed);
+          ctx.shadowColor = `hsla(${hue}, 100%, 50%, ${glowAlpha})`;
+          ctx.shadowBlur = c.fontSize * 2.2;
+          ctx.fillStyle = `hsl(${hue}, 100%, 85%)`;
+          ctx.fillText(c.char, 0, 0);
+          // Burn
+          const burnAlpha = 0.6 + 0.2 * Math.cos(now * 0.006 + c.seed);
+          ctx.shadowColor = `hsla(${(hue+20)%360}, 100%, 40%, ${burnAlpha})`;
+          ctx.shadowBlur = c.fontSize * 0.7;
+          ctx.fillStyle = `hsl(${(hue+20)%360}, 100%, 55%)`;
+          ctx.fillText(c.char, 0, 0);
+          // White hot core
+          const coreAlpha = 0.4 + 0.2 * Math.sin(now * 0.01 + c.seed);
+          ctx.shadowColor = `hsla(0,0%,100%,${coreAlpha})`;
+          ctx.shadowBlur = c.fontSize * 0.3;
+          ctx.fillStyle = '#fff';
+          ctx.fillText(c.char, 0, 0);
+          // Particle sparks (animated)
+          for (let p = 0; p < 4; ++p) {
+            const baseAngle = (p / 4) * Math.PI * 2;
+            const angle = baseAngle + now * 0.001 + c.seed + Math.sin(now * 0.002 + c.seed + p) * 0.5;
+            const dist = c.fontSize * (1.2 + Math.abs(Math.sin(now * 0.002 + c.seed + p)) * 1.5);
+            const px = Math.cos(angle) * dist;
+            const py = Math.sin(angle) * dist;
+            ctx.beginPath();
+            ctx.arc(px, py, 1.1 + Math.abs(Math.sin(now * 0.004 + c.seed + p)) * 1.2, 0, 2 * Math.PI);
+            let sparkHue = hue;
+            if (useMulticolor) {
+              sparkHue = Math.floor((c.seed * 360 + now * 0.09 + p * 90) % 360);
+            }
+            ctx.fillStyle = `hsla(${sparkHue}, 100%, 50%, ${0.18+Math.abs(Math.sin(now*0.002+p+c.seed))*0.22})`;
+            ctx.shadowColor = `hsla(${sparkHue}, 100%, 50%, 0.7)`;
+            ctx.shadowBlur = 8 + Math.abs(Math.sin(now * 0.005 + c.seed + p)) * 8;
+            ctx.fill();
+          }
+          ctx.restore();
+        } else if (currentAnimation === 'mystic') {
+          // Mystic Particle Away animation
+          // ...existing code for mystic...
+          let baseHue = (currentHue + 180) % 360;
+          if (useMulticolor) {
+            baseHue = Math.floor((c.seed * 360 + now * 0.04 + c.x + c.y) % 360);
+          }
+          const t = (now / 1000 + c.seed) % 10;
+          ctx.save();
+          ctx.font = `${c.fontSize}px ${c.font}`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.translate(c.x, c.y);
+          ctx.globalAlpha = 0.18;
+          ctx.fillStyle = `hsl(${baseHue}, 100%, 80%)`;
+          ctx.shadowColor = `hsla(${baseHue}, 100%, 80%, 0.15)`;
+          ctx.shadowBlur = c.fontSize * 1.2;
+          ctx.fillText(c.char, 0, 0);
+          ctx.globalAlpha = 1.0;
+          const numParticles = 12;
+          for (let p = 0; p < numParticles; ++p) {
+            const angle = (p / numParticles) * Math.PI * 2 + c.seed;
+            const speed = 18 + 12 * Math.abs(Math.sin(now * 0.0007 + c.seed + p));
+            const phase = (now * 0.0005 + c.seed + p) % 1;
+            const progress = (t * 0.18 + p * 0.07) % 1;
+            const dist = progress * speed;
+            const px = Math.cos(angle) * dist;
+            const py = Math.sin(angle) * dist;
+            ctx.save();
+            ctx.globalAlpha = 0.7 * (1 - progress);
+            let partHue = baseHue;
+            if (useMulticolor) {
+              partHue = Math.floor((c.seed * 360 + now * 0.09 + p * 90) % 360);
+            }
+            ctx.font = `${c.fontSize * (0.7 + 0.2 * (1 - progress))}px ${c.font}`;
+            ctx.shadowColor = `hsla(${partHue}, 100%, 80%, 0.5)`;
+            ctx.shadowBlur = 8 + 8 * (1 - progress);
+            ctx.fillStyle = `hsl(${partHue}, 100%, ${70 + 20 * (1 - progress)}%)`;
+            ctx.translate(px, py);
+            ctx.rotate(angle + Math.sin(now * 0.001 + c.seed + p) * 0.2);
+            ctx.fillText(c.char, 0, 0);
+            ctx.restore();
+          }
+          ctx.restore();
+        } else if (currentAnimation === 'neonwave') {
+          // Neon Wave: glowing, wavy, neon-colored text
+          ctx.save();
+          const wave = Math.sin(now * 0.004 + c.x * 0.01 + c.y * 0.01 + c.seed) * 8;
+          ctx.font = `${c.fontSize}px ${c.font}`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.translate(c.x, c.y + wave);
+          let hue = (currentHue + wave * 6) % 360;
+          if (useMulticolor) hue = Math.floor((c.seed * 360 + now * 0.08 + c.x + c.y) % 360);
+          ctx.shadowColor = `hsl(${hue},100%,60%)`;
+          ctx.shadowBlur = 16;
+          ctx.fillStyle = `hsl(${hue},100%,70%)`;
+          ctx.globalAlpha = 0.92;
+          ctx.fillText(c.char, 0, 0);
+          ctx.restore();
+        } else if (currentAnimation === 'rainbow') {
+          // Rainbow Flow: cycling rainbow colors, trailing effect
+          ctx.save();
+          const t = now * 0.06 + c.x + c.y + c.seed * 10;
+          let hue = (t % 360);
+          ctx.font = `${c.fontSize}px ${c.font}`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.translate(c.x, c.y);
+          for (let i = 0; i < 4; ++i) {
+            ctx.globalAlpha = 0.18 + 0.18 * i;
+            ctx.shadowColor = `hsl(${(hue + i * 18) % 360},100%,60%)`;
+            ctx.shadowBlur = 8 + i * 4;
+            ctx.fillStyle = `hsl(${(hue + i * 18) % 360},100%,70%)`;
+            ctx.fillText(c.char, 0, 0);
+          }
+          ctx.restore();
+        } else if (currentAnimation === 'matrix') {
+          // Matrix Code: mask letter is always visible, code streams fall from each mask letter
+          const streamLength = 6 + Math.floor(Math.abs(Math.sin(c.seed)) * 4); // shorter stream
+          const speed = 0.12 + Math.abs(Math.sin(c.seed)) * 0.05; // slower
+          // Always draw the mask letter at its position (brightest)
+          ctx.save();
+          ctx.font = `${c.fontSize}px ${c.font}`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.translate(c.x, c.y);
+          ctx.shadowColor = 'lime';
+          ctx.shadowBlur = 10;
+          ctx.globalAlpha = 0.92;
+          ctx.fillStyle = '#b6ffb6';
+          ctx.fillText(c.char, 0, 0);
+          ctx.restore();
+          // Draw the falling code stream below the mask letter, lighter and more transparent
+          for (let i = 1; i < streamLength; ++i) {
+            ctx.save();
+            const t = (now * speed + c.seed * 1000) % (canvas.height + streamLength * c.fontSize * 1.1);
+            const y = (c.y + t + i * c.fontSize * 1.1) % canvas.height;
+            ctx.font = `${c.fontSize}px ${c.font}`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.translate(c.x, y);
+            ctx.shadowColor = 'lime';
+            ctx.shadowBlur = 6;
+            ctx.globalAlpha = 0.08 + 0.25 * Math.max(0, 1 - i / streamLength); // lighter
+            let symbol = chars[Math.floor(Math.random() * chars.length)];
+            ctx.fillStyle = '#3f7';
+            ctx.fillText(symbol, 0, 0);
+            ctx.restore();
+          }
+        } else if (currentAnimation === 'ghost') {
+          // Ghost Fade: characters fade in and out, ghostly glow
+          ctx.save();
+          const fade = 0.5 + 0.5 * Math.sin(now * 0.002 + c.seed);
+          ctx.font = `${c.fontSize}px ${c.font}`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.translate(c.x, c.y);
+          ctx.globalAlpha = 0.18 + 0.7 * fade;
+          ctx.shadowColor = `hsl(${currentHue},100%,90%)`;
+          ctx.shadowBlur = 18;
+          ctx.fillStyle = '#fff';
+          ctx.fillText(c.char, 0, 0);
+          ctx.restore();
+        } else if (currentAnimation === 'ice') {
+          // Ice Shards: shimmering blue/white, sharp glow, icy flicker
+          ctx.save();
+          const flicker = 0.7 + 0.3 * Math.sin(now * 0.004 + c.seed * 2);
+          ctx.font = `${c.fontSize}px ${c.font}`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.translate(c.x, c.y);
+          ctx.rotate(Math.sin(now * 0.001 + c.seed) * 0.18);
+          ctx.globalAlpha = 0.7 + 0.3 * flicker;
+          ctx.shadowColor = `rgba(180,220,255,0.8)`;
+          ctx.shadowBlur = 22;
+          ctx.fillStyle = `hsl(${200 + 30 * Math.sin(c.seed)}, 100%, ${80 + 10 * flicker}%)`;
+          ctx.fillText(c.char, 0, 0);
+          // Shard lines
+          for (let s = 0; s < 3; ++s) {
+            ctx.save();
+            ctx.rotate((s - 1) * 0.5 + Math.sin(now * 0.002 + c.seed + s) * 0.2);
+            ctx.globalAlpha = 0.18 * flicker;
+            ctx.strokeStyle = '#e0f7ff';
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(0, -c.fontSize * (1.2 + 0.5 * Math.abs(Math.sin(now * 0.003 + c.seed + s))));
+            ctx.stroke();
+            ctx.restore();
+          }
+          ctx.restore();
+        } else if (currentAnimation === 'bubble') {
+          // Bubble Pop: floating, scaling, popping bubbles with text inside
+          ctx.save();
+          const float = Math.sin(now * 0.002 + c.seed * 2) * 8;
+          const scale = 0.9 + 0.18 * Math.sin(now * 0.003 + c.seed * 3);
+          ctx.translate(c.x, c.y + float);
+          ctx.scale(scale, scale);
+          ctx.globalAlpha = 0.7 + 0.3 * Math.abs(scale - 1);
+          // Bubble
+          ctx.beginPath();
+          ctx.arc(0, 0, c.fontSize * 0.8, 0, 2 * Math.PI);
+          ctx.fillStyle = 'rgba(180,220,255,0.13)';
+          ctx.fill();
+          ctx.lineWidth = 2.2;
+          ctx.strokeStyle = 'rgba(200,240,255,0.25)';
+          ctx.stroke();
+          // Text
+          ctx.font = `${c.fontSize}px ${c.font}`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.shadowColor = '#fff';
+          ctx.shadowBlur = 8;
+          ctx.fillStyle = '#fff';
+          ctx.fillText(c.char, 0, 0);
+          ctx.restore();
+        } else if (currentAnimation === 'warp') {
+          // Warp Tunnel: characters appear to move in/out of a tunnel
+          ctx.save();
+          const centerX = canvas.width / 2;
+          const centerY = canvas.height / 2;
+          const dx = c.x - centerX;
+          const dy = c.y - centerY;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          const phase = Math.sin(now * 0.002 + c.seed + dist * 0.01);
+          const scale = 1.0 + 0.5 * phase;
+          ctx.translate(centerX + dx * scale, centerY + dy * scale);
+          ctx.globalAlpha = 0.5 + 0.5 * Math.abs(phase);
+          ctx.font = `${c.fontSize * (1.1 + 0.2 * phase)}px ${c.font}`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.shadowColor = `hsl(${currentHue},100%,80%)`;
+          ctx.shadowBlur = 12 + 8 * Math.abs(phase);
+          ctx.fillStyle = `hsl(${currentHue},100%,${60 + 30 * Math.abs(phase)}%)`;
+          ctx.fillText(c.char, 0, 0);
+          ctx.restore();
+        } else if (currentAnimation === 'sparkle') {
+          // Sparkle Flicker: twinkling, sparkling, random flashes
+          ctx.save();
+          const sparkle = Math.random() < 0.04 + 0.04 * Math.abs(Math.sin(now * 0.003 + c.seed)) ? 1 : 0;
+          ctx.font = `${c.fontSize}px ${c.font}`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.translate(c.x, c.y);
+          ctx.globalAlpha = 0.18 + 0.7 * sparkle;
+          ctx.shadowColor = sparkle ? '#fff' : `hsl(${currentHue},100%,80%)`;
+          ctx.shadowBlur = sparkle ? 24 : 8;
+          ctx.fillStyle = sparkle ? '#fff' : `hsl(${currentHue},100%,90%)`;
+          ctx.fillText(c.char, 0, 0);
+          ctx.restore();
+        } else if (currentAnimation === 'pulse') {
+          // Pulse Glow: rhythmic pulsing glow, breathing effect
+          ctx.save();
+          const pulse = 0.7 + 0.3 * Math.sin(now * 0.004 + c.seed);
+          ctx.font = `${c.fontSize}px ${c.font}`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.translate(c.x, c.y);
+          ctx.globalAlpha = 0.5 + 0.5 * pulse;
+          ctx.shadowColor = `hsl(${currentHue},100%,90%)`;
+          ctx.shadowBlur = 18 + 12 * pulse;
+          ctx.fillStyle = `hsl(${currentHue},100%,${70 + 20 * pulse}%)`;
+          ctx.fillText(c.char, 0, 0);
+          ctx.restore();
+        } else if (currentAnimation === 'firefly') {
+          // Firefly Drift: glowing dots drift and fade, with trailing glow
+          ctx.save();
+          const driftX = c.x + Math.sin(now * 0.001 + c.seed * 2) * 12;
+          const driftY = c.y + Math.cos(now * 0.0012 + c.seed * 3) * 12;
+          const flicker = 0.7 + 0.3 * Math.sin(now * 0.006 + c.seed * 4);
+          ctx.font = `${c.fontSize}px ${c.font}`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.translate(driftX, driftY);
+          ctx.globalAlpha = 0.18 + 0.7 * flicker;
+          ctx.shadowColor = `hsl(${currentHue},100%,80%)`;
+          ctx.shadowBlur = 24;
+          ctx.fillStyle = `hsl(${currentHue},100%,90%)`;
+          ctx.fillText(c.char, 0, 0);
+          ctx.restore();
+        } else if (currentAnimation === 'liquid') {
+          // Liquid Ripple: wavy, watery, ripple distortion
+          ctx.save();
+          const ripple = Math.sin(now * 0.003 + c.x * 0.02 + c.y * 0.02 + c.seed) * 8;
+          ctx.font = `${c.fontSize}px ${c.font}`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.translate(c.x + ripple, c.y + ripple);
+          ctx.globalAlpha = 0.7;
+          ctx.shadowColor = `hsl(${(currentHue + 180) % 360},100%,80%)`;
+          ctx.shadowBlur = 14;
+          ctx.fillStyle = `hsl(${(currentHue + 180) % 360},100%,${70 + 20 * Math.abs(ripple/8)}%)`;
+          ctx.fillText(c.char, 0, 0);
+          ctx.restore();
+        } else if (currentAnimation === 'glitch') {
+          // Glitch Flicker: random color shifts, horizontal/vertical jitter
+          ctx.save();
+          const jitterX = (Math.random() - 0.5) * 6;
+          const jitterY = (Math.random() - 0.5) * 6;
+          const colorShift = (currentHue + Math.floor(Math.random() * 120)) % 360;
+          ctx.font = `${c.fontSize}px ${c.font}`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.translate(c.x + jitterX, c.y + jitterY);
+          ctx.globalAlpha = 0.5 + 0.5 * Math.random();
+          ctx.shadowColor = `hsl(${colorShift},100%,80%)`;
+          ctx.shadowBlur = 10 + Math.random() * 10;
+          ctx.fillStyle = `hsl(${colorShift},100%,${60 + Math.random() * 30}%)`;
+          ctx.fillText(c.char, 0, 0);
+          ctx.restore();
+        } else if (currentAnimation === 'orbit') {
+          // Orbit Halo: glowing halo orbits around each character
+          ctx.save();
+          const orbitR = c.fontSize * 0.9;
+          const orbitA = now * 0.002 + c.seed * 2;
+          ctx.font = `${c.fontSize}px ${c.font}`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.translate(c.x, c.y);
+          // Halo
+          ctx.save();
+          ctx.globalAlpha = 0.18;
+          ctx.beginPath();
+          ctx.arc(Math.cos(orbitA) * orbitR, Math.sin(orbitA) * orbitR, c.fontSize * 0.7, 0, 2 * Math.PI);
+          ctx.fillStyle = `hsl(${currentHue},100%,80%)`;
+          ctx.shadowColor = `hsl(${currentHue},100%,90%)`;
+          ctx.shadowBlur = 18;
+          ctx.fill();
+          ctx.restore();
+          // Text
+          ctx.globalAlpha = 1.0;
+          ctx.shadowColor = `hsl(${currentHue},100%,90%)`;
+          ctx.shadowBlur = 10;
+          ctx.fillStyle = '#fff';
+          ctx.fillText(c.char, 0, 0);
+          ctx.restore();
+        } else if (currentAnimation === 'storm') {
+          // Storm Surge: electric arcs, flashes, and surges
+          ctx.save();
+          const surge = Math.abs(Math.sin(now * 0.008 + c.seed * 3));
+          ctx.font = `${c.fontSize}px ${c.font}`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.translate(c.x, c.y);
+          ctx.globalAlpha = 0.4 + 0.6 * surge;
+          ctx.shadowColor = `hsl(${(currentHue + 220) % 360},100%,90%)`;
+          ctx.shadowBlur = 24 + 16 * surge;
+          ctx.fillStyle = `hsl(${(currentHue + 220) % 360},100%,${70 + 20 * surge}%)`;
+          ctx.fillText(c.char, 0, 0);
+          // Electric arc
+          if (surge > 0.95) {
+            ctx.save();
+            ctx.globalAlpha = 0.5 * surge;
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2.2;
+            ctx.beginPath();
+            ctx.moveTo(-c.fontSize * 0.7, 0);
+            ctx.lineTo(c.fontSize * 0.7, 0);
+            ctx.stroke();
+            ctx.restore();
+          }
+          ctx.restore();
+        } else if (currentAnimation === 'blood') {
+          // Blood Drip: red, oozing, dripping effect
+          ctx.save();
+          const drip = Math.max(0, Math.sin(now * 0.002 + c.seed * 3)) * c.fontSize * 1.2;
+          ctx.font = `${c.fontSize}px ${c.font}`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.translate(c.x, c.y + drip * 0.3);
+          ctx.globalAlpha = 0.8;
+          ctx.shadowColor = 'rgba(120,0,0,0.7)';
+          ctx.shadowBlur = 18;
+          ctx.fillStyle = `hsl(0,100%,${30 + 20 * Math.abs(Math.sin(now * 0.003 + c.seed))}%)`;
+          ctx.fillText(c.char, 0, 0);
+          // Drip drop
+          if (drip > c.fontSize * 0.7) {
+            ctx.save();
+            ctx.globalAlpha = 0.5;
+            ctx.beginPath();
+            ctx.arc(0, drip, c.fontSize * 0.18, 0, 2 * Math.PI);
+            ctx.fillStyle = 'rgba(120,0,0,0.8)';
+            ctx.shadowColor = 'rgba(255,0,0,0.7)';
+            ctx.shadowBlur = 8;
+            ctx.fill();
+            ctx.restore();
+          }
+          ctx.restore();
+        } else if (currentAnimation === 'fracture') {
+          // Fracture Glass: sharp, shifting, glass-like shards
+          ctx.save();
+          const angle = Math.sin(now * 0.002 + c.seed) * 0.3;
+          ctx.font = `${c.fontSize}px ${c.font}`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.translate(c.x, c.y);
+          ctx.rotate(angle);
+          ctx.globalAlpha = 0.7;
+          ctx.shadowColor = '#bff';
+          ctx.shadowBlur = 16;
+          ctx.fillStyle = `hsl(190,100%,${80 + 10 * Math.abs(angle)}%)`;
+          ctx.fillText(c.char, 0, 0);
+          // Glass shards
+          for (let s = 0; s < 2; ++s) {
+            ctx.save();
+            ctx.rotate((s - 0.5) * 0.7 + Math.sin(now * 0.003 + c.seed + s) * 0.2);
+            ctx.globalAlpha = 0.13;
+            ctx.strokeStyle = '#fff8';
+            ctx.lineWidth = 1.1;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(0, -c.fontSize * (1.1 + 0.5 * Math.abs(Math.sin(now * 0.004 + c.seed + s))));
+            ctx.stroke();
+            ctx.restore();
+          }
+          ctx.restore();
+        } else if (currentAnimation === 'smoke') {
+          // Smoke Wisp: drifting, semi-transparent, smoky trails
+          ctx.save();
+          const drift = Math.sin(now * 0.002 + c.seed * 2) * 10;
+          ctx.font = `${c.fontSize}px ${c.font}`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.translate(c.x + drift, c.y - Math.abs(drift) * 0.5);
+          ctx.globalAlpha = 0.18 + 0.5 * Math.abs(Math.sin(now * 0.003 + c.seed));
+          ctx.shadowColor = '#fff2';
+          ctx.shadowBlur = 22;
+          ctx.fillStyle = `hsl(0,0%,${70 + 20 * Math.abs(drift/10)}%)`;
+          ctx.fillText(c.char, 0, 0);
+          ctx.restore();
+        } else if (currentAnimation === 'hyper') {
+          // Hyper Flash: rapid color cycling, strobe effect
+          ctx.save();
+          const flashHue = (now * 0.7 + c.seed * 360) % 360;
+          ctx.font = `${c.fontSize}px ${c.font}`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.translate(c.x, c.y);
+          ctx.globalAlpha = 0.7 + 0.3 * Math.sin(now * 0.02 + c.seed);
+          ctx.shadowColor = `hsl(${flashHue},100%,90%)`;
+          ctx.shadowBlur = 18;
+          ctx.fillStyle = `hsl(${flashHue},100%,70%)`;
+          ctx.fillText(c.char, 0, 0);
+          ctx.restore();
+        } else if (currentAnimation === 'vortex') {
+          // Vortex Spiral: swirling, spiral movement, but keep mask fidelity
+          ctx.save();
+          const centerX = canvas.width / 2;
+          const centerY = canvas.height / 2;
+          const dx = c.x - centerX;
+          const dy = c.y - centerY;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          const spiral = Math.sin(now * 0.002 + c.seed + dist * 0.02);
+          // Reduce spiral effect for mask fidelity
+          const angle = Math.atan2(dy, dx) + spiral * 0.25;
+          const radius = dist * (0.98 + 0.01 * spiral);
+          ctx.translate(centerX + Math.cos(angle) * radius, centerY + Math.sin(angle) * radius);
+          ctx.font = `${c.fontSize}px ${c.font}`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.globalAlpha = 0.8;
+          ctx.shadowColor = `hsl(${currentHue},100%,80%)`;
+          ctx.shadowBlur = 10;
+          ctx.fillStyle = `hsl(${currentHue},100%,${60 + 20 * Math.abs(spiral)}%)`;
+          ctx.fillText(c.char, 0, 0);
+          ctx.restore();
+        } else if (currentAnimation === 'depthpop') {
+          // Depth Pop: scale based on distance from center, popping in/out
+          ctx.save();
+          const centerX = canvas.width / 2;
+          const centerY = canvas.height / 2;
+          const dx = c.x - centerX;
+          const dy = c.y - centerY;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          const maxDist = Math.sqrt(centerX * centerX + centerY * centerY);
+          const scale = 0.7 + 1.2 * (1 - dist / maxDist) * (0.7 + 0.3 * Math.sin(now * 0.002 + c.seed));
+          ctx.translate(c.x, c.y);
+          ctx.scale(scale, scale);
+          ctx.globalAlpha = 0.5 + 0.5 * scale;
+          ctx.font = `${c.fontSize}px ${c.font}`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.shadowColor = `hsl(${currentHue},100%,80%)`;
+          ctx.shadowBlur = 10 + 10 * scale;
+          ctx.fillStyle = `hsl(${currentHue},100%,${60 + 30 * scale}%)`;
+          ctx.fillText(c.char, 0, 0);
+          ctx.restore();
+        } else if (currentAnimation === 'tunnelzoom') {
+          // Tunnel Zoom: scale and fade based on distance from center, zooming in/out
+          ctx.save();
+          const centerX = canvas.width / 2;
+          const centerY = canvas.height / 2;
+          const dx = c.x - centerX;
+          const dy = c.y - centerY;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          const maxDist = Math.sqrt(centerX * centerX + centerY * centerY);
+          const phase = Math.sin(now * 0.002 + c.seed + dist * 0.01);
+          const scale = 0.7 + 1.5 * (1 - dist / maxDist) * (0.7 + 0.3 * phase);
+          ctx.translate(centerX + dx * scale, centerY + dy * scale);
+          ctx.scale(scale, scale);
+          ctx.globalAlpha = 0.3 + 0.7 * (1 - dist / maxDist);
+          ctx.font = `${c.fontSize}px ${c.font}`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.shadowColor = `hsl(${currentHue},100%,90%)`;
+          ctx.shadowBlur = 10 + 10 * scale;
+          ctx.fillStyle = `hsl(${currentHue},100%,${60 + 30 * scale}%)`;
+          ctx.fillText(c.char, 0, 0);
+          ctx.restore();
+        } else if (currentAnimation === 'parallax') {
+          // Parallax: scale and offset based on y position, simulating depth layers
+          ctx.save();
+          const relY = c.y / canvas.height;
+          const scale = 0.7 + 1.5 * (1 - relY) * (0.7 + 0.3 * Math.sin(now * 0.002 + c.seed));
+          ctx.translate(c.x + (relY - 0.5) * 40, c.y);
+          ctx.scale(scale, scale);
+          ctx.globalAlpha = 0.4 + 0.6 * scale;
+          ctx.font = `${c.fontSize}px ${c.font}`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.shadowColor = `hsl(${currentHue},100%,80%)`;
+          ctx.shadowBlur = 8 + 10 * scale;
+          ctx.fillStyle = `hsl(${currentHue},100%,${60 + 30 * scale}%)`;
+          ctx.fillText(c.char, 0, 0);
+          ctx.restore();
+        } else if (currentAnimation === 'floatdepth') {
+          // Float Depth: scale and float up/down, simulating floating in 3D
+          ctx.save();
+          const float = Math.sin(now * 0.003 + c.seed * 2) * 16;
+          const scale = 0.8 + 0.7 * (0.7 + 0.3 * Math.sin(now * 0.002 + c.seed));
+          ctx.translate(c.x, c.y + float);
+          ctx.scale(scale, scale);
+          ctx.globalAlpha = 0.5 + 0.5 * scale;
+          ctx.font = `${c.fontSize}px ${c.font}`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.shadowColor = `hsl(${currentHue},100%,80%)`;
+          ctx.shadowBlur = 10 + 10 * scale;
+          ctx.fillStyle = `hsl(${currentHue},100%,${60 + 30 * scale}%)`;
+          ctx.fillText(c.char, 0, 0);
+          ctx.restore();
+        } else if (currentAnimation === 'depthpulse') {
+          // Depth Pulse: scale pulses in and out, simulating breathing depth
+          ctx.save();
+          const pulse = 0.7 + 0.5 * Math.sin(now * 0.004 + c.seed);
+          ctx.translate(c.x, c.y);
+          ctx.scale(pulse, pulse);
+          ctx.globalAlpha = 0.5 + 0.5 * pulse;
+          ctx.font = `${c.fontSize}px ${c.font}`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.shadowColor = `hsl(${currentHue},100%,90%)`;
+          ctx.shadowBlur = 10 + 10 * pulse;
+          ctx.fillStyle = `hsl(${currentHue},100%,${60 + 30 * pulse}%)`;
+          ctx.fillText(c.char, 0, 0);
+          ctx.restore();
+        }
+      }
+      // Draw background image overlay if present and mode is 'over'
+      if (bgImg && bgMode === 'over') {
+        ctx.save();
+        ctx.globalAlpha = 0.85; // Slight transparency for overlay
+        ctx.drawImage(bgImg, pad, pad, canvas.width - 2 * pad, canvas.height - 2 * pad);
+        ctx.restore();
+      }
+      animationId = requestAnimationFrame(renderBurningChars);
+    }
+
+    renderBtn.addEventListener('click', () => {
+      if (!maskImg) return alert('Please upload a mask image.');
+      // Cancel previous animation frame to avoid leaks
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+      }
+      // Draw mask to hidden canvas to get pixel data
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = canvas.width;
+      tempCanvas.height = canvas.height;
+      const tempCtx = tempCanvas.getContext('2d');
+      // Use same padding as display
+      const pad = Math.floor(canvas.width * 0.04);
+      tempCtx.clearRect(0, 0, canvas.width, canvas.height);
+      tempCtx.drawImage(maskImg, pad, pad, canvas.width - 2 * pad, canvas.height - 2 * pad);
+      const imgData = tempCtx.getImageData(0, 0, canvas.width, canvas.height);
+      // Prepare burning chars array
+      burnChars = [];
+      const step = parseInt(densitySlider.value, 10);
+      // Collect all fillable positions
+      let fillPositions = [];
+      for (let y = 0; y < canvas.height; y += step) {
+        for (let x = 0; x < canvas.width; x += step) {
+          const i = (y * canvas.width + x) * 4;
+          const r = imgData.data[i];
+          const g = imgData.data[i+1];
+          const b = imgData.data[i+2];
+          const isWhite = (r + g + b) / 3 > 128;
+          const fill = fillWhite.checked ? isWhite : !isWhite;
+          if (fill) {
+            fillPositions.push({x, y});
+          }
+        }
+      }
+      // Hide words logic
+      let words = hiddenWordInput.value.trim().split(/[, ]+/).filter(Boolean);
+      let usedPositions = new Set();
+      // Place each word at random positions (horizontal, vertical, diagonal)
+      function placeWordRandomly(wordChars) {
+        if (!wordChars.length || fillPositions.length < wordChars.length) return;
+        for (let attempt = 0; attempt < 20; ++attempt) {
+          const dirOptions = [
+            {dx:1,dy:0}, // horizontal
+            {dx:0,dy:1}, // vertical
+            {dx:1,dy:1}, // diagonal
+            {dx:-1,dy:1} // anti-diagonal
+          ];
+          const dir = dirOptions[Math.floor(Math.random()*dirOptions.length)];
+          const startIdx = Math.floor(Math.random() * (fillPositions.length - wordChars.length));
+          let ok = true;
+          let positions = [];
+          let px = fillPositions[startIdx].x;
+          let py = fillPositions[startIdx].y;
+          for (let i = 0; i < wordChars.length; ++i) {
+            const pos = fillPositions.find(p => p.x === px && p.y === py);
+            if (!pos) { ok = false; break; }
+            const key = `${px},${py}`;
+            if (usedPositions.has(key)) { ok = false; break; }
+            positions.push({x: px, y: py, char: wordChars[i]});
+            px += dir.dx * step;
+            py += dir.dy * step;
+          }
+          if (ok) {
+            for (let i = 0; i < positions.length; ++i) {
+              usedPositions.add(`${positions[i].x},${positions[i].y}`);
+            }
+            return positions;
+          }
+        }
+        return null;
+      }
+      let wordPlacements = [];
+      for (let w = 0; w < words.length; ++w) {
+        const wordChars = words[w].split('');
+        // Place each word up to 3 times if possible
+        for (let t = 0; t < 3; ++t) {
+          const placement = placeWordRandomly(wordChars);
+          if (placement) wordPlacements = wordPlacements.concat(placement);
+        }
+      }
+      // Fill the chars, using the word placements if any, or fill with the word if toggle is on
+      if (fillWithWordToggle.checked && hiddenWordInput.value.trim().length > 0) {
+        // Fill the entire mask with the word, repeated/looped
+        const word = hiddenWordInput.value.trim();
+        for (let i = 0; i < fillPositions.length; ++i) {
+          const {x, y} = fillPositions[i];
+          const char = word[i % word.length];
+          const font = fonts[Math.floor(Math.random() * fonts.length)];
+          const fontSize = Math.max(4, step - 3 + Math.floor(Math.random() * 3));
+          burnChars.push({
+            char,
+            font,
+            fontSize,
+            x: x + step/2,
+            y: y + step/2,
+            rotation: (Math.random() - 0.5) * 0.4,
+            seed: Math.random() * 10000
+          });
+        }
+      } else {
+        for (let i = 0; i < fillPositions.length; ++i) {
+          const {x, y} = fillPositions[i];
+          let char = null;
+          // Check if this position is part of a word placement
+          const wordCharObj = wordPlacements.find(p => p.x === x && p.y === y);
+          if (wordCharObj) {
+            char = wordCharObj.char;
+          } else {
+            char = chars[Math.floor(Math.random() * chars.length)];
+          }
+          const font = fonts[Math.floor(Math.random() * fonts.length)];
+          const fontSize = Math.max(4, step - 3 + Math.floor(Math.random() * 3));
+          burnChars.push({
+            char,
+            font,
+            fontSize,
+            x: x + step/2,
+            y: y + step/2,
+            rotation: (Math.random() - 0.5) * 0.4,
+            seed: Math.random() * 10000
+          });
+        }
+      }
+      renderBurningChars();
+    });
+
+    // Handle canvas size changes
+    canvasSize.addEventListener('change', () => {
+      const size = parseInt(canvasSize.value, 10);
+      canvas.width = size;
+      canvas.height = size;
+      // Update CSS size for responsiveness
+      canvas.style.width = Math.min(size, 1024) + 'px';
+      canvas.style.height = Math.min(size, 1024) + 'px';
+      ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const pad = Math.floor(canvas.width * 0.04);
+      if (maskImg) {
+        ctx.drawImage(maskImg, pad, pad, canvas.width - 2 * pad, canvas.height - 2 * pad);
+      }
+      if (bgImg) {
+        if (bgMode === 'under') {
+          ctx.drawImage(bgImg, pad, pad, canvas.width - 2 * pad, canvas.height - 2 * pad);
+        } else if (bgMode === 'over') {
+          ctx.save();
+          ctx.globalAlpha = 0.85;
+          ctx.drawImage(bgImg, pad, pad, canvas.width - 2 * pad, canvas.height - 2 * pad);
+          ctx.restore();
+        }
+      }
+    });
+  </script>
+</body>
+</html>
