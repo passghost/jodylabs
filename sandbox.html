@@ -240,15 +240,27 @@
                 return;
             }
             clearInterval(animationInterval);
+            if (!images[0]) return;
+            // Use the first image's natural size for GIF output
+            const firstImg = images[0];
+            const gifWidth = firstImg.naturalWidth || 300;
+            const gifHeight = firstImg.naturalHeight || 300;
             const gif = new GIF({
                 workers: 2,
                 quality: 10,
-                width: 300,
-                height: 300,
+                width: gifWidth,
+                height: gifHeight,
                 workerScript: 'MaskingPower/gif.worker.js'
             });
+            // Draw each image to a canvas of the correct size, then add to GIF
             images.forEach(img => {
-                gif.addFrame(img, {delay: 200, copy: true});
+                const canvas = document.createElement('canvas');
+                canvas.width = gifWidth;
+                canvas.height = gifHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, gifWidth, gifHeight);
+                ctx.drawImage(img, 0, 0, gifWidth, gifHeight);
+                gif.addFrame(canvas, {delay: 200, copy: true});
             });
             gif.on('finished', function(blob) {
                 gifBlob = URL.createObjectURL(blob);
