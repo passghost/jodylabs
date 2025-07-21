@@ -52,9 +52,10 @@
         const flames = [];
         const enemies = [];
         const enemyLasers = [];
-        const enemySpeed = 2;
-        const enemyFireRate = 100;
+        let enemySpeed = 2;
+        let enemyFireRate = 100;
         let enemyFireCounter = 0;
+        let level = 1;
 
         window.addEventListener('keydown', (e) => {
             keys[e.key] = true;
@@ -162,9 +163,12 @@
         }
 
         const enemyShip = new Image();
-        enemyShip.src = '/GalacticBrow/FatFly.png';
+        enemyShip.src = 'FatFly.png'; // Use relative path for local and GitHub Pages
+        let enemyShipLoaded = false;
+        enemyShip.onload = () => { enemyShipLoaded = true; };
 
         function drawEnemies() {
+            if (!enemyShipLoaded) return; // Don't draw until loaded
             enemies.forEach(enemy => {
                 ctx.save();
                 ctx.translate(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2);
@@ -214,14 +218,18 @@
         }
 
         function spawnEnemies() {
-            for (let i = 0; i < 5; i++) {
+            // Increase difficulty: more enemies, more health, faster, faster fire
+            const numEnemies = 5 + (level - 1) * 2;
+            enemySpeed = 2 + (level - 1) * 0.5;
+            enemyFireRate = Math.max(30, 100 - (level - 1) * 10); // Faster fire, min 30
+            for (let i = 0; i < numEnemies; i++) {
                 enemies.push({
                     x: Math.random() * canvas.width,
                     y: Math.random() * canvas.height / 2,
                     width: 50,
                     height: 50,
                     angle: 0,
-                    health: 10
+                    health: 10 + (level - 1) * 5
                 });
             }
         }
@@ -257,7 +265,7 @@
             });
         }
 
-                function animate() {
+        function animate() {
             drawStars();
             updateStars();
             updateShip();
@@ -275,6 +283,15 @@
             drawEnemyLasers();
             checkCollisions();
             drawHealthBar(10, 10, 200, 20, playerHealth, 100);
+            // Draw level text
+            ctx.font = 'bold 28px Arial';
+            ctx.fillStyle = 'yellow';
+            ctx.fillText('Level: ' + level, canvas.width - 180, 40);
+            // Level up if all enemies are cleared
+            if (enemies.length === 0) {
+                level++;
+                spawnEnemies();
+            }
             requestAnimationFrame(animate);
         }
 
