@@ -594,18 +594,25 @@
             updateAISkill();
         }
 
-        // Game loop
-        function gameLoop(timestamp) {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawFireworks(); // Draw fireworks behind the board
-            drawPaddle(playerPaddle);
-            drawPaddle(aiPaddle);
-            balls.forEach(drawBall);
-            powerups.forEach(drawPowerup);
-            drawActivePowerups();
-            drawScore();
-            printDebug();
-            update(timestamp);
+        // --- 60 FPS Capped Game Loop ---
+        let lastFrameTime = performance.now();
+        const targetFPS = 60;
+        const frameDuration = 1000 / targetFPS;
+
+        function gameLoop(now) {
+            if (now - lastFrameTime >= frameDuration) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawFireworks(); // Draw fireworks behind the board
+                drawPaddle(playerPaddle);
+                drawPaddle(aiPaddle);
+                balls.forEach(drawBall);
+                powerups.forEach(drawPowerup);
+                drawActivePowerups();
+                drawScore();
+                printDebug();
+                update(now);
+                lastFrameTime = now;
+            }
             requestAnimationFrame(gameLoop);
         }
 
@@ -630,7 +637,7 @@
             }
         });
 
-        gameLoop();
+        gameLoop(performance.now());
     </script>
 </body>
 </html>
