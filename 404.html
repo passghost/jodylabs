@@ -130,32 +130,25 @@
     </style>
 </head>
 <body>
-    <div class="art-container">
-        <canvas id="artCanvas"></canvas>
-        
-        <div class="overlay-content">
-            <h1>Oops! Page Not Found</h1>
-            <p>The page you're looking for doesn't exist, but enjoy this beautiful generative art!</p>
-        </div>
-        
-        <div class="art-info" id="artInfo">
-            Generative Art Pattern
-        </div>
+    <canvas id="artCanvas"></canvas>
+    <div class="overlay-content">
+        <h1>404 - Page Not Found</h1>
+        <p>But enjoy this generative art instead!</p>
     </div>
-
+    <!-- Drop-in 404museum art: works on any page -->
     <script src="/404museum/404museum.min.js"></script>
     <script>
-    // Ensure canvas always fits viewport
-    function resizeArtCanvas() {
-        const canvas = document.getElementById('artCanvas');
-        if (canvas) {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+        // Ensure canvas always fits viewport
+        function resizeArtCanvas() {
+            const canvas = document.getElementById('artCanvas');
+            if (canvas) {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
         }
-    }
-    window.addEventListener('resize', resizeArtCanvas);
-    document.addEventListener('DOMContentLoaded', resizeArtCanvas);
-    // Start 404museum art (the library will auto-detect and run patterns)
+        window.addEventListener('resize', resizeArtCanvas);
+        document.addEventListener('DOMContentLoaded', resizeArtCanvas);
+        // 404museum.min.js will auto-detect and run the art
     </script>
 </body>
 </html>
