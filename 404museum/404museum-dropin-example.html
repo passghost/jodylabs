@@ -1,0 +1,47 @@
+<!--
+404museum: Drop-in Generative Art 404 Page
+
+How to use on any HTML page:
+1. Place the 404museum.min.js file in a public folder (e.g., /404museum/404museum.min.js)
+2. Add a canvas element with id="artCanvas" to your 404.html (or any page)
+3. Add the script tag below at the end of your <body>
+4. The art will auto-run and fill the canvas
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>404 Not Found</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        html, body { height: 100%; margin: 0; padding: 0; }
+        body { background: #111; color: #fff; font-family: sans-serif; }
+        #artCanvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; display: block; z-index: 0; }
+        .overlay { position: relative; z-index: 1; text-align: center; margin-top: 20vh; }
+        h1 { font-size: 3em; margin-bottom: 0.5em; }
+        p { font-size: 1.2em; }
+    </style>
+</head>
+<body>
+    <canvas id="artCanvas"></canvas>
+    <div class="overlay">
+        <h1>404 - Page Not Found</h1>
+        <p>But enjoy this generative art instead!</p>
+    </div>
+    <!-- Drop-in 404museum art: works on any page -->
+    <script src="/404museum/404museum.min.js"></script>
+    <script>
+        // Ensure canvas always fits viewport
+        function resizeArtCanvas() {
+            const canvas = document.getElementById('artCanvas');
+            if (canvas) {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+        }
+        window.addEventListener('resize', resizeArtCanvas);
+        document.addEventListener('DOMContentLoaded', resizeArtCanvas);
+        // 404museum.min.js will auto-detect and run the art
+    </script>
+</body>
+</html>
