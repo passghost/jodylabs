@@ -273,7 +273,7 @@
                     opacity: 0.6;
                     z-index: 1000000;
                 ">
-                    Powered by <a href="https://jodylabs.surge.sh/404museum/" target="_blank" style="color: ${config.colors.primary}; text-decoration: none;">404Museum</a>
+                    Powered by <a href="https://passghost.github.io/jodylabs/404museum/index.html" target="_blank" style="color: ${config.colors.primary}; text-decoration: none;">404Museum</a>
                 </div>
             `;
         }
