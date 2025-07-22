@@ -397,7 +397,6 @@ let messages = [
             const matrix = document.getElementById('dotMatrix');
             matrix.innerHTML = '';
             if (messages.length === 0) return;
-            // Only show one message at a time, cycling through them
             let currentIndex = 0;
             function showMessage(index) {
                 matrix.innerHTML = '';
@@ -406,11 +405,11 @@ let messages = [
                 scrollElement.style.animationDuration = currentSpeed + 's';
                 matrix.appendChild(scrollElement);
                 renderMessage(scrollElement, messages[index].text, messages[index].color);
-                // Remove after animation, then show next
-                setTimeout(() => {
+                // Wait for animation to finish, then show next message
+                scrollElement.addEventListener('animationend', () => {
                     currentIndex = (currentIndex + 1) % messages.length;
                     showMessage(currentIndex);
-                }, currentSpeed * 1000);
+                }, { once: true });
             }
             showMessage(currentIndex);
         }
@@ -459,23 +458,8 @@ let messages = [
     }
 
         function updateDisplay() {
-            const matrix = document.getElementById('dotMatrix');
-            matrix.innerHTML = '';
-            if (messages.length === 0) return;
-            let currentIndex = 0;
-            function showMessage(index) {
-                matrix.innerHTML = '';
-                const scrollElement = document.createElement('div');
-                scrollElement.className = 'scrolling-text';
-                scrollElement.style.animationDuration = currentSpeed + 's';
-                matrix.appendChild(scrollElement);
-                renderMessage(scrollElement, messages[index].text, messages[index].color);
-                setTimeout(() => {
-                    currentIndex = (currentIndex + 1) % messages.length;
-                    showMessage(currentIndex);
-                }, currentSpeed * 1000);
-            }
-            showMessage(currentIndex);
+            // Restart the matrix display with new messages or speed
+            initMatrix();
         }
 
         function addMessage() {
