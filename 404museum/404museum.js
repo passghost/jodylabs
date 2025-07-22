@@ -365,41 +365,22 @@
                     this.startGenerativeArt();
             }
         }
-        // Add new art pattern methods below
-        startGeometricMandala() {
-            // Placeholder: You can copy the full implementation from your demo HTML
-            this.animationId = requestAnimationFrame(() => this.startGenerativeArt());
-        }
-        startWaveInterference() {
-            this.animationId = requestAnimationFrame(() => this.startGenerativeArt());
-        }
-        startNeonGrid() {
-            this.animationId = requestAnimationFrame(() => this.startGenerativeArt());
-        }
-        startPlasmaField() {
-            this.animationId = requestAnimationFrame(() => this.startGenerativeArt());
-        }
-        startSpiralGalaxy() {
-            this.animationId = requestAnimationFrame(() => this.startGenerativeArt());
-        }
-        startMatrixGlitch() {
-            this.animationId = requestAnimationFrame(() => this.startGenerativeArt());
-        }
-        startCyberpunkCity() {
-            this.animationId = requestAnimationFrame(() => this.startGenerativeArt());
-        }
-        startDigitalRain() {
-            this.animationId = requestAnimationFrame(() => this.startGenerativeArt());
-        }
-        startHolographicMesh() {
-            this.animationId = requestAnimationFrame(() => this.startGenerativeArt());
-        }
-        startQuantumField() {
-            this.animationId = requestAnimationFrame(() => this.startGenerativeArt());
-        }
-        startVoronoiShatter() {
-            this.animationId = requestAnimationFrame(() => this.startGenerativeArt());
-        }
+        // --- Modular Pattern Functions (inlined from 404museumPatterns.js) ---
+        startGenerativeArt() { showGenerativeArt(this.canvas); }
+        startParticleSystem() { showParticleArt(this.canvas); }
+        startFractalArt() { showFractalTree(this.canvas); }
+        startAbstractArt() { showNeonGrid(this.canvas); }
+        startNeonGrid() { showNeonGrid(this.canvas); }
+        startPlasmaField() { showPlasmaField(this.canvas); }
+        startSpiralGalaxy() { showOrbitalsArt(this.canvas); }
+        startMatrixGlitch() { showOrbitalsArt(this.canvas); }
+        startCyberpunkCity() { showOrbitalsArt(this.canvas); }
+        startDigitalRain() { showOrbitalsArt(this.canvas); }
+        startHolographicMesh() { showOrbitalsArt(this.canvas); }
+        startQuantumField() { showOrbitalsArt(this.canvas); }
+        startVoronoiShatter() { showOrbitalsArt(this.canvas); }
+
+
         
         /**
          * Start art rotation
