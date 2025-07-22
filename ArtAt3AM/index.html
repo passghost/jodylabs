@@ -5,6 +5,105 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IndyGameGarage & TheMasterArtIndex</title>
     <style>
+        body.dark-mode {
+            background: #111 !important;
+            color: #eee !important;
+        }
+        body.dark-mode .left {
+            background: #111 !important;
+            color: #eee !important;
+        }
+        body.dark-mode .right {
+            /* keep reds! */
+            background: linear-gradient(135deg, #b71c1c 60%, #ff5252 100%) !important;
+            color: #fff !important;
+        }
+        body.dark-mode .center-line {
+            background: #333 !important;
+        }
+        body.dark-mode .best-in-show {
+            background: #222 !important;
+            color: #fff !important;
+        }
+        body.dark-mode .right .best-in-show {
+            background: #b71c1c !important;
+            color: #fff !important;
+        }
+        body.dark-mode .featured-item {
+            background: #181818 !important;
+            color: #fff !important;
+        }
+        body.dark-mode .right .featured-item {
+            background: #b71c1c !important;
+            color: #fff !important;
+        }
+        body.dark-mode .title-glass {
+            background: rgba(0,0,0,0.18) !important;
+        }
+        body.dark-mode .right .title-glass {
+            background: rgba(183,28,28,0.18) !important;
+        }
+        body.dark-mode .glass-shine {
+            background: linear-gradient(120deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.2) 40%, rgba(255,255,255,0.08) 100%) !important;
+        }
+        body.dark-mode a[style*='background: rgba(255,255,255,0.85)'] {
+            background: rgba(20,20,20,0.95) !important;
+            color: #fff !important;
+        }
+        body.dark-mode a[style*='background: rgba(255,255,255,0.85)']:hover {
+            background: #333 !important;
+            color: #fff !important;
+            box-shadow: 0 4px 16px #222 !important;
+        }
+        /* Toggle Switch Styles */
+        .dark-toggle-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 10001;
+            display: flex;
+            align-items: center;
+        }
+        .dark-toggle-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-family: 'Orbitron', Arial, sans-serif;
+            color: #b71c1c;
+            font-weight: bold;
+            user-select: none;
+        }
+        .dark-toggle-label .toggle-switch {
+            margin-left: 8px;
+            width: 38px;
+            height: 22px;
+            background: #ccc;
+            border-radius: 12px;
+            position: relative;
+            transition: background 0.2s;
+        }
+        .dark-toggle-label input[type="checkbox"] {
+            display: none;
+        }
+        .dark-toggle-label .toggle-slider {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 18px;
+            height: 18px;
+            background: #fff;
+            border-radius: 50%;
+            transition: left 0.2s, background 0.2s;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+        }
+        .dark-toggle-label input[type="checkbox"]:checked + .toggle-switch {
+            background: #b71c1c;
+        }
+        .dark-toggle-label input[type="checkbox"]:checked + .toggle-switch .toggle-slider {
+            left: 18px;
+            background: #fffde7;
+        }
         body {
             margin: 0;
             padding: 0;
@@ -182,6 +281,13 @@
     </style>
 </head>
 <body>
+    <div class="dark-toggle-container">
+        <label class="dark-toggle-label">
+            <span>Dark Mode</span>
+            <input type="checkbox" id="darkModeToggle">
+            <span class="toggle-switch"><span class="toggle-slider"></span></span>
+        </label>
+    </div>
     <a href="../index.html" style="
         position: fixed;
         top: 24px;
@@ -199,6 +305,7 @@
         box-shadow: 0 2px 8px rgba(0,0,0,0.10);
         transition: background 0.2s, color 0.2s, box-shadow 0.2s;
         display: inline-block;
+        text-align: left;
     " onmouseover="this.style.background='#b71c1c';this.style.color='#fff';this.style.boxShadow='0 4px 16px #b71c1c44';" onmouseout="this.style.background='rgba(255,255,255,0.85)';this.style.color='#b71c1c';this.style.boxShadow='0 2px 8px rgba(0,0,0,0.10)';">
         ← Back to Main
     </a>
@@ -247,6 +354,15 @@
     </div>
 </body>
 <script>
+// Dark mode toggle logic (toggle switch)
+document.addEventListener('DOMContentLoaded', function() {
+    const toggle = document.getElementById('darkModeToggle');
+    if (toggle) {
+        toggle.addEventListener('change', function() {
+            document.body.classList.toggle('dark-mode', toggle.checked);
+        });
+    }
+});
 // Simple red particle effect for both best-in-show cards
 function createParticles(canvas, color) {
     const ctx = canvas.getContext('2d');
