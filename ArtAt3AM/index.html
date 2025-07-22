@@ -5,6 +5,149 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IndyGameGarage & TheMasterArtIndex</title>
     <style>
+        /* Panel Toggle Buttons */
+        .panel-toggle-container {
+            position: fixed;
+            top: 32px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 20000;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            pointer-events: none;
+        }
+        .panel-toggle-btn {
+            pointer-events: auto;
+            background: rgba(255,255,255,0.22);
+            color: #b71c1c;
+            border: 2.5px solid #fff;
+            border-radius: 50%;
+            width: 56px;
+            height: 56px;
+            font-size: 2rem;
+            font-family: 'Orbitron', Arial, sans-serif;
+            font-weight: bold;
+            box-shadow:
+                0 4px 24px 0 rgba(183,28,28,0.18),
+                0 1.5px 0 0 #fff inset,
+                0 2px 8px rgba(0,0,0,0.10);
+            backdrop-filter: blur(8px) saturate(1.2);
+            -webkit-backdrop-filter: blur(8px) saturate(1.2);
+            transition: background 0.25s, color 0.2s, box-shadow 0.2s, transform 0.2s, border 0.2s;
+            cursor: pointer;
+            outline: none;
+            opacity: 0.98;
+            position: relative;
+            overflow: hidden;
+        }
+        .panel-toggle-label {
+            position: absolute;
+            top: 50%;
+            /* For label positioning */
+            position: fixed;
+            width: 200px;
+            height: 160px;
+            font-family: 'Orbitron', Arial, sans-serif;
+            font-weight: 900;
+            font-size: 1.45rem;
+            color: #fff;
+            letter-spacing: 0.12em;
+            pointer-events: none;
+            opacity: 1;
+            white-space: nowrap;
+            z-index: 30001;
+            display: flex;
+            align-items: center;
+            text-shadow:
+                0 2px 12px #b71c1c99,
+                0 1.5px 0 #fff,
+                0 0 8px #ff5252cc;
+            filter: drop-shadow(0 2px 8px #b71c1c44);
+            transition: opacity 0.3s, left 0.5s cubic-bezier(.25,1.5,.5,1), right 0.5s cubic-bezier(.25,1.5,.5,1);
+        }
+        .panel-toggle-label .label-line {
+            display: inline-block;
+            height: 4px;
+            min-width: 60px;
+            background: linear-gradient(90deg, #fffde7 0%, #b71c1c 60%, #ff5252 100%);
+            margin: 0 18px;
+            border-radius: 3px;
+            box-shadow:
+                0 2px 12px #b71c1c55,
+                0 0 8px #fffde7cc,
+                0 1px 8px #ff525288;
+            filter: blur(0.2px) brightness(1.15);
+            transition: width 0.5s cubic-bezier(.25,1.5,.5,1), background 0.3s;
+        }
+        /* Left label: to the left of the first button */
+        #leftLabel {
+            left: -120px;
+            top: 4px;
+            transform: translateY(-5px);
+            justify-content: flex-end;
+            width: 120px;
+            height: 56px;
+            align-items: center;
+        }
+        /* Right label: to the right of the second button */
+        #rightLabel {
+            right: -140px;
+            bottom: 4px;
+            transform: translateY(6px);
+            justify-content: flex-start;
+            width: 140px;
+            height: 56px;
+            align-items: center;
+        }
+        .panel-toggle-btn:active {
+            background: rgba(183,28,28,0.18);
+            color: #fffde7;
+            border: 2.5px solid #fffde7;
+            box-shadow:
+                0 2px 8px #b71c1c44,
+                0 1.5px 0 0 #fffde7 inset;
+            transform: scale(0.97);
+        /* removed stray closing brace */
+        }
+        .panel-toggle-btn:focus-visible {
+            outline: 2.5px solid #b71c1c;
+            outline-offset: 2px;
+        }
+        .expand-left .left {
+            flex: 2.5 !important;
+            z-index: 10;
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.45);
+            transform: translateX(-2vw) scale(1.03);
+        }
+        .expand-left .right {
+            flex: 0.5 !important;
+            filter: blur(2px) grayscale(0.7) brightness(0.7);
+            pointer-events: none;
+            transform: translateX(2vw) scale(0.98);
+        }
+        .expand-right .right {
+            flex: 2.5 !important;
+            z-index: 10;
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.45);
+            transform: translateX(2vw) scale(1.03);
+        }
+        .expand-right .left {
+            flex: 0.5 !important;
+            filter: blur(2px) grayscale(0.7) brightness(0.7);
+            pointer-events: none;
+            transform: translateX(-2vw) scale(0.98);
+        }
+        @media (max-width: 800px) {
+            .panel-toggle-container {
+                top: auto;
+                bottom: 90px;
+                left: 50%;
+                transform: translateX(-50%);
+                flex-direction: row;
+                gap: 16px;
+            }
+        }
         body.dark-mode {
             background: #111 !important;
             color: #eee !important;
@@ -126,6 +269,7 @@
             align-items: center;
             justify-content: center;
             position: relative;
+            transition: flex 0.8s cubic-bezier(.25,1.5,.5,1), filter 0.7s cubic-bezier(.25,1.5,.5,1), box-shadow 0.7s cubic-bezier(.25,1.5,.5,1), transform 0.8s cubic-bezier(.25,1.5,.5,1);
         }
         .right {
             flex: 1;
@@ -136,6 +280,7 @@
             align-items: center;
             justify-content: center;
             position: relative;
+            transition: flex 0.8s cubic-bezier(.25,1.5,.5,1), filter 0.7s cubic-bezier(.25,1.5,.5,1), box-shadow 0.7s cubic-bezier(.25,1.5,.5,1), transform 0.8s cubic-bezier(.25,1.5,.5,1);
         }
         .center-line {
             width: 6px;
@@ -265,7 +410,6 @@
         .left .title, .right .title {
             z-index: 2;
         }
-        }
         @media (max-width: 800px) {
             .split-container {
                 flex-direction: column;
@@ -281,6 +425,12 @@
     </style>
 </head>
 <body>
+    <div class="panel-toggle-container">
+        <button class="panel-toggle-btn" id="expandLeftBtn" title="Expand Art Panel"></button>
+        <div class="panel-toggle-label" id="leftLabel"></div>
+        <button class="panel-toggle-btn" id="expandRightBtn" title="Expand Game Panel"></button>
+        <div class="panel-toggle-label" id="rightLabel"></div>
+    </div>
     <div class="dark-toggle-container">
         <label class="dark-toggle-label">
             <span>Dark Mode</span>
@@ -354,6 +504,60 @@
     </div>
 </body>
 <script>
+// Panel expand/collapse logic with dynamic label/line
+document.addEventListener('DOMContentLoaded', function() {
+    const expandLeftBtn = document.getElementById('expandLeftBtn');
+    const expandRightBtn = document.getElementById('expandRightBtn');
+    const leftLabel = document.getElementById('leftLabel');
+    const rightLabel = document.getElementById('rightLabel');
+
+    function updateLabels() {
+        const isLeft = document.body.classList.contains('expand-left');
+        const isRight = document.body.classList.contains('expand-right');
+        if (!isLeft && !isRight) {
+            leftLabel.innerHTML = '';
+            rightLabel.innerHTML = '';
+            leftLabel.style.opacity = '0';
+            rightLabel.style.opacity = '0';
+        } else if (isLeft) {
+            leftLabel.innerHTML = '';
+            rightLabel.innerHTML = `<span class="label-line" style="width:60px;"></span><span>GAME</span>`;
+            leftLabel.style.opacity = '0';
+            rightLabel.style.opacity = '1';
+        } else if (isRight) {
+            rightLabel.innerHTML = '';
+            leftLabel.innerHTML = `<span>ART</span><span class="label-line" style="width:60px;"></span>`;
+            leftLabel.style.opacity = '1';
+            rightLabel.style.opacity = '0';
+        }
+    }
+    expandLeftBtn.addEventListener('click', function(e) {
+        document.body.classList.add('expand-left');
+        document.body.classList.remove('expand-right');
+        updateLabels();
+        e.stopPropagation();
+    });
+    expandRightBtn.addEventListener('click', function(e) {
+        document.body.classList.add('expand-right');
+        document.body.classList.remove('expand-left');
+        updateLabels();
+        e.stopPropagation();
+    });
+    document.addEventListener('click', function(e) {
+        if (
+            !e.target.closest('.panel-toggle-btn') &&
+            !e.target.closest('.left') &&
+            !e.target.closest('.right')
+        ) {
+            document.body.classList.remove('expand-left', 'expand-right');
+            leftLabel.innerHTML = '';
+            rightLabel.innerHTML = '';
+            leftLabel.style.opacity = '0';
+            rightLabel.style.opacity = '0';
+        }
+    });
+    updateLabels();
+});
 // Dark mode toggle logic (toggle switch)
 document.addEventListener('DOMContentLoaded', function() {
     const toggle = document.getElementById('darkModeToggle');
@@ -407,64 +611,4 @@ window.addEventListener('DOMContentLoaded', function() {
     if (rightCanvas) createParticles(rightCanvas, '#ff2222');
 });
 </script>
-</html>
-        /* Glassy curved border for titles */
-        .title-glass {
-            position: absolute;
-            right: 1.2rem;
-            top: 50%;
-            transform: translateY(-50%);
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            justify-content: center;
-            border-radius: 2rem 2rem 2rem 2rem / 4rem 4rem 4rem 4rem;
-            background: rgba(255,255,255,0.12);
-            box-shadow: 0 4px 24px 0 rgba(0,0,0,0.10), 0 1.5px 0 0 #fff inset;
-            border: 3px solid #b71c1c;
-            padding: 0.5rem 0.7rem;
-            min-height: 220px;
-            min-width: 60px;
-            z-index: 3;
-            overflow: hidden;
-        }
-        .right .title-glass {
-            background: rgba(255,255,255,0.08);
-            border: 3px solid #fff;
-        }
-        .title-glass .title {
-            position: relative;
-            z-index: 2;
-        }
-        .glass-shine {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            border-radius: inherit;
-            background: linear-gradient(120deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.7) 40%, rgba(255,255,255,0.15) 100%);
-            opacity: 0.7;
-            transform: translateX(-100%) skewX(-20deg);
-            pointer-events: none;
-            z-index: 1;
-            transition: transform 0.7s cubic-bezier(.25,1.5,.5,1);
-        }
-        .left:hover .title-glass .glass-shine,
-        .right:hover .title-glass .glass-shine {
-            animation: glass-shine-hover 0.7s linear;
-        }
-        @keyframes glass-shine-hover {
-            0% { transform: translateX(-100%) skewX(-20deg); }
-            80% { transform: translateX(120%) skewX(-20deg); }
-            100% { transform: translateX(120%) skewX(-20deg); }
-        }
-        .left .title-glass {
-            border: 3px solid #b71c1c;
-            background: rgba(255,255,255,0.18);
-        }
-        .right .title-glass {
-            border: 3px solid #fff;
-            background: rgba(183,28,28,0.18);
-        }
+
