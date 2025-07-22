@@ -425,6 +425,24 @@
     </style>
 </head>
 <body>
+    <!-- Center message above buttons -->
+    <div id="centerMessage" style="
+        position: fixed;
+        top: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 20001;
+        font-family: 'Orbitron', Arial, sans-serif;
+        font-size: 1.25rem;
+        color: #b71c1c;
+        font-weight: bold;
+        letter-spacing: 0.08em;
+        text-align: center;
+        transition: opacity 0.3s;
+        pointer-events: none;
+    ">
+        <span style="color:#b71c1c;">Select a panel to e</span><span style="color:#fff;">xplore Art or Games</span>
+    </div>
     <div class="panel-toggle-container">
         <button class="panel-toggle-btn" id="expandLeftBtn" title="Expand Art Panel"></button>
         <div class="panel-toggle-label" id="leftLabel"></div>
@@ -461,25 +479,25 @@
     </a>
     <div class="split-container">
         <div class="left">
-            <div class="best-in-show">
-                <canvas class="particle-canvas" width="220" height="300" style="position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:2;"></canvas>
-                <img src="https://placehold.co/200x200?text=Art+Best" alt="Best in Show Artwork" style="width:180px;height:180px;object-fit:cover;border-radius:0.7rem; margin-bottom:0.5rem; position:relative;z-index:3;" />
-                <div style="position:relative;z-index:3;">Best in Show Artwork</div>
-            </div>
-            <div class="featured-list">
-                <div class="featured-item"><img src="https://placehold.co/120x120?text=Art+1" alt="Featured Art 1" style="width:120px;height:120px;object-fit:cover;border-radius:0.5rem; margin-bottom:0.5rem;" /><div>Featured Art 1</div></div>
-                <div class="featured-item"><img src="https://placehold.co/120x120?text=Art+2" alt="Featured Art 2" style="width:120px;height:120px;object-fit:cover;border-radius:0.5rem; margin-bottom:0.5rem;" /><div>Featured Art 2</div></div>
-                <div class="featured-item"><img src="https://placehold.co/120x120?text=Art+3" alt="Featured Art 3" style="width:120px;height:120px;object-fit:cover;border-radius:0.5rem; margin-bottom:0.5rem;" /><div>Featured Art 3</div></div>
-                <div class="featured-item"><img src="https://placehold.co/120x120?text=Art+4" alt="Featured Art 4" style="width:120px;height:120px;object-fit:cover;border-radius:0.5rem; margin-bottom:0.5rem;" /><div>Featured Art 4</div></div>
-                <div class="featured-item"><img src="https://placehold.co/120x120?text=Art+5" alt="Featured Art 5" style="width:120px;height:120px;object-fit:cover;border-radius:0.5rem; margin-bottom:0.5rem;" /><div>Featured Art 5</div></div>
-                <div class="featured-item"><img src="https://placehold.co/120x120?text=Art+6" alt="Featured Art 6" style="width:120px;height:120px;object-fit:cover;border-radius:0.5rem; margin-bottom:0.5rem;" /><div>Featured Art 6</div></div>
-            </div>
-            <div class="title-glass"><span class="title">TheMasterArtIndex</span>
-                <a class="title" href="https://www.reddit.com/r/TheMasterArtIndex/" target="_blank" rel="noopener noreferrer">TheMasterArtIndex</a>
-                <span class="glass-shine"></span>
-            </div>
-            <div class="subtitle" style="position:absolute; left:2rem; bottom:2rem;">Showcasing Artwork</div>
+        <div class="best-in-show">
+            <canvas class="particle-canvas" width="220" height="300" style="position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:2;"></canvas>
+            <img src="https://placehold.co/200x200?text=Art+Best" alt="Best in Show Artwork" style="width:180px;height:180px;object-fit:cover;border-radius:0.7rem; margin-bottom:0.5rem; position:relative;z-index:3;" />
+            <div style="position:relative;z-index:3;">Best in Show Artwork</div>
         </div>
+        <div class="featured-list">
+            <div class="featured-item"><img src="https://placehold.co/120x120?text=Art+1" alt="Featured Art 1" style="width:120px;height:120px;object-fit:cover;border-radius:0.5rem; margin-bottom:0.5rem;" /><div>Featured Art 1</div></div>
+            <div class="featured-item"><img src="https://placehold.co/120x120?text=Art+2" alt="Featured Art 2" style="width:120px;height:120px;object-fit:cover;border-radius:0.5rem; margin-bottom:0.5rem;" /><div>Featured Art 2</div></div>
+            <div class="featured-item"><img src="https://placehold.co/120x120?text=Art+3" alt="Featured Art 3" style="width:120px;height:120px;object-fit:cover;border-radius:0.5rem; margin-bottom:0.5rem;" /><div>Featured Art 3</div></div>
+            <div class="featured-item"><img src="https://placehold.co/120x120?text=Art+4" alt="Featured Art 4" style="width:120px;height:120px;object-fit:cover;border-radius:0.5rem; margin-bottom:0.5rem;" /><div>Featured Art 4</div></div>
+            <div class="featured-item"><img src="https://placehold.co/120x120?text=Art+5" alt="Featured Art 5" style="width:120px;height:120px;object-fit:cover;border-radius:0.5rem; margin-bottom:0.5rem;" /><div>Featured Art 5</div></div>
+            <div class="featured-item"><img src="https://placehold.co/120x120?text=Art+6" alt="Featured Art 6" style="width:120px;height:120px;object-fit:cover;border-radius:0.5rem; margin-bottom:0.5rem;" /><div>Featured Art 6</div></div>
+        </div>
+        <div class="title-glass"><span class="title">TheMasterArtIndex</span>
+            <a class="title" href="https://www.reddit.com/r/TheMasterArtIndex/" target="_blank" rel="noopener noreferrer">TheMasterArtIndex</a>
+            <span class="glass-shine"></span>
+        </div>
+        <div class="subtitle showcase-subtitle">Showcasing Artwork</div>
+    </div>
         <div class="center-line"></div>
         <div class="right">
             <div class="best-in-show">
@@ -504,6 +522,37 @@
     </div>
 </body>
 <script>
+// Ensure the center message visibility updates with panel state
+document.addEventListener('DOMContentLoaded', function() {
+    function updateCenterMessage() {
+        const msg = document.getElementById('centerMessage');
+        if (!msg) return;
+        if (document.body.classList.contains('expand-left') || document.body.classList.contains('expand-right')) {
+            msg.style.opacity = '0';
+            msg.style.pointerEvents = 'none';
+        } else {
+            msg.style.opacity = '1';
+            msg.style.pointerEvents = 'auto';
+        }
+    }
+    // Hook into your existing expand/collapse logic:
+    const expandLeftBtn = document.getElementById('expandLeftBtn');
+    const expandRightBtn = document.getElementById('expandRightBtn');
+    if (expandLeftBtn && expandRightBtn) {
+        expandLeftBtn.addEventListener('click', updateCenterMessage);
+        expandRightBtn.addEventListener('click', updateCenterMessage);
+    }
+    document.addEventListener('click', function(e) {
+        if (
+            !e.target.closest('.panel-toggle-btn') &&
+            !e.target.closest('.left') &&
+            !e.target.closest('.right')
+        ) {
+            updateCenterMessage();
+        }
+    });
+    updateCenterMessage();
+});
 // Panel expand/collapse logic with dynamic label/line
 document.addEventListener('DOMContentLoaded', function() {
     const expandLeftBtn = document.getElementById('expandLeftBtn');
