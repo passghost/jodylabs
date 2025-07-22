@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GIF Creator 2.0 - Free Online Animated GIF Maker | JodyLabs</title>
+    <title>GIF Creator - Free Online Animated GIF Maker | JodyLabs</title>
     
     <!-- SEO Meta Tags -->
     <meta name="description" content="Create custom animated GIFs with our free web-based GIF maker! Upload images, adjust timing, add effects, and generate high-quality GIFs for social media and presentations.">
@@ -32,68 +32,52 @@
     
     <!-- Canonical URL -->
     <link rel="canonical" href="https://jodylabs.surge.sh/sandbox.html">
-    <!-- Use gif.js from MaskingPower directory -->
-    <script src="MaskingPower/gif.js"></script>
+    
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "GIF Creator",
+      "description": "A free web-based tool to create custom animated GIFs from uploaded images with timing and effect controls",
+      "url": "https://jodylabs.surge.sh/sandbox.html",
+      "author": {
+        "@type": "Organization",
+        "name": "JodyLabs"
+      },
+      "applicationCategory": "MultimediaApplication",
+      "operatingSystem": "Web Browser",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "featureList": [
+        "Upload multiple images",
+        "Adjust animation timing",
+        "Add visual effects",
+        "Download high-quality GIFs",
+        "Browser-based tool"
+      ]
+    }
+    </script>
     <style>
         body {
-            font-family: 'Segoe UI', 'Arial', 'Helvetica Neue', sans-serif;
-            background: linear-gradient(135deg, #1a0000 0%, #0a0000 100%);
-            color: #ff3c3c;
-            min-height: 100vh;
-            margin: 0;
-            letter-spacing: 0.04em;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-        }
-        h1 {
-            font-family: 'Segoe UI Black', 'Arial Black', 'Impact', sans-serif;
-            font-size: 2.3em;
-            color: #ff3c3c;
-            letter-spacing: 0.18em;
-            text-shadow:
-                0 0 16px #ffb3b3,
-                0 0 32px #ff3c3c,
-                0 0 60px #220000,
-                0 0 8px #fff;
-            margin-top: 32px;
-            margin-bottom: 24px;
-            filter: brightness(1.2) drop-shadow(0 0 8px #ff3c3c88);
+            font-family: Arial, sans-serif;
             text-align: center;
-        }
-        button {
-            background: #2a0000;
-            color: #ff3c3c;
-            border: 1px solid #ff3c3c;
-            border-radius: 4px;
-            padding: 8px 18px;
-            margin: 8px;
-            font-size: 1em;
-            cursor: pointer;
-            transition: background 0.2s, color 0.2s;
-        }
-        button:disabled {
-            background: #440000;
-            color: #a44;
-            border-color: #a44;
-            cursor: not-allowed;
-        }
-        button:hover:enabled {
-            background: #ff3c3c;
-            color: #fff;
+            margin: 20px;
         }
         #preview {
             display: flex;
             justify-content: center;
             align-items: center;
             margin-bottom: 20px;
-            border: 2px solid #ff3c3c;
+            border: 1px solid #ccc;
             width: 300px;
             height: 300px;
             margin: 0 auto;
             position: relative;
-            background: #1a0000;
+            background-color: transparent;
         }
         .preview-image {
             max-width: 100%;
@@ -104,25 +88,331 @@
     </style>
 </head>
 <body>
-    <h1>GIF Creator 2.0</h1>
+    <h1>GIF Creator</h1>
     <input type="file" id="fileInput" accept="image/*" multiple>
     <button id="createGifButton" disabled>Create GIF</button>
     <button id="downloadGifButton" disabled>Download GIF</button>
     <div id="preview"></div>
-    <div id="frameListContainer" style="margin:24px 0 12px 0;max-width:400px;width:100%;">
-        <h2 style="font-size:1.1em;color:#ff3c3c;margin-bottom:8px;">Reorder Frames</h2>
-        <ul id="frameList" style="list-style:none;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:8px;"></ul>
-        <div id="frameListHint" style="font-size:0.95em;color:#aaa;margin-top:4px;">Drag and drop to reorder frames before creating your GIF.</div>
-    </div>
 
     <script>
+        // Inline gifencoder library
+        class LZWEncoder {
+            constructor() {
+                this.init();
+            }
+            init() {
+                this.accum = [];
+                this.cur_accum = 0;
+                this.cur_bits = 0;
+                this.free_ent = 0;
+                this.g_init_bits = 0;
+                this.clear_flg = false;
+                this.g_init_bits = 0;
+                this.maxcode = 0;
+                this.maxmaxcode = 1 << 12;
+                this.n_bits = 0;
+                this.ClearCode = 0;
+                this.EOFCode = 0;
+                this.a_count = 0;
+                this.tab_prefix = [];
+                this.tab_suffix = [];
+                this.tab_prefix.fill(0);
+                this.tab_suffix.fill(0);
+                this.accum.fill(0);
+            }
+            char_out(c, outs) {
+                this.accum[this.a_count++] = c;
+                if (this.a_count >= 254) this.flush_char(outs);
+            }
+            cl_block(outs) {
+                this.cl_hash(this.hsize);
+                this.free_ent = this.ClearCode + 2;
+                this.clear_flg = true;
+                this.output(this.ClearCode, outs);
+            }
+            cl_hash(hsize) {
+                for (let i = 0; i < hsize; ++i) this.tab_prefix[i] = -1;
+            }
+            compress(init_bits, outs) {
+                let fcode, i, c, ent, disp, hsize_reg, hshift;
+                this.g_init_bits = init_bits;
+                this.clear_flg = false;
+                this.n_bits = this.g_init_bits;
+                this.maxcode = this.MAXCODE(this.n_bits);
+                this.ClearCode = 1 << (init_bits - 1);
+                this.EOFCode = this.ClearCode + 1;
+                this.free_ent = this.ClearCode + 2;
+                this.a_count = 0;
+                ent = this.nextPixel();
+                hshift = 0;
+                for (fcode = this.hsize; fcode < 65536; fcode *= 2) ++hshift;
+                hshift = 8 - hshift;
+                hsize_reg = this.hsize;
+                this.cl_hash(hsize_reg);
+                this.output(this.ClearCode, outs);
+                outer_loop: while ((c = this.nextPixel()) != EOF) {
+                    fcode = (c << this.BITS) + ent;
+                    i = (c << hshift) ^ ent;
+                    if (this.tab_prefix[i] == fcode) {
+                        ent = this.tab_suffix[i];
+                        continue;
+                    } else if (this.tab_prefix[i] >= 0) {
+                        disp = hsize_reg - i;
+                        if (i == 0) disp = 1;
+                        do {
+                            if ((i -= disp) < 0) i += hsize_reg;
+                            if (this.tab_prefix[i] == fcode) {
+                                ent = this.tab_suffix[i];
+                                continue outer_loop;
+                            }
+                        } while (this.tab_prefix[i] >= 0);
+                    }
+                    this.output(ent, outs);
+                    ent = c;
+                    if (this.free_ent < this.maxmaxcode) {
+                        this.tab_suffix[i] = this.free_ent++;
+                        this.tab_prefix[i] = fcode;
+                    } else this.cl_block(outs);
+                }
+                this.output(ent, outs);
+                this.output(this.EOFCode, outs);
+            }
+            encode(pixels, width, height, color_depth) {
+                this.init();
+                this.pixels = pixels;
+                this.width = width;
+                this.height = height;
+                this.color_depth = color_depth;
+                this.hsize = 5003;
+                this.n_bits = this.BITS;
+                this.maxcode = this.MAXCODE(this.n_bits);
+                this.ClearCode = 1 << (this.BITS - 1);
+                this.EOFCode = this.ClearCode + 1;
+                this.free_ent = this.ClearCode + 2;
+                this.a_count = 0;
+                this.cur_accum = 0;
+                this.cur_bits = 0;
+                this.accum.fill(0);
+                this.tab_prefix.fill(0);
+                this.tab_suffix.fill(0);
+                this.cl_hash(this.hsize);
+                this.output(this.ClearCode, this);
+                this.compress(this.BITS + 1, this);
+                this.output(this.EOFCode, this);
+            }
+            flush_char(outs) {
+                if (this.a_count > 0) {
+                    outs.writeByte(this.a_count);
+                    outs.writeBytes(this.accum, 0, this.a_count);
+                    this.a_count = 0;
+                }
+            }
+            MAXCODE(n_bits) {
+                return (1 << n_bits) - 1;
+            }
+            nextPixel() {
+                if (this.cur_pixel >= this.pixels.length) return EOF;
+                return this.pixels[this.cur_pixel++] & 0xff;
+            }
+            output(code, outs) {
+                this.cur_accum &= this.masks[this.cur_bits];
+                if (this.cur_bits > 0) this.cur_accum |= code << this.cur_bits;
+                else this.cur_accum = code;
+                this.cur_bits += this.n_bits;
+                while (this.cur_bits >= 8) {
+                    this.char_out((this.cur_accum & 0xff), outs);
+                    this.cur_accum >>= 8;
+                    this.cur_bits -= 8;
+                }
+                if (this.free_ent > this.maxcode || this.clear_flg) {
+                    if (this.clear_flg) {
+                        this.maxcode = this.MAXCODE(this.n_bits = this.g_init_bits);
+                        this.clear_flg = false;
+                    } else {
+                        ++this.n_bits;
+                        if (this.n_bits == this.BITS) this.maxcode = this.maxmaxcode;
+                        else this.maxcode = this.MAXCODE(this.n_bits);
+                    }
+                }
+                if (code == this.EOFCode) {
+                    while (this.cur_bits > 0) {
+                        this.char_out((this.cur_accum & 0xff), outs);
+                        this.cur_accum >>= 8;
+                        this.cur_bits -= 8;
+                    }
+                    this.flush_char(outs);
+                }
+            }
+        }
 
+        class GIFEncoder {
+            constructor(width, height) {
+                this.width = ~~width;
+                this.height = ~~height;
+                this.transparent = null;
+                this.transIndex = 0;
+                this.repeat = -1;
+                this.delay = 0;
+                this.started = false;
+                this.image = null;
+                this.pixels = null;
+                this.indexedPixels = null;
+                this.colorTab = null;
+                this.usedEntry = new Array();
+                this.usedEntry.fill(false);
+                this.palSize = 7;
+                this.dispose = -1;
+                this.firstFrame = true;
+                this.sample = 10;
+                this.comment = "Generated by gifencoder";
+                this.out = new ByteArray();
+            }
+            setDelay(ms) {
+                this.delay = Math.round(ms / 10);
+            }
+            setDispose(code) {
+                if (code >= 0) this.dispose = code;
+            }
+            setRepeat(iter) {
+                if (iter >= 0) this.repeat = iter;
+            }
+            setTransparent(c) {
+                this.transparent = c;
+            }
+            addFrame(im) {
+                if ((im == null) || !this.started) return false;
+                let ok = true;
+                try {
+                    if (!this.firstFrame) this.writeGraphicCtrlExt();
+                    this.writeImageDesc();
+                    if (this.firstFrame) {
+                        this.writeLSD();
+                        this.writePalette();
+                        if (this.repeat >= 0) this.writeNetscapeExt();
+                    }
+                    this.writePixels();
+                    this.firstFrame = false;
+                } catch (e) {
+                    ok = false;
+                }
+                return ok;
+            }
+            finish() {
+                if (!this.started) return false;
+                let ok = true;
+                this.started = false;
+                try {
+                    this.out.writeByte(0x3b);
+                } catch (e) {
+                    ok = false;
+                }
+                return ok;
+            }
+                        start() {
+                this.out.writeUTFBytes("GIF89a");
+                this.started = true;
+                return this.started;
+            }
+            setSize(w, h) {
+                if (this.started) return;
+                this.width = ~~w;
+                this.height = ~~h;
+            }
+            setQuality(quality) {
+                if (quality < 1) quality = 1;
+                this.sample = quality;
+            }
+            writeGraphicCtrlExt() {
+                this.out.writeByte(0x21);
+                this.out.writeByte(0xf9);
+                this.out.writeByte(4);
+                let transp, disp;
+                if (this.transparent == null) {
+                    transp = 0;
+                    disp = 0;
+                } else {
+                    transp = 1;
+                    disp = 2;
+                }
+                if (this.dispose >= 0) disp = this.dispose & 7;
+                disp <<= 2;
+                this.out.writeByte(0 | disp | 0 | transp);
+                this.writeShort(this.delay);
+                this.out.writeByte(this.transIndex);
+                this.out.writeByte(0);
+            }
+            writeImageDesc() {
+                this.out.writeByte(0x2c);
+                this.writeShort(0);
+                this.writeShort(0);
+                this.writeShort(this.width);
+                this.writeShort(this.height);
+                this.out.writeByte(0);
+            }
+            writeLSD() {
+                this.writeShort(this.width);
+                this.writeShort(this.height);
+                this.out.writeByte(0xf0 | 0x70 | 0x00 | this.palSize);
+                this.out.writeByte(0);
+                this.out.writeByte(0);
+            }
+            writeNetscapeExt() {
+                this.out.writeByte(0x21);
+                this.out.writeByte(0xff);
+                this.out.writeByte(11);
+                this.out.writeUTFBytes("NETSCAPE2.0");
+                this.out.writeByte(3);
+                this.out.writeByte(1);
+                this.writeShort(this.repeat);
+                this.out.writeByte(0);
+            }
+            writePalette() {
+                this.out.writeBytes(this.colorTab);
+                let n = (3 * 256) - this.colorTab.length;
+                for (let i = 0; i < n; i++) this.out.writeByte(0);
+            }
+            writePixels() {
+                let enc = new LZWEncoder(this.width, this.height, this.indexedPixels, this.color_depth);
+                enc.encode(this.out);
+            }
+            writeShort(pValue) {
+                this.out.writeByte(pValue & 0xff);
+                this.out.writeByte((pValue >> 8) & 0xff);
+            }
+            writeUTFBytes(s) {
+                for (let i = 0; i < s.length; i++) this.out.writeByte(s.charCodeAt(i));
+            }
+        }
+
+        class ByteArray {
+            constructor() {
+                this.page = -1;
+                this.pages = [];
+                this.newPage();
+            }
+            newPage() {
+                this.pages[++this.page] = new Uint8Array(4096);
+                this.cursor = 0;
+            }
+            writeByte(val) {
+                if (this.cursor >= 4096) this.newPage();
+                this.pages[this.page][this.cursor++] = val;
+            }
+            writeBytes(array, offset, length) {
+                for (let i = 0; i < length; i++) this.writeByte(array[offset + i]);
+            }
+            getData() {
+                let rv = new Uint8Array((this.page * 4096) + this.cursor);
+                for (let i = 0; i < this.page; i++) rv.set(this.pages[i], i * 4096);
+                rv.set(this.pages[this.page].subarray(0, this.cursor), this.page * 4096);
+                return rv;
+            }
+        }
 
         const fileInput = document.getElementById('fileInput');
         const createGifButton = document.getElementById('createGifButton');
         const downloadGifButton = document.getElementById('downloadGifButton');
         const preview = document.getElementById('preview');
-        const frameList = document.getElementById('frameList');
         let images = [];
         let gifBlob = null;
         let animationInterval = null;
@@ -130,28 +420,32 @@
         // Handle file selection
         fileInput.addEventListener('change', function(event) {
             const files = event.target.files;
-            images = [];
-            preview.innerHTML = '';
-            frameList.innerHTML = '';
+            images = []; // Clear previous images array
+            preview.innerHTML = ''; // Clear previous preview
+
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
                 const reader = new FileReader();
+
                 reader.onload = function(e) {
                     const img = document.createElement('img');
                     img.src = e.target.result;
                     img.className = 'preview-image';
                     preview.appendChild(img);
                     images.push(img);
+
+                    // After images are loaded, enable the create GIF button
                     if (images.length === files.length) {
                         createGifButton.disabled = false;
                         startPreviewAnimation();
-                        renderFrameList();
                     }
                 };
+
                 reader.readAsDataURL(file);
             }
         });
 
+        // Start animated preview of uploaded images
         function startPreviewAnimation() {
             if (images.length > 1) {
                 let currentIndex = 0;
@@ -166,112 +460,51 @@
             }
         }
 
-        // --- Frame Reordering UI ---
-        function renderFrameList() {
-            frameList.innerHTML = '';
-            images.forEach((img, idx) => {
-                const li = document.createElement('li');
-                li.style.display = 'flex';
-                li.style.flexDirection = 'column';
-                li.style.alignItems = 'center';
-                li.style.background = '#1a0000';
-                li.style.border = '2px solid #ff3c3c';
-                li.style.borderRadius = '8px';
-                li.style.padding = '4px 6px 2px 6px';
-                li.style.cursor = 'grab';
-                li.style.width = '54px';
-                li.style.position = 'relative';
-                li.setAttribute('draggable', 'true');
-                li.setAttribute('data-idx', idx);
-                const thumb = document.createElement('img');
-                thumb.src = img.src;
-                thumb.style.width = '40px';
-                thumb.style.height = '40px';
-                thumb.style.objectFit = 'cover';
-                thumb.style.borderRadius = '4px';
-                thumb.style.marginBottom = '2px';
-                const label = document.createElement('span');
-                label.textContent = idx + 1;
-                label.style.fontSize = '0.9em';
-                label.style.color = '#ff3c3c';
-                li.appendChild(thumb);
-                li.appendChild(label);
-                // Drag events
-                li.addEventListener('dragstart', e => {
-                    e.dataTransfer.effectAllowed = 'move';
-                    e.dataTransfer.setData('from-idx', idx);
-                    li.classList.add('dragging');
-                });
-                li.addEventListener('dragend', e => {
-                    li.classList.remove('dragging');
-                });
-                li.addEventListener('dragover', e => {
-                    e.preventDefault();
-                    li.style.background = '#2a0000';
-                });
-                li.addEventListener('dragleave', e => {
-                    li.style.background = '#1a0000';
-                });
-                li.addEventListener('drop', e => {
-                    e.preventDefault();
-                    li.style.background = '#1a0000';
-                    const fromIdx = parseInt(e.dataTransfer.getData('from-idx'));
-                    const toIdx = idx;
-                    if (fromIdx !== toIdx) {
-                        reorderImages(fromIdx, toIdx);
-                        renderFrameList();
-                        startPreviewAnimation();
-                    }
-                });
-                frameList.appendChild(li);
-            });
-        }
-
-        function reorderImages(fromIdx, toIdx) {
-            if (fromIdx < 0 || toIdx < 0 || fromIdx === toIdx) return;
-            const moved = images.splice(fromIdx, 1)[0];
-            images.splice(toIdx, 0, moved);
-        }
-
-        // Create GIF Button using gif.js
+        // Create GIF Button
         createGifButton.addEventListener('click', function() {
             if (images.length === 0) {
                 alert('Please upload at least one image.');
                 return;
             }
-            clearInterval(animationInterval);
-            if (!images[0]) return;
-            // Use the first image's natural size for GIF output
-            const firstImg = images[0];
-            const gifWidth = firstImg.naturalWidth || 300;
-            const gifHeight = firstImg.naturalHeight || 300;
-            const gif = new GIF({
-                workers: 2,
-                quality: 10,
-                width: gifWidth,
-                height: gifHeight,
-                workerScript: 'MaskingPower/gif.worker.js'
-            });
-            // Draw each image to a canvas of the correct size, then add to GIF
+
+            clearInterval(animationInterval); // Stop preview animation
+
+            // Create a new GIF using gifencoder
+            const encoder = new GIFEncoder(300, 300);
+            encoder.setRepeat(0); // 0 for repeat, -1 for no-repeat
+            encoder.setDelay(200); // frame delay in ms
+            encoder.setQuality(10); // image quality. 10 is default.
+
+            encoder.start();
+
             images.forEach(img => {
                 const canvas = document.createElement('canvas');
-                canvas.width = gifWidth;
-                canvas.height = gifHeight;
                 const ctx = canvas.getContext('2d');
-                ctx.clearRect(0, 0, gifWidth, gifHeight);
-                ctx.drawImage(img, 0, 0, gifWidth, gifHeight);
-                gif.addFrame(canvas, {delay: 200, copy: true});
+                canvas.width = 300;
+                canvas.height = 300;
+
+                // Draw the image on the canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height); // Ensure the canvas starts transparent
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                // Add frame with alpha transparency
+                encoder.addFrame(ctx);
             });
-            gif.on('finished', function(blob) {
-                gifBlob = URL.createObjectURL(blob);
-                const img = document.createElement('img');
-                img.src = gifBlob;
-                preview.innerHTML = '';
-                preview.appendChild(img);
-                downloadGifButton.disabled = false;
-                console.log('GIF created successfully.');
-            });
-            gif.render();
+
+            encoder.finish();
+
+            // Get the binary GIF data
+            const binaryGif = encoder.stream().getData();
+            const blob = new Blob([binaryGif], { type: 'image/gif' });
+            gifBlob = URL.createObjectURL(blob);
+
+            // Display the GIF
+            const img = document.createElement('img');
+            img.src = gifBlob;
+            preview.innerHTML = ''; // Clear previous preview
+            preview.appendChild(img);
+            downloadGifButton.disabled = false; // Enable download button
+            console.log('GIF created successfully.');
         });
 
         // Download GIF Button
