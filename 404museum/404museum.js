@@ -362,6 +362,9 @@
                 case 'plasmaField':
                     this.startPlasmaField();
                     break;
+                case 'orbitalsArt':
+                    this.startOrbitalsArt();
+                    break;
                 case 'spiralGalaxy':
                     this.startSpiralGalaxy();
                     break;
@@ -394,6 +397,7 @@
         startAbstractArt() { showNeonGrid(this.canvas); }
         startNeonGrid() { showNeonGrid(this.canvas); }
         startPlasmaField() { showPlasmaField(this.canvas); }
+        startOrbitalsArt() { showOrbitalsArt(this.canvas); }
         startSpiralGalaxy() { showOrbitalsArt(this.canvas); }
         startMatrixGlitch() { showOrbitalsArt(this.canvas); }
         startCyberpunkCity() { showOrbitalsArt(this.canvas); }
@@ -423,7 +427,11 @@
                 cancelAnimationFrame(this.animationId);
                 this.animationId = null;
             }
-            
+            // Also cancel any running pattern animation on the canvas
+            if (this.canvas && this.canvas._genArtAnim) {
+                cancelAnimationFrame(this.canvas._genArtAnim);
+                this.canvas._genArtAnim = null;
+            }
             if (this.artSwitchInterval) {
                 clearInterval(this.artSwitchInterval);
                 this.artSwitchInterval = null;
