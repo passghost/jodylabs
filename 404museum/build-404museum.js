@@ -6,13 +6,10 @@ const fs = require('fs');
 const path = require('path');
 const esbuild = require('esbuild');
 
-const entryPoints = [
-  path.join(__dirname, '404museum.js'),
-  path.join(__dirname, '404museumPatterns.js')
-];
+const entryPoint = path.join(__dirname, '404museum.bundle.js');
 
 esbuild.build({
-  entryPoints,
+  entryPoints: [entryPoint],
   bundle: true,
   minify: true,
   outfile: path.join(__dirname, '404museum.min.js'),
