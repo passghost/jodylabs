@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IndyGameGarage & TheMasterArtIndex</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+        .split-container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+        .left {
+            flex: 1;
+            background: #fff;
+            color: #222;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        .right {
+            flex: 1;
+            background: linear-gradient(135deg, #b71c1c 60%, #ff5252 100%);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        .center-line {
+            width: 6px;
+            background: #d32f2f;
+            height: 100vh;
+            position: absolute;
+            left: 50%;
+            top: 0;
+            transform: translateX(-50%);
+            z-index: 2;
+        }
+        .title {
+            font-size: 2.5rem;
+            font-weight: bold;
+            letter-spacing: 2px;
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            position: absolute;
+            right: 2rem;
+            top: 50%;
+            margin: 0;
+            translate: 0 -50%;
+            /* 3D effect */
+            text-shadow:
+                2px 2px 0 #b71c1c,
+                4px 4px 8px rgba(0,0,0,0.25),
+                0 1px 0 #fff;
+            transition: transform 0.3s cubic-bezier(.25,1.5,.5,1),
+                        text-shadow 0.3s cubic-bezier(.25,1.5,.5,1),
+                        color 0.3s;
+            cursor: pointer;
+        }
+        .left .title {
+            color: #b71c1c;
+            text-shadow:
+                2px 2px 0 #fff,
+                4px 4px 8px rgba(183,28,28,0.25),
+                0 1px 0 #b71c1c;
+        }
+        .right .title {
+            color: #fff;
+            text-shadow:
+                2px 2px 0 #b71c1c,
+                4px 4px 8px rgba(0,0,0,0.25),
+                0 1px 0 #fff;
+        }
+        .left:hover .title {
+            transform: rotate(180deg) scale(1.15) skewY(-8deg);
+            text-shadow:
+                4px 4px 0 #fff,
+                8px 8px 16px rgba(183,28,28,0.35),
+                0 2px 0 #b71c1c;
+            color: #d32f2f;
+        }
+        .right:hover .title {
+            transform: rotate(180deg) scale(1.15) skewY(8deg);
+            text-shadow:
+                4px 4px 0 #b71c1c,
+                8px 8px 16px rgba(0,0,0,0.35),
+                0 2px 0 #fff;
+            color: #fffde7;
+        }
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.7;
+        }
+
+        .best-in-show {
+            width: 220px;
+            height: 300px;
+            margin: 2rem auto 1rem auto;
+            border-radius: 1rem;
+            background: #fff;
+            color: #b71c1c;
+            font-weight: bold;
+            font-size: 1.2rem;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+            border: 3px solid #b71c1c;
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .right .best-in-show {
+            background: #b71c1c;
+            color: #fff;
+            border: 3px solid #fff;
+        }
+        .featured-list {
+            width: 350px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: repeat(3, 1fr);
+            gap: 1rem;
+            justify-items: center;
+            align-items: center;
+            margin: 0 auto 2rem auto;
+            position: relative;
+            z-index: 1;
+        }
+        .featured-item {
+            width: 160px;
+            height: 200px;
+            background: #fff;
+            border-radius: 0.7rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: #b71c1c;
+            font-weight: 500;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+            border: 2px solid #b71c1c;
+            overflow: hidden;
+            position: relative;
+        }
+        .right .featured-item {
+            background: #b71c1c;
+            color: #fff;
+            border: 2px solid #fff;
+        }
+        .left .title, .right .title {
+            z-index: 2;
+        }
+        }
+        @media (max-width: 800px) {
+            .split-container {
+                flex-direction: column;
+            }
+            .center-line {
+                width: 100vw;
+                height: 6px;
+                left: 0;
+                top: 50%;
+                transform: translateY(-50%);
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="../index.html" style="
+        position: fixed;
+        top: 24px;
+        left: 24px;
+        z-index: 10000;
+        background: rgba(255,255,255,0.85);
+        color: #b71c1c;
+        border: 2px solid #b71c1c;
+        border-radius: 12px;
+        padding: 10px 22px;
+        font-size: 1.1rem;
+        font-family: 'Orbitron', Arial, sans-serif;
+        font-weight: bold;
+        text-decoration: none;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+        transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+        display: inline-block;
+    " onmouseover="this.style.background='#b71c1c';this.style.color='#fff';this.style.boxShadow='0 4px 16px #b71c1c44';" onmouseout="this.style.background='rgba(255,255,255,0.85)';this.style.color='#b71c1c';this.style.boxShadow='0 2px 8px rgba(0,0,0,0.10)';">
+        ← Back to Main
+    </a>
+    <div class="split-container">
+        <div class="left">
+            <div class="best-in-show">
+                <canvas class="particle-canvas" width="220" height="300" style="position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:2;"></canvas>
+                <img src="https://placehold.co/200x200?text=Art+Best" alt="Best in Show Artwork" style="width:180px;height:180px;object-fit:cover;border-radius:0.7rem; margin-bottom:0.5rem; position:relative;z-index:3;" />
+                <div style="position:relative;z-index:3;">Best in Show Artwork</div>
+            </div>
+            <div class="featured-list">
+                <div class="featured-item"><img src="https://placehold.co/120x120?text=Art+1" alt="Featured Art 1" style="width:120px;height:120px;object-fit:cover;border-radius:0.5rem; margin-bottom:0.5rem;" /><div>Featured Art 1</div></div>
+                <div class="featured-item"><img src="https://placehold.co/120x120?text=Art+2" alt="Featured Art 2" style="width:120px;height:120px;object-fit:cover;border-radius:0.5rem; margin-bottom:0.5rem;" /><div>Featured Art 2</div></div>
+                <div class="featured-item"><img src="https://placehold.co/120x120?text=Art+3" alt="Featured Art 3" style="width:120px;height:120px;object-fit:cover;border-radius:0.5rem; margin-bottom:0.5rem;" /><div>Featured Art 3</div></div>
+                <div class="featured-item"><img src="https://placehold.co/120x120?text=Art+4" alt="Featured Art 4" style="width:120px;height:120px;object-fit:cover;border-radius:0.5rem; margin-bottom:0.5rem;" /><div>Featured Art 4</div></div>
+                <div class="featured-item"><img src="https://placehold.co/120x120?text=Art+5" alt="Featured Art 5" style="width:120px;height:120px;object-fit:cover;border-radius:0.5rem; margin-bottom:0.5rem;" /><div>Featured Art 5</div></div>
+                <div class="featured-item"><img src="https://placehold.co/120x120?text=Art+6" alt="Featured Art 6" style="width:120px;height:120px;object-fit:cover;border-radius:0.5rem; margin-bottom:0.5rem;" /><div>Featured Art 6</div></div>
+            </div>
+            <div class="title-glass"><span class="title">TheMasterArtIndex</span>
+                <a class="title" href="https://www.reddit.com/r/TheMasterArtIndex/" target="_blank" rel="noopener noreferrer">TheMasterArtIndex</a>
+                <span class="glass-shine"></span>
+            </div>
+            <div class="subtitle" style="position:absolute; left:2rem; bottom:2rem;">Showcasing Artwork</div>
+        </div>
+        <div class="center-line"></div>
+        <div class="right">
+            <div class="best-in-show">
+                <canvas class="particle-canvas" width="220" height="300" style="position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:2;"></canvas>
+                <img src="https://placehold.co/200x200?text=Game+Best" alt="Best in Show Game" style="width:180px;height:180px;object-fit:cover;border-radius:0.7rem; margin-bottom:0.5rem; position:relative;z-index:3;" />
+                <div style="position:relative;z-index:3;">Best in Show Game</div>
+            </div>
+            <div class="featured-list">
+                <div class="featured-item"><img src="https://placehold.co/120x120?text=Game+1" alt="Featured Game 1" style="width:120px;height:120px;object-fit:cover;border-radius:0.5rem; margin-bottom:0.5rem;" /><div>Featured Game 1</div></div>
+                <div class="featured-item"><img src="https://placehold.co/120x120?text=Game+2" alt="Featured Game 2" style="width:120px;height:120px;object-fit:cover;border-radius:0.5rem; margin-bottom:0.5rem;" /><div>Featured Game 2</div></div>
+                <div class="featured-item"><img src="https://placehold.co/120x120?text=Game+3" alt="Featured Game 3" style="width:120px;height:120px;object-fit:cover;border-radius:0.5rem; margin-bottom:0.5rem;" /><div>Featured Game 3</div></div>
+                <div class="featured-item"><img src="https://placehold.co/120x120?text=Game+4" alt="Featured Game 4" style="width:120px;height:120px;object-fit:cover;border-radius:0.5rem; margin-bottom:0.5rem;" /><div>Featured Game 4</div></div>
+                <div class="featured-item"><img src="https://placehold.co/120x120?text=Game+5" alt="Featured Game 5" style="width:120px;height:120px;object-fit:cover;border-radius:0.5rem; margin-bottom:0.5rem;" /><div>Featured Game 5</div></div>
+                <div class="featured-item"><img src="https://placehold.co/120x120?text=Game+6" alt="Featured Game 6" style="width:120px;height:120px;object-fit:cover;border-radius:0.5rem; margin-bottom:0.5rem;" /><div>Featured Game 6</div></div>
+            </div>
+            <div class="title-glass"><span class="title">IndyGameGarage</span>
+                <a class="title" href="https://www.reddit.com/r/IndyGameGarage/" target="_blank" rel="noopener noreferrer">IndyGameGarage</a>
+                <span class="glass-shine"></span>
+            </div>
+            <div class="subtitle" style="position:absolute; left:2rem; bottom:2rem;">Discover Indie Games</div>
+        </div>
+    </div>
+</body>
+<script>
+// Simple red particle effect for both best-in-show cards
+function createParticles(canvas, color) {
+    const ctx = canvas.getContext('2d');
+    const particles = [];
+    const w = canvas.width;
+    const h = canvas.height;
+    for (let i = 0; i < 32; i++) {
+        particles.push({
+            x: Math.random() * w,
+            y: Math.random() * h,
+            r: 2 + Math.random() * 3,
+            dx: (Math.random() - 0.5) * 0.7,
+            dy: (Math.random() - 0.5) * 0.7,
+            alpha: 0.5 + Math.random() * 0.5
+        });
+    }
+    function draw() {
+        ctx.clearRect(0, 0, w, h);
+        for (let p of particles) {
+            ctx.save();
+            ctx.globalAlpha = p.alpha;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r, 0, 2 * Math.PI);
+            ctx.fillStyle = color;
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 8;
+            ctx.fill();
+            ctx.restore();
+            p.x += p.dx;
+            p.y += p.dy;
+            if (p.x < 0 || p.x > w) p.dx *= -1;
+            if (p.y < 0 || p.y > h) p.dy *= -1;
+        }
+        requestAnimationFrame(draw);
+    }
+    draw();
+}
+window.addEventListener('DOMContentLoaded', function() {
+    const leftCanvas = document.querySelector('.left .best-in-show .particle-canvas');
+    const rightCanvas = document.querySelector('.right .best-in-show .particle-canvas');
+    if (leftCanvas) createParticles(leftCanvas, '#b71c1c');
+    if (rightCanvas) createParticles(rightCanvas, '#ff2222');
+});
+</script>
+</html>
+        /* Glassy curved border for titles */
+        .title-glass {
+            position: absolute;
+            right: 1.2rem;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            justify-content: center;
+            border-radius: 2rem 2rem 2rem 2rem / 4rem 4rem 4rem 4rem;
+            background: rgba(255,255,255,0.12);
+            box-shadow: 0 4px 24px 0 rgba(0,0,0,0.10), 0 1.5px 0 0 #fff inset;
+            border: 3px solid #b71c1c;
+            padding: 0.5rem 0.7rem;
+            min-height: 220px;
+            min-width: 60px;
+            z-index: 3;
+            overflow: hidden;
+        }
+        .right .title-glass {
+            background: rgba(255,255,255,0.08);
+            border: 3px solid #fff;
+        }
+        .title-glass .title {
+            position: relative;
+            z-index: 2;
+        }
+        .glass-shine {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: inherit;
+            background: linear-gradient(120deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.7) 40%, rgba(255,255,255,0.15) 100%);
+            opacity: 0.7;
+            transform: translateX(-100%) skewX(-20deg);
+            pointer-events: none;
+            z-index: 1;
+            transition: transform 0.7s cubic-bezier(.25,1.5,.5,1);
+        }
+        .left:hover .title-glass .glass-shine,
+        .right:hover .title-glass .glass-shine {
+            animation: glass-shine-hover 0.7s linear;
+        }
+        @keyframes glass-shine-hover {
+            0% { transform: translateX(-100%) skewX(-20deg); }
+            80% { transform: translateX(120%) skewX(-20deg); }
+            100% { transform: translateX(120%) skewX(-20deg); }
+        }
+        .left .title-glass {
+            border: 3px solid #b71c1c;
+            background: rgba(255,255,255,0.18);
+        }
+        .right .title-glass {
+            border: 3px solid #fff;
+            background: rgba(183,28,28,0.18);
+        }
