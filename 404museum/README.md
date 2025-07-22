@@ -17,26 +17,36 @@ Transform boring 404 error pages into stunning interactive art galleries with th
 
 Add this single line to your website's `<head>` section:
 
+
 ```html
-<script src="https://jodylabs.surge.sh/404museum/404museum.min.js"></script>
+<script src="https://passghost.github.io/jodylabs/404museum/404museum.min.js"></script>
 ```
 
 That's it! 404Museum will automatically detect and transform any 404 pages on your site.
 
+
 ## 📖 Demo
 
-- **Live Demo**: [https://jodylabs.surge.sh/404museum/demo.html](https://jodylabs.surge.sh/404museum/demo.html)
-- **Project Page**: [https://jodylabs.surge.sh/404museum/](https://jodylabs.surge.sh/404museum/)
+- **Live Demo**: [https://passghost.github.io/jodylabs/404museum/demo.html](https://passghost.github.io/jodylabs/404museum/demo.html)
+- **Project Page**: [https://passghost.github.io/jodylabs/404museum/](https://passghost.github.io/jodylabs/404museum/)
 
 ## ⚙️ Configuration
 
 Customize 404Museum by defining configuration before loading the script:
 
+
 ```html
 <script>
 window.Museum404Config = {
     theme: 'dark', // 'light' or 'dark'
-    artTypes: ['generative', 'particles', 'fractals', 'abstract'],
+    artTypes: [
+        'generative',      // Generative Waves
+        'particles',       // Particle System
+        'fractals',        // Fractal Tree
+        'orbitals',        // Orbitals Art
+        'neonGrid',        // Neon Grid
+        'plasmaField'      // Plasma Field
+    ],
     customMessage: 'Page not found, but enjoy this art instead!',
     colors: {
         primary: '#4ecdc4',
@@ -48,11 +58,10 @@ window.Museum404Config = {
     showBranding: true,
     artDuration: 30000, // Switch art every 30 seconds (0 = manual only)
     particleCount: 100,
-    animationSpeed: 1,
-    apiEndpoint: 'https://your-api.com/404-logs' // Optional analytics endpoint
+    animationSpeed: 1
 };
 </script>
-<script src="https://jodylabs.surge.sh/404museum/404museum.min.js"></script>
+<script src="https://passghost.github.io/jodylabs/404museum/404museum.min.js"></script>
 ```
 
 ## 🎮 Manual Control
@@ -77,57 +86,34 @@ if (window.Museum404.isActive()) {
 
 ## 🎨 Art Types
 
+
 404Museum includes several beautiful art generators:
 
 1. **Generative Waves** (`'generative'`) - Flowing sine wave patterns
 2. **Particle System** (`'particles'`) - Animated floating particles
-3. **Fractal Trees** (`'fractals'`) - Recursive branching patterns
-4. **Abstract Patterns** (`'abstract'`) - Geometric orbital designs
+3. **Fractal Tree** (`'fractals'`) - Recursive branching patterns
+4. **Orbitals Art** (`'orbitals'`) - Geometric orbital designs
+5. **Neon Grid** (`'neonGrid'`) - Retro-futuristic grid patterns
+6. **Plasma Field** (`'plasmaField'`) - Dynamic plasma-like patterns
 
-## 📊 Analytics Backend
 
-The project includes a Node.js backend for logging 404 visits:
+## 📊 Analytics (Optional)
 
-### Setup
-
-```bash
-cd 404museum
-npm install
-npm start
-```
-
-### API Endpoints
-
-- `POST /api/404-log` - Log a 404 visit
-- `GET /api/404-stats` - Get visit statistics
-- `GET /api/404-visits` - Get recent visits
-- `GET /dashboard` - View analytics dashboard
-
-### Example Analytics Payload
-
-```javascript
-{
-    "timestamp": "2025-07-02T10:30:00.000Z",
-    "url": "https://example.com/missing-page",
-    "referrer": "https://google.com",
-    "userAgent": "Mozilla/5.0...",
-    "viewport": {
-        "width": 1920,
-        "height": 1080
-    }
-}
-```
+You can optionally log 404 hits by specifying an `apiEndpoint` in the config. This is not required for normal use.
 
 ## 🔧 Development
 
-### Files Structure
+
+### File Structure
 
 ```
 404museum/
 ├── index.html          # Project homepage
 ├── demo.html           # Interactive demo
 ├── 404museum.js        # Main library (development)
-├── 404museum.min.js    # Minified library (production)
+├── 404museumPatterns.js # Art pattern functions (modular)
+├── 404museum.bundle.js # Bundle entry for all code
+├── 404museum.min.js    # Minified bundle (production)
 ├── server.js           # Node.js backend API
 ├── package.json        # Backend dependencies
 └── README.md           # This file
@@ -135,10 +121,11 @@ npm start
 
 ### Building
 
-The library is written in vanilla JavaScript with no build process required. To minify:
 
-1. Use any JavaScript minifier
-2. Or use the provided `404museum.min.js`
+The library is written in vanilla JavaScript. To build the minified bundle:
+
+1. Run `npm install` (if not already)
+2. Run `node build-404museum.js` to generate `404museum.min.js`
 
 ### Testing
 
@@ -162,6 +149,7 @@ MIT License - feel free to use in personal and commercial projects.
 
 ## 🌟 Examples
 
+
 ### Basic Implementation
 
 ```html
@@ -169,7 +157,7 @@ MIT License - feel free to use in personal and commercial projects.
 <html>
 <head>
     <title>404 - Page Not Found</title>
-    <script src="https://jodylabs.surge.sh/404museum/404museum.min.js"></script>
+    <script src="https://passghost.github.io/jodylabs/404museum/404museum.min.js"></script>
 </head>
 <body>
     <h1>404 - Page Not Found</h1>
@@ -196,7 +184,7 @@ MIT License - feel free to use in personal and commercial projects.
         apiEndpoint: 'https://api.mysite.com/404-log'
     };
     </script>
-    <script src="https://jodylabs.surge.sh/404museum/404museum.min.js"></script>
+    <script src="https://passghost.github.io/jodylabs/404museum/404museum.min.js"></script>
 </head>
 <body>
     <h1>404 - Page Not Found</h1>
@@ -214,12 +202,14 @@ MIT License - feel free to use in personal and commercial projects.
 
 ## 📞 Support
 
-- **Project Page**: [https://jodylabs.surge.sh/404museum/](https://jodylabs.surge.sh/404museum/)
-- **Demo**: [https://jodylabs.surge.sh/404museum/demo.html](https://jodylabs.surge.sh/404museum/demo.html)
+
+- **Project Page**: [https://passghost.github.io/jodylabs/404museum/](https://passghost.github.io/jodylabs/404museum/)
+- **Demo**: [https://passghost.github.io/jodylabs/404museum/demo.html](https://passghost.github.io/jodylabs/404museum/demo.html)
 - **Issues**: Create an issue on the repository
 
 ---
 
-Made with ❤️ by [JodyLabs](https://jodylabs.surge.sh)
+
+Made with ❤️ by [JodyLabs](https://github.com/JodyLabs/404museum)
 
 Transform your 404 errors into art experiences! 🎨

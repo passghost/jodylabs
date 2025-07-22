@@ -308,9 +308,9 @@
                 <button class="demo-btn" onclick="showGenerativeArt()">Generative Art</button>
                 <button class="demo-btn" onclick="showParticleArt()">Particle System</button>
                 <button class="demo-btn" onclick="showFractalTree()">Fractal Tree</button>
+                <button class="demo-btn" onclick="showOrbitalsArt()">Orbitals Art</button>
                 <button class="demo-btn" onclick="showNeonGrid()">Neon Grid</button>
                 <button class="demo-btn" onclick="showPlasmaField()">Plasma Field</button>
-                <button class="demo-btn" onclick="showOrbitalsArt()">Orbitals Art</button>
             </div>
             
             <div class="demo-display" id="artDisplay">
@@ -373,7 +373,14 @@
                 <pre><code>&lt;script&gt;
 window.Museum404Config = {
     theme: 'dark', // 'light' or 'dark'
-    artTypes: ['generative', 'particles', 'fractals', 'abstract'],
+    artTypes: [
+        'generative',      // Generative Waves
+        'particles',       // Particle System
+        'fractals',        // Fractal Tree
+        'orbitals',        // Orbitals Art
+        'neonGrid',        // Neon Grid
+        'plasmaField'      // Plasma Field
+    ],
     customMessage: 'Page not found, but enjoy this art instead!',
     colors: {
         primary: '#4ecdc4',
@@ -416,12 +423,10 @@ if (window.Museum404.isActive()) {
             <ul style="list-style-type: none; margin: 20px 0; padding-left: 20px;">
                 <li style="margin-bottom: 10px;">✅ <strong>Generative Waves</strong> (<code>'generative'</code>) - Flowing sine wave patterns</li>
                 <li style="margin-bottom: 10px;">✅ <strong>Particle System</strong> (<code>'particles'</code>) - Animated floating particles</li>
-                <li style="margin-bottom: 10px;">✅ <strong>Fractal Trees</strong> (<code>'fractals'</code>) - Recursive branching patterns</li>
-                <li style="margin-bottom: 10px;">✅ <strong>Abstract Patterns</strong> (<code>'abstract'</code>) - Geometric orbital designs</li>
+                <li style="margin-bottom: 10px;">✅ <strong>Fractal Tree</strong> (<code>'fractals'</code>) - Recursive branching patterns</li>
+                <li style="margin-bottom: 10px;">✅ <strong>Orbitals Art</strong> (<code>'orbitals'</code>) - Geometric orbital designs</li>
                 <li style="margin-bottom: 10px;">✅ <strong>Neon Grid</strong> (<code>'neonGrid'</code>) - Retro-futuristic grid patterns</li>
                 <li style="margin-bottom: 10px;">✅ <strong>Plasma Field</strong> (<code>'plasmaField'</code>) - Dynamic plasma-like patterns</li>
-                <li style="margin-bottom: 10px;">✅ <strong>Matrix Glitch</strong> (<code>'matrixGlitch'</code>) - Digital falling characters</li>
-                <li style="margin-bottom: 10px;">✅ <strong>Cosmic Dust</strong> (<code>'cosmicDust'</code>) - Space-like dust particles</li>
             </ul>
             
             <h3 style="color: #e63946; margin-top: 30px; margin-bottom: 15px;">📱 Browser Compatibility</h3>
@@ -436,7 +441,7 @@ if (window.Museum404.isActive()) {
             </ul>
             
             <div style="margin-top: 40px; text-align: center;">
-                <p>Need more information? Check out the <a href="https://github.com/JodyLabs/404museum" style="color: #e63946; text-decoration: none; font-weight: 600;">GitHub repository</a> or <a href="demo.html" style="color: #e63946; text-decoration: none; font-weight: 600;">try the live demo</a>.</p>
+                <p>Need more information? Check out the <a href="https://github.com/JodyLabs/404museum" style="color: #e63946; text-decoration: none; font-weight: 600;">GitHub repository</a> or <a href="https://passghost.github.io/jodylabs/404museum/demo.html" style="color: #e63946; text-decoration: none; font-weight: 600;">try the live demo</a>.</p>
             </div>
         </div>
     </div>
@@ -449,9 +454,9 @@ if (window.Museum404.isActive()) {
             showGenerativeArt: 'Generative Art',
             showParticleArt: 'Particle System',
             showFractalTree: 'Fractal Tree',
+            showOrbitalsArt: 'Orbitals Art',
             showNeonGrid: 'Neon Grid',
-            showPlasmaField: 'Plasma Field',
-            showOrbitalsArt: 'Orbitals Art'
+            showPlasmaField: 'Plasma Field'
         };
 
         for (const [fnName, label] of Object.entries(patternMap)) {
