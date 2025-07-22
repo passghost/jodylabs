@@ -14,7 +14,7 @@
     // Default configuration
     const defaultConfig = {
         theme: 'dark',
-        artTypes: ['generative', 'fractals', 'particles', 'abstract'],
+        artTypes: ['generative', 'particles', 'fractals', 'neonGrid', 'plasmaField', 'orbitalsArt'],
         showBranding: true,
         customMessage: 'Page not found, but look at this beautiful art instead!',
         colors: {
@@ -222,7 +222,7 @@
                         font-size: 0.8rem;
                         backdrop-filter: blur(10px);
                         transition: all 0.3s ease;
-                    ">Waves</button>
+                    ">Generative Art</button>
                     <button onclick="window.Museum404.switchArt('particles')" style="
                         background: rgba(255, 255, 255, 0.1);
                         border: 1px solid rgba(255, 255, 255, 0.2);
@@ -233,7 +233,7 @@
                         font-size: 0.8rem;
                         backdrop-filter: blur(10px);
                         transition: all 0.3s ease;
-                    ">Particles</button>
+                    ">Particle System</button>
                     <button onclick="window.Museum404.switchArt('fractals')" style="
                         background: rgba(255, 255, 255, 0.1);
                         border: 1px solid rgba(255, 255, 255, 0.2);
@@ -244,8 +244,8 @@
                         font-size: 0.8rem;
                         backdrop-filter: blur(10px);
                         transition: all 0.3s ease;
-                    ">Fractals</button>
-                    <button onclick="window.Museum404.switchArt('abstract')" style="
+                    ">Fractal Tree</button>
+                    <button onclick="window.Museum404.switchArt('neonGrid')" style="
                         background: rgba(255, 255, 255, 0.1);
                         border: 1px solid rgba(255, 255, 255, 0.2);
                         color: white;
@@ -255,7 +255,29 @@
                         font-size: 0.8rem;
                         backdrop-filter: blur(10px);
                         transition: all 0.3s ease;
-                    ">Abstract</button>
+                    ">Neon Grid</button>
+                    <button onclick="window.Museum404.switchArt('plasmaField')" style="
+                        background: rgba(255, 255, 255, 0.1);
+                        border: 1px solid rgba(255, 255, 255, 0.2);
+                        color: white;
+                        padding: 8px 15px;
+                        border-radius: 20px;
+                        cursor: pointer;
+                        font-size: 0.8rem;
+                        backdrop-filter: blur(10px);
+                        transition: all 0.3s ease;
+                    ">Plasma Field</button>
+                    <button onclick="window.Museum404.switchArt('orbitalsArt')" style="
+                        background: rgba(255, 255, 255, 0.1);
+                        border: 1px solid rgba(255, 255, 255, 0.2);
+                        color: white;
+                        padding: 8px 15px;
+                        border-radius: 20px;
+                        cursor: pointer;
+                        font-size: 0.8rem;
+                        backdrop-filter: blur(10px);
+                        transition: all 0.3s ease;
+                    ">Orbitals Art</button>
                 </div>
             `;
         }
