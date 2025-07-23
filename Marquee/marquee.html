@@ -417,16 +417,13 @@ let messages = [
         function renderMessage(container, text, color) {
             container.innerHTML = '';
             let currentY = 20;
-            
             // Render each character vertically
             for (let i = 0; i < text.length; i++) {
                 const char = text[i].toUpperCase();
                 const pattern = dotFont[char];
-                
                 if (pattern) {
                     // Rotate the pattern 90 degrees left
                     const rotatedPattern = rotatePattern90Left(pattern);
-                    
                     for (let y = 0; y < rotatedPattern.length; y++) {
                         for (let x = 0; x < rotatedPattern[y].length; x++) {
                             if (rotatedPattern[y][x] === 1) {
@@ -441,6 +438,22 @@ let messages = [
                     currentY += 32; // Space between characters
                 }
             }
+        }
+
+        // Preview text logic: show preview until finished, then allow next preview
+        let previewTimeout = null;
+        function showPreview(text, color) {
+            const matrix = document.getElementById('dotMatrix');
+            matrix.innerHTML = '';
+            const scrollElement = document.createElement('div');
+            scrollElement.className = 'scrolling-text';
+            scrollElement.style.animationDuration = currentSpeed + 's';
+            matrix.appendChild(scrollElement);
+            renderMessage(scrollElement, text, color);
+            // Remove preview after animation
+            scrollElement.addEventListener('animationend', () => {
+                matrix.innerHTML = '';
+            }, { once: true });
         }
 
         function rotatePattern90Left(pattern) {
@@ -465,7 +478,6 @@ let messages = [
         function addMessage() {
             const input = document.getElementById('messageInput');
             const message = input.value.trim().toUpperCase();
-            
             if (message) {
                 messages.push({text: message, color: selectedColor});
                 input.value = '';
@@ -473,6 +485,20 @@ let messages = [
                 updateMessageCount();
             }
         }
+
+        // Show preview on input (debounced)
+        document.getElementById('messageInput').addEventListener('input', function(e) {
+            const text = e.target.value.trim().toUpperCase();
+            if (previewTimeout) clearTimeout(previewTimeout);
+            if (text) {
+                previewTimeout = setTimeout(() => {
+                    showPreview(text, selectedColor);
+                }, 200);
+            } else {
+                // If input is empty, restore normal display
+                updateDisplay();
+            }
+        });
 
         function clearMessages() {
             messages = [];
