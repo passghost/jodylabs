@@ -47,26 +47,11 @@
         .scrolling-text {
             position: absolute;
             width: 100%;
-            animation: scrollUp 15s linear infinite;
+            /* animation will be set dynamically via JS */
             white-space: nowrap;
         }
 
-        @keyframes scrollUp {
-            0% {
-                transform: translateY(100vh);
-                opacity: 0;
-            }
-            5% {
-                opacity: 1;
-            }
-            98% {
-                opacity: 1;
-            }
-            100% {
-                transform: translateY(-200px);
-                opacity: 0;
-            }
-        }
+        /* Keyframes will be injected dynamically via JS for each message */
 
         .dot {
             position: absolute;
@@ -402,14 +387,39 @@ let messages = [
                 matrix.innerHTML = '';
                 const scrollElement = document.createElement('div');
                 scrollElement.className = 'scrolling-text';
-                scrollElement.style.animationDuration = currentSpeed + 's';
                 matrix.appendChild(scrollElement);
                 renderMessage(scrollElement, messages[index].text, messages[index].color);
-                // Wait for animation to finish, then show next message
-                scrollElement.addEventListener('animationend', () => {
-                    currentIndex = (currentIndex + 1) % messages.length;
-                    showMessage(currentIndex);
-                }, { once: true });
+                // Wait for DOM to update so we can measure height
+                setTimeout(() => {
+                    const containerHeight = matrix.offsetHeight;
+                    const messageHeight = scrollElement.offsetHeight;
+                    // Calculate scroll distance: message starts below, ends above
+                    const startY = containerHeight;
+                    const endY = -messageHeight;
+                    // Animation duration is proportional to scroll distance
+                    // (Keep user speed setting as seconds per container height)
+                    const baseSpeed = currentSpeed; // seconds for 200px (old value)
+                    const baseDistance = 200; // px
+                    const distance = startY - endY;
+                    const duration = Math.max(2, baseSpeed * (distance / baseDistance));
+                    // Create unique keyframes for this scroll
+                    const animName = `scrollUpDynamic_${Date.now()}`;
+                    const styleSheet = document.createElement('style');
+                    styleSheet.innerHTML = `@keyframes ${animName} {\n` +
+                        `  0% { transform: translateY(${startY}px); opacity: 0; }\n` +
+                        `  3% { opacity: 1; }\n` +
+                        `  97% { opacity: 1; }\n` +
+                        `  100% { transform: translateY(${endY}px); opacity: 0; }\n` +
+                        `}`;
+                    document.head.appendChild(styleSheet);
+                    scrollElement.style.animation = `${animName} ${duration}s linear 1`;
+                    // Wait for animation to finish, then show next message
+                    scrollElement.addEventListener('animationend', () => {
+                        document.head.removeChild(styleSheet);
+                        currentIndex = (currentIndex + 1) % messages.length;
+                        showMessage(currentIndex);
+                    }, { once: true });
+                }, 10);
             }
             showMessage(currentIndex);
         }
@@ -447,13 +457,32 @@ let messages = [
             matrix.innerHTML = '';
             const scrollElement = document.createElement('div');
             scrollElement.className = 'scrolling-text';
-            scrollElement.style.animationDuration = currentSpeed + 's';
             matrix.appendChild(scrollElement);
             renderMessage(scrollElement, text, color);
-            // Remove preview after animation
-            scrollElement.addEventListener('animationend', () => {
-                matrix.innerHTML = '';
-            }, { once: true });
+            setTimeout(() => {
+                const containerHeight = matrix.offsetHeight;
+                const messageHeight = scrollElement.offsetHeight;
+                const startY = containerHeight;
+                const endY = -messageHeight;
+                const baseSpeed = currentSpeed;
+                const baseDistance = 200;
+                const distance = startY - endY;
+                const duration = Math.max(2, baseSpeed * (distance / baseDistance));
+                const animName = `scrollUpPreview_${Date.now()}`;
+                const styleSheet = document.createElement('style');
+                styleSheet.innerHTML = `@keyframes ${animName} {\n` +
+                    `  0% { transform: translateY(${startY}px); opacity: 0; }\n` +
+                    `  3% { opacity: 1; }\n` +
+                    `  97% { opacity: 1; }\n` +
+                    `  100% { transform: translateY(${endY}px); opacity: 0; }\n` +
+                    `}`;
+                document.head.appendChild(styleSheet);
+                scrollElement.style.animation = `${animName} ${duration}s linear 1`;
+                scrollElement.addEventListener('animationend', () => {
+                    document.head.removeChild(styleSheet);
+                    matrix.innerHTML = '';
+                }, { once: true });
+            }, 10);
         }
 
         function rotatePattern90Left(pattern) {
