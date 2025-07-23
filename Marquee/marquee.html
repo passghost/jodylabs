@@ -325,7 +325,7 @@
 
     <script>
 let messages = [
-    {text: 'Facebook down to take advantage of down in an effort to get down.', color: 'blue'}
+    {text: 'UNDER CONSTRUCTION', color: 'yellow'}
 ];
         let selectedColor = 'red';
         let currentSpeed = 15;
@@ -450,7 +450,7 @@ let messages = [
             }
         }
 
-        // Preview text logic: show preview until finished, then allow next preview
+        // Preview text logic: always show 'UNDER CONSTRUCTION' in yellow
         let previewTimeout = null;
         function showPreview(text, color) {
             const matrix = document.getElementById('dotMatrix');
@@ -458,7 +458,7 @@ let messages = [
             const scrollElement = document.createElement('div');
             scrollElement.className = 'scrolling-text';
             matrix.appendChild(scrollElement);
-            renderMessage(scrollElement, text, color);
+            renderMessage(scrollElement, 'UNDER CONSTRUCTION', 'yellow');
             setTimeout(() => {
                 const containerHeight = matrix.offsetHeight;
                 const messageHeight = scrollElement.offsetHeight;
