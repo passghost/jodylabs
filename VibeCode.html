@@ -551,32 +551,25 @@
             <h1>The Vibe Code Registry</h1>
             <p>A registry of web projects, games, and creative tools to vibe with.</p>
         </div>
-        <!-- from here -->
-        <div class="projects-grid" id="projectsGrid"></div>
-        <!-- to here -->
-
-    <script type="module">
-    import { vibeProjects } from './vibeProjects.js';
-
-    function renderProjects() {
-        const grid = document.getElementById('projectsGrid');
-        grid.innerHTML = vibeProjects.map(project => `
+        
+        <div class="projects-grid">
+            <!-- VibeCode Project Card -->
             <div class="project">
                 <div class="project-content">
-                    <div class="project-icon"><img src="${project.icon}" alt="Project Icon" loading="lazy"></div>
-                    <div class="project-body">
-                        <h2>${project.title}</h2>
-                        <p>${project.description}</p>
+                    <div class="project-icon">
+                        <img src="screenshots/mosaic.png" alt="VibeCode Mosaic Screenshot" />
                     </div>
+                    <div class="project-body">
+                        <img class="project-screenshot" src="screenshots/mosaic.png" alt="VibeCode Mosaic Screenshot" />
+                        <h2>VibeCode Mosaic</h2>
+                        <p>Create animated mosaics and GIFs with interactive effects. Powered by gif.worker.js.</p>
+                    </div>
+                    <a class="project-link" href="MosaicMaker/index.html" target="_blank">Open MosaicMaker</a>
                 </div>
-                <img src="${project.screenshot}" alt="${project.title} Screenshot" class="project-screenshot" loading="lazy">
-                <a href="${project.link}" class="project-link"><span>→</span></a>
             </div>
-        `).join('');
-    }
+            <!-- Add other project cards below as needed -->
+        </div>
 
-    document.addEventListener('DOMContentLoaded', renderProjects);
-    </script>
     <script>
         // Array of available eyeball images (copied from index.html)
         const eyeballImages = [
