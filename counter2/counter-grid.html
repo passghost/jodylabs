@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jim's Counter Grid 2.0</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .main-container {
+            max-width: 1200px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            color: #64b5f6;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 0 0 20px rgba(100, 181, 246, 0.5);
+            font-weight: 300;
+        }
+
+        .controls {
+            margin-bottom: 30px;
+            padding: 25px;
+            background: rgba(26, 26, 46, 0.9);
+            border: 1px solid rgba(100, 181, 246, 0.3);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            min-width: 600px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 120px;
+        }
+
+        label {
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #64b5f6;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        input,
+        select,
+        button {
+            padding: 10px 15px;
+            border: 2px solid rgba(100, 181, 246, 0.3);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            outline: none;
+            background: rgba(22, 33, 62, 0.8);
+            color: #e3f2fd;
+        }
+
+        input:focus,
+        select:focus {
+            border-color: #64b5f6;
+            box-shadow: 0 0 0 3px rgba(100, 181, 246, 0.2);
+        }
+
+        select {
+            cursor: pointer;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        button {
+            background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%);
+            color: #e3f2fd;
+            cursor: pointer;
+            border: 2px solid rgba(100, 181, 246, 0.5);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            min-width: 100px;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(100, 181, 246, 0.4);
+            background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background: #424242;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+            border-color: #616161;
+        }
+
+        .grid-container {
+            background: rgba(26, 26, 46, 0.9);
+            border: 1px solid rgba(100, 181, 246, 0.3);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .counter-grid {
+            display: grid;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .counter {
+            width: 90px;
+            height: 90px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid rgba(100, 181, 246, 0.3);
+            border-radius: 15px;
+            font-size: 20px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #64b5f6;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .counter::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(100, 181, 246, 0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        .counter:hover::before {
+            left: 100%;
+        }
+
+        .counter.active {
+            background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%);
+            color: #e3f2fd;
+            border-color: #64b5f6;
+            box-shadow: 0 5px 20px rgba(100, 181, 246, 0.6);
+        }
+
+        .counter.waiting {
+            background: linear-gradient(135deg, #ff6f00 0%, #e65100 100%);
+            color: #fff3e0;
+            border-color: #ff8f00;
+        }
+
+        /* Custom color themes for clicked counters */
+        .counter.theme-red.active {
+            background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%);
+            border-color: #f44336;
+            box-shadow: 0 5px 20px rgba(244, 67, 54, 0.6);
+        }
+
+        .counter.theme-green.active {
+            background: linear-gradient(135deg, #388e3c 0%, #1b5e20 100%);
+            border-color: #4caf50;
+            box-shadow: 0 5px 20px rgba(76, 175, 80, 0.6);
+        }
+
+        .counter.theme-purple.active {
+            background: linear-gradient(135deg, #7b1fa2 0%, #4a148c 100%);
+            border-color: #9c27b0;
+            box-shadow: 0 5px 20px rgba(156, 39, 176, 0.6);
+        }
+
+        .counter.theme-orange.active {
+            background: linear-gradient(135deg, #f57c00 0%, #e65100 100%);
+            border-color: #ff9800;
+            box-shadow: 0 5px 20px rgba(255, 152, 0, 0.6);
+        }
+
+        .counter.theme-cyan.active {
+            background: linear-gradient(135deg, #00acc1 0%, #006064 100%);
+            border-color: #00bcd4;
+            box-shadow: 0 5px 20px rgba(0, 188, 212, 0.6);
+        }
+
+        /* Animation Styles */
+        .counter.active.pulse {
+            animation: pulse 1s infinite;
+        }
+
+        .counter.active.bounce {
+            animation: bounce 0.8s infinite;
+        }
+
+        .counter.active.rotate {
+            animation: rotate 2s linear infinite;
+        }
+
+        .counter.active.glow {
+            animation: glow 1.5s ease-in-out infinite alternate;
+        }
+
+        .counter.active.shake {
+            animation: shake 0.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        @keyframes bounce {
+
+            0%,
+            20%,
+            50%,
+            80%,
+            100% {
+                transform: translateY(0);
+            }
+
+            40% {
+                transform: translateY(-10px);
+            }
+
+            60% {
+                transform: translateY(-5px);
+            }
+        }
+
+        @keyframes rotate {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes glow {
+            0% {
+                box-shadow: 0 5px 20px rgba(100, 181, 246, 0.4);
+            }
+
+            100% {
+                box-shadow: 0 5px 30px rgba(100, 181, 246, 0.8), 0 0 20px rgba(100, 181, 246, 0.6);
+            }
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-3px);
+            }
+
+            75% {
+                transform: translateX(3px);
+            }
+        }
+
+        .status {
+            padding: 15px 25px;
+            background: linear-gradient(135deg, #16213e 0%, #1a1a2e 100%);
+            border: 1px solid rgba(100, 181, 246, 0.3);
+            border-radius: 25px;
+            font-weight: 600;
+            color: #64b5f6;
+            text-align: center;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+            min-width: 300px;
+        }
+
+        /* Random effect animations */
+        .counter.random-spin {
+            animation: randomSpin 0.8s ease-in-out;
+        }
+
+        .counter.random-flip {
+            animation: randomFlip 0.6s ease-in-out;
+        }
+
+        .counter.random-wobble {
+            animation: randomWobble 1s ease-in-out;
+        }
+
+        .counter.random-zoom {
+            animation: randomZoom 0.5s ease-in-out;
+        }
+
+        .counter.random-rainbow {
+            animation: randomRainbow 1.5s linear;
+        }
+
+        .counter.random-jello {
+            animation: randomJello 0.9s ease-in-out;
+        }
+
+        .counter.random-flash {
+            animation: randomFlash 0.4s ease-in-out;
+        }
+
+        .counter.random-elastic {
+            animation: randomElastic 1.2s ease-out;
+        }
+
+        @keyframes randomSpin {
+            0% {
+                transform: rotate(0deg) scale(1);
+            }
+
+            50% {
+                transform: rotate(180deg) scale(1.2);
+            }
+
+            100% {
+                transform: rotate(360deg) scale(1);
+            }
+        }
+
+        @keyframes randomFlip {
+            0% {
+                transform: perspective(400px) rotateY(0);
+            }
+
+            40% {
+                transform: perspective(400px) rotateY(-180deg) scale(1.1);
+            }
+
+            100% {
+                transform: perspective(400px) rotateY(0);
+            }
+        }
+
+        @keyframes randomWobble {
+            0% {
+                transform: translateX(0%);
+            }
+
+            15% {
+                transform: translateX(-25%) rotate(-5deg);
+            }
+
+            30% {
+                transform: translateX(20%) rotate(3deg);
+            }
+
+            45% {
+                transform: translateX(-15%) rotate(-3deg);
+            }
+
+            60% {
+                transform: translateX(10%) rotate(2deg);
+            }
+
+            75% {
+                transform: translateX(-5%) rotate(-1deg);
+            }
+
+            100% {
+                transform: translateX(0%);
+            }
+        }
+
+        @keyframes randomZoom {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.5) rotate(10deg);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        @keyframes randomRainbow {
+            0% {
+                filter: hue-rotate(0deg) saturate(1);
+            }
+
+            25% {
+                filter: hue-rotate(90deg) saturate(1.5);
+            }
+
+            50% {
+                filter: hue-rotate(180deg) saturate(2);
+            }
+
+            75% {
+                filter: hue-rotate(270deg) saturate(1.5);
+            }
+
+            100% {
+                filter: hue-rotate(360deg) saturate(1);
+            }
+        }
+
+        @keyframes randomJello {
+
+            0%,
+            11.1%,
+            100% {
+                transform: translate3d(0, 0, 0);
+            }
+
+            22.2% {
+                transform: skewX(-12.5deg) skewY(-12.5deg);
+            }
+
+            33.3% {
+                transform: skewX(6.25deg) skewY(6.25deg);
+            }
+
+            44.4% {
+                transform: skewX(-3.125deg) skewY(-3.125deg);
+            }
+
+            55.5% {
+                transform: skewX(1.5625deg) skewY(1.5625deg);
+            }
+
+            66.6% {
+                transform: skewX(-0.78125deg) skewY(-0.78125deg);
+            }
+
+            77.7% {
+                transform: skewX(0.390625deg) skewY(0.390625deg);
+            }
+
+            88.8% {
+                transform: skewX(-0.1953125deg) skewY(-0.1953125deg);
+            }
+        }
+
+        @keyframes randomFlash {
+
+            0%,
+            50%,
+            100% {
+                opacity: 1;
+            }
+
+            25%,
+            75% {
+                opacity: 0.3;
+                transform: scale(1.1);
+            }
+        }
+
+        @keyframes randomElastic {
+            0% {
+                transform: scale3d(1, 1, 1);
+            }
+
+            30% {
+                transform: scale3d(1.25, 0.75, 1);
+            }
+
+            40% {
+                transform: scale3d(0.75, 1.25, 1);
+            }
+
+            50% {
+                transform: scale3d(1.15, 0.85, 1);
+            }
+
+            65% {
+                transform: scale3d(0.95, 1.05, 1);
+            }
+
+            75% {
+                transform: scale3d(1.05, 0.95, 1);
+            }
+
+            100% {
+                transform: scale3d(1, 1, 1);
+            }
+        }
+
+        /* Chaos mode - multiple effects at once */
+        .counter.chaos-mode {
+            animation: chaosMode 2s ease-in-out;
+        }
+
+        @keyframes chaosMode {
+            0% {
+                transform: rotate(0deg) scale(1);
+                filter: hue-rotate(0deg);
+            }
+
+            20% {
+                transform: rotate(72deg) scale(1.3) skewX(10deg);
+                filter: hue-rotate(72deg);
+            }
+
+            40% {
+                transform: rotate(144deg) scale(0.8) skewY(-10deg);
+                filter: hue-rotate(144deg);
+            }
+
+            60% {
+                transform: rotate(216deg) scale(1.2) skewX(-5deg);
+                filter: hue-rotate(216deg);
+            }
+
+            80% {
+                transform: rotate(288deg) scale(0.9) skewY(5deg);
+                filter: hue-rotate(288deg);
+            }
+
+            100% {
+                transform: rotate(360deg) scale(1);
+                filter: hue-rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="main-container">
+        <h1>Jim's Counter Grid 2.0</h1>
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="rows">Rows</label>
+                <input type="number" id="rows" value="3" min="1" max="10">
+            </div>
+
+            <div class="control-group">
+                <label for="cols">Columns</label>
+                <input type="number" id="cols" value="4" min="1" max="10">
+            </div>
+
+            <div class="control-group">
+                <label for="triggerValue">Trigger Value</label>
+                <input type="number" id="triggerValue" value="5" min="1" max="100">
+            </div>
+
+            <div class="control-group">
+                <label for="speed">Speed (ms)</label>
+                <input type="number" id="speed" value="100" min="50" max="2000" step="50">
+            </div>
+
+            <div class="control-group">
+                <label for="animation">Animation</label>
+                <select id="animation">
+                    <option value="pulse">Pulse</option>
+                    <option value="bounce">Bounce</option>
+                    <option value="rotate">Rotate</option>
+                    <option value="glow">Glow</option>
+                    <option value="shake">Shake</option>
+                </select>
+            </div>
+
+            <div class="button-group">
+                <button onclick="startCounters()">Start</button>
+                <button onclick="resetCounters()">Reset</button>
+                <button onclick="pauseCounters()" id="pauseBtn">Pause</button>
+            </div>
+        </div>
+
+        <div class="grid-container">
+            <div id="counterGrid" class="counter-grid"></div>
+            <div id="status" class="status">Ready to start</div>
+        </div>
+    </div>
+
+    <script>
+        let counters = [];
+        let intervals = [];
+        let currentActiveIndex = 0;
+        let isRunning = false;
+        let isPaused = false;
+        let rows, cols, triggerValue, speed;
+
+        // Color themes for clicking
+        const colorThemes = ['theme-red', 'theme-green', 'theme-purple', 'theme-orange', 'theme-cyan'];
+        let currentThemeIndex = 0;
+
+        // Random effects for all cells
+        const randomEffects = [
+            'random-spin', 'random-flip', 'random-wobble', 'random-zoom',
+            'random-rainbow', 'random-jello', 'random-flash', 'random-elastic', 'chaos-mode'
+        ];
+
+        // Random messages for chaos
+        const chaosMessages = [
+            "🌪️ CHAOS UNLEASHED!", "🎭 Reality is glitching!", "🌈 Rainbow madness!",
+            "🎪 Circus mode activated!", "🚀 Launching into space!", "⚡ Electric mayhem!",
+            "🎨 Art explosion!", "🎯 Target acquired!", "🎲 Rolling the dice!",
+            "🔥 Fire in the hole!", "❄️ Frozen in time!", "🌟 Stellar collision!"
+        ];
+
+        function createGrid() {
+            const gridElement = document.getElementById('counterGrid');
+            rows = parseInt(document.getElementById('rows').value);
+            cols = parseInt(document.getElementById('cols').value);
+            triggerValue = parseInt(document.getElementById('triggerValue').value);
+            speed = parseInt(document.getElementById('speed').value);
+
+            // Set grid template
+            gridElement.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+
+            // Clear existing grid
+            gridElement.innerHTML = '';
+            counters = [];
+            intervals = [];
+
+            // Create counter elements
+            for (let i = 0; i < rows * cols; i++) {
+                const counterDiv = document.createElement('div');
+                counterDiv.className = 'counter';
+                counterDiv.textContent = '0';
+                counterDiv.id = `counter-${i}`;
+
+                // Add click event listener for theme changing and random effects
+                counterDiv.addEventListener('click', function () {
+                    changeCounterTheme(i);
+                    triggerRandomChaos();
+                });
+
+                gridElement.appendChild(counterDiv);
+
+                counters.push({
+                    element: counterDiv,
+                    value: 0,
+                    isActive: false,
+                    hasStarted: false,
+                    customTheme: null
+                });
+            }
+
+            currentActiveIndex = 0;
+            updateStatus('Grid created. Ready to start.');
+        }
+
+        function startCounters() {
+            if (isRunning && !isPaused) return;
+
+            if (!isPaused) {
+                resetCounters();
+                createGrid();
+            }
+
+            isRunning = true;
+            isPaused = false;
+            document.getElementById('pauseBtn').textContent = 'Pause';
+
+            // Start the first counter
+            if (counters.length > 0) {
+                startCounter(0);
+                updateStatus('Counters started!');
+            }
+        }
+
+        function startCounter(index) {
+            if (index >= counters.length || counters[index].isActive) return;
+
+            const counter = counters[index];
+            const animationType = document.getElementById('animation').value;
+
+            counter.isActive = true;
+            counter.hasStarted = true;
+            counter.element.classList.add('active', animationType);
+
+            // Apply custom theme if set
+            if (counter.customTheme) {
+                counter.element.classList.add(counter.customTheme);
+            }
+
+            intervals[index] = setInterval(() => {
+                if (isPaused) return;
+
+                counter.value++;
+                counter.element.textContent = counter.value;
+
+                // Check if this counter reached the trigger value
+                if (counter.value >= triggerValue) {
+                    // Start next counter (move right, then wrap to next row)
+                    const nextIndex = getNextCounterIndex(index);
+                    if (nextIndex !== -1 && !counters[nextIndex].hasStarted) {
+                        startCounter(nextIndex);
+                    }
+
+                    // Check if all counters are now running
+                    checkAllCountersRunning();
+                }
+            }, speed);
+        }
+
+        function getNextCounterIndex(currentIndex) {
+            const row = Math.floor(currentIndex / cols);
+            const col = currentIndex % cols;
+
+            // Move right first
+            if (col < cols - 1) {
+                return currentIndex + 1;
+            }
+            // Move to next row, first column
+            else if (row < rows - 1) {
+                return (row + 1) * cols;
+            }
+
+            return -1; // No more counters
+        }
+
+        function checkAllCountersRunning() {
+            const allRunning = counters.every(counter => counter.isActive);
+            if (allRunning) {
+                updateStatus('All counters are now running!');
+            }
+        }
+
+        function resetCounters() {
+            isRunning = false;
+            isPaused = false;
+            document.getElementById('pauseBtn').textContent = 'Pause';
+
+            // Clear all intervals
+            intervals.forEach(interval => {
+                if (interval) clearInterval(interval);
+            });
+            intervals = [];
+
+            // Reset counter states
+            counters.forEach(counter => {
+                counter.value = 0;
+                counter.isActive = false;
+                counter.hasStarted = false;
+                counter.element.textContent = '0';
+                counter.element.classList.remove('active', 'waiting', 'pulse', 'bounce', 'rotate', 'glow', 'shake');
+
+                // Keep custom theme but remove active state
+                if (counter.customTheme) {
+                    counter.element.classList.remove(counter.customTheme);
+                }
+            });
+
+            currentActiveIndex = 0;
+            updateStatus('Counters reset.');
+        }
+
+        function pauseCounters() {
+            if (!isRunning) return;
+
+            isPaused = !isPaused;
+            const pauseBtn = document.getElementById('pauseBtn');
+
+            if (isPaused) {
+                pauseBtn.textContent = 'Resume';
+                updateStatus('Counters paused.');
+            } else {
+                pauseBtn.textContent = 'Pause';
+                updateStatus('Counters resumed.');
+            }
+        }
+
+        function updateStatus(message) {
+            document.getElementById('status').textContent = message;
+        }
+
+        function changeCounterTheme(index) {
+            if (index >= counters.length) return;
+
+            const counter = counters[index];
+
+            // Remove current custom theme
+            if (counter.customTheme) {
+                counter.element.classList.remove(counter.customTheme);
+            }
+
+            // Cycle to next theme
+            currentThemeIndex = (currentThemeIndex + 1) % colorThemes.length;
+            counter.customTheme = colorThemes[currentThemeIndex];
+
+            // Apply new theme if counter is active
+            if (counter.isActive) {
+                counter.element.classList.add(counter.customTheme);
+            }
+
+            updateStatus(`Counter ${index + 1} theme changed to ${counter.customTheme.replace('theme-', '')}`);
+        }
+
+        function triggerRandomChaos() {
+            // Pick a random effect
+            const randomEffect = randomEffects[Math.floor(Math.random() * randomEffects.length)];
+            const randomMessage = chaosMessages[Math.floor(Math.random() * chaosMessages.length)];
+
+            // Apply random effect to ALL counters
+            counters.forEach((counter, index) => {
+                // Add random delay for each counter (0-500ms)
+                const delay = Math.random() * 500;
+
+                setTimeout(() => {
+                    counter.element.classList.add(randomEffect);
+
+                    // Remove the effect after animation completes
+                    setTimeout(() => {
+                        counter.element.classList.remove(randomEffect);
+                    }, getAnimationDuration(randomEffect));
+                }, delay);
+            });
+
+            // Additional random chaos effects
+            applyRandomGlobalEffects();
+
+            // Update status with chaos message
+            updateStatus(randomMessage);
+
+            // Reset status after 3 seconds
+            setTimeout(() => {
+                updateStatus(isRunning ? 'Counters running...' : 'Ready to start');
+            }, 3000);
+        }
+
+        function getAnimationDuration(effect) {
+            const durations = {
+                'random-spin': 800,
+                'random-flip': 600,
+                'random-wobble': 1000,
+                'random-zoom': 500,
+                'random-rainbow': 1500,
+                'random-jello': 900,
+                'random-flash': 400,
+                'random-elastic': 1200,
+                'chaos-mode': 2000
+            };
+            return durations[effect] || 1000;
+        }
+
+        function applyRandomGlobalEffects() {
+            const effects = [
+                () => {
+                    // Randomly change grid gap
+                    const grid = document.getElementById('counterGrid');
+                    const randomGap = Math.floor(Math.random() * 30) + 5;
+                    grid.style.gap = randomGap + 'px';
+                    setTimeout(() => grid.style.gap = '15px', 2000);
+                },
+                () => {
+                    // Randomly tilt the entire grid
+                    const container = document.querySelector('.grid-container');
+                    const randomRotation = (Math.random() - 0.5) * 20;
+                    container.style.transform = `rotate(${randomRotation}deg)`;
+                    setTimeout(() => container.style.transform = 'rotate(0deg)', 2000);
+                },
+                () => {
+                    // Random background color shift
+                    const body = document.body;
+                    const hue = Math.floor(Math.random() * 360);
+                    body.style.filter = `hue-rotate(${hue}deg)`;
+                    setTimeout(() => body.style.filter = 'none', 3000);
+                },
+                () => {
+                    // Randomly scale the entire grid
+                    const container = document.querySelector('.grid-container');
+                    const randomScale = 0.8 + Math.random() * 0.4;
+                    container.style.transform = `scale(${randomScale})`;
+                    setTimeout(() => container.style.transform = 'scale(1)', 2000);
+                },
+                () => {
+                    // Random counter values chaos
+                    counters.forEach(counter => {
+                        if (Math.random() > 0.7) {
+                            const originalValue = counter.element.textContent;
+                            const randomSymbols = ['🎲', '🌟', '⚡', '🔥', '💫', '🎯', '🚀', '🌈'];
+                            const randomSymbol = randomSymbols[Math.floor(Math.random() * randomSymbols.length)];
+                            counter.element.textContent = randomSymbol;
+                            setTimeout(() => {
+                                counter.element.textContent = originalValue;
+                            }, 1500);
+                        }
+                    });
+                },
+                () => {
+                    // Random border radius chaos
+                    counters.forEach(counter => {
+                        const randomRadius = Math.floor(Math.random() * 50);
+                        counter.element.style.borderRadius = randomRadius + 'px';
+                        setTimeout(() => {
+                            counter.element.style.borderRadius = '15px';
+                        }, 2000);
+                    });
+                }
+            ];
+
+            // Execute 1-3 random effects
+            const numEffects = Math.floor(Math.random() * 3) + 1;
+            for (let i = 0; i < numEffects; i++) {
+                const randomEffect = effects[Math.floor(Math.random() * effects.length)];
+                setTimeout(randomEffect, Math.random() * 1000);
+            }
+        }
+
+        // Initialize grid on page load
+        window.onload = function () {
+            createGrid();
+        };
+
+        // Update grid when parameters change
+        document.getElementById('rows').addEventListener('change', createGrid);
+        document.getElementById('cols').addEventListener('change', createGrid);
+    </script>
+</body>
+
+</html>
