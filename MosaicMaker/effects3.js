@@ -584,4 +584,4 @@ export function applyAnimatedArtEffect3(effect) {
     else if (effect === 'stackfadetrail3') stackFadeTrail3();
 }
 
-export { setupEffects3, applyAnimatedArtEffect3 };
+// ...existing code...
