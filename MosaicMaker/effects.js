@@ -1,10 +1,4 @@
-export function setupEffects(deps) {
-  // TODO: Implement effect setup logic for Core Effects
-}
-
-export function applyAnimatedArtEffect(effectName) {
-  // TODO: Implement animated art effect logic for Core Effects
-}
+// ...existing code...
 // effects.js - Core mosaic tile effects
 let ctx, canvas, tiles;
 
