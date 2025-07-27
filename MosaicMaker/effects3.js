@@ -1,11 +1,10 @@
-// ...existing code...
 // MosaicMaker Effects3 Module
 // Usage: Call setupEffects3({ctx, canvas, tiles, ...}) once in your main script after initialization.
 // Then use applyAnimatedArtEffect3(effectName) as before.
 
 let ctx3, canvas3, tiles3, animationFrameId3 = null;
 
-export function setupEffects3(env) {
+function setupEffects3(env) {
     ctx3 = env.ctx;
     canvas3 = env.canvas;
     tiles3 = env.tiles;
@@ -555,7 +554,7 @@ function stackFadeTrail3() {
     step();
 }
 
-export function applyAnimatedArtEffect3(effect) {
+function applyAnimatedArtEffect3(effect) {
     if (effect === 'spiralburst3') spiralBurstEffect3();
     else if (effect === 'pulse3') tilePulse3();
     else if (effect === 'twist3') tileTwist3();
@@ -584,4 +583,4 @@ export function applyAnimatedArtEffect3(effect) {
     else if (effect === 'stackfadetrail3') stackFadeTrail3();
 }
 
-// ...existing code...
+export { setupEffects3, applyAnimatedArtEffect3 };

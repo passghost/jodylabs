@@ -1,4 +1,3 @@
-// ...existing code...
 // effects.js - Core mosaic tile effects
 let ctx, canvas, tiles;
 

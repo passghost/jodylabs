@@ -1,4 +1,3 @@
-// ...existing code...
 // effects4.js - New creative mosaic tile effects
 // Each effect should animate tiles in a unique, visually distinct way
 
