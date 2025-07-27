@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mosaic Maker</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d0000 100%);
+            margin: 0;
+            padding: 0;
+            color: #f44336;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .controls {
+            background: rgba(30,0,0,0.95);
+            padding: 24px 32px;
+            border-radius: 14px;
+            box-shadow: 0 4px 24px rgba(244,67,54,0.15), 0 1.5px 0 #f44336 inset;
+            margin-bottom: 32px;
+            display: flex;
+            gap: 24px;
+            align-items: center;
+            border: 2px solid #f44336;
+        }
+        .controls label {
+            color: #f44336;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        .controls input[type="number"],
+        .controls input[type="file"] {
+            background: #1a1a1a;
+            color: #f44336;
+            border: 1px solid #f44336;
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: 1rem;
+        }
+        .controls input[type="number"]::-webkit-inner-spin-button,
+        .controls input[type="number"]::-webkit-outer-spin-button {
+            background: #f44336;
+        }
+        .controls button {
+            background: linear-gradient(90deg, #f44336 0%, #b71c1c 100%);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 22px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(244,67,54,0.15);
+            transition: background 0.2s, transform 0.2s;
+        }
+        .controls button:hover {
+            background: linear-gradient(90deg, #b71c1c 0%, #f44336 100%);
+            transform: translateY(-2px) scale(1.04);
+        }
+        .preview {
+            background: #1a1a1a !important;
+            padding: 24px;
+            border-radius: 14px;
+            box-shadow: 0 4px 24px rgba(244,67,54,0.15);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border: 2px solid #f44336;
+        }
+        canvas {
+            display: block;
+            margin: 0 auto;
+            background: #000 !important;
+            border: 2px solid #f44336;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px rgba(244,67,54,0.12);
+        }
+        #effectSelect {
+            max-height: 300px;
+            overflow-y: auto;
+            width: 240px;
+            background: #1a1a1a;
+            color: #f44336;
+            border: 1.5px solid #f44336;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+        }
+        #effectSelect optgroup {
+            color: #b71c1c;
+            font-weight: bold;
+        }
+        #effectSelect option {
+            color: #f44336;
+            background: #1a1a1a;
+        }
+        ::selection {
+            background: #f44336;
+            color: #fff;
+        }
+        .mosaic-title {
+            font-family: 'Segoe UI', 'Arial Black', Arial, sans-serif;
+            font-size: 3.2rem;
+            font-weight: 900;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #f44336;
+            text-shadow: 0 2px 16px #b71c1c, 0 1px 0 #fff, 0 0px 32px #f44336;
+            margin-bottom: 18px;
+            margin-top: 0;
+            background: linear-gradient(90deg, #f44336 0%, #1a1a1a 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        @media (max-width: 900px) {
+            .controls {
+                flex-direction: column;
+                gap: 12px;
+                padding: 16px;
+            }
+            .preview {
+                padding: 12px;
+            }
+            #effectSelect {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="mosaic-title">Mosaicia</h1>
+        <div class="controls">
+            <input type="file" id="imageInput" accept="image/*" multiple>
+            <label for="rows">Rows:</label>
+            <input type="number" id="rows" min="2" max="100" value="20">
+            <label for="cols">Columns:</label>
+            <input type="number" id="cols" min="2" max="100" value="20">
+            <label for="effectSelect">Art Effect:</label>
+            <select id="effectSelect">
+                <optgroup label="Core Effects">
+                    <option value="shimmer">Shimmer</option>
+                    <option value="drop">Tile Drop</option>
+                    <option value="spin">Tile Spin</option>
+                    <option value="fade">Tile Fade</option>
+                    <option value="wobble">Tile Wobble</option>
+                    <option value="wave">Wave</option>
+                    <option value="pulse">Pulse</option>
+                    <option value="twist">Twist</option>
+                    <option value="scatter">Scatter</option>
+                    <option value="flip">Flip</option>
+                    <option value="bounce">Bounce</option>
+                    <option value="flash">Tile Flash</option>
+                    <option value="checker">Tile Checker</option>
+                    <option value="zoom">Tile Zoom</option>
+                    <option value="slide">Tile Slide</option>
+                    <option value="swirl">Tile Swirl</option>
+                    <option value="grow">Tile Grow</option>
+                    <option value="shrink">Tile Shrink</option>
+                    <option value="diamond">Tile Diamond</option>
+                </optgroup>
+                <optgroup label="Effects2">
+                    <option value="rainbow2">Rainbow Tint</option>
+                    <option value="jitter2">Pixel Jitter</option>
+                    <option value="shrinkgrow2">Shrink/Grow</option>
+                    <option value="trail2">Tile Fade Trail</option>
+                    <option value="popcorn2">Tile Popcorn</option>
+                    <option value="swirl2">Swirl 2</option>
+                    <option value="fade2">Fade In/Out</option>
+                    <option value="zoom2">Zoom Pop</option>
+                    <option value="checker2">Checkerboard Flash</option>
+                    <option value="orbit2">Orbit</option>
+                    <option value="ripple2">Ripple</option>
+                </optgroup>
+                <optgroup label="Effects3">
+                    <option value="spiralburst3">Spiral Burst 3</option>
+                    <option value="pulse3">Tile Pulse 3</option>
+                    <option value="twist3">Tile Twist 3</option>
+                    <option value="flash3">Tile Flash 3</option>
+                    <option value="orbit3">Tile Orbit 3</option>
+                    <option value="ripple3">Tile Ripple 3</option>
+                    <option value="bounce3">Tile Bounce 3</option>
+                    <option value="flip3">Tile Flip 3</option>
+                    <option value="scatter3">Tile Scatter 3</option>
+                    <option value="glow3">Tile Glow 3</option>
+                    <option value="checker3">Tile Checker 3</option>
+                    <option value="zoom3">Tile Zoom 3</option>
+                    <option value="fade3">Tile Fade 3</option>
+                    <option value="trail3">Tile Trail 3</option>
+                    <option value="rainbow3">Tile Rainbow 3</option>
+                    <option value="jitter3">Tile Jitter 3</option>
+                    <option value="diamond3">Tile Diamond 3</option>
+                    <option value="wave3">Tile Wave 3</option>
+                    <option value="spiral3">Tile Spiral 3</option>
+                    <option value="grid3">Tile Grid 3</option>
+                    <option value="fadetrail3">Tile Fade Trail 3</option>
+                    <option value="stackcascade3">Stack Cascade 3</option>
+                    <option value="stackwave3">Stack Wave 3</option>
+                    <option value="stackbounce3">Stack Bounce 3</option>
+                    <option value="stackspiral3">Stack Spiral 3</option>
+                    <option value="stackfadetrail3">Stack Fade Trail 3</option>
+                </optgroup>
+                <optgroup label="Effects4">
+                    <option value="slidein4">Tile Slide In</option>
+                    <option value="explode4">Tile Explode</option>
+                    <option value="swipe4">Tile Swipe</option>
+                    <option value="curtain4">Tile Curtain</option>
+                    <option value="vortex4">Tile Vortex</option>
+                </optgroup>
+            </select>
+            <button id="makeMosaic">Make Mosaic</button>
+            <button id="exportGif">Export GIF</button>
+        </div>
+        <div class="preview">
+            <canvas id="mosaicCanvas" width="1200" height="1200"></canvas>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/gif.js.optimized/dist/gif.js"></script>
+    <script type="module">
+    import { setupEffects, applyAnimatedArtEffect } from './effects.js';
+    import { setupEffects2, applyAnimatedArtEffect2 } from './effects2.js';
+    import { setupEffects3, applyAnimatedArtEffect3 } from './effects3.js';
+    import { setupEffects4, applyAnimatedArtEffect4 } from './effects4.js';
+
+    const imageInput = document.getElementById('imageInput');
+    const rowsInput = document.getElementById('rows');
+    const colsInput = document.getElementById('cols');
+    const makeMosaicBtn = document.getElementById('makeMosaic');
+    const canvas = document.getElementById('mosaicCanvas');
+    const ctx = canvas.getContext('2d');
+    const effectSelect = document.getElementById('effectSelect');
+    let images = [];
+    let animationFrameId = null;
+    let tiles = [];
+
+    // Setup effects with dependencies (after variables are defined)
+    setupEffects({ ctx, canvas, tiles });
+    setupEffects2({ ctx, canvas, tiles });
+    setupEffects3({ ctx, canvas, tiles });
+    setupEffects4({ ctx, canvas, tiles });
+
+        imageInput.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files);
+            images = [];
+            let loaded = 0;
+            if (files.length === 0) return;
+            files.forEach((file, idx) => {
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    const img = new Image();
+                    img.onload = function() {
+                        images[idx] = img;
+                        loaded++;
+                        if (loaded === files.length) {
+                            drawPreview();
+                        }
+                    };
+                    img.src = ev.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        });
+
+        function drawPreview() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (images.length === 0) return;
+            // Center first image in canvas
+            let img = images[0];
+            let scale = Math.min(canvas.width / img.width, canvas.height / img.height);
+            let w = img.width * scale;
+            let h = img.height * scale;
+            let x = (canvas.width - w) / 2;
+            let y = (canvas.height - h) / 2;
+            ctx.drawImage(img, x, y, w, h);
+        }
+
+        function stopAnimation() {
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+        }
+        makeMosaicBtn.addEventListener('click', () => {
+            stopAnimation();
+            if (images.length === 0) return;
+            const rows = parseInt(rowsInput.value);
+            const cols = parseInt(colsInput.value);
+            const effect = effectSelect.value;
+            makeMosaic(images, rows, cols);
+            if (["shimmer","drop","spin","fade","wobble","wave","pulse","twist","scatter","flip","bounce","flash","checker","zoom","slide","swirl","grow","shrink","diamond"].includes(effect)) {
+                if (typeof applyAnimatedArtEffect === "function") {
+                    applyAnimatedArtEffect(effect);
+                } else {
+                    console.error("applyAnimatedArtEffect is not a function or not imported correctly.");
+                }
+            } else if (["swirl2","fade2","zoom2","checker2","orbit2","ripple2","rainbow2","jitter2","shrinkgrow2","trail2","popcorn2"].includes(effect)) {
+                applyAnimatedArtEffect2(effect);
+            } else if (["spiralburst3","pulse3","twist3","flash3","orbit3","ripple3","bounce3","flip3","scatter3","glow3","checker3","zoom3","fade3","trail3","rainbow3","jitter3","diamond3","wave3","spiral3","grid3","fadetrail3","stackcascade3","stackwave3","stackbounce3","stackspiral3","stackfadetrail3"].includes(effect)) {
+                applyAnimatedArtEffect3(effect);
+            } else if (["slidein4","explode4","swipe4","curtain4","vortex4"].includes(effect)) {
+                applyAnimatedArtEffect4(effect);
+            }
+        });
+
+        // Store tile info for per-tile animation
+        function makeMosaic(imagesArr, rows, cols) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            tiles.length = 0;
+            let refImg = imagesArr[0];
+            let scale = Math.min(canvas.width / refImg.width, canvas.height / refImg.height);
+            let w = refImg.width * scale;
+            let h = refImg.height * scale;
+            let x = (canvas.width - w) / 2;
+            let y = (canvas.height - h) / 2;
+            let cellW = w / cols;
+            let cellH = h / rows;
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    let img = imagesArr[Math.floor(Math.random() * imagesArr.length)];
+                    tiles.push({
+                        img,
+                        baseX: x + c * cellW,
+                        baseY: y + r * cellH,
+                        cellW,
+                        cellH,
+                        row: r,
+                        col: c
+                    });
+                }
+            }
+        }
+    </script>
+</body>
+</html>
