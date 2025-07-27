@@ -29,7 +29,194 @@ export function applyAnimatedArtEffect(effectName) {
     else if (effectName === "diamond") diamond();
 }
 
-// 1. Tile Flash (tiles flash white then fade back)
+// 1. Shimmer
+function shimmer() {
+    let progress = 0;
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        tiles.forEach(tile => {
+            let alpha = 0.5 + 0.5 * Math.sin(progress * 4 + tile.row + tile.col);
+            ctx.save();
+            ctx.globalAlpha = alpha;
+            ctx.drawImage(tile.img, tile.baseX, tile.baseY, tile.cellW, tile.cellH);
+            ctx.restore();
+        });
+        progress += 0.04;
+        if (progress < 2.5) requestAnimationFrame(animate);
+    }
+    animate();
+}
+
+// 2. Drop
+function drop() {
+    let progress = 0;
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        tiles.forEach(tile => {
+            let t = Math.abs(Math.sin(progress * 2 + tile.row * 0.2 + tile.col * 0.2));
+            let y = tile.baseY + t * 30;
+            ctx.drawImage(tile.img, tile.baseX, y, tile.cellW, tile.cellH);
+        });
+        progress += 0.04;
+        if (progress < 2.5) requestAnimationFrame(animate);
+    }
+    animate();
+}
+
+// 3. Spin
+function spin() {
+    let progress = 0;
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        tiles.forEach(tile => {
+            let angle = progress * 2 * Math.PI + (tile.row + tile.col) * 0.1;
+            ctx.save();
+            ctx.translate(tile.baseX + tile.cellW/2, tile.baseY + tile.cellH/2);
+            ctx.rotate(angle);
+            ctx.drawImage(tile.img, -tile.cellW/2, -tile.cellH/2, tile.cellW, tile.cellH);
+            ctx.restore();
+        });
+        progress += 0.04;
+        if (progress < 2.5) requestAnimationFrame(animate);
+    }
+    animate();
+}
+
+// 4. Fade
+function fade() {
+    let progress = 0;
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        tiles.forEach(tile => {
+            let alpha = 0.5 + 0.5 * Math.sin(progress * 2 + tile.row + tile.col);
+            ctx.save();
+            ctx.globalAlpha = alpha;
+            ctx.drawImage(tile.img, tile.baseX, tile.baseY, tile.cellW, tile.cellH);
+            ctx.restore();
+        });
+        progress += 0.04;
+        if (progress < 2.5) requestAnimationFrame(animate);
+    }
+    animate();
+}
+
+// 5. Wobble
+function wobble() {
+    let progress = 0;
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        tiles.forEach(tile => {
+            let dx = Math.sin(progress * 6 + tile.row) * 8;
+            let dy = Math.cos(progress * 6 + tile.col) * 8;
+            ctx.drawImage(tile.img, tile.baseX + dx, tile.baseY + dy, tile.cellW, tile.cellH);
+        });
+        progress += 0.04;
+        if (progress < 2.5) requestAnimationFrame(animate);
+    }
+    animate();
+}
+
+// 6. Wave
+function wave() {
+    let progress = 0;
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        tiles.forEach(tile => {
+            let y = tile.baseY + Math.sin(progress * 2 + tile.col * 0.5) * 20;
+            ctx.drawImage(tile.img, tile.baseX, y, tile.cellW, tile.cellH);
+        });
+        progress += 0.04;
+        if (progress < 2.5) requestAnimationFrame(animate);
+    }
+    animate();
+}
+
+// 7. Pulse
+function pulse() {
+    let progress = 0;
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        tiles.forEach(tile => {
+            let scale = 0.8 + 0.2 * Math.sin(progress * 4 + tile.row + tile.col);
+            let x = tile.baseX + tile.cellW/2 - tile.cellW*scale/2;
+            let y = tile.baseY + tile.cellH/2 - tile.cellH*scale/2;
+            ctx.drawImage(tile.img, x, y, tile.cellW*scale, tile.cellH*scale);
+        });
+        progress += 0.04;
+        if (progress < 2.5) requestAnimationFrame(animate);
+    }
+    animate();
+}
+
+// 8. Twist
+function twist() {
+    let progress = 0;
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        tiles.forEach(tile => {
+            let angle = Math.sin(progress * 2 + tile.row + tile.col) * Math.PI/4;
+            ctx.save();
+            ctx.translate(tile.baseX + tile.cellW/2, tile.baseY + tile.cellH/2);
+            ctx.rotate(angle);
+            ctx.drawImage(tile.img, -tile.cellW/2, -tile.cellH/2, tile.cellW, tile.cellH);
+            ctx.restore();
+        });
+        progress += 0.04;
+        if (progress < 2.5) requestAnimationFrame(animate);
+    }
+    animate();
+}
+
+// 9. Scatter
+function scatter() {
+    let progress = 0;
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        tiles.forEach(tile => {
+            let dx = Math.sin(progress * 2 + tile.row) * 20;
+            let dy = Math.cos(progress * 2 + tile.col) * 20;
+            ctx.drawImage(tile.img, tile.baseX + dx, tile.baseY + dy, tile.cellW, tile.cellH);
+        });
+        progress += 0.04;
+        if (progress < 2.5) requestAnimationFrame(animate);
+    }
+    animate();
+}
+
+// 10. Flip
+function flip() {
+    let progress = 0;
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        tiles.forEach(tile => {
+            let scaleX = Math.sin(progress * 4 + tile.row + tile.col);
+            ctx.save();
+            ctx.translate(tile.baseX + tile.cellW/2, tile.baseY + tile.cellH/2);
+            ctx.scale(scaleX, 1);
+            ctx.drawImage(tile.img, -tile.cellW/2, -tile.cellH/2, tile.cellW, tile.cellH);
+            ctx.restore();
+        });
+        progress += 0.04;
+        if (progress < 2.5) requestAnimationFrame(animate);
+    }
+    animate();
+}
+
+// 11. Bounce
+function bounce() {
+    let progress = 0;
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        tiles.forEach(tile => {
+            let y = tile.baseY + Math.abs(Math.sin(progress * 4 + tile.row + tile.col)) * 30;
+            ctx.drawImage(tile.img, tile.baseX, y, tile.cellW, tile.cellH);
+        });
+        progress += 0.04;
+        if (progress < 2.5) requestAnimationFrame(animate);
+    }
+    animate();
+}
+// 12. Flash
 function flash() {
     let progress = 0;
     function animate() {
@@ -49,8 +236,7 @@ function flash() {
     }
     animate();
 }
-
-// 2. Tile Checker (checkerboard pattern fade)
+// 13. Checker
 function checker() {
     let progress = 0;
     function animate() {
@@ -67,8 +253,7 @@ function checker() {
     }
     animate();
 }
-
-// 3. Tile Zoom (tiles zoom in from center)
+// 14. Zoom
 function zoom() {
     let progress = 0;
     let cx = canvas.width/2, cy = canvas.height/2;
@@ -88,8 +273,7 @@ function zoom() {
     }
     animate();
 }
-
-// 4. Tile Slide (tiles slide in from left)
+// 15. Slide
 function slide() {
     let progress = 0;
     function animate() {
@@ -104,8 +288,7 @@ function slide() {
     }
     animate();
 }
-
-// 5. Tile Swirl (tiles rotate in place)
+// 16. Swirl
 function swirl() {
     let progress = 0;
     function animate() {
@@ -124,8 +307,7 @@ function swirl() {
     }
     animate();
 }
-
-// 6. Tile Grow (tiles grow from small to full size)
+// 17. Grow
 function grow() {
     let progress = 0;
     function animate() {
@@ -142,8 +324,7 @@ function grow() {
     }
     animate();
 }
-
-// 7. Tile Shrink (tiles shrink to center)
+// 18. Shrink
 function shrink() {
     let progress = 0;
     function animate() {
@@ -160,8 +341,7 @@ function shrink() {
     }
     animate();
 }
-
-// 8. Tile Diamond (tiles move in diamond pattern)
+// 19. Diamond
 function diamond() {
     let progress = 0;
     let cx = canvas.width/2, cy = canvas.height/2;

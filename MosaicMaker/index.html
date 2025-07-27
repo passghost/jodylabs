@@ -304,7 +304,11 @@
             } else if (["swirl2","fade2","zoom2","checker2","orbit2","ripple2","rainbow2","jitter2","shrinkgrow2","trail2","popcorn2"].includes(effect)) {
                 applyAnimatedArtEffect2(effect);
             } else if (["spiralburst3","pulse3","twist3","flash3","orbit3","ripple3","bounce3","flip3","scatter3","glow3","checker3","zoom3","fade3","trail3","rainbow3","jitter3","diamond3","wave3","spiral3","grid3","fadetrail3","stackcascade3","stackwave3","stackbounce3","stackspiral3","stackfadetrail3"].includes(effect)) {
-                applyAnimatedArtEffect3(effect);
+                if (typeof applyAnimatedArtEffect3 === "function") {
+                    applyAnimatedArtEffect3(effect);
+                } else {
+                    console.error("applyAnimatedArtEffect3 is not a function or not imported correctly.");
+                }
             } else if (["slidein4","explode4","swipe4","curtain4","vortex4"].includes(effect)) {
                 applyAnimatedArtEffect4(effect);
             }
