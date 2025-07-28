@@ -4,59 +4,74 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
 // On game start, show only the top 5 high scores in the UI
-if (window.getHighScores) {
-    window.getHighScores().then(scores => {
-        // Always show only the top 5 scores
-        if (!Array.isArray(scores)) {
-            console.error('[DEBUG] getHighScores did not return an array:', scores);
-            return;
-        }
-        // Filter out zero scores
-        const nonZeroScores = scores.filter(s => s.score > 0);
-        // Remove duplicate usernames, keep highest score per user
-        const uniqueScores = Object.values(nonZeroScores.reduce((acc, s) => {
-            if (!acc[s.username] || acc[s.username].score < s.score) {
-                acc[s.username] = s;
+function updateHighScoreUIAndCleanup() {
+    if (window.getHighScores) {
+        window.getHighScores().then(scores => {
+            // Always show only the top 5 scores
+            if (!Array.isArray(scores)) {
+                console.error('[DEBUG] getHighScores did not return an array:', scores);
+                return;
             }
-            return acc;
-        }, {}));
-        // Sort and take top 5
-        const top5 = uniqueScores.sort((a, b) => b.score - a.score).slice(0, 5);
-        const hsUi = document.getElementById('highscore-ui');
-        if (hsUi) {
-            let lines = top5.map(s => `${s.username}: ${s.score}`);
-            while (lines.length < 5) lines.push('&nbsp;');
-            hsUi.innerHTML = '<b>High Scores:</b><br>' + lines.join('<br>');
-        }
-        // Delete any scores not in top 5 (run only once on game start)
-        if (window.deleteHighScore && !window._highScoreCleanupDone) {
-            window._highScoreCleanupDone = true;
-            const top5Keys = new Set(top5.map(s => s.username + ':' + s.score));
-            const deletions = [];
-            for (const s of uniqueScores) {
-                const key = s.username + ':' + s.score;
-                if (!top5Keys.has(key)) {
-                    try {
-                        const del = window.deleteHighScore(s.username, s.score);
-                        if (del && typeof del.then === 'function') {
-                            deletions.push(del.catch(err => console.error('[DEBUG] Error deleting score:', s, err)));
+            // Filter out zero scores
+            const nonZeroScores = scores.filter(s => s.score > 0);
+            // Remove duplicate usernames, keep highest score per user
+            const uniqueScores = Object.values(nonZeroScores.reduce((acc, s) => {
+                if (!acc[s.username] || acc[s.username].score < s.score) {
+                    acc[s.username] = s;
+                }
+                return acc;
+            }, {}));
+            // Sort and take top 5
+            const top5 = uniqueScores.sort((a, b) => b.score - a.score).slice(0, 5);
+            const hsUi = document.getElementById('highscore-ui');
+            if (hsUi) {
+                let lines = top5.map(s => `${s.username}: ${s.score}`);
+                while (lines.length < 5) lines.push('&nbsp;');
+                hsUi.innerHTML = '<b>High Scores:</b><br>' + lines.join('<br>');
+            }
+            // Delete any scores not in top 5 (run only once on game start)
+            if (window.deleteHighScore && !window._highScoreCleanupDone) {
+                window._highScoreCleanupDone = true;
+                console.log('[DEBUG] typeof window.deleteHighScore:', typeof window.deleteHighScore);
+                const top5Keys = new Set(top5.map(s => s.username + ':' + s.score));
+                const deletions = [];
+                for (const s of uniqueScores) {
+                    const key = s.username + ':' + s.score;
+                    if (!top5Keys.has(key)) {
+                        try {
+                            console.log('[DEBUG] Attempting to delete score:', s);
+                            const del = window.deleteHighScore(s.username, s.score);
+                            console.log('[DEBUG] deleteHighScore return value:', del);
+                            if (del && typeof del.then === 'function') {
+                                deletions.push(del.catch(err => console.error('[DEBUG] Error deleting score:', s, err)));
+                            } else {
+                                console.log('[DEBUG] deleteHighScore is not a Promise for:', s);
+                            }
+                        } catch (err) {
+                            console.error('[DEBUG] Error deleting score:', s, err);
                         }
-                    } catch (err) {
-                        console.error('[DEBUG] Error deleting score:', s, err);
                     }
                 }
+                if (deletions.length) {
+                    Promise.all(deletions).then(() => {
+                        console.log('[DEBUG] High score cleanup complete.');
+                    });
+                } else {
+                    console.log('[DEBUG] No deletions were queued.');
+                }
             }
-            if (deletions.length) {
-                Promise.all(deletions).then(() => {
-                    console.log('[DEBUG] High score cleanup complete.');
-                });
-            }
-        }
-    }).catch(err => {
-        console.error('[DEBUG] Error updating high score UI:', err);
-    });
+        }).catch(err => {
+            console.error('[DEBUG] Error updating high score UI:', err);
+        });
+    } else {
+        console.warn('[DEBUG] High score API not available. window.getHighScores:', window.getHighScores);
+    }
+}
+
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    setTimeout(updateHighScoreUIAndCleanup, 0);
 } else {
-    console.warn('[DEBUG] High score API not available. window.getHighScores:', window.getHighScores);
+    window.addEventListener('load', updateHighScoreUIAndCleanup);
 }
 
 // Game constants
