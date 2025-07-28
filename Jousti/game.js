@@ -173,7 +173,7 @@ spawnEnemies();
 
     // Animate wing flap
     if (player.flapAnim > 0) player.flapAnim--;
-}
+
 
 
 function updateEnemy(enemy) {
