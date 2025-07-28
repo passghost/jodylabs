@@ -6,29 +6,51 @@ const ctx = canvas.getContext('2d');
 // On game start, show only the top 5 high scores in the UI
 if (window.getHighScores) {
     window.getHighScores().then(scores => {
-        console.log('[DEBUG] Full scores from database:', scores);
+        // Always show only the top 5 scores
         if (!Array.isArray(scores)) {
             console.error('[DEBUG] getHighScores did not return an array:', scores);
             return;
         }
-        // Step 1: Filter out zero scores first
+        // Filter out zero scores
         const nonZeroScores = scores.filter(s => s.score > 0);
-        // Step 2: Remove duplicate usernames, keep highest score per user
+        // Remove duplicate usernames, keep highest score per user
         const uniqueScores = Object.values(nonZeroScores.reduce((acc, s) => {
             if (!acc[s.username] || acc[s.username].score < s.score) {
                 acc[s.username] = s;
             }
             return acc;
         }, {}));
-        // Step 3: Sort and take top 5
+        // Sort and take top 5
         const top5 = uniqueScores.sort((a, b) => b.score - a.score).slice(0, 5);
-        console.log('[DEBUG] Top 5 scores for display:', top5);
         const hsUi = document.getElementById('highscore-ui');
         if (hsUi) {
-            // Always show exactly 5 lines, fill with blanks if needed
             let lines = top5.map(s => `${s.username}: ${s.score}`);
             while (lines.length < 5) lines.push('&nbsp;');
             hsUi.innerHTML = '<b>High Scores:</b><br>' + lines.join('<br>');
+        }
+        // Delete any scores not in top 5 (run only once on game start)
+        if (window.deleteHighScore && !window._highScoreCleanupDone) {
+            window._highScoreCleanupDone = true;
+            const top5Keys = new Set(top5.map(s => s.username + ':' + s.score));
+            const deletions = [];
+            for (const s of uniqueScores) {
+                const key = s.username + ':' + s.score;
+                if (!top5Keys.has(key)) {
+                    try {
+                        const del = window.deleteHighScore(s.username, s.score);
+                        if (del && typeof del.then === 'function') {
+                            deletions.push(del.catch(err => console.error('[DEBUG] Error deleting score:', s, err)));
+                        }
+                    } catch (err) {
+                        console.error('[DEBUG] Error deleting score:', s, err);
+                    }
+                }
+            }
+            if (deletions.length) {
+                Promise.all(deletions).then(() => {
+                    console.log('[DEBUG] High score cleanup complete.');
+                });
+            }
         }
     }).catch(err => {
         console.error('[DEBUG] Error updating high score UI:', err);
@@ -371,52 +393,72 @@ function checkPlayerEnemyCollision() {
         // Prevent multiple prompts
         if (window.gameOverActive) return;
         window.gameOverActive = true;
-        // Store score before resetting
         const finalScore = player.score;
-        // Show high score prompt asynchronously
-        setTimeout(() => {
-            // Disable controls before prompt
-            window.removeEventListener('keydown', handleKeyDown);
-            window.removeEventListener('keyup', handleKeyUp);
-            let username = window.prompt('Game Over! Enter your name for the high score:');
-            // Only save non-zero scores
-            if (username && window.saveHighScore && finalScore > 0) {
-                window.saveHighScore(username, finalScore).then(() => {
-                    window.getHighScores().then(scores => {
-                        // Filter out zero scores
-                        const nonZeroScores = scores.filter(s => s.score > 0);
-                        // Remove duplicate usernames, keep highest score per user
-                        const uniqueScores = Object.values(nonZeroScores.reduce((acc, s) => {
-                            if (!acc[s.username] || acc[s.username].score < s.score) {
-                                acc[s.username] = s;
-                            }
-                            return acc;
-                        }, {}));
-                        // Sort and take top 5
-                        const top5 = uniqueScores.sort((a, b) => b.score - a.score).slice(0, 5);
-                        const hsUi = document.getElementById('highscore-ui');
-                        if (hsUi) {
-                            // Always show exactly 5 lines, fill with blanks if needed
-                            let lines = top5.map(s => `${s.username}: ${s.score}`);
-                            while (lines.length < 5) lines.push('&nbsp;');
-                            hsUi.innerHTML = '<b>High Scores:</b><br>' + lines.join('<br>');
-                        }
-                    });
-                });
+        // Check if score qualifies for top 5 before prompting
+        window.getHighScores().then(scores => {
+            if (!Array.isArray(scores)) scores = [];
+            const nonZeroScores = scores.filter(s => s.score > 0);
+            const uniqueScores = Object.values(nonZeroScores.reduce((acc, s) => {
+                if (!acc[s.username] || acc[s.username].score < s.score) {
+                    acc[s.username] = s;
+                }
+                return acc;
+            }, {}));
+            const top5 = uniqueScores.sort((a, b) => b.score - a.score).slice(0, 5);
+            let qualifies = false;
+            if (finalScore > 0) {
+                if (top5.length < 5) {
+                    qualifies = true;
+                } else {
+                    const lowestScore = top5[top5.length - 1].score;
+                    if (finalScore > lowestScore) qualifies = true;
+                }
             }
-            // Re-enable controls after prompt
-            window.addEventListener('keydown', handleKeyDown);
-            window.addEventListener('keyup', handleKeyUp);
-            // Now reset game state AFTER high score prompt
-            player.lives = 2;
-            level = 1;
-            ENEMY_COUNT = Math.floor(Math.random() * 3) + 1; // 1-3 enemies
-            randomizePlatforms();
-            spawnEnemies();
-            resetPlayer();
-            player.score = 0;
-            window.gameOverActive = false;
-        }, 100);
+            setTimeout(() => {
+                window.removeEventListener('keydown', handleKeyDown);
+                window.removeEventListener('keyup', handleKeyUp);
+                if (qualifies && window.saveHighScore) {
+                    let username = window.prompt('Game Over! Enter your name for the high score:');
+                    if (username) {
+                        window.saveHighScore(username, finalScore).then(() => {
+                            window.getHighScores().then(scores => {
+                                // Always show only the top 5 scores
+                                if (!Array.isArray(scores)) {
+                                    console.error('[DEBUG] getHighScores did not return an array:', scores);
+                                    return;
+                                }
+                                const nonZeroScores = scores.filter(s => s.score > 0);
+                                const uniqueScores = Object.values(nonZeroScores.reduce((acc, s) => {
+                                    if (!acc[s.username] || acc[s.username].score < s.score) {
+                                        acc[s.username] = s;
+                                    }
+                                    return acc;
+                                }, {}));
+                                const top5 = uniqueScores.sort((a, b) => b.score - a.score).slice(0, 5);
+                                const hsUi = document.getElementById('highscore-ui');
+                                if (hsUi) {
+                                    let lines = top5.map(s => `${s.username}: ${s.score}`);
+                                    while (lines.length < 5) lines.push('&nbsp;');
+                                    hsUi.innerHTML = '<b>High Scores:</b><br>' + lines.join('<br>');
+                                }
+                            });
+                        });
+                    }
+                }
+                // Re-enable controls after prompt or skip
+                window.addEventListener('keydown', handleKeyDown);
+                window.addEventListener('keyup', handleKeyUp);
+                // Now reset game state AFTER high score prompt or skip
+                player.lives = 2;
+                level = 1;
+                ENEMY_COUNT = Math.floor(Math.random() * 3) + 1; // 1-3 enemies
+                randomizePlatforms();
+                spawnEnemies();
+                resetPlayer();
+                player.score = 0;
+                window.gameOverActive = false;
+            }, 100);
+        });
     } else if (playerKilled && player.lives >= 0) {
         // Player loses a life, but NOT game over: only reset player position and score
         player.score = 0;
