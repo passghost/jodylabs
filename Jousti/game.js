@@ -14,15 +14,8 @@ function updateHighScoreUIAndCleanup() {
             }
             // Filter out zero scores
             const nonZeroScores = scores.filter(s => s.score > 0);
-            // Remove duplicate usernames, keep highest score per user
-            const uniqueScores = Object.values(nonZeroScores.reduce((acc, s) => {
-                if (!acc[s.username] || acc[s.username].score < s.score) {
-                    acc[s.username] = s;
-                }
-                return acc;
-            }, {}));
-            // Sort and take top 5
-            const top5 = uniqueScores.sort((a, b) => b.score - a.score).slice(0, 5);
+            // Allow double entries: do not filter duplicate usernames
+            const top5 = nonZeroScores.sort((a, b) => b.score - a.score).slice(0, 5);
             const hsUi = document.getElementById('highscore-ui');
             if (hsUi) {
                 let lines = top5.map(s => `${s.username}: ${s.score}`);
@@ -413,13 +406,7 @@ function checkPlayerEnemyCollision() {
         window.getHighScores().then(scores => {
             if (!Array.isArray(scores)) scores = [];
             const nonZeroScores = scores.filter(s => s.score > 0);
-            const uniqueScores = Object.values(nonZeroScores.reduce((acc, s) => {
-                if (!acc[s.username] || acc[s.username].score < s.score) {
-                    acc[s.username] = s;
-                }
-                return acc;
-            }, {}));
-            const top5 = uniqueScores.sort((a, b) => b.score - a.score).slice(0, 5);
+        const top5 = nonZeroScores.sort((a, b) => b.score - a.score).slice(0, 5);
             let qualifies = false;
             if (finalScore > 0) {
                 if (top5.length < 5) {
@@ -450,13 +437,7 @@ function checkPlayerEnemyCollision() {
                                     return;
                                 }
                                 const nonZeroScores = scores.filter(s => s.score > 0);
-                                const uniqueScores = Object.values(nonZeroScores.reduce((acc, s) => {
-                                    if (!acc[s.username] || acc[s.username].score < s.score) {
-                                        acc[s.username] = s;
-                                    }
-                                    return acc;
-                                }, {}));
-                                const top5 = uniqueScores.sort((a, b) => b.score - a.score).slice(0, 5);
+                            const top5 = nonZeroScores.sort((a, b) => b.score - a.score).slice(0, 5);
                                 const hsUi = document.getElementById('highscore-ui');
                                 if (hsUi) {
                                     let lines = top5.map(s => `${s.username}: ${s.score}`);
