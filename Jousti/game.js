@@ -426,7 +426,14 @@ function checkPlayerEnemyCollision() {
                     qualifies = true;
                 } else {
                     const lowestScore = top5[top5.length - 1].score;
-                    if (finalScore > lowestScore) qualifies = true;
+                    // Prompt if player's score is greater than the lowest, or if their score is equal but their username is not already in top5
+                    if (finalScore > lowestScore) {
+                        qualifies = true;
+                    } else if (finalScore === lowestScore) {
+                        // Check if username is not already in top5
+                        const inTop5 = top5.some(s => s.username === player.username);
+                        if (!inTop5) qualifies = true;
+                    }
                 }
             }
             setTimeout(() => {
