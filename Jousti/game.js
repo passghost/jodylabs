@@ -126,10 +126,9 @@ function spawnEnemies() {
     }
 }
 spawnEnemies();
-    }
-    // Clamp max speed
-    if (player.vx > PLAYER_SPEED) player.vx = PLAYER_SPEED;
-    if (player.vx < -PLAYER_SPEED) player.vx = -PLAYER_SPEED;
+// Clamp max speed
+if (player.vx > PLAYER_SPEED) player.vx = PLAYER_SPEED;
+if (player.vx < -PLAYER_SPEED) player.vx = -PLAYER_SPEED;
 
     // Flap mechanism: up to 3 jumps before landing
     if (player.flapCooldown > 0) player.flapCooldown--;
