@@ -28,7 +28,7 @@ function updateHighScoreUIAndCleanup() {
                 console.log('[DEBUG] typeof window.deleteHighScore:', typeof window.deleteHighScore);
                 const top5Keys = new Set(top5.map(s => s.username + ':' + s.score));
                 const deletions = [];
-                for (const s of uniqueScores) {
+                for (const s of nonZeroScores) {
                     const key = s.username + ':' + s.score;
                     if (!top5Keys.has(key)) {
                         try {
