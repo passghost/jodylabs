@@ -135,6 +135,8 @@ function spawnEnemies() {
     }
 }
 spawnEnemies();
+// Player update logic
+function updatePlayer() {
     // Clamp max speed
     if (player.vx > PLAYER_SPEED) player.vx = PLAYER_SPEED;
     if (player.vx < -PLAYER_SPEED) player.vx = -PLAYER_SPEED;
@@ -180,6 +182,7 @@ spawnEnemies();
 
     // Animate wing flap
     if (player.flapAnim > 0) player.flapAnim--;
+}
 }
 
 
