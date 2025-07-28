@@ -122,6 +122,199 @@ export const powerupTypes = [
     minLevel: 10
   },
   
+  // NEW WEAPONS
+  { 
+    type: 'shotgun', 
+    color: '#ff6600', 
+    effect: 'Combat Shotgun',
+    symbol: '▣',
+    duration: 12000,
+    rarity: 0.12,
+    minLevel: 2
+  },
+  { 
+    type: 'flamethrower', 
+    color: '#ff4400', 
+    effect: 'Flamethrower',
+    symbol: '🔥',
+    duration: 8000,
+    rarity: 0.08,
+    minLevel: 3
+  },
+  { 
+    type: 'freeze', 
+    color: '#00ccff', 
+    effect: 'Freeze Ray',
+    symbol: '❄',
+    duration: 10000,
+    rarity: 0.07,
+    minLevel: 4
+  },
+  { 
+    type: 'lightning', 
+    color: '#ffff88', 
+    effect: 'Chain Lightning',
+    symbol: '⚡',
+    duration: 9000,
+    rarity: 0.06,
+    minLevel: 5
+  },
+  { 
+    type: 'acid', 
+    color: '#88ff00', 
+    effect: 'Acid Launcher',
+    symbol: '☣',
+    duration: 11000,
+    rarity: 0.05,
+    minLevel: 6
+  },
+  { 
+    type: 'homing', 
+    color: '#ff00ff', 
+    effect: 'Smart Missiles',
+    symbol: '🎯',
+    duration: 13000,
+    rarity: 0.04,
+    minLevel: 7
+  },
+  { 
+    type: 'minigun', 
+    color: '#ffaa00', 
+    effect: 'Minigun',
+    symbol: '⚈',
+    duration: 10000,
+    rarity: 0.06,
+    minLevel: 5
+  },
+  { 
+    type: 'sniper', 
+    color: '#00ff00', 
+    effect: 'Sniper Rifle',
+    symbol: '◎',
+    duration: 15000,
+    rarity: 0.03,
+    minLevel: 8
+  },
+  { 
+    type: 'bouncer', 
+    color: '#ff8800', 
+    effect: 'Bouncing Balls',
+    symbol: '◐',
+    duration: 12000,
+    rarity: 0.05,
+    minLevel: 6
+  },
+  
+  // NEW POWERUP VARIATIONS FOR HARDER LEVELS
+  { 
+    type: 'megahealth', 
+    color: '#ff0066', 
+    effect: 'Mega Health Pack',
+    symbol: '♥',
+    duration: 0,
+    rarity: 0.15,
+    minLevel: 3
+  },
+  { 
+    type: 'doubleammo', 
+    color: '#ffcc00', 
+    effect: 'Double Ammo Capacity',
+    symbol: '▣',
+    duration: 30000,
+    rarity: 0.12,
+    minLevel: 2
+  },
+  { 
+    type: 'rapidreload', 
+    color: '#00ff66', 
+    effect: 'Instant Reload',
+    symbol: '⚡',
+    duration: 20000,
+    rarity: 0.14,
+    minLevel: 2
+  },
+  { 
+    type: 'multishield', 
+    color: '#66ccff', 
+    effect: 'Multi-Layer Shield',
+    symbol: '⬢',
+    duration: 25000,
+    rarity: 0.08,
+    minLevel: 4
+  },
+  { 
+    type: 'berserker', 
+    color: '#ff3300', 
+    effect: 'Berserker Mode',
+    symbol: '💀',
+    duration: 15000,
+    rarity: 0.09,
+    minLevel: 5
+  },
+  { 
+    type: 'timeslow', 
+    color: '#9966ff', 
+    effect: 'Time Dilation',
+    symbol: '⏰',
+    duration: 12000,
+    rarity: 0.06,
+    minLevel: 6
+  },
+  { 
+    type: 'ghostmode', 
+    color: '#cccccc', 
+    effect: 'Ghost Mode',
+    symbol: '👻',
+    duration: 10000,
+    rarity: 0.05,
+    minLevel: 7
+  },
+  { 
+    type: 'magnetism', 
+    color: '#ff6699', 
+    effect: 'Magnetic Attraction',
+    symbol: '🧲',
+    duration: 20000,
+    rarity: 0.10,
+    minLevel: 3
+  },
+  { 
+    type: 'multishot', 
+    color: '#ffaa66', 
+    effect: 'Multi-Shot Burst',
+    symbol: '※',
+    duration: 18000,
+    rarity: 0.11,
+    minLevel: 4
+  },
+  { 
+    type: 'regeneration', 
+    color: '#66ff99', 
+    effect: 'Health Regeneration',
+    symbol: '♻',
+    duration: 25000,
+    rarity: 0.07,
+    minLevel: 5
+  },
+  { 
+    type: 'invincible', 
+    color: '#ffff66', 
+    effect: 'Temporary Invincibility',
+    symbol: '⭐',
+    duration: 8000,
+    rarity: 0.03,
+    minLevel: 8
+  },
+  { 
+    type: 'airstrike', 
+    color: '#ff9933', 
+    effect: 'Orbital Strike',
+    symbol: '💥',
+    duration: 0,
+    rarity: 0.04,
+    minLevel: 6
+  },
+  
   // CHAOS POWERUP!
   { 
     type: 'chaos', 
@@ -129,7 +322,7 @@ export const powerupTypes = [
     effect: 'CHAOS EFFECT',
     symbol: '🎲',
     duration: 0,
-    rarity: 0.2,
+    rarity: 0.25, // Increased from 0.2
     minLevel: 1
   }
 ];

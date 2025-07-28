@@ -60,6 +60,24 @@
       letter-spacing: 3px;
     }
 
+    #title-enemy {
+      position: absolute;
+      top: 15px;
+      left: 50%;
+      width: 20px;
+      height: 20px;
+      z-index: 11;
+      pointer-events: none;
+      transform-origin: center;
+    }
+
+    .title-pixel {
+      position: absolute;
+      width: 3px;
+      height: 3px;
+      border-radius: 1px;
+    }
+
     @keyframes rainbow-flow {
 
       0%,
@@ -588,6 +606,7 @@
 
 <body>
   <div id="game-title">BATTLE TITS</div>
+  <div id="title-enemy"></div>
   <div id="game-ui">
     <div id="left-ui">
       <div id="health-bar"></div>
@@ -604,6 +623,27 @@
     <div id="right-ui">
       <div id="powerup-list"></div>
     </div>
+  </div>
+
+  <!-- Controls instruction -->
+  <div style="
+    width: 800px;
+    text-align: center;
+    margin-bottom: 10px;
+    font-family: 'Orbitron', monospace;
+    font-size: 12px;
+    color: #ffff00;
+    text-shadow: 0 0 8px #ffff00;
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.8), rgba(20, 20, 0, 0.8));
+    border: 1px solid #ffff00;
+    border-radius: 4px;
+    padding: 8px;
+    box-shadow: 0 0 10px rgba(255, 255, 0, 0.3);
+  ">
+    <span style="color: #00ff00;">P1: WASD + SPACE</span> | 
+    <span style="color: #0080ff;">P2: ARROWS + NUM0</span> | 
+    <span style="color: #ff8800;">PRESS P FOR PLAYER 2</span> | 
+    <span style="color: #ffffff;">ESC: PAUSE</span>
   </div>
 
   <div style="position:relative;width:800px;height:500px;">
@@ -635,39 +675,13 @@
     </div>
   </div>
 
-  <script type="module">
-    // Error logging for module imports
-    async function importWithErrorLogging() {
-      try {
-        await import('./bloodEffects.js');
-      } catch (e) {
-        const errDiv = document.createElement('div');
-        errDiv.style = 'position:fixed;top:0;left:0;width:100vw;background:#ff0000;color:#fff;padding:10px;z-index:99999;font-size:18px;font-family:monospace;';
-        errDiv.textContent = 'Error loading bloodEffects.js: ' + e;
-        document.body.appendChild(errDiv);
-        throw e;
-      }
-      try {
-        await import('./movement.js');
-      } catch (e) {
-        const errDiv = document.createElement('div');
-        errDiv.style = 'position:fixed;top:40px;left:0;width:100vw;background:#ff8000;color:#fff;padding:10px;z-index:99999;font-size:18px;font-family:monospace;';
-        errDiv.textContent = 'Error loading movement.js: ' + e;
-        document.body.appendChild(errDiv);
-        throw e;
-      }
-      try {
-        await import('./pixel-commando.js');
-      } catch (e) {
-        const errDiv = document.createElement('div');
-        errDiv.style = 'position:fixed;top:80px;left:0;width:100vw;background:#ff0080;color:#fff;padding:10px;z-index:99999;font-size:18px;font-family:monospace;';
-        errDiv.textContent = 'Error loading pixel-commando.js: ' + e;
-        document.body.appendChild(errDiv);
-        throw e;
-      }
-    }
-    importWithErrorLogging();
-  </script>
+  <!-- Supabase CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script type="module" src="./config.js"></script>
+  <script type="module" src="./highscores.js"></script>
+  <script type="module" src="./titleEnemy.js"></script>
+  <script type="module" src="./movement.js"></script>
 </body>
 
 </html>

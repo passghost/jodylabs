@@ -7,14 +7,27 @@ export const chaosEvents = [
       // Make player slide around AND change board to yellow!
       window.chaosSlippery = true;
       document.getElementById('game-area').style.background = 'linear-gradient(45deg, #ffff00, #ffaa00)';
-      // Spawn falling bananas!
-      for (let i = 0; i < 20; i++) {
-        setTimeout(() => spawnFallingBanana(), i * 200);
-      }
+      document.getElementById('game-area').style.animation = 'wiggle 0.5s infinite';
+      
+      // Continuous banana rain!
+      const bananaInterval = setInterval(() => {
+        if (window.chaosSlippery) {
+          for (let i = 0; i < 3; i++) {
+            setTimeout(() => spawnFallingBanana(), i * 100);
+          }
+        }
+      }, 800);
+      
+      // Make movement more chaotic
+      window.chaosSlipperyMultiplier = 2.5;
+      
       setTimeout(() => { 
         window.chaosSlippery = false;
+        window.chaosSlipperyMultiplier = 1;
+        clearInterval(bananaInterval);
         document.getElementById('game-area').style.background = 'linear-gradient(180deg, #2a4a2a 0%, #1a3a1a 50%, #0a2a0a 100%)';
-      }, 8000);
+        document.getElementById('game-area').style.animation = '';
+      }, 15000); // Longer duration!
     },
     rarity: 0.15
   },
@@ -42,16 +55,43 @@ export const chaosEvents = [
     message: '🐔 GIANT CHICKEN INVASION! BAWK BAWK! 🐔',
     effect: () => {
       window.chaosGiantChicken = true;
-      // Change board to farm theme!
+      // Change board to farm theme with animated sky!
       document.getElementById('game-area').style.background = 'linear-gradient(180deg, #87CEEB 0%, #90EE90 50%, #8B4513 100%)';
-      // Spawn ACTUAL CHICKEN ARMY!
-      for (let i = 0; i < 15; i++) {
-        setTimeout(() => spawnChickenRaider(), i * 300);
-      }
+      document.getElementById('game-area').style.backgroundSize = '200% 200%';
+      document.getElementById('game-area').style.animation = 'gradient-shift 3s ease infinite';
+      
+      // Continuous chicken waves!
+      const chickenWaves = setInterval(() => {
+        if (window.chaosGiantChicken) {
+          // Spawn chicken formations
+          for (let i = 0; i < 8; i++) {
+            setTimeout(() => spawnChickenRaider(), i * 150);
+          }
+          // Add some flying chickens too!
+          for (let i = 0; i < 3; i++) {
+            setTimeout(() => spawnFlyingChicken(), i * 400);
+          }
+        }
+      }, 2000);
+      
+      // Make enemies chicken-themed
+      window.chaosChickenTransform = true;
+      
+      // Add chicken sound effects (visual)
+      const bawkInterval = setInterval(() => {
+        if (window.chaosGiantChicken && Math.random() < 0.3) {
+          showChickenBawk();
+        }
+      }, 1500);
+      
       setTimeout(() => { 
         window.chaosGiantChicken = false;
+        window.chaosChickenTransform = false;
+        clearInterval(chickenWaves);
+        clearInterval(bawkInterval);
         document.getElementById('game-area').style.background = 'linear-gradient(180deg, #2a4a2a 0%, #1a3a1a 50%, #0a2a0a 100%)';
-      }, 12000);
+        document.getElementById('game-area').style.animation = '';
+      }, 20000); // Much longer chicken invasion!
     },
     rarity: 0.08
   },
@@ -351,6 +391,151 @@ export const chaosEvents = [
       }, 10000);
     },
     rarity: 0.015
+  },
+  {
+    name: 'PIZZA PARTY',
+    message: '🍕 PIZZA PARTY MODE! CHEESY CHAOS! 🍕',
+    effect: () => {
+      window.chaosPizzaParty = true;
+      document.getElementById('game-area').style.background = 'linear-gradient(45deg, #ff6b35 0%, #f7931e 25%, #ffd700 50%, #ff6b35 75%, #f7931e 100%)';
+      
+      // Rain pizzas from the sky!
+      const pizzaInterval = setInterval(() => {
+        if (window.chaosPizzaParty) {
+          for (let i = 0; i < 4; i++) {
+            setTimeout(() => spawnFallingPizza(), i * 200);
+          }
+        }
+      }, 1000);
+      
+      // Make everything pizza-themed
+      window.chaosPizzaTheme = true;
+      
+      setTimeout(() => { 
+        window.chaosPizzaParty = false;
+        window.chaosPizzaTheme = false;
+        clearInterval(pizzaInterval);
+        document.getElementById('game-area').style.background = 'linear-gradient(180deg, #2a4a2a 0%, #1a3a1a 50%, #0a2a0a 100%)';
+      }, 18000);
+    },
+    rarity: 0.09
+  },
+  {
+    name: 'ROBOT UPRISING',
+    message: '🤖 ROBOT UPRISING! BEEP BOOP CHAOS! 🤖',
+    effect: () => {
+      window.chaosRobotUprising = true;
+      document.getElementById('game-area').style.background = 'linear-gradient(180deg, #2c3e50 0%, #34495e 50%, #2c3e50 100%)';
+      document.getElementById('game-area').style.filter = 'contrast(1.2) brightness(0.9)';
+      
+      // Spawn robot effects
+      const robotInterval = setInterval(() => {
+        if (window.chaosRobotUprising) {
+          spawnRobotGlitch();
+          if (Math.random() < 0.3) spawnBinaryRain();
+        }
+      }, 800);
+      
+      // Make enemies more robotic
+      window.chaosRobotTransform = true;
+      
+      setTimeout(() => { 
+        window.chaosRobotUprising = false;
+        window.chaosRobotTransform = false;
+        clearInterval(robotInterval);
+        document.getElementById('game-area').style.background = 'linear-gradient(180deg, #2a4a2a 0%, #1a3a1a 50%, #0a2a0a 100%)';
+        document.getElementById('game-area').style.filter = '';
+      }, 16000);
+    },
+    rarity: 0.07
+  },
+  {
+    name: 'MEDIEVAL MADNESS',
+    message: '⚔️ MEDIEVAL TIMES! KNIGHTS AND DRAGONS! ⚔️',
+    effect: () => {
+      window.chaosMedievalMode = true;
+      document.getElementById('game-area').style.background = 'linear-gradient(180deg, #8B4513 0%, #A0522D 25%, #228B22 50%, #8B4513 100%)';
+      document.getElementById('game-area').style.filter = 'sepia(0.3)';
+      
+      // Spawn medieval effects
+      const medievalInterval = setInterval(() => {
+        if (window.chaosMedievalMode) {
+          if (Math.random() < 0.4) spawnCastle();
+          if (Math.random() < 0.6) spawnDragon();
+        }
+      }, 2000);
+      
+      // Transform weapons to medieval
+      window.chaosMedievalWeapons = true;
+      
+      setTimeout(() => { 
+        window.chaosMedievalMode = false;
+        window.chaosMedievalWeapons = false;
+        clearInterval(medievalInterval);
+        document.getElementById('game-area').style.background = 'linear-gradient(180deg, #2a4a2a 0%, #1a3a1a 50%, #0a2a0a 100%)';
+        document.getElementById('game-area').style.filter = '';
+      }, 14000);
+    },
+    rarity: 0.06
+  },
+  {
+    name: 'JUNGLE FEVER',
+    message: '🌴 JUNGLE EXPEDITION! WILD ADVENTURE! 🌴',
+    effect: () => {
+      window.chaosJungleMode = true;
+      document.getElementById('game-area').style.background = 'linear-gradient(180deg, #228B22 0%, #32CD32 25%, #006400 50%, #228B22 100%)';
+      document.getElementById('game-area').style.filter = 'saturate(1.5) brightness(1.1)';
+      
+      // Spawn jungle creatures
+      const jungleInterval = setInterval(() => {
+        if (window.chaosJungleMode) {
+          if (Math.random() < 0.5) spawnJungleAnimal();
+          if (Math.random() < 0.3) spawnVines();
+        }
+      }, 1200);
+      
+      // Add jungle sounds (visual)
+      window.chaosJungleSounds = true;
+      
+      setTimeout(() => { 
+        window.chaosJungleMode = false;
+        window.chaosJungleSounds = false;
+        clearInterval(jungleInterval);
+        document.getElementById('game-area').style.background = 'linear-gradient(180deg, #2a4a2a 0%, #1a3a1a 50%, #0a2a0a 100%)';
+        document.getElementById('game-area').style.filter = '';
+      }, 17000);
+    },
+    rarity: 0.08
+  },
+  {
+    name: 'WINTER WONDERLAND',
+    message: '❄️ WINTER WONDERLAND! FROZEN BATTLEFIELD! ❄️',
+    effect: () => {
+      window.chaosWinterMode = true;
+      document.getElementById('game-area').style.background = 'linear-gradient(180deg, #E6E6FA 0%, #F0F8FF 25%, #FFFFFF 50%, #E6E6FA 100%)';
+      document.getElementById('game-area').style.filter = 'brightness(1.2) contrast(0.9)';
+      
+      // Continuous snowfall
+      const snowInterval = setInterval(() => {
+        if (window.chaosWinterMode) {
+          for (let i = 0; i < 6; i++) {
+            setTimeout(() => spawnSnowflake(), i * 100);
+          }
+        }
+      }, 600);
+      
+      // Freeze effects
+      window.chaosIceEffects = true;
+      
+      setTimeout(() => { 
+        window.chaosWinterMode = false;
+        window.chaosIceEffects = false;
+        clearInterval(snowInterval);
+        document.getElementById('game-area').style.background = 'linear-gradient(180deg, #2a4a2a 0%, #1a3a1a 50%, #0a2a0a 100%)';
+        document.getElementById('game-area').style.filter = '';
+      }, 19000);
+    },
+    rarity: 0.07
   }
 ];
 
@@ -393,7 +578,7 @@ export const randomMessages = [
 ];
 
 export function triggerChaosEvent() {
-  if (Math.random() < 0.35) { // 35% chance per level for more variety
+  if (Math.random() < 0.55) { // 55% chance per level for MORE CHAOS!
     const event = chaosEvents[Math.floor(Math.random() * chaosEvents.length)];
     showChaosMessage(event.message);
     event.effect();
@@ -473,16 +658,24 @@ export function spawnChickenRaider() {
   chicken.style.position = 'absolute';
   chicken.style.left = (800 + Math.random() * 100) + 'px'; // Start from right
   chicken.style.top = (Math.random() * 400) + 'px';
-  chicken.style.fontSize = '35px';
+  chicken.style.fontSize = (25 + Math.random() * 20) + 'px'; // Varied sizes!
   chicken.style.zIndex = '9999';
   chicken.textContent = '🐔';
   chicken.style.animation = 'chicken-march 8s linear';
+  chicken.style.filter = `hue-rotate(${Math.random() * 60}deg)`; // Color variety
   document.getElementById('game-area').appendChild(chicken);
   
-  // Make chickens move left across screen
+  // Make chickens move left across screen with varied speeds
+  const speed = 1 + Math.random() * 3;
   const moveInterval = setInterval(() => {
     const currentLeft = parseInt(chicken.style.left);
-    chicken.style.left = (currentLeft - 2) + 'px';
+    chicken.style.left = (currentLeft - speed) + 'px';
+    
+    // Random direction changes
+    if (Math.random() < 0.05) {
+      const currentTop = parseInt(chicken.style.top);
+      chicken.style.top = Math.max(0, Math.min(450, currentTop + (Math.random() - 0.5) * 40)) + 'px';
+    }
     
     if (currentLeft < -50) {
       clearInterval(moveInterval);
@@ -493,7 +686,43 @@ export function spawnChickenRaider() {
   setTimeout(() => {
     clearInterval(moveInterval);
     if (chicken.parentNode) chicken.parentNode.removeChild(chicken);
-  }, 8000);
+  }, 12000);
+}
+
+export function spawnFlyingChicken() {
+  const chicken = document.createElement('div');
+  chicken.style.position = 'absolute';
+  chicken.style.left = (Math.random() * 800) + 'px';
+  chicken.style.top = '-50px';
+  chicken.style.fontSize = '30px';
+  chicken.style.zIndex = '9999';
+  chicken.textContent = '🐓'; // Rooster for flying
+  chicken.style.animation = 'chicken-fly 6s linear';
+  chicken.style.transform = 'rotate(-15deg)';
+  document.getElementById('game-area').appendChild(chicken);
+  
+  setTimeout(() => {
+    if (chicken.parentNode) chicken.parentNode.removeChild(chicken);
+  }, 6000);
+}
+
+export function showChickenBawk() {
+  const bawk = document.createElement('div');
+  bawk.style.position = 'absolute';
+  bawk.style.left = (Math.random() * 600 + 100) + 'px';
+  bawk.style.top = (Math.random() * 300 + 100) + 'px';
+  bawk.style.fontSize = '20px';
+  bawk.style.fontWeight = 'bold';
+  bawk.style.color = '#ff6600';
+  bawk.style.textShadow = '2px 2px 4px #000';
+  bawk.style.zIndex = '9999';
+  bawk.style.animation = 'bounce 0.5s infinite';
+  bawk.textContent = 'BAWK!';
+  document.getElementById('game-area').appendChild(bawk);
+  
+  setTimeout(() => {
+    if (bawk.parentNode) bawk.parentNode.removeChild(bawk);
+  }, 2000);
 }
 
 export function spawnMatrixRain() {
@@ -600,6 +829,152 @@ export function spawnQuantumParticle() {
   setTimeout(() => {
     if (particle.parentNode) particle.parentNode.removeChild(particle);
   }, 3000);
+}
+
+export function spawnFallingPizza() {
+  const pizzas = ['🍕', '🍕', '🍕', '🧀', '🍅'];
+  const pizza = document.createElement('div');
+  pizza.style.position = 'absolute';
+  pizza.style.left = (Math.random() * 800) + 'px';
+  pizza.style.top = '-50px';
+  pizza.style.fontSize = (20 + Math.random() * 15) + 'px';
+  pizza.style.zIndex = '9999';
+  pizza.textContent = pizzas[Math.floor(Math.random() * pizzas.length)];
+  pizza.style.animation = 'fall 4s linear';
+  pizza.style.transform = `rotate(${Math.random() * 360}deg)`;
+  document.getElementById('game-area').appendChild(pizza);
+  
+  setTimeout(() => {
+    if (pizza.parentNode) pizza.parentNode.removeChild(pizza);
+  }, 4000);
+}
+
+export function spawnRobotGlitch() {
+  const robot = document.createElement('div');
+  robot.style.position = 'absolute';
+  robot.style.left = (Math.random() * 700) + 'px';
+  robot.style.top = (Math.random() * 400) + 'px';
+  robot.style.fontSize = '25px';
+  robot.style.zIndex = '9999';
+  robot.textContent = '🤖';
+  robot.style.animation = 'digital-glitch 2s infinite';
+  robot.style.filter = 'brightness(1.5) contrast(2)';
+  document.getElementById('game-area').appendChild(robot);
+  
+  setTimeout(() => {
+    if (robot.parentNode) robot.parentNode.removeChild(robot);
+  }, 3000);
+}
+
+export function spawnBinaryRain() {
+  const binary = document.createElement('div');
+  binary.style.position = 'absolute';
+  binary.style.left = (Math.random() * 800) + 'px';
+  binary.style.top = '-20px';
+  binary.style.color = '#00ff00';
+  binary.style.fontSize = '14px';
+  binary.style.fontFamily = 'monospace';
+  binary.style.zIndex = '9999';
+  binary.textContent = Math.random() < 0.5 ? '0' : '1';
+  binary.style.animation = 'fall 3s linear';
+  document.getElementById('game-area').appendChild(binary);
+  
+  setTimeout(() => {
+    if (binary.parentNode) binary.parentNode.removeChild(binary);
+  }, 3000);
+}
+
+export function spawnCastle() {
+  const castle = document.createElement('div');
+  castle.style.position = 'absolute';
+  castle.style.left = (Math.random() * 600) + 'px';
+  castle.style.top = (Math.random() * 300 + 100) + 'px';
+  castle.style.fontSize = '40px';
+  castle.style.zIndex = '9999';
+  castle.textContent = '🏰';
+  castle.style.animation = 'bounce 2s infinite';
+  document.getElementById('game-area').appendChild(castle);
+  
+  setTimeout(() => {
+    if (castle.parentNode) castle.parentNode.removeChild(castle);
+  }, 8000);
+}
+
+export function spawnDragon() {
+  const dragon = document.createElement('div');
+  dragon.style.position = 'absolute';
+  dragon.style.left = '-50px';
+  dragon.style.top = (Math.random() * 200 + 50) + 'px';
+  dragon.style.fontSize = '35px';
+  dragon.style.zIndex = '9999';
+  dragon.textContent = '🐉';
+  dragon.style.animation = 'dragon-fly 6s linear';
+  document.getElementById('game-area').appendChild(dragon);
+  
+  const moveInterval = setInterval(() => {
+    const currentLeft = parseInt(dragon.style.left);
+    dragon.style.left = (currentLeft + 3) + 'px';
+    
+    if (currentLeft > 850) {
+      clearInterval(moveInterval);
+      if (dragon.parentNode) dragon.parentNode.removeChild(dragon);
+    }
+  }, 50);
+  
+  setTimeout(() => {
+    clearInterval(moveInterval);
+    if (dragon.parentNode) dragon.parentNode.removeChild(dragon);
+  }, 6000);
+}
+
+export function spawnJungleAnimal() {
+  const animals = ['🐒', '🦍', '🐅', '🦜', '🐍', '🦎'];
+  const animal = document.createElement('div');
+  animal.style.position = 'absolute';
+  animal.style.left = (Math.random() * 700) + 'px';
+  animal.style.top = (Math.random() * 400) + 'px';
+  animal.style.fontSize = '30px';
+  animal.style.zIndex = '9999';
+  animal.textContent = animals[Math.floor(Math.random() * animals.length)];
+  animal.style.animation = 'jungle-hop 3s infinite';
+  document.getElementById('game-area').appendChild(animal);
+  
+  setTimeout(() => {
+    if (animal.parentNode) animal.parentNode.removeChild(animal);
+  }, 6000);
+}
+
+export function spawnVines() {
+  const vine = document.createElement('div');
+  vine.style.position = 'absolute';
+  vine.style.left = (Math.random() * 800) + 'px';
+  vine.style.top = '-20px';
+  vine.style.fontSize = '20px';
+  vine.style.zIndex = '9999';
+  vine.textContent = '🌿';
+  vine.style.animation = 'vine-grow 4s linear';
+  document.getElementById('game-area').appendChild(vine);
+  
+  setTimeout(() => {
+    if (vine.parentNode) vine.parentNode.removeChild(vine);
+  }, 4000);
+}
+
+export function spawnSnowflake() {
+  const snowflake = document.createElement('div');
+  snowflake.style.position = 'absolute';
+  snowflake.style.left = (Math.random() * 800) + 'px';
+  snowflake.style.top = '-20px';
+  snowflake.style.fontSize = (10 + Math.random() * 15) + 'px';
+  snowflake.style.zIndex = '9999';
+  snowflake.textContent = '❄️';
+  snowflake.style.animation = 'snowfall 5s linear';
+  snowflake.style.opacity = '0.8';
+  document.getElementById('game-area').appendChild(snowflake);
+  
+  setTimeout(() => {
+    if (snowflake.parentNode) snowflake.removeChild(snowflake);
+  }, 5000);
 }
 
 // Add chaos CSS animations
@@ -724,6 +1099,61 @@ chaosStyle.textContent = `
     70% { transform: translate(2px, 2px); }
     80% { transform: translate(-2px, -2px); }
     90% { transform: translate(2px, 2px); }
+  }
+  
+  @keyframes chicken-fly {
+    0% { transform: translateY(-50px) rotate(-15deg); }
+    50% { transform: translateY(200px) rotate(-10deg); }
+    100% { transform: translateY(550px) rotate(-20deg); }
+  }
+  
+  @keyframes dragon-fly {
+    0% { transform: translateX(0) translateY(0) scale(1); }
+    25% { transform: translateX(200px) translateY(-20px) scale(1.1); }
+    50% { transform: translateX(400px) translateY(20px) scale(1); }
+    75% { transform: translateX(600px) translateY(-10px) scale(1.1); }
+    100% { transform: translateX(850px) translateY(0) scale(1); }
+  }
+  
+  @keyframes jungle-hop {
+    0%, 100% { transform: translateY(0) scale(1); }
+    25% { transform: translateY(-15px) scale(1.1); }
+    50% { transform: translateY(-5px) scale(0.9); }
+    75% { transform: translateY(-20px) scale(1.2); }
+  }
+  
+  @keyframes vine-grow {
+    0% { transform: translateY(-20px) scaleY(0.1); }
+    50% { transform: translateY(200px) scaleY(1); }
+    100% { transform: translateY(520px) scaleY(1.2); }
+  }
+  
+  @keyframes snowfall {
+    0% { transform: translateY(-20px) rotate(0deg); opacity: 0.8; }
+    50% { transform: translateY(250px) rotate(180deg); opacity: 1; }
+    100% { transform: translateY(520px) rotate(360deg); opacity: 0.3; }
+  }
+  
+  @keyframes pizza-spin {
+    0% { transform: rotate(0deg) scale(1); }
+    50% { transform: rotate(180deg) scale(1.2); }
+    100% { transform: rotate(360deg) scale(1); }
+  }
+  
+  @keyframes robot-march {
+    0%, 100% { transform: translateX(0) rotate(0deg); }
+    25% { transform: translateX(5px) rotate(2deg); }
+    75% { transform: translateX(-5px) rotate(-2deg); }
+  }
+  
+  @keyframes medieval-wave {
+    0%, 100% { transform: scale(1) rotate(0deg); }
+    50% { transform: scale(1.1) rotate(5deg); }
+  }
+  
+  @keyframes ice-sparkle {
+    0%, 100% { opacity: 0.6; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.3); }
   }
 `;
 document.head.appendChild(chaosStyle);

@@ -3,17 +3,55 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=800, initial-scale=1.0">
-  <title>Joust Clone</title>
+    <title>Jousti</title>
   <link rel="stylesheet" href="style.css">
+  <style>
+    :root {
+      --theme-hue: 0;
+    }
+    body, .container, .game-title, .score-ui, .canvas-wrapper {
+      filter: hue-rotate(var(--theme-hue, 0deg));
+      transition: filter 0.6s;
+    }
+    #highscore-ui {
+      position: fixed;
+      top: 60px;
+      right: 32px;
+      width: 220px;
+      background: rgba(0,0,0,0.7);
+      color: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+      padding: 16px 18px;
+      z-index: 100;
+      font-family: monospace;
+      text-align: left;
+    }
+  </style>
 </head>
 <body>
   <div class="container">
-    <h1 class="game-title">JOUST CLONE</h1>
+    <h1 class="game-title">Jousti</h1>
     <div id="score-ui" class="score-ui">SCORE: 0</div>
+    <div id="highscore-ui" class="score-ui" style="margin-top:10px;"></div>
     <div class="canvas-wrapper">
       <canvas id="gameCanvas" width="800" height="600"></canvas>
     </div>
   </div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="highscore.js"></script>
+  <script>
+    window.addEventListener('DOMContentLoaded', function() {
+      if (window.getHighScores) {
+        window.getHighScores(10).then(scores => {
+          const hsUi = document.getElementById('highscore-ui');
+          if (hsUi) {
+            hsUi.innerHTML = '<b>High Scores:</b><br>' + scores.map(s => `${s.username}: ${s.score}`).join('<br>');
+          }
+        });
+      }
+    });
+  </script>
   <script src="game.js"></script>
 </body>
 </html>

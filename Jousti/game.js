@@ -3,10 +3,10 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
 // Game constants
-const GRAVITY = 0.4;
-const FLAP_STRENGTH = -8;
-const PLAYER_SPEED = 7;
-const ENEMY_SPEED = 4;
+const GRAVITY = 2.2; // Further increased gravity for faster fall
+const FLAP_STRENGTH = -13; // Reduced jump height
+const PLAYER_SPEED = 26; // Further increased player speed
+const ENEMY_SPEED = 18; // Further increased enemy speed
 const PLATFORM_HEIGHT = 20;
 const PLATFORM_COLOR = '#2a0a0a';
 const PLAYER_COLOR = '#ff2222';
@@ -27,12 +27,15 @@ function randomizePlatforms() {
     platforms = [];
     // Always add main floor
     platforms.push({ x: 60, y: 540, w: 680, h: PLATFORM_HEIGHT });
-    // Add 6-9 random platforms
-    let platCount = 6 + Math.floor(Math.random() * 4);
+    // Add 2 random platforms (reduced from 6-9)
+    let platCount = 2;
+    // Define several fixed platform heights
+    const platformLevels = [180, 260, 340, 420];
     for (let i = 0; i < platCount; i++) {
         let w = 60 + Math.random() * 140;
         let x = 20 + Math.random() * (800 - w - 40);
-        let y = 120 + Math.random() * 400;
+        // Pick a random level from the array
+        let y = platformLevels[Math.floor(Math.random() * platformLevels.length)];
         platforms.push({ x, y, w, h: PLATFORM_HEIGHT });
     }
     // Optionally add a top ledge
@@ -64,7 +67,8 @@ const player = {
 // (removed old single enemy, now using enemies array)
 // Enemies
 let level = 1;
-let ENEMY_COUNT = 3;
+let ENEMY_COUNT = 1;
+let currentThemeHue = 0;
 let enemies = [];
 function createEnemy() {
     return {
@@ -85,34 +89,43 @@ function createEnemy() {
     };
 }
 function spawnEnemies() {
+let level = 1;
+let ENEMY_COUNT = 1;
+let enemies = [];
+const SUPER_ENEMY_CHANCE = 0.18; // 18% chance per enemy slot
+const SUPER_ENEMY_COLOR = '#00e6ff';
+const SUPER_ENEMY_SPEED = 38;
+function createEnemy(isSuper = false) {
+    return {
+        x: Math.random() * (canvas.width - 40),
+        y: 100,
+        w: 40,
+        h: 40,
+        vx: 0,
+        vy: 0,
+        onGround: false,
+        jumps: 4,
+        maxJumps: 4,
+        flapCooldown: 0,
+        flapAnim: 0,
+        facingRight: true,
+        aiTimer: 0,
+        targetX: Math.random() * 800,
+        isSuper: isSuper
+    };
+}
+function spawnEnemies() {
     enemies = [];
     for (let i = 0; i < ENEMY_COUNT; i++) {
-        enemies.push(createEnemy());
+        // Randomly spawn a super enemy
+        if (Math.random() < SUPER_ENEMY_CHANCE) {
+            enemies.push(createEnemy(true));
+        } else {
+            enemies.push(createEnemy(false));
+        }
     }
 }
 spawnEnemies();
-
-// Input
-const keys = {};
-document.addEventListener('keydown', e => keys[e.code] = true);
-document.addEventListener('keyup', e => keys[e.code] = false);
-
-function rectsCollide(a, b) {
-    return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
-}
-
-function updatePlayer() {
-    // Horizontal movement with longer momentum
-    if (keys['ArrowLeft'] || keys['KeyA']) {
-        player.vx -= 0.09;
-        player.facingRight = false;
-    } else if (keys['ArrowRight'] || keys['KeyD']) {
-        player.vx += 0.09;
-        player.facingRight = true;
-    } else {
-        // Slower friction for longer momentum
-        player.vx *= 0.97;
-        if (Math.abs(player.vx) < 0.05) player.vx = 0;
     }
     // Clamp max speed
     if (player.vx > PLAYER_SPEED) player.vx = PLAYER_SPEED;
@@ -123,8 +136,8 @@ function updatePlayer() {
     if ((keys['Space'] || keys['ArrowUp'] || keys['KeyW'])) {
         if (player.flapCooldown === 0 && player.jumps > 0) {
             player.vy = FLAP_STRENGTH;
-            player.flapCooldown = 10; // limit flaps per second
-            player.flapAnim = 6; // frames of wing animation
+            player.flapCooldown = 5; // limit flaps per second (halved for 30fps)
+            player.flapAnim = 3; // frames of wing animation (halved for 30fps)
             player.jumps--;
         }
     }
@@ -162,8 +175,6 @@ function updatePlayer() {
 }
 
 
-// Black particle trail state for enemies
-let enemyParticles = [];
 function updateEnemy(enemy) {
     // AI: running starts and gradual direction changes
     if (enemy.aiTimer <= 0) {
@@ -173,33 +184,35 @@ function updateEnemy(enemy) {
         } else {
             enemy.targetX = Math.random() * (canvas.width - enemy.w);
         }
-        enemy.aiTimer = 60 + Math.random() * 90; // 1-2.5 seconds
+        enemy.aiTimer = 30 + Math.random() * 45; // 1-2.5 seconds (halved for 30fps)
     } else {
         enemy.aiTimer--;
     }
 
     // Move toward targetX, but not too sharply
+    let speed = enemy.isSuper ? SUPER_ENEMY_SPEED : ENEMY_SPEED;
+    let accel = enemy.isSuper ? 2.2 : 1.1;
     if (enemy.targetX < enemy.x - 5) {
-        enemy.vx -= 0.09;
+        enemy.vx -= accel;
         enemy.facingRight = false;
     } else if (enemy.targetX > enemy.x + 5) {
-        enemy.vx += 0.09;
+        enemy.vx += accel;
         enemy.facingRight = true;
     } else {
-        enemy.vx *= 0.97;
-        if (Math.abs(enemy.vx) < 0.05) enemy.vx = 0;
+        enemy.vx *= 0.94;
+        if (Math.abs(enemy.vx) < 0.1) enemy.vx = 0;
     }
     // Clamp max speed
-    if (enemy.vx > ENEMY_SPEED) enemy.vx = ENEMY_SPEED;
-    if (enemy.vx < -ENEMY_SPEED) enemy.vx = -ENEMY_SPEED;
+    if (enemy.vx > speed) enemy.vx = speed;
+    if (enemy.vx < -speed) enemy.vx = -speed;
 
     // Triple jump/flap logic: up to 3 jumps before landing
     if (enemy.flapCooldown > 0) enemy.flapCooldown--;
-    // Flap if below player or randomly
-    if ((enemy.flapCooldown === 0 && enemy.jumps > 0) && (enemy.y < player.y - 10 || Math.random() < 0.02)) {
+    // Flap if below player or randomly (increased frequency)
+    if ((enemy.flapCooldown === 0 && enemy.jumps > 0) && (enemy.y < player.y - 10 || Math.random() < 0.18)) {
         enemy.vy = FLAP_STRENGTH;
-        enemy.flapCooldown = 10;
-        enemy.flapAnim = 6;
+        enemy.flapCooldown = 3; // shorter cooldown for more frequent jumps
+        enemy.flapAnim = 3;
         enemy.jumps--;
     }
 
@@ -233,17 +246,8 @@ function updateEnemy(enemy) {
 
     // Animate wing flap
     if (enemy.flapAnim > 0) enemy.flapAnim--;
-    // Emit black glowing particles as the enemy moves (reduced rate)
-    if ((Math.abs(enemy.vx) > 0.2 || Math.abs(enemy.vy) > 0.2) && Math.random() < 0.25) {
-        enemyParticles.push({
-            x: enemy.x + enemy.w/2 + (Math.random()-0.5)*8,
-            y: enemy.y + enemy.h/2 + (Math.random()-0.5)*8,
-            r: 6 + Math.random()*4,
-            alpha: 0.5 + Math.random()*0.2,
-            life: 0
-        });
-    }
 }
+
 
 // Impact effect state
 let impacts = [];
@@ -257,43 +261,61 @@ function checkPlayerEnemyCollision() {
             const enemyTip = enemy.y;
             let impactX = (player.x + player.w/2 + enemy.x + enemy.w/2) / 2;
             let impactY = (player.y + player.h/2 + enemy.y + enemy.h/2) / 2;
-            impacts.push({x: impactX, y: impactY, frame: 0});
+            let impactType = 'tie';
             if (Math.abs(playerTip - enemyTip) < JOUST_BUFFER) {
                 // Tie: both bounce
+                impactType = 'tie';
                 player.vy = FLAP_STRENGTH / 2;
                 enemy.vy = FLAP_STRENGTH / 2;
             } else if (playerTip < enemyTip) {
                 // Player is above enemy: player wins
+                impactType = 'playerWin';
                 player.score++;
                 enemies.splice(i, 1);
                 player.vy = FLAP_STRENGTH;
             } else {
                 // Enemy is above player: player loses
+                impactType = 'enemyWin';
                 player.lives--;
                 if (player.lives < 0) {
-                    // Game over: reset everything
+                    // Game over: prompt for name and save high score
+                    setTimeout(() => {
+                        let username = window.prompt('Game Over! Enter your name for the high score:');
+                        if (username && window.saveHighScore) {
+                            window.saveHighScore(username, player.score).then(() => {
+                                window.getHighScores(10).then(scores => {
+                                    const hsUi = document.getElementById('highscore-ui');
+                                    if (hsUi) {
+                                        hsUi.innerHTML = '<b>High Scores:</b><br>' + scores.map(s => `${s.username}: ${s.score}`).join('<br>');
+                                    }
+                                });
+                            });
+                        }
+                    }, 100);
                     player.lives = 2;
                     player.score = 0;
                     level = 1;
-                    ENEMY_COUNT = 3;
+                    ENEMY_COUNT = Math.floor(Math.random() * 3) + 1; // 1-3 enemies
                     randomizePlatforms();
                     spawnEnemies();
                 } else {
                     // Restart current level
                     player.score = 0;
+                    ENEMY_COUNT = Math.floor(Math.random() * 3) + 1; // 1-3 enemies
                     randomizePlatforms();
                     spawnEnemies();
                 }
                 resetPlayer();
                 enemy.vy = FLAP_STRENGTH;
             }
+            impacts.push({x: impactX, y: impactY, frame: 0, type: impactType});
         }
     }
 }
 
 function resetPlayer() {
     player.x = 400;
-    player.y = 100;
+    player.y = canvas.height - player.h;
     player.vx = 0;
     player.vy = 0;
 }
@@ -562,13 +584,28 @@ function drawBuzzardRider(x, y, w, h, color, flapAnim = 0, facingRight = true) {
     ctx.translate(x + w/2, y + h/2);
     ctx.rotate(facingRight ? 0.18 : -0.18);
     ctx.scale(facingRight ? w/40 : -w/40, h/40);
+    // Use different color for super enemy
+    let isSuper = false;
+    for (const enemy of enemies) {
+        if (Math.abs(enemy.x - x) < 1 && Math.abs(enemy.y - y) < 1 && enemy.isSuper) {
+            isSuper = true;
+            break;
+        }
+    }
     let buzzGrad = ctx.createLinearGradient(-12, 8, 12, 24);
-    buzzGrad.addColorStop(0, '#ff2222');
-    buzzGrad.addColorStop(0.3, '#440000');
-    buzzGrad.addColorStop(0.7, '#000');
-    buzzGrad.addColorStop(1, '#220000');
+    if (isSuper) {
+        buzzGrad.addColorStop(0, SUPER_ENEMY_COLOR);
+        buzzGrad.addColorStop(0.3, '#00aaff');
+        buzzGrad.addColorStop(0.7, '#003344');
+        buzzGrad.addColorStop(1, '#00e6ff');
+    } else {
+        buzzGrad.addColorStop(0, '#ff2222');
+        buzzGrad.addColorStop(0.3, '#440000');
+        buzzGrad.addColorStop(0.7, '#000');
+        buzzGrad.addColorStop(1, '#220000');
+    }
     ctx.save();
-    ctx.shadowColor = '#ff2222';
+    ctx.shadowColor = isSuper ? SUPER_ENEMY_COLOR : '#ff2222';
     ctx.shadowBlur = 10;
     ctx.fillStyle = buzzGrad;
     ctx.beginPath();
@@ -779,19 +816,6 @@ function draw() {
     bgGrad.addColorStop(1, '#000');
     ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    // Animated red/white stars
-    for (let i = 0; i < 40; i++) {
-        let sx = (Math.sin(i * 13.1 + sparkleFrame * 0.01 + i) * 0.5 + 0.5) * canvas.width;
-        let sy = (Math.cos(i * 7.7 + sparkleFrame * 0.013 - i) * 0.5 + 0.5) * canvas.height * 0.7;
-        let starAlpha = 0.5 + 0.5 * Math.sin(sparkleFrame * 0.08 + i * 2);
-        ctx.save();
-        ctx.globalAlpha = 0.18 * starAlpha;
-        ctx.fillStyle = i % 2 === 0 ? '#fff' : '#ff2222';
-        ctx.beginPath();
-        ctx.arc(sx, sy, 1.2 + Math.sin(sparkleFrame * 0.2 + i), 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-    }
 
     // Draw platforms (black/red)
     for (const plat of platforms) {
@@ -817,22 +841,24 @@ function draw() {
         ctx.restore();
     }
 
-    // Sparkles on platforms (white/red)
+    // Remove sparkles on platforms
+    // sparkleFrame++;
+    // runFrame++;
+    // for (const plat of platforms) {
+    //     for (let i = 0; i < Math.floor(plat.w / 60); i++) {
+    //         let sx = plat.x + 20 + i * 60 + ((sparkleFrame * (i+1)) % 40);
+    //         let sy = plat.y + 6 + Math.sin((sparkleFrame + i*13) * 0.1) * 2;
+    //         ctx.save();
+    //         ctx.globalAlpha = 0.5 + 0.5 * Math.sin((sparkleFrame + i*7) * 0.2);
+    //         ctx.fillStyle = i % 2 === 0 ? '#fff' : '#ff2222';
+    //         ctx.beginPath();
+    //         ctx.arc(sx, sy, 2 + Math.sin((sparkleFrame + i*5) * 0.2), 0, Math.PI * 2);
+    //         ctx.fill();
+    //         ctx.restore();
+    //     }
+    // }
     sparkleFrame++;
     runFrame++;
-    for (const plat of platforms) {
-        for (let i = 0; i < Math.floor(plat.w / 60); i++) {
-            let sx = plat.x + 20 + i * 60 + ((sparkleFrame * (i+1)) % 40);
-            let sy = plat.y + 6 + Math.sin((sparkleFrame + i*13) * 0.1) * 2;
-            ctx.save();
-            ctx.globalAlpha = 0.5 + 0.5 * Math.sin((sparkleFrame + i*7) * 0.2);
-            ctx.fillStyle = i % 2 === 0 ? '#fff' : '#ff2222';
-            ctx.beginPath();
-            ctx.arc(sx, sy, 2 + Math.sin((sparkleFrame + i*5) * 0.2), 0, Math.PI * 2);
-            ctx.fill();
-            ctx.restore();
-        }
-    }
 
     // Draw player (ostrich rider)
     ctx.save();
@@ -854,45 +880,42 @@ function draw() {
         ctx.shadowColor = '#ff2222';
         ctx.shadowBlur = 32;
         drawBuzzardRider(enemy.x, enemy.y, enemy.w, enemy.h, ENEMY_COLOR, enemy.flapAnim, enemy.facingRight);
-        // Enemy sparkle
-        ctx.globalAlpha = 0.5 + 0.5 * Math.sin((sparkleFrame + enemy.x) * 0.18);
-        ctx.beginPath();
-        ctx.arc(enemy.x + enemy.w/2, enemy.y + enemy.h/2 - 18, 6 + 2 * Math.sin((sparkleFrame + enemy.x) * 0.18), 0, Math.PI * 2);
-        ctx.fillStyle = '#fff';
-        ctx.fill();
-        ctx.globalAlpha = 1;
         ctx.restore();
     }
-    // Draw black glowing particles trailing from enemies
-    for (let i = enemyParticles.length - 1; i >= 0; i--) {
-        let p = enemyParticles[i];
-        ctx.save();
-        ctx.globalAlpha = p.alpha * (1 - p.life / 32);
-        ctx.shadowColor = '#000';
-        ctx.shadowBlur = 16;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r * (1 - p.life / 32), 0, Math.PI * 2);
-        ctx.fillStyle = '#000';
-        ctx.fill();
-        ctx.restore();
-        p.life++;
-        if (p.life > 32) enemyParticles.splice(i, 1);
-    }
-
     // Draw impact effects
     for (let i = impacts.length - 1; i >= 0; i--) {
         let imp = impacts[i];
         let t = imp.frame / 16;
         ctx.save();
         ctx.globalAlpha = 1 - t;
-        for (let j = 0; j < 8; j++) {
-            let angle = (Math.PI * 2 / 8) * j + t * Math.PI * 2 * 0.2;
+        let colorA, colorB, shadow, particleCount, sizeBase;
+        if (imp.type === 'playerWin') {
+            colorA = '#fff';
+            colorB = '#44ff44';
+            shadow = '#44ff44';
+            particleCount = 10;
+            sizeBase = 4;
+        } else if (imp.type === 'enemyWin') {
+            colorA = '#ff2222';
+            colorB = '#440000';
+            shadow = '#ff2222';
+            particleCount = 12;
+            sizeBase = 5;
+        } else {
+            colorA = '#fff';
+            colorB = '#ff2222';
+            shadow = '#ff2222';
+            particleCount = 8;
+            sizeBase = 3;
+        }
+        for (let j = 0; j < particleCount; j++) {
+            let angle = (Math.PI * 2 / particleCount) * j + t * Math.PI * 2 * 0.2;
             let r = 12 + t * 24;
             ctx.beginPath();
-            ctx.arc(imp.x + Math.cos(angle) * r, imp.y + Math.sin(angle) * r, 3 + 2 * (1 - t), 0, Math.PI * 2);
-            ctx.fillStyle = j % 2 === 0 ? '#fff' : '#ff2222';
-            ctx.shadowColor = '#ff2222';
-            ctx.shadowBlur = 8;
+            ctx.arc(imp.x + Math.cos(angle) * r, imp.y + Math.sin(angle) * r, sizeBase + 2 * (1 - t), 0, Math.PI * 2);
+            ctx.fillStyle = j % 2 === 0 ? colorA : colorB;
+            ctx.shadowColor = shadow;
+            ctx.shadowBlur = 10;
             ctx.fill();
         }
         ctx.restore();
@@ -907,23 +930,35 @@ function draw() {
     }
 }
 
-function gameLoop() {
-    updatePlayer();
-    for (const enemy of enemies) {
-        updateEnemy(enemy);
-    }
-    checkPlayerEnemyCollision();
-    // Level up if all enemies are cleared
-    if (typeof level !== 'undefined' && enemies.length === 0) {
-        level++;
-        ENEMY_COUNT = 3 + Math.floor(level / 2);
-        randomizePlatforms();
-        if (typeof spawnEnemies === 'function') {
-            spawnEnemies();
+// Frame rate limiting for 30 FPS
+let lastFrameTime = 0;
+const targetFrameTime = 1000 / 30; // 30 FPS
+
+function gameLoop(currentTime) {
+    if (currentTime - lastFrameTime >= targetFrameTime) {
+        updatePlayer();
+        for (const enemy of enemies) {
+            updateEnemy(enemy);
         }
-        resetPlayer();
+        checkPlayerEnemyCollision();
+        // Level up if all enemies are cleared
+        if (typeof level !== 'undefined' && enemies.length === 0) {
+            level++;
+            ENEMY_COUNT = Math.floor(Math.random() * 3) + 1; // 1-3 enemies per level
+            randomizePlatforms();
+            if (typeof spawnEnemies === 'function') {
+                spawnEnemies();
+            }
+            resetPlayer();
+            // Change theme hue every 10 levels
+            if (level % 10 === 0) {
+                currentThemeHue = Math.floor(Math.random() * 360);
+                document.documentElement.style.setProperty('--theme-hue', currentThemeHue + 'deg');
+            }
+        }
+        draw();
+        lastFrameTime = currentTime;
     }
-    draw();
     requestAnimationFrame(gameLoop);
 }
 
