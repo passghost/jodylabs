@@ -1,4 +1,5 @@
 // Joust Clone - Basic Game Loop and Structure
+// Trigger redeploy: 2025-07-28
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 

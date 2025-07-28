@@ -1,5 +1,6 @@
 // highscore.js - Handles high score storage and retrieval via Supabase
 
+// Trigger redeploy: 2025-07-28
 // Supabase config (replace with your own project details)
 const SUPABASE_URL = 'https://omcwjmvdjswkfjkahchm.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE';
