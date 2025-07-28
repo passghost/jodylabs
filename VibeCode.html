@@ -602,8 +602,8 @@
                 <div class="project-content">
                 <div class="project-icon"><img src="Images/gem4.png" alt="Pixelyar Icon" loading="lazy"></div>
                     <div class="project-body">
-                        <h2>Pixelyar - Pixel Art Creator</h2>
-                        <p>Create and share pixel art masterpieces! Use intuitive tools to design, color, and export your own pixel creations. Perfect for artists, game developers, and retro art fans.</p>
+                        <h2>Pixelyar</h2>
+                        <p>Pixelyar is an experimental MMO pirate game. Join a world of swashbuckling pirates, treasure hunts, and ship battles—explore islands, form crews, and compete for loot in real-time multiplayer action.</p>
                     </div>
                 </div>
                 <img src="screenshots/pixelyar.png" alt="Pixelyar Screenshot" class="project-screenshot" loading="lazy">
@@ -1013,57 +1013,39 @@
                 setEyeballImage(randomEyeballImage());
             }, 30000);
 
-            // Mouse tracking
+            // Mouse tracking with smooth vertical chase and more independent floating
             let lastMouseMove = Date.now();
+            let targetEyeTop = 18; // initial top
+            let currentEyeTop = 18;
             document.addEventListener('mousemove', (e) => {
                 lastMouseMove = Date.now();
-                const eyeContainer = document.getElementById('eyeContainer');
-                const eyeball = document.getElementById('eyeball');
-                // Clamp vertical position so eye stays in viewport
                 const eyeHeight = 100; // px, matches CSS
                 const minTop = 0;
                 const maxTop = window.innerHeight - eyeHeight;
-                let newTop = e.clientY - eyeHeight / 2;
-                newTop = Math.max(minTop, Math.min(maxTop, newTop));
-                eyeContainer.style.top = newTop + 'px';
-                // Eye stays flush left
-                // Horizontal position will be animated, so don't set here
-                // Eyeball tracks mouse within socket as before
-                const eyeRect = eyeContainer.getBoundingClientRect();
-                const eyeCenterX = eyeRect.left + eyeRect.width / 2;
-                const eyeCenterY = eyeRect.top + eyeRect.height / 2;
-                const mouseX = e.clientX;
-                const mouseY = e.clientY;
-                const deltaX = mouseX - eyeCenterX;
-                const deltaY = mouseY - eyeCenterY;
-                const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-                const maxDistance = 15;
-                const limitedDistance = Math.min(distance, maxDistance);
-                const angle = Math.atan2(deltaY, deltaX);
-                const moveX = Math.cos(angle) * (limitedDistance / maxDistance) * 15;
-                const moveY = Math.sin(angle) * (limitedDistance / maxDistance) * 15;
-                moveEyeball(moveX, moveY);
+                targetEyeTop = Math.max(minTop, Math.min(maxTop, e.clientY - eyeHeight / 2));
             });
 
             // Animate the whole eye rig horizontally (gentle sine wave)
             function animateEyeRig() {
                 const eyeContainer = document.getElementById('eyeContainer');
                 const baseLeft = 18; // px
-                const baseTop = parseFloat(eyeContainer.style.top) || 18; // px, set by mouse tracking
+                // Smoothly interpolate currentEyeTop toward targetEyeTop
+                currentEyeTop += (targetEyeTop - currentEyeTop) * 0.08; // 0.08 for smooth chase
+                // Eye's own vertical floating (independent)
                 const hAmplitude = 10; // px horizontal
                 const hSpeed = 0.0012; // radians/ms
-                const vAmplitude = 6; // px vertical
+                const vAmplitude = 8; // px vertical (more room to float)
                 const vSpeed = 0.0017; // radians/ms
                 const time = Date.now();
                 // Horizontal sine wave
                 const wiggleX = Math.sin(time * hSpeed) * hAmplitude;
-                // Vertical sine wave layered on mouse tracking
+                // Vertical sine wave layered on smooth chase
                 const wiggleY = Math.cos(time * vSpeed) * vAmplitude;
                 // Random jitter (subtle)
                 const jitterX = (Math.random() - 0.5) * 2.2;
                 const jitterY = (Math.random() - 0.5) * 2.2;
                 eyeContainer.style.left = (baseLeft + wiggleX + jitterX) + 'px';
-                eyeContainer.style.top = (baseTop + wiggleY + jitterY) + 'px';
+                eyeContainer.style.top = (currentEyeTop + wiggleY + jitterY) + 'px';
                 requestAnimationFrame(animateEyeRig);
             }
             animateEyeRig();
@@ -1077,6 +1059,38 @@
                 }, delay);
             }
             scheduleBlink();
+            // Eye reacts to button hover
+            function eyeReactToButton(button) {
+                const eyeContainer = document.getElementById('eyeContainer');
+                const eyeball = document.getElementById('eyeball');
+                // Get button position
+                const rect = button.getBoundingClientRect();
+                const buttonCenterX = rect.left + rect.width / 2;
+                const buttonCenterY = rect.top + rect.height / 2;
+                const eyeRect = eyeContainer.getBoundingClientRect();
+                const eyeCenterX = eyeRect.left + eyeRect.width / 2;
+                const eyeCenterY = eyeRect.top + eyeRect.height / 2;
+                const deltaX = buttonCenterX - eyeCenterX;
+                const deltaY = buttonCenterY - eyeCenterY;
+                // Move eyeball toward button
+                const maxDistance = 15;
+                const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                const limitedDistance = Math.min(distance, maxDistance);
+                const angle = Math.atan2(deltaY, deltaX);
+                const moveX = Math.cos(angle) * (limitedDistance / maxDistance) * 15;
+                const moveY = Math.sin(angle) * (limitedDistance / maxDistance) * 15;
+                moveEyeball(moveX, moveY);
+            }
+
+            function resetEyeAfterButton() {
+                resetEyeball();
+            }
+
+            // Attach hover listeners to all .project-link, .back-btn, .support-button a
+            document.querySelectorAll('.project-link, .back-btn, .support-button a').forEach(btn => {
+                btn.addEventListener('mouseenter', () => eyeReactToButton(btn));
+                btn.addEventListener('mouseleave', resetEyeAfterButton);
+            });
 
             // Idle look around
             setInterval(() => {
