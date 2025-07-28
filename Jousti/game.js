@@ -17,6 +17,15 @@ const PLATFORM_SHADOW = 'rgba(255,0,0,0.18)';
 
 // Sparkle animation state
 let sparkleFrame = 0;
+// Rectangle collision detection
+function rectsCollide(a, b) {
+    return (
+        a.x < b.x + b.w &&
+        a.x + a.w > b.x &&
+        a.y < b.y + b.h &&
+        a.y + a.h > b.y
+    );
+}
 
 // Running animation state
 let runFrame = 0;
@@ -126,7 +135,6 @@ function spawnEnemies() {
     }
 }
 spawnEnemies();
-    }
     // Clamp max speed
     if (player.vx > PLAYER_SPEED) player.vx = PLAYER_SPEED;
     if (player.vx < -PLAYER_SPEED) player.vx = -PLAYER_SPEED;
