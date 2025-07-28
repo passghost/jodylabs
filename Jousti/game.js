@@ -482,8 +482,7 @@ function checkPlayerEnemyCollision() {
             }, 100);
         });
     } else if (playerKilled && player.lives >= 0) {
-        // Player loses a life, but NOT game over: only reset player position and score
-        player.score = 0;
+        // Player loses a life, but NOT game over: only reset player position
         resetPlayer();
     } else {
         // If a tie occurred, reset player to middle
