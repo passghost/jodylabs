@@ -1,6 +1,41 @@
 // Joust Clone - Basic Game Loop and Structure
+
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
+
+// On game start, show only the top 5 high scores in the UI
+if (window.getHighScores) {
+    window.getHighScores().then(scores => {
+        console.log('[DEBUG] Full scores from database:', scores);
+        if (!Array.isArray(scores)) {
+            console.error('[DEBUG] getHighScores did not return an array:', scores);
+            return;
+        }
+        // Step 1: Filter out zero scores first
+        const nonZeroScores = scores.filter(s => s.score > 0);
+        // Step 2: Remove duplicate usernames, keep highest score per user
+        const uniqueScores = Object.values(nonZeroScores.reduce((acc, s) => {
+            if (!acc[s.username] || acc[s.username].score < s.score) {
+                acc[s.username] = s;
+            }
+            return acc;
+        }, {}));
+        // Step 3: Sort and take top 5
+        const top5 = uniqueScores.sort((a, b) => b.score - a.score).slice(0, 5);
+        console.log('[DEBUG] Top 5 scores for display:', top5);
+        const hsUi = document.getElementById('highscore-ui');
+        if (hsUi) {
+            // Always show exactly 5 lines, fill with blanks if needed
+            let lines = top5.map(s => `${s.username}: ${s.score}`);
+            while (lines.length < 5) lines.push('&nbsp;');
+            hsUi.innerHTML = '<b>High Scores:</b><br>' + lines.join('<br>');
+        }
+    }).catch(err => {
+        console.error('[DEBUG] Error updating high score UI:', err);
+    });
+} else {
+    console.warn('[DEBUG] High score API not available. window.getHighScores:', window.getHighScores);
+}
 
 // Game constants
 const GRAVITY = 2.2; // Further increased gravity for faster fall
@@ -17,6 +52,13 @@ const PLATFORM_SHADOW = 'rgba(255,0,0,0.18)';
 
 // Sparkle animation state
 let sparkleFrame = 0;
+
+// Keyboard input tracking
+let keys = {};
+function handleKeyDown(e) { keys[e.code] = true; }
+function handleKeyUp(e) { keys[e.code] = false; }
+window.addEventListener('keydown', handleKeyDown);
+window.addEventListener('keyup', handleKeyUp);
 
 // Running animation state
 let runFrame = 0;
@@ -43,7 +85,10 @@ function randomizePlatforms() {
         platforms.push({ x: 320, y: 100, w: 60, h: PLATFORM_HEIGHT });
     }
 }
+
+// Call once at startup
 randomizePlatforms();
+ 
 
 // Player
 const player = {
@@ -88,47 +133,52 @@ function createEnemy() {
         targetX: Math.random() * 800
     };
 }
-function spawnEnemies() {
-let level = 1;
-let ENEMY_COUNT = 1;
-let enemies = [];
+
 const SUPER_ENEMY_CHANCE = 0.18; // 18% chance per enemy slot
 const SUPER_ENEMY_COLOR = '#00e6ff';
 const SUPER_ENEMY_SPEED = 38;
-function createEnemy(isSuper = false) {
-    return {
-        x: Math.random() * (canvas.width - 40),
-        y: 100,
-        w: 40,
-        h: 40,
-        vx: 0,
-        vy: 0,
-        onGround: false,
-        jumps: 4,
-        maxJumps: 4,
-        flapCooldown: 0,
-        flapAnim: 0,
-        facingRight: true,
-        aiTimer: 0,
-        targetX: Math.random() * 800,
-        isSuper: isSuper
-    };
+function createSuperEnemy() {
+    let e = createEnemy();
+    e.isSuper = true;
+    return e;
 }
 function spawnEnemies() {
     enemies = [];
     for (let i = 0; i < ENEMY_COUNT; i++) {
-        // Randomly spawn a super enemy
         if (Math.random() < SUPER_ENEMY_CHANCE) {
-            enemies.push(createEnemy(true));
+            enemies.push(createSuperEnemy());
         } else {
-            enemies.push(createEnemy(false));
+            enemies.push(createEnemy());
         }
     }
 }
+
+// Call once at startup
+
 spawnEnemies();
-// Clamp max speed
-if (player.vx > PLAYER_SPEED) player.vx = PLAYER_SPEED;
-if (player.vx < -PLAYER_SPEED) player.vx = -PLAYER_SPEED;
+
+function updatePlayer() {
+    // Clamp max speed
+
+    // Horizontal movement with acceleration and friction
+    const accel = 2.0;
+    const friction = 0.85;
+    if (keys['ArrowLeft'] || keys['KeyA']) {
+        player.vx -= accel;
+        player.facingRight = false;
+    }
+    if (keys['ArrowRight'] || keys['KeyD']) {
+        player.vx += accel;
+        player.facingRight = true;
+    }
+    if (!(keys['ArrowLeft'] || keys['KeyA'] || keys['ArrowRight'] || keys['KeyD'])) {
+        player.vx *= friction;
+        if (Math.abs(player.vx) < 0.1) player.vx = 0;
+    }
+
+    // Clamp max speed
+    if (player.vx > PLAYER_SPEED) player.vx = PLAYER_SPEED;
+    if (player.vx < -PLAYER_SPEED) player.vx = -PLAYER_SPEED;
 
     // Flap mechanism: up to 3 jumps before landing
     if (player.flapCooldown > 0) player.flapCooldown--;
@@ -250,8 +300,20 @@ function updateEnemy(enemy) {
 
 // Impact effect state
 let impacts = [];
+
+// Rectangle collision detection
+function rectsCollide(a, b) {
+    return (
+        a.x < b.x + b.w &&
+        a.x + a.w > b.x &&
+        a.y < b.y + b.h &&
+        a.y + a.h > b.y
+    );
+}
 function checkPlayerEnemyCollision() {
     const JOUST_BUFFER = 8; // pixels, for forgiving ties
+    let playerKilled = false;
+    let defeatedEnemyIndices = [];
     for (let i = enemies.length - 1; i >= 0; i--) {
         const enemy = enemies[i];
         if (rectsCollide(player, enemy)) {
@@ -270,51 +332,119 @@ function checkPlayerEnemyCollision() {
                 // Player is above enemy: player wins
                 impactType = 'playerWin';
                 player.score++;
-                enemies.splice(i, 1);
+                defeatedEnemyIndices.push(i);
                 player.vy = FLAP_STRENGTH;
             } else {
-                // Enemy is above player: player loses
                 impactType = 'enemyWin';
                 player.lives--;
-                if (player.lives < 0) {
-                    // Game over: prompt for name and save high score
-                    setTimeout(() => {
-                        let username = window.prompt('Game Over! Enter your name for the high score:');
-                        if (username && window.saveHighScore) {
-                            window.saveHighScore(username, player.score).then(() => {
-                                window.getHighScores(10).then(scores => {
-                                    const hsUi = document.getElementById('highscore-ui');
-                                    if (hsUi) {
-                                        hsUi.innerHTML = '<b>High Scores:</b><br>' + scores.map(s => `${s.username}: ${s.score}`).join('<br>');
-                                    }
-                                });
-                            });
-                        }
-                    }, 100);
-                    player.lives = 2;
-                    player.score = 0;
-                    level = 1;
-                    ENEMY_COUNT = Math.floor(Math.random() * 3) + 1; // 1-3 enemies
-                    randomizePlatforms();
-                    spawnEnemies();
-                } else {
-                    // Restart current level
-                    player.score = 0;
-                    ENEMY_COUNT = Math.floor(Math.random() * 3) + 1; // 1-3 enemies
-                    randomizePlatforms();
-                    spawnEnemies();
-                }
-                resetPlayer();
+                playerKilled = true;
                 enemy.vy = FLAP_STRENGTH;
             }
             impacts.push({x: impactX, y: impactY, frame: 0, type: impactType});
         }
     }
+    // Only remove defeated enemies if player was NOT killed in any collision
+    if (!playerKilled && defeatedEnemyIndices.length > 0) {
+        defeatedEnemyIndices.sort((a, b) => b - a);
+        for (const idx of defeatedEnemyIndices) {
+            enemies.splice(idx, 1);
+        }
+        // Only trigger level up if player survived all collisions and killed all enemies
+        if (typeof level !== 'undefined' && enemies.length === 0 && player.lives >= 0) {
+            level++;
+            ENEMY_COUNT = Math.floor(Math.random() * 3) + 1; // 1-3 enemies per level
+            randomizePlatforms();
+            if (typeof spawnEnemies === 'function') {
+                spawnEnemies();
+            }
+            resetPlayer();
+            // Change theme hue every 10 levels
+            if (level % 10 === 0) {
+                currentThemeHue = Math.floor(Math.random() * 360);
+                document.documentElement.style.setProperty('--theme-hue', currentThemeHue + 'deg');
+            }
+        }
+    } else if (playerKilled) {
+    }
+    // Handle game over/lives logic as before
+    if (playerKilled && player.lives < 0) {
+        // Prevent multiple prompts
+        if (window.gameOverActive) return;
+        window.gameOverActive = true;
+        // Store score before resetting
+        const finalScore = player.score;
+        // Show high score prompt asynchronously
+        setTimeout(() => {
+            // Disable controls before prompt
+            window.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('keyup', handleKeyUp);
+            let username = window.prompt('Game Over! Enter your name for the high score:');
+            // Only save non-zero scores
+            if (username && window.saveHighScore && finalScore > 0) {
+                window.saveHighScore(username, finalScore).then(() => {
+                    window.getHighScores().then(scores => {
+                        // Filter out zero scores
+                        const nonZeroScores = scores.filter(s => s.score > 0);
+                        // Remove duplicate usernames, keep highest score per user
+                        const uniqueScores = Object.values(nonZeroScores.reduce((acc, s) => {
+                            if (!acc[s.username] || acc[s.username].score < s.score) {
+                                acc[s.username] = s;
+                            }
+                            return acc;
+                        }, {}));
+                        // Sort and take top 5
+                        const top5 = uniqueScores.sort((a, b) => b.score - a.score).slice(0, 5);
+                        const hsUi = document.getElementById('highscore-ui');
+                        if (hsUi) {
+                            // Always show exactly 5 lines, fill with blanks if needed
+                            let lines = top5.map(s => `${s.username}: ${s.score}`);
+                            while (lines.length < 5) lines.push('&nbsp;');
+                            hsUi.innerHTML = '<b>High Scores:</b><br>' + lines.join('<br>');
+                        }
+                    });
+                });
+            }
+            // Re-enable controls after prompt
+            window.addEventListener('keydown', handleKeyDown);
+            window.addEventListener('keyup', handleKeyUp);
+            // Now reset game state AFTER high score prompt
+            player.lives = 2;
+            level = 1;
+            ENEMY_COUNT = Math.floor(Math.random() * 3) + 1; // 1-3 enemies
+            randomizePlatforms();
+            spawnEnemies();
+            resetPlayer();
+            player.score = 0;
+            window.gameOverActive = false;
+        }, 100);
+    } else if (playerKilled && player.lives >= 0) {
+        // Player loses a life, but NOT game over: only reset player position and score
+        player.score = 0;
+        resetPlayer();
+    } else {
+        // If a tie occurred, reset player to middle
+        if (defeatedEnemyIndices.length === 0 && !playerKilled) {
+            // Check if any impact was a tie
+            if (impacts.length > 0 && impacts[impacts.length-1].type === 'tie') {
+                resetPlayerToMiddle();
+            }
+        }
+    }
 }
 
+
 function resetPlayer() {
+    // Used for full resets (level up, game over)
     player.x = 400;
     player.y = canvas.height - player.h;
+    player.vx = 0;
+    player.vy = 0;
+}
+
+function resetPlayerToMiddle() {
+    // Used for hit scored, just reset player to middle of screen
+    player.x = (canvas.width - player.w) / 2;
+    player.y = (canvas.height - player.h) / 2;
     player.vx = 0;
     player.vy = 0;
 }
@@ -577,6 +707,8 @@ function drawOstrichRider(x, y, w, h, color, flapAnim = 0, facingRight = true) {
     ctx.restore();
     ctx.restore();
 }
+
+
 
 function drawBuzzardRider(x, y, w, h, color, flapAnim = 0, facingRight = true) {
     ctx.save();
@@ -940,21 +1072,6 @@ function gameLoop(currentTime) {
             updateEnemy(enemy);
         }
         checkPlayerEnemyCollision();
-        // Level up if all enemies are cleared
-        if (typeof level !== 'undefined' && enemies.length === 0) {
-            level++;
-            ENEMY_COUNT = Math.floor(Math.random() * 3) + 1; // 1-3 enemies per level
-            randomizePlatforms();
-            if (typeof spawnEnemies === 'function') {
-                spawnEnemies();
-            }
-            resetPlayer();
-            // Change theme hue every 10 levels
-            if (level % 10 === 0) {
-                currentThemeHue = Math.floor(Math.random() * 360);
-                document.documentElement.style.setProperty('--theme-hue', currentThemeHue + 'deg');
-            }
-        }
         draw();
         lastFrameTime = currentTime;
     }
