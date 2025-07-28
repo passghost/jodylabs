@@ -19,6 +19,11 @@ const PLATFORM_SHADOW = 'rgba(255,0,0,0.18)';
 // Sparkle animation state
 let sparkleFrame = 0;
 
+// Keyboard input tracking
+const keys = {};
+window.addEventListener('keydown', e => keys[e.code] = true);
+window.addEventListener('keyup', e => keys[e.code] = false);
+
 // Running animation state
 let runFrame = 0;
 
