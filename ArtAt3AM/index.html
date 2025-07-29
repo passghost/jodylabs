@@ -250,9 +250,10 @@
         body {
             margin: 0;
             padding: 0;
-            height: 100vh;
+            min-height: 100vh;
             width: 100vw;
-            overflow: hidden;
+            overflow-x: hidden;
+            overflow-y: auto;
             font-family: Arial, sans-serif;
         }
         .split-container {
@@ -413,6 +414,22 @@
         @media (max-width: 800px) {
             .split-container {
                 flex-direction: column;
+                height: auto;
+                min-height: 100vh;
+                width: 100vw;
+                overflow-x: hidden;
+            }
+            .left, .right {
+                min-height: 60vh;
+                min-width: 0;
+                width: 100vw;
+                height: auto;
+                position: relative;
+                flex: unset;
+                filter: none !important;
+                pointer-events: auto !important;
+                box-shadow: none !important;
+                transform: none !important;
             }
             .center-line {
                 width: 100vw;
@@ -420,7 +437,64 @@
                 left: 0;
                 top: 50%;
                 transform: translateY(-50%);
+                position: relative;
+                z-index: 2;
             }
+            .title {
+                font-size: 1.5rem;
+                right: 1rem;
+                left: unset;
+                top: 1.5rem;
+                position: static;
+                margin: 0 auto 1rem auto;
+                display: block;
+                writing-mode: horizontal-tb;
+                transform: none;
+                text-align: center;
+            }
+            .title-glass {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                margin: 0 auto 1rem auto;
+            }
+            .subtitle {
+                position: static !important;
+                left: unset !important;
+                bottom: unset !important;
+                margin: 0.5rem auto 1rem auto;
+                text-align: center;
+            }
+            .best-in-show, .featured-list {
+                margin-left: auto;
+                margin-right: auto;
+            }
+            .featured-list {
+                width: 98vw;
+                grid-template-columns: 1fr 1fr;
+                gap: 0.5rem;
+            }
+            .featured-item {
+                width: 44vw;
+                min-width: 120px;
+                max-width: 180px;
+                height: auto;
+                min-height: 120px;
+                font-size: 1rem;
+            }
+            .panel-toggle-container {
+                top: auto;
+                bottom: 90px;
+                left: 50%;
+                transform: translateX(-50%);
+                flex-direction: row;
+                gap: 16px;
+            }
+            body {
+                overflow-x: hidden;
+                overflow-y: auto;
+            }
+        }
         }
     </style>
 </head>
