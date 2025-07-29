@@ -17,7 +17,7 @@
 </head>
 <body>
     <canvas id="starfield"></canvas>
-    <script>
+    <script type="module">
         const canvas = document.getElementById('starfield');
         const ctx = canvas.getContext('2d');
         canvas.width = window.innerWidth;
@@ -25,18 +25,41 @@
 
         const stars = [];
         const numStars = 300; // Increased by 200%
+        let starSpeedMultiplier = 1;
+        let warping = false;
+        let warpTimer = 0;
 
-        for (let i = 0; i < numStars; i++) {
-            stars.push({
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height,
-                speed: Math.random() * 12 + 4, // Increased speed by 200%
-                size: Math.random() * 2 + 1
-            });
-        }
+        // Tiny background ships
+        const tinyShips = [];
+        let tinyShipTimer = 0;
+        const tinyShipInterval = 1200; // ~20 seconds at 60fps
 
+for (let i = 0; i < numStars; i++) {
+    stars.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        baseSpeed: Math.random() * 20 + 10, // Much faster starfield
+        speed: 0, // will be set in updateStars
+        size: Math.random() * 2 + 1
+    });
+}
+
+        // Player ship
         const ship = new Image();
+        ship.loaded = false;
+        ship.onload = () => { 
+            ship.loaded = true; 
+            console.log('Player ship loaded');
+        };
+        ship.onerror = () => {
+            ship.loaded = false;
+            console.error('Player ship failed to load');
+        };
         ship.src = 'Vibrex.png';
+        if (ship.complete && ship.naturalWidth !== 0) {
+            ship.loaded = true;
+            console.log('Player ship loaded (from cache)');
+        }
         const shipWidth = 75; // Increased by 50%
         const shipHeight = 75; // Increased by 50%
         let shipX = canvas.width / 2 - shipWidth / 2;
@@ -44,15 +67,47 @@
         const shipSpeed = 15; // Increased by 200%
         let playerHealth = 100;
 
+        // Enemy ship images
+        const enemyShipFilenames = [
+            'Eagle5.png',
+            'FatFly.png',
+            'FrontLineRunner.png',
+            'ShipLevel2A.png',
+            'sNUBship.png',
+            'Thrower.png',
+            'Vibrex.png' // Optionally include player ship as enemy
+        ];
+        const enemyShipImages = enemyShipFilenames.map(filename => {
+            const img = new Image();
+            img.loaded = false;
+            img.onload = () => { 
+                img.loaded = true; 
+                console.log('Loaded enemy image:', filename);
+            };
+            img.onerror = () => {
+                img.loaded = false;
+                console.error('Failed to load enemy image:', filename);
+            };
+            img.src = filename;
+            if (img.complete && img.naturalWidth !== 0) {
+                img.loaded = true;
+                console.log('Loaded enemy image (from cache):', filename);
+            }
+            return img;
+        });
+
+        // Now that enemyShipImages is defined, assign for tiny ships
+        const tinyShipImages = enemyShipImages;
+
         const keys = {};
         const lasers = [];
         const laserSpeed = 10;
-        const laserCooldown = 40; // Slowed down fire rate by 200%
+        const laserCooldown = 20; // Faster fire rate for click
         let laserCooldownCounter = 0;
         const flames = [];
-        const enemies = [];
+import { enemies, spawnEnemies, updateEnemies, drawEnemies, fireEnemyLasers, updateEnemyLasers, drawEnemyLasers, checkEnemyLaserHitsPlayer, checkPlayerLaserHitsEnemies } from './enemyship.js';
+import { powerups, spawnPowerup, updatePowerups, drawPowerups, checkPowerupCollection } from './powerups.js';
         const enemyLasers = [];
-        const enemySpeed = 2;
         const enemyFireRate = 100;
         let enemyFireCounter = 0;
 
@@ -64,18 +119,90 @@
             keys[e.key] = false;
         });
 
+        // Draw a faint nebula background
+        function drawNebula() {
+            const grad = ctx.createRadialGradient(
+                canvas.width * 0.7, canvas.height * 0.3, 100,
+                canvas.width * 0.5, canvas.height * 0.5, canvas.width * 0.8
+            );
+            grad.addColorStop(0, 'rgba(80,0,120,0.25)');
+            grad.addColorStop(0.3, 'rgba(0,40,120,0.18)');
+            grad.addColorStop(0.7, 'rgba(0,0,0,0.12)');
+            grad.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.save();
+            ctx.globalAlpha = 0.7;
+            ctx.globalCompositeOperation = 'lighter';
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.globalAlpha = 1;
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.restore();
+        }
+
         function drawStars() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawNebula();
             ctx.fillStyle = 'white';
             stars.forEach(star => {
+                ctx.save();
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = 'aqua';
                 ctx.beginPath();
                 ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
                 ctx.fill();
+                ctx.restore();
+            });
+        }
+
+        // Tiny ships: update and draw
+        function updateTinyShips() {
+            for (let i = tinyShips.length - 1; i >= 0; i--) {
+                tinyShips[i].y += tinyShips[i].speed;
+                if (tinyShips[i].y > canvas.height + 20) {
+                    tinyShips.splice(i, 1);
+                }
+            }
+            // Spawn logic
+            tinyShipTimer++;
+            if (tinyShipTimer > tinyShipInterval) {
+                const count = 1 + Math.floor(Math.random() * 2); // 1 or 2
+                for (let i = 0; i < count; i++) {
+                    const imgIndex = Math.floor(Math.random() * tinyShipImages.length);
+                    tinyShips.push({
+                        x: Math.random() * (canvas.width - 40) + 20,
+                        y: -30,
+                        width: 18 + Math.random() * 8,
+                        height: 18 + Math.random() * 8,
+                        speed: 8 + Math.random() * 4,
+                        imgIndex
+                    });
+                }
+                tinyShipTimer = 0;
+            }
+        }
+
+        function drawTinyShips() {
+            tinyShips.forEach(ship => {
+                const img = tinyShipImages[ship.imgIndex];
+                ctx.save();
+                ctx.globalAlpha = 0.55;
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = '#fff';
+                if (img.loaded) {
+                    ctx.drawImage(img, ship.x, ship.y, ship.width, ship.height);
+                } else {
+                    ctx.fillStyle = '#888';
+                    ctx.fillRect(ship.x, ship.y, ship.width, ship.height);
+                }
+                ctx.globalAlpha = 1;
+                ctx.shadowBlur = 0;
+                ctx.restore();
             });
         }
 
         function updateStars() {
             stars.forEach(star => {
+                star.speed = star.baseSpeed * starSpeedMultiplier;
                 star.y += star.speed;
                 if (star.y > canvas.height) {
                     star.y = 0;
@@ -85,7 +212,14 @@
         }
 
         function drawShip() {
+            ctx.save();
+            ctx.shadowBlur = 30;
+            ctx.shadowColor = 'cyan';
+            ctx.globalAlpha = 0.95;
             ctx.drawImage(ship, shipX, shipY, shipWidth, shipHeight);
+            ctx.globalAlpha = 1;
+            ctx.shadowBlur = 0;
+            ctx.restore();
         }
 
         function updateShip() {
@@ -96,34 +230,96 @@
         }
 
         function drawLasers() {
-            ctx.fillStyle = 'blue';
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = 'green';
+            ctx.save();
             lasers.forEach(laser => {
-                ctx.fillRect(laser.x + 10, laser.y, 2, 10); // Adjusted spacing
-                ctx.fillRect(laser.x + shipWidth - 12, laser.y, 2, 10); // Adjusted spacing
+                if (laser.giant) {
+                    ctx.shadowBlur = 32;
+                    ctx.shadowColor = 'yellow';
+                    ctx.fillStyle = 'yellow';
+                    ctx.fillRect(laser.x + shipWidth/2 - 8, laser.y - 30, 16, 80);
+                } else if (laser.spread) {
+                    ctx.shadowBlur = 18;
+                    ctx.shadowColor = 'orange';
+                    ctx.fillStyle = 'orange';
+                    ctx.fillRect(laser.x - 2, laser.y, 4, 18);
+                } else if (powerupState.double_laser && typeof laser.offset !== 'undefined') {
+                    ctx.shadowBlur = 18;
+                    ctx.shadowColor = 'aqua';
+                    ctx.fillStyle = 'aqua';
+                    ctx.fillRect(laser.x + laser.offset, laser.y, 2, 14);
+                } else {
+                    ctx.shadowBlur = 18;
+                    ctx.shadowColor = '#00fff7';
+                    ctx.fillStyle = 'aqua';
+                    ctx.fillRect(laser.x + 10, laser.y, 2, 14);
+                    ctx.fillRect(laser.x + shipWidth - 12, laser.y, 2, 14);
+                }
             });
             ctx.shadowBlur = 0;
+            ctx.restore();
         }
 
         function updateLasers() {
             lasers.forEach((laser, index) => {
-                laser.y -= laserSpeed;
-                if (laser.y < 0) {
+                if (laser.spread) {
+                    laser.x += laser.dx;
+                    laser.y += laser.dy;
+                } else {
+                    laser.y -= laserSpeed;
+                }
+                if (laser.y < 0 || laser.y > canvas.height || laser.x < 0 || laser.x > canvas.width) {
                     lasers.splice(index, 1);
                 }
             });
         }
 
+        let mouseDown = false;
         function fireLasers() {
-            if (keys[' '] && laserCooldownCounter <= 0) {
-                lasers.push({ x: shipX, y: shipY });
-                laserCooldownCounter = laserCooldown;
+            let cooldown = laserCooldown;
+            if (powerupState.rapid_fire) cooldown = Math.max(5, laserCooldown / 2);
+            if ((keys[' '] || mouseDown) && laserCooldownCounter <= 0) {
+                // Giant laser takes priority, but can still be piercing
+                if (powerupState.giant_laser) {
+                    lasers.push({ x: shipX, y: shipY, giant: true, piercing: !!powerupState.piercing });
+                } else {
+                    let fired = false;
+                    // Spread shot + double laser combo
+                    if (powerupState.spread_shot) {
+                        const spreadAngles = [-0.3, -0.15, 0, 0.15, 0.3];
+                        const centerX = shipX + shipWidth / 2;
+                        spreadAngles.forEach(angle => {
+                            if (powerupState.double_laser) {
+                                // Double laser for each spread
+                                lasers.push({ x: centerX - 14, y: shipY, dx: Math.sin(angle) * 7, dy: -laserSpeed * Math.cos(angle), spread: true, offset: -14, piercing: !!powerupState.piercing });
+                                lasers.push({ x: centerX + 14, y: shipY, dx: Math.sin(angle) * 7, dy: -laserSpeed * Math.cos(angle), spread: true, offset: 14, piercing: !!powerupState.piercing });
+                            } else {
+                                lasers.push({ x: centerX, y: shipY, dx: Math.sin(angle) * 7, dy: -laserSpeed * Math.cos(angle), spread: true, piercing: !!powerupState.piercing });
+                            }
+                        });
+                        fired = true;
+                    }
+                    // Double laser only (no spread)
+                    if (powerupState.double_laser && !fired) {
+                        lasers.push({ x: shipX, y: shipY, offset: -14, piercing: !!powerupState.piercing });
+                        lasers.push({ x: shipX, y: shipY, offset: 0, piercing: !!powerupState.piercing });
+                        lasers.push({ x: shipX, y: shipY, offset: shipWidth - 12, piercing: !!powerupState.piercing });
+                        lasers.push({ x: shipX, y: shipY, offset: shipWidth - 12 + 14, piercing: !!powerupState.piercing });
+                        fired = true;
+                    }
+                    // Spread/double not active: normal laser
+                    if (!fired) {
+                        lasers.push({ x: shipX, y: shipY, piercing: !!powerupState.piercing });
+                    }
+                }
+                laserCooldownCounter = cooldown;
             }
             if (laserCooldownCounter > 0) {
                 laserCooldownCounter--;
             }
         }
+
+        window.addEventListener('mousedown', () => { mouseDown = true; });
+        window.addEventListener('mouseup', () => { mouseDown = false; });
 
         function drawFlames() {
             flames.forEach(flame => {
@@ -161,105 +357,63 @@
             }
         }
 
-        const enemyShip = new Image();
-        enemyShip.src = '/GalacticBrow/FatFly.png';
+// drawEnemies now imported
 
-        function drawEnemies() {
-            enemies.forEach(enemy => {
-                ctx.save();
-                ctx.translate(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2);
-                ctx.rotate(Math.PI); // Rotate 180 degrees
-                ctx.drawImage(enemyShip, -enemy.width / 2, -enemy.height / 2, enemy.width, enemy.height);
-                ctx.restore();
-            });
-        }
+// updateEnemies now imported
 
-        function updateEnemies() {
-            enemies.forEach(enemy => {
-                enemy.x += Math.cos(enemy.angle) * enemySpeed;
-                enemy.y += Math.sin(enemy.angle) * enemySpeed;
-                enemy.angle += 0.01; // Example geometric pattern
-            });
-        }
+// drawEnemyLasers and updateEnemyLasers now imported
 
-        function drawEnemyLasers() {
-            ctx.fillStyle = 'red';
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = 'red';
-            enemyLasers.forEach(laser => {
-                ctx.fillRect(laser.x, laser.y, 2, 10);
-            });
-            ctx.shadowBlur = 0;
-        }
+// fireEnemyLasers now imported
 
-        function updateEnemyLasers() {
-            enemyLasers.forEach((laser, index) => {
-                laser.y += laserSpeed; // Reverse direction
-                if (laser.y > canvas.height) {
-                    enemyLasers.splice(index, 1);
-                }
-            });
-        }
-
-        function fireEnemyLasers() {
-            if (enemyFireCounter <= 0) {
-                enemies.forEach(enemy => {
-                    enemyLasers.push({ x: enemy.x + enemy.width / 2, y: enemy.y + enemy.height });
-                });
-                enemyFireCounter = enemyFireRate;
-            }
-            if (enemyFireCounter > 0) {
-                enemyFireCounter--;
-            }
-        }
-
-        function spawnEnemies() {
-            for (let i = 0; i < 5; i++) {
-                enemies.push({
-                    x: Math.random() * canvas.width,
-                    y: Math.random() * canvas.height / 2,
-                    width: 50,
-                    height: 50,
-                    angle: 0,
-                    health: 10
-                });
-            }
-        }
+// spawnEnemies now imported
 
         function drawHealthBar(x, y, width, height, health, maxHealth) {
-            ctx.fillStyle = 'red';
+            // Border
+            ctx.save();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#00fff7';
+            ctx.strokeRect(x - 2, y - 2, width + 4, height + 4);
+            // Background
+            const grad = ctx.createLinearGradient(x, y, x + width, y);
+            grad.addColorStop(0, '#2a0033');
+            grad.addColorStop(1, '#001a33');
+            ctx.fillStyle = grad;
             ctx.fillRect(x, y, width, height);
-            ctx.fillStyle = 'green';
+            // Health
+            const healthGrad = ctx.createLinearGradient(x, y, x + width, y);
+            healthGrad.addColorStop(0, '#00ff99');
+            healthGrad.addColorStop(1, '#00fff7');
+            ctx.fillStyle = healthGrad;
             ctx.fillRect(x, y, (health / maxHealth) * width, height);
+            // Text
+            ctx.font = 'bold 18px monospace';
+            ctx.fillStyle = '#fff';
+            ctx.shadowColor = '#00fff7';
+            ctx.shadowBlur = 8;
+            ctx.fillText('SHIELDS', x + 10, y + height - 5);
+            ctx.shadowBlur = 0;
+            ctx.restore();
         }
 
+        // Player laser vs. enemy and enemy laser vs. player collision now handled by enemyship.js
+        // Enhanced: spawn powerups on enemy death
         function checkCollisions() {
-            lasers.forEach((laser, laserIndex) => {
-                enemies.forEach((enemy, enemyIndex) => {
-                    if (laser.x < enemy.x + enemy.width &&
-                        laser.x + 2 > enemy.x &&
-                        laser.y < enemy.y + enemy.height &&
-                        laser.y + 10 > enemy.y) {
-                        enemies.splice(enemyIndex, 1);
-                        lasers.splice(laserIndex, 1);
-                    }
+            // Get destroyed enemy positions
+            const destroyed = checkPlayerLaserHitsEnemies(lasers, enemies, shipWidth);
+            // For each destroyed, spawn a powerup at the enemy's position
+            if (destroyed.length > 0) {
+                destroyed.forEach(pos => {
+                    spawnPowerup(pos.x - 14, pos.y - 14); // Center orb on enemy
                 });
-            });
-
-            enemyLasers.forEach((laser, laserIndex) => {
-                if (laser.x < shipX + shipWidth &&
-                    laser.x + 2 > shipX &&
-                    laser.y < shipY + shipHeight &&
-                    laser.y + 10 > shipY) {
-                    playerHealth -= 2;
-                    enemyLasers.splice(laserIndex, 1);
-                }
-            });
+            }
+            // Enemy laser vs. player handled by checkEnemyLaserHitsPlayer in main loop
         }
 
-                function animate() {
+        function animate() {
             drawStars();
             updateStars();
+            updateTinyShips();
+            drawTinyShips();
             updateShip();
             fireLasers();
             updateLasers();
@@ -268,20 +422,100 @@
             updateFlames();
             drawFlames();
             drawShip();
-            updateEnemies();
-            drawEnemies();
-            fireEnemyLasers();
-            updateEnemyLasers();
-            drawEnemyLasers();
+            updateEnemies(canvas);
+            drawEnemies(ctx, enemyShipImages);
+            enemyFireCounter = fireEnemyLasers(enemyLasers, enemyFireCounter, enemyFireRate);
+            updateEnemyLasers(enemyLasers, canvas, laserSpeed);
+            drawEnemyLasers(ctx, enemyLasers);
+            // Powerups
+            updatePowerups(canvas);
+            drawPowerups(ctx);
             checkCollisions();
+            // Powerup collection
+            checkPowerupCollection(shipX, shipY, shipWidth, shipHeight, applyPowerup);
+            playerHealth = checkEnemyLaserHitsPlayer(enemyLasers, shipX, shipY, shipWidth, shipHeight, playerHealth);
             drawHealthBar(10, 10, 200, 20, playerHealth, 100);
+
+            // Warp effect and infinite waves
+            if (!warping && enemies.length === 0) {
+                warping = true;
+                warpTimer = 0;
+                starSpeedMultiplier = 8;
+            }
+            if (warping) {
+                warpTimer++;
+                if (warpTimer < 10) {
+                    ctx.save();
+                    ctx.globalAlpha = 0.15;
+                    ctx.fillStyle = '#fff';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.restore();
+                }
+                if (warpTimer > 40) {
+                    warping = false;
+                    starSpeedMultiplier = 1;
+                    spawnEnemies(canvas, enemyShipImages);
+                }
+            }
+
             requestAnimationFrame(animate);
         }
-
-        ship.onload = () => {
-            spawnEnemies();
-            animate();
+        // Apply powerup effects to player weapons
+        let powerupState = {
+            double_laser: false,
+            spread_shot: false,
+            piercing: false,
+            rapid_fire: false,
+            giant_laser: false
         };
+
+        function applyPowerup(type) {
+            powerupState[type] = true;
+            // Optionally: set a timer to expire after some time
+            // setTimeout(() => { powerupState[type] = false; }, 12000);
+        }
+
+        // Wait for all enemy images and player ship to load before starting
+        function allEnemyImagesLoaded() {
+            return enemyShipImages.every(img => img.loaded);
+        }
+
+        function playerShipLoaded() {
+            return ship.loaded;
+        }
+
+        let gameStarted = false;
+        let fallbackTimeout = null;
+        function startGameWhenReady() {
+            if (gameStarted) return;
+            if (playerShipLoaded() && allEnemyImagesLoaded()) {
+                gameStarted = true;
+                spawnEnemies(canvas, enemyShipImages);
+                animate();
+                console.log('Game started: all images loaded');
+            } else {
+                setTimeout(startGameWhenReady, 50);
+            }
+        }
+
+        // Fallback: start game after 5 seconds even if some images failed
+        function fallbackStart() {
+            if (!gameStarted) {
+                gameStarted = true;
+                spawnEnemies(canvas, enemyShipImages);
+                animate();
+                ctx.save();
+                ctx.font = '30px sans-serif';
+                ctx.fillStyle = 'red';
+                ctx.fillText('Some images failed to load!', 50, 100);
+                ctx.restore();
+                console.warn('Game started after fallback timeout. Some images may be missing.');
+            }
+        }
+
+        // Start game when all images are loaded
+        startGameWhenReady();
+        fallbackTimeout = setTimeout(fallbackStart, 5000);
     </script>
 </body>
 </html>
