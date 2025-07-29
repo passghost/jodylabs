@@ -5,31 +5,32 @@ export const powerups = [];
 
 // Types of powerups
 export const POWERUP_TYPES = [
-  {
-    type: 'double_laser',
-    color: 'aqua',
-    description: 'Double Lasers: Fire two extra lasers per shot.'
-  },
-  {
-    type: 'spread_shot',
-    color: 'orange',
-    description: 'Spread Shot: Fire in a wide arc.'
-  },
-  {
-    type: 'piercing',
-    color: 'lime',
-    description: 'Piercing: Lasers go through enemies.'
-  },
-  {
-    type: 'rapid_fire',
-    color: 'magenta',
-    description: 'Rapid Fire: Much faster fire rate.'
-  },
-  {
-    type: 'giant_laser',
-    color: 'yellow',
-    description: 'Giant Laser: Fires a huge, powerful laser.'
-  }
+  // 5 tiers for each powerup type
+  ...[1,2,3,4,5].map(i => ({
+    type: 'double_laser' + (i > 1 ? '_' + i : ''),
+    color: ['aqua','#00e6e6','#00bfff','#0099ff','#0055ff'][i-1],
+    description: `Double Lasers Tier ${i}`
+  })),
+  ...[1,2,3,4,5].map(i => ({
+    type: 'spread_shot' + (i > 1 ? '_' + i : ''),
+    color: ['orange','#ffb347','#ff9900','#ff6600','#ff3300'][i-1],
+    description: `Spread Shot Tier ${i}`
+  })),
+  ...[1,2,3,4,5].map(i => ({
+    type: 'piercing' + (i > 1 ? '_' + i : ''),
+    color: ['lime','#66ff66','#00ff99','#00ffcc','#00ffff'][i-1],
+    description: `Piercing Tier ${i}`
+  })),
+  ...[1,2,3,4,5].map(i => ({
+    type: 'rapid_fire' + (i > 1 ? '_' + i : ''),
+    color: ['magenta','#ff66cc','#ff33cc','#ff00cc','#cc00ff'][i-1],
+    description: `Rapid Fire Tier ${i}`
+  })),
+  ...[1,2,3,4,5].map(i => ({
+    type: 'giant_laser' + (i > 1 ? '_' + i : ''),
+    color: ['yellow','#fff700','#fff200','#ffe600','#fff'][i-1],
+    description: `Giant Laser Tier ${i}`
+  })),
 ];
 
 // Spawn a powerup at (x, y) with random type
