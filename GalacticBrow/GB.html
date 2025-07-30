@@ -1,0 +1,1987 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scrolling Starfield with Player Ship</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: black;
+        }
+
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="starfield"></canvas>
+    <script type="module">
+        const canvas = document.getElementById('starfield');
+        const ctx = canvas.getContext('2d');
+
+        // Handle browser scaling and device pixel ratio
+        function setupCanvas() {
+            const dpr = window.devicePixelRatio || 1;
+            const displayWidth = window.innerWidth;
+            const displayHeight = window.innerHeight;
+
+            // Set the actual canvas size in memory (scaled up for high DPI)
+            canvas.width = displayWidth * dpr;
+            canvas.height = displayHeight * dpr;
+
+            // Scale the canvas back down using CSS
+            canvas.style.width = displayWidth + 'px';
+            canvas.style.height = displayHeight + 'px';
+
+            // Scale the drawing context so everything draws at the correct size
+            ctx.scale(dpr, dpr);
+
+            return { width: displayWidth, height: displayHeight };
+        }
+
+        let canvasSize = setupCanvas();
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            canvasSize = setupCanvas();
+            // Reposition ship to stay centered
+            shipX = canvasSize.width / 2 - shipWidth / 2;
+            shipY = canvasSize.height / 2 - shipHeight / 2;
+        });
+
+        const stars = [];
+        const numStars = 150; // Reduced star count for performance
+        let starSpeedMultiplier = 2.5; // Faster base speed
+        let warping = false;
+        let warpTimer = 0;
+
+        // Game state
+        let gameLevel = 1;
+        let gameScore = 0;
+        let enemySpawnRate = 1.0;
+        let difficultyTimer = 0;
+        const DIFFICULTY_INCREASE_INTERVAL = 1800; // 30 seconds at 60fps
+
+        // Tiny background ships
+        const tinyShips = [];
+        let tinyShipTimer = 0;
+        const tinyShipInterval = 1200; // ~20 seconds at 60fps
+
+        for (let i = 0; i < numStars; i++) {
+            stars.push({
+                x: Math.random() * canvasSize.width,
+                y: Math.random() * canvasSize.height,
+                baseSpeed: (Math.random() * 30 + 15) * 1.5, // Much faster stars
+                speed: 0, // will be set in updateStars
+                size: Math.random() * 2.5 + 0.8, // Larger, more varied stars
+                brightness: Math.random() * 0.7 + 0.6, // Brighter stars
+                twinkle: Math.random() * Math.PI * 2, // For twinkling effect
+                color: Math.random() < 0.1 ? Math.random() * 60 + 180 : window.starHue || 60 // Some blue/purple stars
+            });
+        }
+
+        // Player ship
+        const ship = new Image();
+        ship.loaded = false;
+        ship.onload = () => {
+            ship.loaded = true;
+            console.log('Player ship loaded');
+        };
+        ship.onerror = () => {
+            ship.loaded = false;
+            console.error('Player ship failed to load');
+        };
+        ship.src = 'Vibrex.png';
+        if (ship.complete && ship.naturalWidth !== 0) {
+            ship.loaded = true;
+            console.log('Player ship loaded (from cache)');
+        }
+        const shipWidth = 60; // Normalized size
+        const shipHeight = 60; // Normalized size
+        let shipX = canvasSize.width / 2 - shipWidth / 2;
+        let shipY = canvasSize.height / 2 - shipHeight / 2;
+        const shipSpeed = 0.6; // Improved responsiveness
+        const shipMaxSpeed = 18; // Maximum velocity
+        let shipVX = 0;
+        let shipVY = 0;
+        const shipFriction = 0.88; // More pronounced momentum
+        const shipAcceleration = 0.8; // Smoother acceleration
+        let playerHealth = 100;
+
+        // Enemy ship images
+        const enemyShipFilenames = [
+            'Eagle5.png',
+            'FatFly.png',
+            'FrontLineRunner.png',
+            'ShipLevel2A.png',
+            'sNUBship.png',
+            'Thrower.png',
+            'Vibrex.png' // Optionally include player ship as enemy
+        ];
+        const enemyShipImages = enemyShipFilenames.map(filename => {
+            const img = new Image();
+            img.loaded = false;
+            img.onload = () => {
+                img.loaded = true;
+                console.log('Loaded enemy image:', filename);
+            };
+            img.onerror = () => {
+                img.loaded = false;
+                console.error('Failed to load enemy image:', filename);
+            };
+            img.src = filename;
+            if (img.complete && img.naturalWidth !== 0) {
+                img.loaded = true;
+                console.log('Loaded enemy image (from cache):', filename);
+            }
+            return img;
+        });
+
+        // Now that enemyShipImages is defined, assign for tiny ships
+        const tinyShipImages = enemyShipImages;
+
+        const keys = {};
+        const lasers = [];
+        const laserSpeed = 10;
+        const laserCooldown = 20; // Faster fire rate for click
+        let laserCooldownCounter = 0;
+        const flames = [];
+        import { enemies, spawnEnemies, updateEnemies, drawEnemies, updateEnemyLasers, drawEnemyLasers, checkEnemyLaserHitsPlayer, checkPlayerLaserHitsEnemies, spawnBossEnemy } from './enemyship.js';
+        import { enemyWeaponTypes, getRandomEnemyWeapon } from './enemyweapons.js';
+        import { powerups, spawnPowerup, updatePowerups, drawPowerups, checkPowerupCollection } from './powerups.js';
+        import { fireAllWeapons } from './weapons.js';
+        import { getEnemyHp } from './enemy_balance.js';
+
+        // --- Drone Support Ships ---
+        const drones = [];
+        const MAX_DRONES = 3;
+        const DRONE_OFFSET = [
+            { x: -90, y: 0 },
+            { x: 90, y: 0 },
+            { x: 0, y: 90 }
+        ];
+        const DRONE_FIRE_DELAY = 6;
+        let droneFireCounter = 0;
+
+        // --- Chafe System ---
+        const chafeParticles = [];
+        let chafeActive = false;
+        let chafeCooldown = 0;
+        const CHAFE_COOLDOWN_TIME = 300; // 5 seconds at 60fps
+        const CHAFE_DURATION = 180; // 3 seconds
+        const CHAFE_RANGE = 200; // Effective range
+
+        // --- Powerup Feedback System ---
+        let recentPowerups = [];
+        const POWERUP_DISPLAY_TIME = 180; // 3 seconds
+        const enemyLasers = [];
+        const enemyFireRate = 100;
+        // Make enemy fire rate much faster
+        const enemyFireRateFast = 40; // Lowered from 100
+        let enemyFireCounter = 0;
+
+        // --- MISSILE SYSTEM ---
+        const playerMissiles = [];
+        const enemyMissiles = [];
+        // Using chafeParticles defined above
+        let guidedMissileTarget = null;
+        // Using chafeCooldown defined above
+        const CHAFF_COOLDOWN = 180; // 3 seconds at 60fps
+        let missileGuidanceActive = false;
+
+        // --- ENEMY WEAPON ASSIGNMENT ---
+        // On spawn, assign a random weapon to each enemy
+        function assignEnemyWeapons() {
+            enemies.forEach(enemy => {
+                if (!enemy.weaponType) {
+                    enemy.weaponType = getRandomEnemyWeapon();
+                }
+            });
+        }
+
+        window.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+        });
+
+        window.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+
+            // Restart game on R key
+            if (e.key === 'r' || e.key === 'R') {
+                if (playerHealth <= 0) {
+                    restartGame();
+                }
+            }
+
+            // Launch guided missile on Q key
+            if (e.key === 'q' || e.key === 'Q') {
+                launchGuidedMissile();
+            }
+
+            // Deploy chafe on C key
+            if (e.key === 'c' || e.key === 'C') {
+                deployChafe();
+            }
+
+            // Deploy chaff on E key
+            if (e.key === 'e' || e.key === 'E') {
+                deployChaff();
+            }
+        });
+
+        // Draw a faint nebula background
+        function drawNebula() {
+            // Nebula background removed for performance
+        }
+
+        // Star hue for background
+        if (window.starHue === undefined) window.starHue = 60; // default hue
+        function setStarHueForLevel() {
+            window.starHue = (window.starHue + 60 + Math.floor(Math.random() * 120)) % 360;
+        }
+
+        function drawStars() {
+            ctx.clearRect(0, 0, canvasSize.width, canvasSize.height);
+            drawNebula();
+
+            stars.forEach(star => {
+                ctx.save();
+
+                // Twinkling effect
+                star.twinkle += 0.05;
+                const twinkleIntensity = (Math.sin(star.twinkle) + 1) * 0.3 + 0.4;
+                const currentBrightness = star.brightness * twinkleIntensity;
+
+                // Create motion blur effect for fast-moving stars
+                const alpha = Math.min(1, currentBrightness * (star.speed / 40));
+                ctx.globalAlpha = alpha;
+
+                // Enhanced star trail for speed effect
+                if (star.speed > 20) {
+                    const trailLength = Math.min(star.speed / 2.5, 25);
+                    const gradient = ctx.createLinearGradient(
+                        star.x, star.y - trailLength,
+                        star.x, star.y
+                    );
+                    gradient.addColorStop(0, `hsla(${star.color}, 90%, ${80 * currentBrightness}%, 0)`);
+                    gradient.addColorStop(0.7, `hsla(${star.color}, 95%, ${85 * currentBrightness}%, ${alpha * 0.6})`);
+                    gradient.addColorStop(1, `hsla(${star.color}, 100%, ${90 * currentBrightness}%, ${alpha})`);
+
+                    ctx.strokeStyle = gradient;
+                    ctx.lineWidth = star.size * 0.8;
+                    ctx.beginPath();
+                    ctx.moveTo(star.x, star.y - trailLength);
+                    ctx.lineTo(star.x, star.y);
+                    ctx.stroke();
+                }
+
+                // Enhanced star with glow
+                const starGlow = star.size * (1.5 + currentBrightness);
+                ctx.shadowBlur = starGlow;
+                ctx.shadowColor = `hsl(${star.color}, 100%, ${70 * currentBrightness}%)`;
+
+                // Outer glow
+                ctx.fillStyle = `hsla(${star.color}, 80%, ${60 * currentBrightness}%, 0.3)`;
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size * 2, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Main star
+                ctx.fillStyle = `hsl(${star.color}, 95%, ${85 * currentBrightness}%)`;
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Bright core
+                ctx.shadowBlur = star.size * 2;
+                ctx.fillStyle = `hsl(${star.color}, 100%, ${95 * currentBrightness}%)`;
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size * 0.4, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.restore();
+            });
+        }
+
+        // Tiny ships: update and draw
+        function updateTinyShips() {
+            for (let i = tinyShips.length - 1; i >= 0; i--) {
+                tinyShips[i].y += tinyShips[i].speed;
+                if (tinyShips[i].y > canvasSize.height + 20) {
+                    tinyShips.splice(i, 1);
+                }
+            }
+            // Spawn logic
+            tinyShipTimer++;
+            if (tinyShipTimer > tinyShipInterval) {
+                const count = 1 + Math.floor(Math.random() * 2); // 1 or 2
+                for (let i = 0; i < count; i++) {
+                    const imgIndex = Math.floor(Math.random() * tinyShipImages.length);
+                    tinyShips.push({
+                        x: Math.random() * (canvasSize.width - 40) + 20,
+                        y: -30,
+                        width: 18 + Math.random() * 8,
+                        height: 18 + Math.random() * 8,
+                        speed: 2 + Math.random() * 2, // Much slower tiny ships
+                        imgIndex
+                    });
+                }
+                tinyShipTimer = 0;
+            }
+        }
+
+        function drawTinyShips() {
+            tinyShips.forEach(ship => {
+                const img = tinyShipImages[ship.imgIndex];
+                ctx.save();
+                ctx.globalAlpha = 0.4; // Lowered from 0.55
+                ctx.shadowBlur = 0; // Remove glow
+                ctx.shadowColor = '#fff';
+                if (img.loaded) {
+                    ctx.drawImage(img, ship.x, ship.y, ship.width, ship.height);
+                } else {
+                    ctx.fillStyle = '#888';
+                    ctx.fillRect(ship.x, ship.y, ship.width, ship.height);
+                }
+                ctx.globalAlpha = 1;
+                ctx.shadowBlur = 0;
+                ctx.restore();
+            });
+        }
+
+        function updateStars() {
+            stars.forEach(star => {
+                star.speed = star.baseSpeed * starSpeedMultiplier;
+                star.y += star.speed;
+                if (star.y > canvasSize.height) {
+                    star.y = 0;
+                    star.x = Math.random() * canvasSize.width;
+                    // Randomize star properties when respawning
+                    star.color = Math.random() < 0.1 ? Math.random() * 60 + 180 : window.starHue || 60;
+                    star.brightness = Math.random() * 0.7 + 0.6;
+                    star.size = Math.random() * 2.5 + 0.8;
+                }
+            });
+        }
+
+        // --- MISSILE SYSTEM FUNCTIONS ---
+        function launchGuidedMissile() {
+            // Find nearest enemy as target
+            let nearestEnemy = null;
+            let nearestDistance = Infinity;
+
+            enemies.forEach(enemy => {
+                const dx = enemy.x - shipX;
+                const dy = enemy.y - shipY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                if (distance < nearestDistance) {
+                    nearestDistance = distance;
+                    nearestEnemy = enemy;
+                }
+            });
+
+            if (nearestEnemy) {
+                playerMissiles.push({
+                    x: shipX + shipWidth / 2,
+                    y: shipY,
+                    vx: 0,
+                    vy: -8,
+                    target: nearestEnemy,
+                    type: 'guided',
+                    life: 300, // 5 seconds
+                    trail: []
+                });
+            }
+        }
+
+        function deployChaff() {
+            if (chaffCooldown > 0) return;
+
+            chaffCooldown = CHAFF_COOLDOWN;
+
+            // Create chaff cloud
+            for (let i = 0; i < 15; i++) {
+                chafeParticles.push({
+                    x: shipX + shipWidth / 2 + (Math.random() - 0.5) * 40,
+                    y: shipY + shipHeight / 2 + (Math.random() - 0.5) * 40,
+                    vx: (Math.random() - 0.5) * 8,
+                    vy: (Math.random() - 0.5) * 8,
+                    life: 120 + Math.random() * 60,
+                    maxLife: 120 + Math.random() * 60,
+                    size: Math.random() * 3 + 1
+                });
+            }
+        }
+
+        function updateMissiles() {
+            // Update player missiles
+            for (let i = playerMissiles.length - 1; i >= 0; i--) {
+                const missile = playerMissiles[i];
+                missile.life--;
+
+                if (missile.type === 'guided' && missile.target && missile.life > 0) {
+                    // Homing behavior
+                    const dx = missile.target.x - missile.x;
+                    const dy = missile.target.y - missile.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance > 0) {
+                        const turnRate = 0.15;
+                        missile.vx += (dx / distance) * turnRate;
+                        missile.vy += (dy / distance) * turnRate;
+
+                        // Limit speed
+                        const speed = Math.sqrt(missile.vx * missile.vx + missile.vy * missile.vy);
+                        if (speed > 12) {
+                            missile.vx = (missile.vx / speed) * 12;
+                            missile.vy = (missile.vy / speed) * 12;
+                        }
+                    }
+                }
+
+                // Update position
+                missile.x += missile.vx;
+                missile.y += missile.vy;
+
+                // Add to trail
+                missile.trail.push({ x: missile.x, y: missile.y });
+                if (missile.trail.length > 8) missile.trail.shift();
+
+                // Remove if expired or off screen
+                if (missile.life <= 0 || missile.y < -50 || missile.y > canvasSize.height + 50 ||
+                    missile.x < -50 || missile.x > canvasSize.width + 50) {
+                    playerMissiles.splice(i, 1);
+                }
+            }
+
+            // Update enemy missiles
+            for (let i = enemyMissiles.length - 1; i >= 0; i--) {
+                const missile = enemyMissiles[i];
+                missile.life--;
+
+                // Check if 5 seconds have passed since launch
+                const timeSinceLaunch = Date.now() - missile.launchTime;
+                if (timeSinceLaunch > 5000) {
+                    missile.canHitEnemies = true;
+                }
+
+                // Check for chaff interference
+                let chafeRedirected = false;
+                if (chafeParticles.length > 0) {
+                    chafeParticles.forEach(chaff => {
+                        const dx = chaff.x - missile.x;
+                        const dy = chaff.y - missile.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+
+                        if (distance < 80) {
+                            missile.chafeConfused = true;
+                            missile.confusionTimer = 120; // 2 seconds of confusion
+                            chafeRedirected = true;
+                        }
+                    });
+                }
+
+                // Handle confusion timer
+                if (missile.confusionTimer > 0) {
+                    missile.confusionTimer--;
+                    if (missile.confusionTimer <= 0) {
+                        missile.chafeConfused = false;
+                    }
+                }
+
+                // Determine target based on confusion state
+                let targetX, targetY;
+                if (missile.chafeConfused && chafeParticles.length > 0) {
+                    // Target random chaff particle
+                    const randomChaff = chafeParticles[Math.floor(Math.random() * chafeParticles.length)];
+                    targetX = randomChaff.x;
+                    targetY = randomChaff.y;
+                } else {
+                    // Target player
+                    targetX = shipX + shipWidth / 2;
+                    targetY = shipY + shipHeight / 2;
+                }
+
+                // Homing behavior
+                if (missile.life > 0) {
+                    const dx = targetX - missile.x;
+                    const dy = targetY - missile.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance > 0) {
+                        const turnRate = missile.chafeConfused ? 0.15 : 0.08; // More erratic when confused
+                        missile.vx += (dx / distance) * turnRate;
+                        missile.vy += (dy / distance) * turnRate;
+
+                        // Limit speed
+                        const speed = Math.sqrt(missile.vx * missile.vx + missile.vy * missile.vy);
+                        if (speed > 10) {
+                            missile.vx = (missile.vx / speed) * 10;
+                            missile.vy = (missile.vy / speed) * 10;
+                        }
+                    }
+                }
+
+                // Update position
+                missile.x += missile.vx;
+                missile.y += missile.vy;
+
+                // Check collision with enemies after 5 seconds
+                if (missile.canHitEnemies) {
+                    for (let j = enemies.length - 1; j >= 0; j--) {
+                        const enemy = enemies[j];
+                        const dx = missile.x - (enemy.x + enemy.width / 2);
+                        const dy = missile.y - (enemy.y + enemy.height / 2);
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+
+                        if (distance < 30) {
+                            // Missile hit enemy
+                            enemy.health -= 40; // Significant damage
+                            enemyMissiles.splice(i, 1);
+
+                            // Create explosion effect
+                            for (let k = 0; k < 8; k++) {
+                                flames.push({
+                                    x: missile.x + (Math.random() - 0.5) * 20,
+                                    y: missile.y + (Math.random() - 0.5) * 20,
+                                    size: Math.random() * 8 + 6,
+                                    speed: Math.random() * 3 + 1
+                                });
+                            }
+
+                            // Remove enemy if health depleted
+                            if (enemy.health <= 0) {
+                                enemies.splice(j, 1);
+                                gameScore += 500; // Bonus points for missile kill
+                            }
+                            break;
+                        }
+                    }
+                }
+
+                // Add to trail
+                missile.trail.push({ x: missile.x, y: missile.y });
+                if (missile.trail.length > 6) missile.trail.shift();
+
+                // Remove if expired or off screen
+                if (missile.life <= 0 || missile.y < -50 || missile.y > canvasSize.height + 50) {
+                    enemyMissiles.splice(i, 1);
+                }
+            }
+        }
+
+        function updateChaff() {
+            if (chafeCooldown > 0) chafeCooldown--;
+
+            for (let i = chafeParticles.length - 1; i >= 0; i--) {
+                const chaff = chafeParticles[i];
+                chaff.life--;
+                chaff.x += chaff.vx;
+                chaff.y += chaff.vy;
+                chaff.vx *= 0.98; // Slow down
+                chaff.vy *= 0.98;
+
+                if (chaff.life <= 0) {
+                    chafeParticles.splice(i, 1);
+                }
+            }
+        }
+
+        function drawMissiles() {
+            ctx.save();
+
+            // Draw player missiles
+            playerMissiles.forEach(missile => {
+                // Draw trail
+                ctx.strokeStyle = 'rgba(255, 100, 0, 0.8)';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                missile.trail.forEach((point, index) => {
+                    if (index === 0) ctx.moveTo(point.x, point.y);
+                    else ctx.lineTo(point.x, point.y);
+                });
+                ctx.stroke();
+
+                // Draw missile
+                ctx.fillStyle = '#ff6600';
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = '#ff6600';
+                ctx.beginPath();
+                ctx.arc(missile.x, missile.y, 4, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Draw guidance indicator
+                if (missile.type === 'guided' && missile.target) {
+                    ctx.strokeStyle = 'rgba(255, 255, 0, 0.5)';
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([5, 5]);
+                    ctx.beginPath();
+                    ctx.moveTo(missile.x, missile.y);
+                    ctx.lineTo(missile.target.x, missile.target.y);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+            });
+
+            // Draw enemy missiles
+            enemyMissiles.forEach(missile => {
+                // Change colors when confused by chaff
+                let trailColor = 'rgba(255, 0, 100, 0.8)';
+                let missileColor = '#ff0066';
+                let shadowColor = '#ff0066';
+
+                if (missile.chafeConfused) {
+                    // Flickering yellow/red when confused
+                    const confused = Math.random() > 0.5;
+                    trailColor = confused ? 'rgba(255, 255, 0, 0.8)' : 'rgba(255, 100, 100, 0.8)';
+                    missileColor = confused ? '#ffff00' : '#ff6666';
+                    shadowColor = confused ? '#ffff00' : '#ff6666';
+                }
+
+                // Draw trail
+                ctx.strokeStyle = trailColor;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                missile.trail.forEach((point, index) => {
+                    if (index === 0) ctx.moveTo(point.x, point.y);
+                    else ctx.lineTo(point.x, point.y);
+                });
+                ctx.stroke();
+
+                // Draw missile (same size as player missiles for consistency)
+                ctx.fillStyle = missileColor;
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = shadowColor;
+                ctx.beginPath();
+                ctx.arc(missile.x, missile.y, 4, 0, Math.PI * 2); // Same size as player missiles
+                ctx.fill();
+
+                // Draw timer indicator for enemy collision capability
+                if (missile.canHitEnemies) {
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.arc(missile.x, missile.y, 8, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            });
+
+            ctx.shadowBlur = 0;
+            ctx.restore();
+        }
+
+        function drawChaff() {
+            ctx.save();
+            chafeParticles.forEach(chaff => {
+                const alpha = chaff.life / chaff.maxLife;
+                ctx.globalAlpha = alpha * 0.8;
+                ctx.fillStyle = '#ffff00';
+                ctx.shadowBlur = 6;
+                ctx.shadowColor = '#ffff00';
+                ctx.beginPath();
+                ctx.arc(chaff.x, chaff.y, chaff.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.shadowBlur = 0;
+            ctx.globalAlpha = 1;
+            ctx.restore();
+        }
+
+        function checkMissileCollisions() {
+            // Player missiles vs enemies
+            for (let i = playerMissiles.length - 1; i >= 0; i--) {
+                const missile = playerMissiles[i];
+                for (let j = enemies.length - 1; j >= 0; j--) {
+                    const enemy = enemies[j];
+                    const dx = missile.x - (enemy.x + enemy.width / 2);
+                    const dy = missile.y - (enemy.y + enemy.height / 2);
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < 25) {
+                        // Missile hit enemy
+                        enemy.health -= 50; // Missiles do more damage
+                        playerMissiles.splice(i, 1);
+
+                        // Create explosion effect
+                        for (let k = 0; k < 8; k++) {
+                            flames.push({
+                                x: missile.x + (Math.random() - 0.5) * 20,
+                                y: missile.y + (Math.random() - 0.5) * 20,
+                                size: Math.random() * 8 + 6,
+                                speed: Math.random() * 3 + 1
+                            });
+                        }
+                        break;
+                    }
+                }
+            }
+
+            // Enemy missiles vs player
+            for (let i = enemyMissiles.length - 1; i >= 0; i--) {
+                const missile = enemyMissiles[i];
+                const dx = missile.x - (shipX + shipWidth / 2);
+                const dy = missile.y - (shipY + shipHeight / 2);
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < 30) {
+                    playerHealth -= 25; // Missiles do significant damage
+                    enemyMissiles.splice(i, 1);
+
+                    // Create explosion effect
+                    for (let k = 0; k < 6; k++) {
+                        flames.push({
+                            x: missile.x + (Math.random() - 0.5) * 15,
+                            y: missile.y + (Math.random() - 0.5) * 15,
+                            size: Math.random() * 6 + 4,
+                            speed: Math.random() * 2 + 1
+                        });
+                    }
+                }
+            }
+        }
+
+        function drawDrones() {
+            drones.forEach((drone, i) => {
+                ctx.save();
+
+                const droneSize = shipWidth * 0.65;
+                const droneHeight = shipHeight * 0.65;
+
+                // Drone energy field
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = 'rgba(0,255,150,0.6)';
+                ctx.globalAlpha = 0.3;
+                ctx.beginPath();
+                ctx.arc(drone.x + droneSize / 2, drone.y + droneHeight / 2, droneSize * 0.6, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(0,255,150,0.2)';
+                ctx.fill();
+
+                // Drone hull with green tint
+                ctx.globalAlpha = 0.9;
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = 'rgba(0,255,100,0.8)';
+
+                // Slight rotation for each drone
+                const rotation = Math.sin(Date.now() * 0.001 + i) * 0.1;
+                ctx.translate(drone.x + droneSize / 2, drone.y + droneHeight / 2);
+                ctx.rotate(rotation);
+
+                // Color overlay for drone distinction
+                ctx.filter = 'hue-rotate(120deg) saturate(1.2)';
+                ctx.drawImage(ship, -droneSize / 2, -droneHeight / 2, droneSize, droneHeight);
+                ctx.filter = 'none';
+
+                // Drone status lights
+                ctx.globalAlpha = 0.8 + Math.sin(Date.now() * 0.005 + i * 2) * 0.2;
+                ctx.fillStyle = '#00ff88';
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = '#00ff88';
+                ctx.beginPath();
+                ctx.arc(-droneSize / 4, -droneHeight / 3, 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(droneSize / 4, -droneHeight / 3, 2, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.globalAlpha = 1;
+                ctx.shadowBlur = 0;
+                ctx.restore();
+            });
+        }
+        function drawShip() {
+            ctx.save();
+
+            // Calculate movement intensity for effects
+            const velocityMagnitude = Math.sqrt(shipVX * shipVX + shipVY * shipVY);
+            const thrustIntensity = Math.min(velocityMagnitude / shipMaxSpeed, 1);
+
+            // Draw engine trails based on movement direction
+            if (Math.abs(shipVX) > 1 || Math.abs(shipVY) > 1) {
+                ctx.save();
+
+                // Main engine trail (rear)
+                if (shipVY < -1) { // Moving up
+                    const trailLength = 30 + thrustIntensity * 20;
+                    const gradient = ctx.createLinearGradient(
+                        shipX + shipWidth / 2, shipY + shipHeight,
+                        shipX + shipWidth / 2, shipY + shipHeight + trailLength
+                    );
+                    gradient.addColorStop(0, `rgba(0,150,255,${0.8 * thrustIntensity})`);
+                    gradient.addColorStop(0.5, `rgba(100,200,255,${0.4 * thrustIntensity})`);
+                    gradient.addColorStop(1, 'rgba(255,255,255,0)');
+
+                    ctx.fillStyle = gradient;
+                    ctx.fillRect(shipX + shipWidth / 2 - 4, shipY + shipHeight, 8, trailLength);
+                }
+
+                // Side thrusters
+                if (shipVX < -1) { // Moving left
+                    const gradient = ctx.createRadialGradient(
+                        shipX + shipWidth - 8, shipY + shipHeight / 2, 0,
+                        shipX + shipWidth + 15, shipY + shipHeight / 2, 20
+                    );
+                    gradient.addColorStop(0, `rgba(255,100,50,${0.7 * thrustIntensity})`);
+                    gradient.addColorStop(1, 'rgba(255,150,100,0)');
+
+                    ctx.fillStyle = gradient;
+                    ctx.beginPath();
+                    ctx.arc(shipX + shipWidth + 8, shipY + shipHeight / 2, 15 * thrustIntensity, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (shipVX > 1) { // Moving right
+                    const gradient = ctx.createRadialGradient(
+                        shipX + 8, shipY + shipHeight / 2, 0,
+                        shipX - 15, shipY + shipHeight / 2, 20
+                    );
+                    gradient.addColorStop(0, `rgba(255,100,50,${0.7 * thrustIntensity})`);
+                    gradient.addColorStop(1, 'rgba(255,150,100,0)');
+
+                    ctx.fillStyle = gradient;
+                    ctx.beginPath();
+                    ctx.arc(shipX - 8, shipY + shipHeight / 2, 15 * thrustIntensity, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                ctx.restore();
+            }
+
+            // Ship hull glow based on speed
+            ctx.shadowBlur = 25 + thrustIntensity * 15;
+            ctx.shadowColor = `rgba(80,160,255,${0.4 + thrustIntensity * 0.3})`;
+
+            // Slight ship rotation based on horizontal movement
+            const tilt = shipVX * 0.02;
+            ctx.translate(shipX + shipWidth / 2, shipY + shipHeight / 2);
+            ctx.rotate(tilt);
+
+            ctx.globalAlpha = 0.95 + thrustIntensity * 0.05;
+            ctx.drawImage(ship, -shipWidth / 2, -shipHeight / 2, shipWidth, shipHeight);
+
+            ctx.globalAlpha = 1;
+            ctx.shadowBlur = 0;
+            ctx.restore();
+        }
+
+        function updateShip() {
+            // Make ship position and velocity available globally for enemy AI
+            window.shipX = shipX;
+            window.shipY = shipY;
+            window.shipWidth = shipWidth;
+            window.shipHeight = shipHeight;
+            window.shipVX = shipVX;
+            window.shipVY = shipVY;
+
+            // Drones follow player with offset
+            drones.forEach((drone, i) => {
+                const targetX = shipX + DRONE_OFFSET[i % DRONE_OFFSET.length].x;
+                const targetY = shipY + DRONE_OFFSET[i % DRONE_OFFSET.length].y;
+                drone.x += (targetX - drone.x) * 0.18;
+                drone.y += (targetY - drone.y) * 0.18;
+            });
+            // WASD controls with improved momentum
+            if (keys['w']) shipVY -= shipAcceleration;
+            if (keys['s']) shipVY += shipAcceleration;
+            if (keys['a']) shipVX -= shipAcceleration * 1.4; // Slightly faster horizontal
+            if (keys['d']) shipVX += shipAcceleration * 1.4;
+
+            // Clamp velocity to prevent excessive speed
+            shipVX = Math.max(Math.min(shipVX, shipMaxSpeed), -shipMaxSpeed);
+            shipVY = Math.max(Math.min(shipVY, shipMaxSpeed), -shipMaxSpeed);
+
+            // Apply velocity
+            shipX += shipVX;
+            shipY += shipVY;
+
+            // Friction for glide
+            shipVX *= shipFriction;
+            shipVY *= shipFriction;
+
+            // Clamp to screen
+            if (shipX < 0) { shipX = 0; shipVX = 0; }
+            if (shipX > canvasSize.width - shipWidth) { shipX = canvasSize.width - shipWidth; shipVX = 0; }
+            if (shipY < 0) { shipY = 0; shipVY = 0; }
+            if (shipY > canvasSize.height - shipHeight) { shipY = canvasSize.height - shipHeight; shipVY = 0; }
+        }
+
+        function drawLasers() {
+            ctx.save();
+            lasers.forEach(laser => {
+                ctx.fillStyle = laser.color || 'aqua';
+
+                if (laser.giant) {
+                    // Giant laser - wider but normal height
+                    ctx.fillRect(laser.x + shipWidth / 2 - 6, laser.y, 12, 16);
+                } else if (laser.spread) {
+                    // Spread shot - normal size
+                    ctx.fillRect(laser.x, laser.y, 3, 14);
+                } else if (laser.piercing) {
+                    // Piercing - thin but normal height
+                    ctx.fillRect(laser.x, laser.y, 2, 14);
+                } else {
+                    // Standard twin lasers - normal size
+                    ctx.fillRect(laser.x + 10, laser.y, 2, 14);
+                    ctx.fillRect(laser.x + shipWidth - 12, laser.y, 2, 14);
+                }
+            });
+            ctx.restore();
+        }
+
+        function updateLasers() {
+            lasers.forEach((laser, index) => {
+                if (laser.spread) {
+                    laser.x += laser.dx;
+                    laser.y += laser.dy;
+                } else {
+                    laser.y -= laserSpeed;
+                }
+                if (laser.y < 0 || laser.y > canvasSize.height || laser.x < 0 || laser.x > canvasSize.width) {
+                    lasers.splice(index, 1);
+                }
+            });
+        }
+
+        let mouseDown = false;
+        // Update flame positions and remove small ones
+        function updateFlames() {
+            for (let i = flames.length - 1; i >= 0; i--) {
+                flames[i].y += flames[i].speed;
+                flames[i].size -= 0.2;
+                if (flames[i].size <= 0) {
+                    flames.splice(i, 1);
+                }
+            }
+        }
+
+        // Create a flame behind the ship when firing or moving up
+        function createFlame() {
+            // Reduce number of flames created for performance
+            if ((keys['w'] || keys[' '] || mouseDown) && flames.length < 10) {
+                flames.push({
+                    x: shipX + shipWidth / 2 + (Math.random() - 0.5) * 10,
+                    y: shipY + shipHeight,
+                    size: Math.random() * 5 + 5,
+                    speed: Math.random() * 2 + 1
+                });
+            }
+        }
+        function fireLasers() {
+            // Drones only fire if player is shooting
+            let playerIsShooting = (keys[' '] || mouseDown);
+            droneFireCounter--;
+            if (drones.length > 0 && droneFireCounter <= 0 && playerIsShooting) {
+                drones.forEach(drone => {
+                    fireAllWeapons({
+                        shipX: drone.x,
+                        shipY: drone.y,
+                        shipWidth,
+                        powerupState,
+                        lasers,
+                        laserSpeed
+                    });
+                });
+                droneFireCounter = DRONE_FIRE_DELAY;
+            }
+            // Player fires
+            let rapidTier = 0;
+            for (let i = 5; i >= 1; i--) if (powerupState['rapid_fire' + (i > 1 ? '_' + i : '')]) { rapidTier = i; break; }
+            let cooldown = 8;
+            if (rapidTier > 0) cooldown = Math.max(2, laserCooldown / (1.5 + rapidTier * 1.2));
+            if (playerIsShooting && laserCooldownCounter <= 0) {
+                fireAllWeapons({
+                    shipX,
+                    shipY,
+                    shipWidth,
+                    powerupState,
+                    lasers,
+                    laserSpeed
+                });
+                laserCooldownCounter = cooldown;
+            }
+            if (laserCooldownCounter > 0) {
+                laserCooldownCounter--;
+            }
+        }
+
+        window.addEventListener('mousedown', () => { mouseDown = true; });
+        window.addEventListener('mouseup', () => { mouseDown = false; });
+
+        // Touch controls for mobile
+        let touchDown = false;
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            touchDown = true;
+            mouseDown = true; // Also trigger firing
+            const touch = e.touches[0];
+            touchStartX = touch.clientX;
+            touchStartY = touch.clientY;
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (touchDown) {
+                const touch = e.touches[0];
+                const deltaX = touch.clientX - touchStartX;
+                const deltaY = touch.clientY - touchStartY;
+
+                // Convert touch movement to acceleration (works with momentum system)
+                const sensitivity = 0.05;
+                shipVX += deltaX * sensitivity;
+                shipVY += deltaY * sensitivity;
+
+                // Clamp to max speed
+                shipVX = Math.max(Math.min(shipVX, shipMaxSpeed), -shipMaxSpeed);
+                shipVY = Math.max(Math.min(shipVY, shipMaxSpeed), -shipMaxSpeed);
+
+                touchStartX = touch.clientX;
+                touchStartY = touch.clientY;
+            }
+        });
+
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            touchDown = false;
+            mouseDown = false;
+        });
+
+        // Prevent default touch behaviors
+        document.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
+        document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+
+        function drawFlames() {
+            flames.forEach(flame => {
+                const gradient = ctx.createRadialGradient(flame.x, flame.y, 0, flame.x, flame.y, flame.size);
+
+                // Different colors based on flame type
+                if (flame.color === 'green') {
+                    // Healing effect - green flames
+                    gradient.addColorStop(0, '#00ff88');
+                    gradient.addColorStop(1, '#00aa44');
+                    ctx.shadowColor = '#00ff88';
+                } else if (flame.color === 'emp') {
+                    // EMP effect - electric blue flames
+                    gradient.addColorStop(0, '#00ffff');
+                    gradient.addColorStop(1, '#0088ff');
+                    ctx.shadowColor = '#00ffff';
+                } else {
+                    // Default engine flames
+                    gradient.addColorStop(0, 'purple');
+                    gradient.addColorStop(1, 'blue');
+                    ctx.shadowColor = 'orange';
+                }
+
+                ctx.fillStyle = gradient;
+                ctx.shadowBlur = 6;
+                ctx.beginPath();
+                ctx.arc(flame.x, flame.y, flame.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+        // updateEnemies now imported
+
+        // Enemy AI now uses strategic positioning to get behind the player
+
+        // fireEnemyLasers now imported
+
+        // spawnEnemies now imported
+
+        function drawHealthBar(x, y, width, height, health, maxHealth) {
+            ctx.save();
+
+            // Outer border
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#ff0000';
+            ctx.strokeRect(x - 2, y - 2, width + 4, height + 4);
+
+            // Background
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(x, y, width, height);
+
+            // Health bar
+            const healthRatio = Math.max(0, health / maxHealth);
+            const healthGrad = ctx.createLinearGradient(x, y, x + width, y);
+
+            if (healthRatio > 0.6) {
+                healthGrad.addColorStop(0, '#ff4444');
+                healthGrad.addColorStop(1, '#ff0000');
+            } else if (healthRatio > 0.3) {
+                healthGrad.addColorStop(0, '#ff6666');
+                healthGrad.addColorStop(1, '#ff2222');
+            } else {
+                healthGrad.addColorStop(0, '#ff8888');
+                healthGrad.addColorStop(1, '#ff4444');
+            }
+
+            ctx.fillStyle = healthGrad;
+            ctx.fillRect(x, y, width * healthRatio, height);
+
+            // Inner border
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = '#ffffff';
+            ctx.strokeRect(x, y, width, height);
+
+            // Text
+            ctx.font = 'bold 16px monospace';
+            ctx.fillStyle = '#ffffff';
+            ctx.shadowColor = '#000000';
+            ctx.shadowBlur = 2;
+            ctx.fillText('SHIELDS', x + 8, y + height - 4);
+            ctx.shadowBlur = 0;
+            ctx.restore();
+        }
+
+        // Game over screen
+        function drawGameOver() {
+            ctx.save();
+            // Dark overlay
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+            ctx.fillRect(0, 0, canvasSize.width, canvasSize.height);
+
+            // Game Over panel
+            const panelWidth = 400;
+            const panelHeight = 300;
+            const panelX = canvasSize.width / 2 - panelWidth / 2;
+            const panelY = canvasSize.height / 2 - panelHeight / 2;
+
+            // Panel background
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(panelX, panelY, panelWidth, panelHeight);
+
+            // Panel border
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#ff0000';
+            ctx.strokeRect(panelX, panelY, panelWidth, panelHeight);
+
+            // Inner border
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = '#ffffff';
+            ctx.strokeRect(panelX + 10, panelY + 10, panelWidth - 20, panelHeight - 20);
+
+            // Game Over text
+            const gameOverSize = Math.max(32, Math.min(48, canvasSize.width / 20));
+            ctx.font = `bold ${gameOverSize}px monospace`;
+            ctx.fillStyle = '#ff0000';
+            ctx.shadowColor = '#000000';
+            ctx.shadowBlur = 4;
+            ctx.textAlign = 'center';
+            ctx.fillText('GAME OVER', canvasSize.width / 2, panelY + 80);
+
+            // Final score
+            const scoreSize = Math.max(16, Math.min(24, canvasSize.width / 40));
+            ctx.font = `bold ${scoreSize}px monospace`;
+            ctx.fillStyle = '#ffffff';
+            ctx.shadowColor = '#000000';
+            ctx.shadowBlur = 2;
+            ctx.fillText(`Final Score: ${gameScore.toLocaleString()}`, canvasSize.width / 2, panelY + 130);
+            ctx.fillText(`Level Reached: ${gameLevel}`, canvasSize.width / 2, panelY + 160);
+
+            // Restart instruction
+            const instructionSize = Math.max(14, Math.min(18, canvasSize.width / 50));
+            ctx.font = `bold ${instructionSize}px monospace`;
+            ctx.fillStyle = '#ff4444';
+            ctx.fillText('Press R to Restart', canvasSize.width / 2, panelY + 220);
+
+            ctx.shadowBlur = 0;
+            ctx.restore();
+        }
+
+        // Restart game function
+        function restartGame() {
+            playerHealth = 100;
+            gameLevel = 1;
+            gameScore = 0;
+            enemySpawnRate = 1.0;
+            difficultyTimer = 0;
+            shipX = canvasSize.width / 2 - shipWidth / 2;
+            shipY = canvasSize.height / 2 - shipHeight / 2;
+            shipVX = 0;
+            shipVY = 0;
+
+            // Clear all arrays
+            enemies.length = 0;
+            lasers.length = 0;
+            enemyLasers.length = 0;
+            powerups.length = 0;
+            flames.length = 0;
+            drones.length = 0;
+
+            // Reset powerup state
+            for (const key in powerupState) {
+                powerupState[key] = false;
+            }
+
+            // Reset star hue
+            window.starHue = 60;
+
+            // Restart animation loop
+            animate();
+        }
+
+        // Draw game UI (score, level, etc.)
+        function drawGameUI() {
+            ctx.save();
+
+            // Main UI Panel Background
+            const panelWidth = 250;
+            const panelHeight = 120;
+            const panelX = canvasSize.width - panelWidth - 10;
+            const panelY = 10;
+
+            // Panel background
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            ctx.fillRect(panelX, panelY, panelWidth, panelHeight);
+
+            // Panel border
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#ff0000';
+            ctx.strokeRect(panelX, panelY, panelWidth, panelHeight);
+
+            // Main stats
+            const fontSize = Math.max(16, Math.min(20, canvasSize.width / 60));
+            ctx.font = `bold ${fontSize}px monospace`;
+            ctx.fillStyle = '#ffffff';
+            ctx.shadowColor = '#000000';
+            ctx.shadowBlur = 2;
+            ctx.textAlign = 'left';
+
+            ctx.fillText(`SCORE: ${gameScore.toLocaleString()}`, panelX + 10, panelY + 25);
+            ctx.fillText(`LEVEL: ${gameLevel}`, panelX + 10, panelY + 50);
+            ctx.fillText(`WAVE: ${Math.floor(enemySpawnRate * 10) / 10}x`, panelX + 10, panelY + 75);
+            ctx.fillText(`MISSILES: ${playerMissiles.length}`, panelX + 10, panelY + 100);
+
+            // Controls Panel
+            const controlPanelWidth = 200;
+            const controlPanelHeight = 80;
+            const controlPanelX = 10;
+            const controlPanelY = canvasSize.height - controlPanelHeight - 10;
+
+            // Control panel background
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            ctx.fillRect(controlPanelX, controlPanelY, controlPanelWidth, controlPanelHeight);
+
+            // Control panel border
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#ff0000';
+            ctx.strokeRect(controlPanelX, controlPanelY, controlPanelWidth, controlPanelHeight);
+
+            // Controls text
+            const smallFont = Math.max(12, Math.min(14, canvasSize.width / 80));
+            ctx.font = `bold ${smallFont}px monospace`;
+
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText('Q: GUIDED MISSILE', controlPanelX + 10, controlPanelY + 20);
+
+            // Chaff status with color coding
+            if (chafeCooldown > 0) {
+                ctx.fillStyle = '#ff4444';
+                ctx.fillText(`C: CHAFF (${Math.ceil(chafeCooldown / 60)}s)`, controlPanelX + 10, controlPanelY + 40);
+            } else {
+                ctx.fillStyle = '#ff0000';
+                ctx.fillText('C: CHAFF READY', controlPanelX + 10, controlPanelY + 40);
+            }
+
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText('WASD: MOVE', controlPanelX + 10, controlPanelY + 60);
+
+            ctx.shadowBlur = 0;
+            ctx.restore();
+        }
+
+        function updatePowerupFeedback() {
+            // Update powerup feedback timers
+            for (let i = recentPowerups.length - 1; i >= 0; i--) {
+                recentPowerups[i].timer--;
+                if (recentPowerups[i].timer <= 0) {
+                    recentPowerups.splice(i, 1);
+                }
+            }
+        }
+
+        function drawPowerupFeedback() {
+            if (recentPowerups.length === 0) return;
+
+            ctx.save();
+            ctx.font = 'bold 16px monospace';
+            ctx.textAlign = 'center';
+
+            recentPowerups.forEach((powerup, index) => {
+                const alpha = powerup.timer / POWERUP_DISPLAY_TIME;
+                const y = canvasSize.height / 2 - 100 + index * 25;
+
+                ctx.globalAlpha = alpha;
+                ctx.fillStyle = powerup.color;
+                ctx.shadowColor = '#000000';
+                ctx.shadowBlur = 3;
+                ctx.fillText(powerup.message, canvasSize.width / 2, y);
+            });
+
+            ctx.shadowBlur = 0;
+            ctx.globalAlpha = 1;
+            ctx.restore();
+        }
+
+        // Draw weapon/tier UI indicators
+        function drawWeaponTiers() {
+            const weaponTypes = [
+                { key: 'spread_shot', label: 'Spread', color: '#ff4444' },
+                { key: 'double_laser', label: 'Double', color: '#ff6666' },
+                { key: 'piercing', label: 'Pierce', color: '#ff8888' },
+                { key: 'rapid_fire', label: 'Rapid', color: '#ffaaaa' },
+                { key: 'giant_laser', label: 'Giant', color: '#ff0000' }
+            ];
+
+            // Weapon panel
+            const panelWidth = 180;
+            const panelHeight = 140;
+            const panelX = 10;
+            const panelY = 40;
+
+            // Panel background
+            ctx.save();
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            ctx.fillRect(panelX, panelY, panelWidth, panelHeight);
+
+            // Panel border
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#ff0000';
+            ctx.strokeRect(panelX, panelY, panelWidth, panelHeight);
+
+            // Title
+            ctx.font = 'bold 14px monospace';
+            ctx.fillStyle = '#ffffff';
+            ctx.shadowColor = '#000000';
+            ctx.shadowBlur = 2;
+            ctx.fillText('WEAPONS', panelX + 10, panelY + 18);
+
+            const iconSize = 16;
+            const gap = 4;
+            const startY = panelY + 30;
+
+            // Responsive font size for weapon tiers
+            const tierFontSize = Math.max(10, Math.min(12, canvasSize.width / 90));
+            ctx.font = `bold ${tierFontSize}px monospace`;
+
+            weaponTypes.forEach((w, idx) => {
+                // Find tier
+                let tier = 0;
+                for (let i = 5; i >= 1; i--) {
+                    if (powerupState[w.key + (i > 1 ? '_' + i : '')]) {
+                        tier = i;
+                        break;
+                    }
+                }
+
+                const yPos = startY + idx * (iconSize + gap);
+
+                // Draw weapon icon background
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(panelX + 8, yPos, iconSize * 2.5, iconSize);
+
+                // Draw weapon icon border
+                ctx.strokeStyle = tier > 0 ? w.color : '#444444';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(panelX + 8, yPos, iconSize * 2.5, iconSize);
+
+                // Draw weapon label
+                ctx.fillStyle = tier > 0 ? w.color : '#666666';
+                ctx.fillText(w.label, panelX + 12, yPos + 12);
+
+                // Draw tier pips
+                for (let t = 1; t <= 5; t++) {
+                    ctx.beginPath();
+                    ctx.arc(panelX + 60 + t * 12, yPos + iconSize / 2, 3, 0, Math.PI * 2);
+                    if (t <= tier) {
+                        ctx.fillStyle = w.color;
+                        ctx.fill();
+                        ctx.strokeStyle = '#ffffff';
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                    } else {
+                        ctx.fillStyle = '#222222';
+                        ctx.fill();
+                        ctx.strokeStyle = '#444444';
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                    }
+                }
+            });
+            ctx.shadowBlur = 0;
+            ctx.restore();
+        }
+
+        // Player laser vs. enemy and enemy laser vs. player collision now handled by enemyship.js
+        // Enhanced: spawn powerups on enemy death and award points
+        function checkCollisions() {
+            // Get destroyed enemy positions and types
+            const destroyed = checkPlayerLaserHitsEnemies(lasers, enemies, shipWidth, gameLevel);
+            // For each destroyed, spawn a powerup and award points
+            if (destroyed.length > 0) {
+                destroyed.forEach(enemyData => {
+                    spawnPowerup(enemyData.x - 14, enemyData.y - 14); // Center orb on enemy
+
+                    // Award points based on enemy type and level
+                    let points = 100;
+                    if (enemyData.type === 'small') points = 100;
+                    else if (enemyData.type === 'medium') points = 250;
+                    else if (enemyData.type === 'large') points = 500;
+                    else if (enemyData.type === 'boss') points = 2000;
+
+                    // Level multiplier
+                    points = Math.floor(points * (1 + gameLevel * 0.1));
+                    gameScore += points;
+                });
+            }
+            // Enemy laser vs. player handled by checkEnemyLaserHitsPlayer in main loop
+        }
+
+        function animate() {
+            assignEnemyWeapons();
+            drawStars();
+            updateStars();
+            updateTinyShips();
+            drawTinyShips();
+            updateShip();
+            drawDrones();
+            fireLasers();
+            updateLasers();
+            drawLasers();
+            createFlame();
+            updateFlames();
+            drawFlames();
+            updateChafe();
+            drawChafe();
+            drawShip();
+            updateEnemies(canvasSize);
+            drawEnemies(ctx, enemyShipImages);
+            // --- Enhanced enemy firing logic with individual timers ---
+            enemies.forEach(enemy => {
+                if (!enemy.weaponType) enemy.weaponType = getRandomEnemyWeapon();
+                if (!enemy.lastFired) enemy.lastFired = 0;
+
+                enemy.lastFired++;
+
+                // BOSS SPECIAL FIRING - Bullet hell nightmare
+                if (enemy.isBoss) {
+                    // Boss fires multiple patterns simultaneously
+                    const bossFireRate = Math.max(2, enemy.fireRate - Math.floor(gameLevel / 2));
+
+                    if (enemy.lastFired >= bossFireRate) {
+                        // Import boss patterns
+                        import('./enemyweapons.js').then(module => {
+                            const pattern = module.getBossWeaponPattern(gameLevel);
+
+                            // Fire main pattern
+                            pattern.fire(enemy, enemyLasers, shipX + shipWidth / 2, shipY + shipHeight / 2);
+
+                            // Additional chaos for higher levels
+                            if (gameLevel >= 3) {
+                                // Fire a second pattern
+                                const pattern2 = module.getBossWeaponPattern(gameLevel);
+                                setTimeout(() => {
+                                    pattern2.fire(enemy, enemyLasers, shipX + shipWidth / 2, shipY + shipHeight / 2);
+                                }, 100);
+                            }
+
+                            if (gameLevel >= 6) {
+                                // Fire a third pattern for absolute chaos
+                                const pattern3 = module.getBossWeaponPattern(gameLevel);
+                                setTimeout(() => {
+                                    pattern3.fire(enemy, enemyLasers, shipX + shipWidth / 2, shipY + shipHeight / 2);
+                                }, 200);
+                            }
+                        });
+
+                        enemy.lastFired = 0;
+                    }
+                    return; // Skip normal firing for boss
+                }
+
+                // Different fire rates based on enemy type and level - larger enemies are more skilled
+                let fireRate = (60 - gameLevel * 3); // Much faster scaling
+                // Reverse fire rate logic: larger enemies fire faster (more skilled)
+                if (enemy.type === 'small') fireRate *= 1.5; // Slower firing for small enemies
+                else if (enemy.type === 'medium') fireRate *= 1.0; // Normal firing for medium
+                else if (enemy.type === 'large') fireRate *= 0.6; // Much faster firing for large enemies
+
+                if (enemy.lastFired >= fireRate) {
+                    // 25% chance to launch missile instead of regular weapon
+                    if (Math.random() < 0.25 && gameLevel >= 2) {
+                        enemyMissiles.push({
+                            x: enemy.x + enemy.width / 2,
+                            y: enemy.y + enemy.height,
+                            vx: 0,
+                            vy: 3,
+                            life: 400,
+                            trail: [],
+                            launchTime: Date.now(),
+                            canHitEnemies: false,
+                            chafeConfused: false,
+                            confusionTimer: 0
+                        });
+                    } else {
+                        // For homing, pass player position
+                        if (enemy.weaponType.name === 'homing_missile') {
+                            enemy.weaponType.fire(enemy, enemyLasers, shipX + shipWidth / 2, shipY + shipHeight / 2);
+                        } else {
+                            enemy.weaponType.fire(enemy, enemyLasers);
+                        }
+                    }
+                    enemy.lastFired = 0;
+                }
+            });
+            updateEnemyLasers(enemyLasers, canvasSize, laserSpeed);
+            drawEnemyLasers(ctx, enemyLasers);
+
+            // Missile system
+            updateMissiles();
+            updateChaff();
+            drawMissiles();
+            drawChaff();
+
+            // Powerups
+            updatePowerups(canvasSize);
+            drawPowerups(ctx);
+            checkCollisions();
+            // Powerup collection
+            checkPowerupCollection(shipX, shipY, shipWidth, shipHeight, applyPowerup);
+            playerHealth = checkEnemyLaserHitsPlayer(enemyLasers, shipX, shipY, shipWidth, shipHeight, playerHealth);
+
+            // Check missile collisions
+            checkMissileCollisions();
+
+            // Check for game over
+            if (playerHealth <= 0) {
+                drawGameOver();
+                return; // Stop the game loop
+            }
+
+            drawHealthBar(10, 10, 200, 20, playerHealth, 100);
+            drawChafeIndicator();
+            drawWeaponTiers();
+            drawGameUI();
+            updatePowerupFeedback();
+            drawPowerupFeedback();
+
+            // Game progression and difficulty scaling - OVERWHELMING PROGRESSION
+            difficultyTimer++;
+            const scalingInterval = Math.max(600, DIFFICULTY_INCREASE_INTERVAL - gameLevel * 60); // Gets faster each level
+
+            if (difficultyTimer >= scalingInterval) {
+                difficultyTimer = 0;
+
+                // Exponential difficulty scaling - gets overwhelming fast
+                const difficultyMultiplier = 1.25 + (gameLevel * 0.05); // Accelerating multiplier
+                enemySpawnRate = Math.min(enemySpawnRate * difficultyMultiplier, 8.0 + gameLevel); // No cap, keeps growing
+
+                gameLevel++;
+
+                // Additional chaos scaling - removed mini-bosses, only full bosses at level 10, 20, 30...
+
+                console.log(`Level ${gameLevel}: Spawn rate ${enemySpawnRate.toFixed(2)}x, Difficulty: OVERWHELMING`);
+            }
+
+            // Mini-boss function removed - only full bosses spawn at levels 10, 20, 30...
+
+            // Warp effect and infinite waves with scaling difficulty
+            if (!warping && enemies.length === 0) {
+                warping = true;
+                warpTimer = 0;
+                starSpeedMultiplier = 12; // Much faster warp effect
+                setStarHueForLevel(); // Change star hue for new level
+            }
+            if (warping) {
+                warpTimer++;
+                if (warpTimer < 15) {
+                    ctx.save();
+                    ctx.globalAlpha = 0.25;
+                    ctx.fillStyle = '#fff';
+                    ctx.fillRect(0, 0, canvasSize.width, canvasSize.height);
+                    ctx.restore();
+                }
+                if (warpTimer > 60) {
+                    warping = false;
+                    starSpeedMultiplier = 2.5; // Return to faster base speed
+
+                    // Spawn more enemies based on level and spawn rate - OVERWHELMING SCALING
+                    let baseEnemyCount = 3 + Math.floor(gameLevel * 1.5); // Linear growth, no cap
+                    let enemyCount = Math.floor(baseEnemyCount * enemySpawnRate);
+
+                    // Higher levels get exponentially more enemies
+                    if (gameLevel >= 10) {
+                        enemyCount = Math.floor(enemyCount * 1.5); // 50% more enemies
+                    }
+                    if (gameLevel >= 15) {
+                        enemyCount = Math.floor(enemyCount * 1.3); // Even more enemies
+                    }
+                    if (gameLevel >= 20) {
+                        enemyCount = Math.floor(enemyCount * 1.2); // Absolute chaos
+                    }
+
+                    // Boss spawning - only at levels 10, 20, 30, etc.
+                    if (gameLevel % 10 === 0) {
+                        // Spawn boss every 10 levels
+                        spawnBossEnemy(canvasSize, enemyShipImages, gameLevel);
+
+                        // Add regular enemies alongside boss at higher levels
+                        if (gameLevel >= 8) {
+                            const additionalEnemies = Math.floor(enemyCount * 0.5);
+                            setTimeout(() => {
+                                spawnEnemies(canvasSize, enemyShipImages, gameLevel, additionalEnemies);
+                            }, 2000);
+                        }
+                    } else {
+                        spawnEnemies(canvasSize, enemyShipImages, gameLevel, enemyCount);
+                    }
+                }
+            }
+
+            requestAnimationFrame(animate);
+        }
+        // Apply powerup effects to player weapons
+        // Track all possible powerup types and tiers
+        let powerupState = {
+            double_laser: false,
+            double_laser_2: false,
+            double_laser_3: false,
+            double_laser_4: false,
+            double_laser_5: false,
+            spread_shot: false,
+            spread_shot_2: false,
+            spread_shot_3: false,
+            spread_shot_4: false,
+            spread_shot_5: false,
+            piercing: false,
+            piercing_2: false,
+            piercing_3: false,
+            piercing_4: false,
+            piercing_5: false,
+            rapid_fire: false,
+            rapid_fire_2: false,
+            rapid_fire_3: false,
+            rapid_fire_4: false,
+            rapid_fire_5: false,
+            giant_laser: false,
+            giant_laser_2: false,
+            giant_laser_3: false,
+            giant_laser_4: false,
+            giant_laser_5: false
+        };
+
+        // Helper: clear all powerups of a given family (e.g. spread_shot, double_laser, etc)
+        function clearPowerupFamily(family) {
+            for (const key in powerupState) {
+                if (key.startsWith(family)) powerupState[key] = false;
+            }
+        }
+
+        // --- Chafe System Functions ---
+        function deployChafe() {
+            if (chafeCooldown > 0) return; // Still on cooldown
+
+            chafeActive = true;
+            chafeCooldown = CHAFE_COOLDOWN_TIME;
+
+            // Create chafe particles around the player
+            for (let i = 0; i < 25; i++) {
+                const angle = (i / 25) * Math.PI * 2;
+                const distance = 30 + Math.random() * 50;
+                chafeParticles.push({
+                    x: shipX + shipWidth / 2 + Math.cos(angle) * distance,
+                    y: shipY + shipHeight / 2 + Math.sin(angle) * distance,
+                    vx: Math.cos(angle) * (2 + Math.random() * 3),
+                    vy: Math.sin(angle) * (2 + Math.random() * 3),
+                    life: CHAFE_DURATION,
+                    maxLife: CHAFE_DURATION,
+                    size: 2 + Math.random() * 3
+                });
+            }
+        }
+
+        function updateChafe() {
+            // Update cooldown
+            if (chafeCooldown > 0) chafeCooldown--;
+
+            // Update chafe particles
+            for (let i = chafeParticles.length - 1; i >= 0; i--) {
+                const particle = chafeParticles[i];
+                particle.x += particle.vx;
+                particle.y += particle.vy;
+                particle.life--;
+
+                // Add some drift
+                particle.vx *= 0.98;
+                particle.vy *= 0.98;
+
+                if (particle.life <= 0) {
+                    chafeParticles.splice(i, 1);
+                }
+            }
+
+            // Check if chafe is still active
+            chafeActive = chafeParticles.length > 0;
+
+            // Make chafe particles globally accessible
+            window.chafeParticles = chafeParticles;
+        }
+
+        function drawChafe() {
+            if (chafeParticles.length === 0) return;
+
+            ctx.save();
+            chafeParticles.forEach(particle => {
+                const alpha = particle.life / particle.maxLife;
+                ctx.globalAlpha = alpha * 0.8;
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = '#ffff00';
+                ctx.fillStyle = '#ffff00';
+                ctx.beginPath();
+                ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.shadowBlur = 0;
+            ctx.globalAlpha = 1;
+            ctx.restore();
+        }
+
+        function drawChafeIndicator() {
+            // Chaff indicator is now integrated into the main control panel
+            // This function is kept for compatibility but does nothing
+        }
+
+        // --- Inject drone powerup into powerup drop logic ---
+        // This is a quick patch to make drone powerups appear as a rare drop
+        const originalSpawnPowerup = spawnPowerup;
+        function spawnPowerupWithDrone(x, y) {
+            // 10% chance to spawn a drone powerup if we don't have max drones
+            if (Math.random() < 0.10 && drones.length < MAX_DRONES) {
+                // Create drone powerup with proper properties
+                powerups.push({
+                    x,
+                    y,
+                    type: 'drone',
+                    color: '#00ff88',
+                    vy: 3 + Math.random() * 2,
+                    width: 28,
+                    height: 28,
+                    active: true
+                });
+            } else {
+                // Use the normal powerup spawning system
+                originalSpawnPowerup(x, y);
+            }
+        }
+        // Override spawnPowerup globally
+        window.spawnPowerup = spawnPowerupWithDrone;
+
+        function applyPowerup(type) {
+            // New: If powerup is 'drone', add a drone up to MAX_DRONES
+            if (type === 'drone') {
+                if (drones.length < MAX_DRONES) {
+                    // Spawn drone at player position
+                    drones.push({ x: shipX, y: shipY });
+                }
+                return;
+            }
+
+            // EMP Blast - Destroys all seeking projectiles
+            if (type === 'emp_blast') {
+                // Destroy all enemy missiles
+                const destroyedMissiles = enemyMissiles.length;
+                enemyMissiles.length = 0;
+
+                // Destroy all homing enemy lasers
+                let destroyedLasers = 0;
+                for (let i = enemyLasers.length - 1; i >= 0; i--) {
+                    const laser = enemyLasers[i];
+                    if (laser.homing || laser.type === 'homing_missile' || laser.type === 'seeker_drone' ||
+                        laser.type === 'plasma_tracker' || laser.type === 'zigzag') {
+                        enemyLasers.splice(i, 1);
+                        destroyedLasers++;
+                    }
+                }
+
+                // Create visual effect
+                for (let i = 0; i < 20; i++) {
+                    flames.push({
+                        x: shipX + shipWidth / 2 + (Math.random() - 0.5) * 200,
+                        y: shipY + shipHeight / 2 + (Math.random() - 0.5) * 200,
+                        size: Math.random() * 12 + 8,
+                        speed: Math.random() * 4 + 2,
+                        color: 'emp' // Special EMP effect color
+                    });
+                }
+
+                // Award bonus points
+                const totalDestroyed = destroyedMissiles + destroyedLasers;
+                gameScore += totalDestroyed * 50;
+
+                // Add feedback message
+                recentPowerups.push({
+                    message: `EMP BLAST! ${totalDestroyed} projectiles destroyed`,
+                    timer: POWERUP_DISPLAY_TIME,
+                    color: '#00ffff'
+                });
+                return;
+            }
+
+            // Health Pack - Restores health
+            if (type === 'health_pack') {
+                const oldHealth = playerHealth;
+                playerHealth = Math.min(100, playerHealth + 50);
+                const healedAmount = playerHealth - oldHealth;
+
+                // Create healing visual effect with green-tinted flames
+                for (let i = 0; i < 15; i++) {
+                    flames.push({
+                        x: shipX + shipWidth / 2 + (Math.random() - 0.5) * 80,
+                        y: shipY + shipHeight / 2 + (Math.random() - 0.5) * 80,
+                        size: Math.random() * 8 + 6,
+                        speed: Math.random() * 3 + 1,
+                        color: 'green' // Special color for healing effect
+                    });
+                }
+
+                // Award bonus points for healing
+                gameScore += healedAmount * 10;
+
+                // Add feedback message
+                recentPowerups.push({
+                    message: `HEALTH RESTORED! +${healedAmount} HP`,
+                    timer: POWERUP_DISPLAY_TIME,
+                    color: '#ff4444'
+                });
+                return;
+            }
+
+
+            // Helper: check if all main powerup families are at tier 5
+            function allFamiliesAtMax() {
+                const families = ['spread_shot', 'double_laser', 'piercing', 'rapid_fire', 'giant_laser'];
+                return families.every(fam => powerupState[fam + '_5']);
+            }
+
+            // Helper: get current tier for a family
+            function getTier(family) {
+                let maxTier = 0;
+                for (let i = 5; i >= 1; i--) {
+                    if (powerupState[family + (i > 1 ? '_' + i : '')]) {
+                        maxTier = i;
+                        break;
+                    }
+                }
+                return maxTier;
+            }
+
+            // If all families at max, grant drone and reset all tiers for each family
+            if (allFamiliesAtMax()) {
+                if (drones.length < MAX_DRONES) {
+                    drones.push({ x: shipX, y: shipY });
+                }
+                // For each family, remove all tiers (reset to 0)
+                const families = ['spread_shot', 'double_laser', 'piercing', 'rapid_fire', 'giant_laser'];
+                families.forEach(fam => {
+                    for (let i = 1; i <= 5; i++) {
+                        powerupState[fam + (i > 1 ? '_' + i : '')] = false;
+                    }
+                });
+                return;
+            }
+
+            // --- Powerup stacking logic: always keep all lower tiers active for every family ---
+            function setFamilyTiers(family, n) {
+                for (let i = 1; i <= 5; i++) {
+                    powerupState[family + (i > 1 ? '_' + i : '')] = i <= n;
+                }
+            }
+
+            if (type.startsWith('spread_shot')) {
+                let tier = 1;
+                if (type !== 'spread_shot') {
+                    const match = type.match(/spread_shot_(\d)/);
+                    if (match) tier = parseInt(match[1]);
+                }
+                setFamilyTiers('spread_shot', Math.max(getTier('spread_shot'), tier));
+            } else if (type.startsWith('double_laser')) {
+                let tier = 1;
+                if (type !== 'double_laser') {
+                    const match = type.match(/double_laser_(\d)/);
+                    if (match) tier = parseInt(match[1]);
+                }
+                setFamilyTiers('double_laser', Math.max(getTier('double_laser'), tier));
+            } else if (type.startsWith('piercing')) {
+                let tier = 1;
+                if (type !== 'piercing') {
+                    const match = type.match(/piercing_(\d)/);
+                    if (match) tier = parseInt(match[1]);
+                }
+                setFamilyTiers('piercing', Math.max(getTier('piercing'), tier));
+            } else if (type.startsWith('rapid_fire')) {
+                let tier = 1;
+                if (type !== 'rapid_fire') {
+                    const match = type.match(/rapid_fire_(\d)/);
+                    if (match) tier = parseInt(match[1]);
+                }
+                setFamilyTiers('rapid_fire', Math.max(getTier('rapid_fire'), tier));
+            } else if (type.startsWith('giant_laser')) {
+                let tier = 1;
+                if (type !== 'giant_laser') {
+                    const match = type.match(/giant_laser_(\d)/);
+                    if (match) tier = parseInt(match[1]);
+                }
+                setFamilyTiers('giant_laser', Math.max(getTier('giant_laser'), tier));
+            } else {
+                powerupState[type] = true;
+            }
+        }
+
+        // Wait for all enemy images and player ship to load before starting
+        function allEnemyImagesLoaded() {
+            return enemyShipImages.every(img => img.loaded);
+        }
+
+        function playerShipLoaded() {
+            return ship.loaded;
+        }
+
+        let gameStarted = false;
+        let fallbackTimeout = null;
+        function startGameWhenReady() {
+            if (gameStarted) return;
+            if (playerShipLoaded() && allEnemyImagesLoaded()) {
+                gameStarted = true;
+                spawnEnemies(canvas, enemyShipImages);
+                animate();
+                console.log('Game started: all images loaded');
+            } else {
+                setTimeout(startGameWhenReady, 50);
+            }
+        }
+
+        // Fallback: start game after 5 seconds even if some images failed
+        function fallbackStart() {
+            if (!gameStarted) {
+                gameStarted = true;
+                spawnEnemies(canvas, enemyShipImages);
+                animate();
+                ctx.save();
+                ctx.font = '30px sans-serif';
+                ctx.fillStyle = 'red';
+                ctx.fillText('Some images failed to load!', 50, 100);
+                ctx.restore();
+                console.warn('Game started after fallback timeout. Some images may be missing.');
+            }
+        }
+
+        // Start game when all images are loaded
+        startGameWhenReady();
+        fallbackTimeout = setTimeout(fallbackStart, 5000);
+    </script>
+</body>
+
+</html>
