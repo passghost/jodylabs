@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pirate Pixel Yar</title>
+  <style>
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #222;
+      transition: background 0.7s;
+    }
+
+    #bgParticles {
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+      display: block;
+    }
+
+    #oceanCanvas {
+      display: block;
+      margin: 0 auto;
+      background: transparent;
+    }
+
+    #login {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: #fff3;
+      padding: 20px;
+      border-radius: 8px;
+    }
+
+    #hud {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: #fff3;
+      padding: 20px;
+      border-radius: 8px;
+      color: #222;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+</head>
+
+<body>
+  <div
+    style="position:relative; width:100vw; height:100vh; overflow:hidden; font-family: 'Pirata One', 'Treasure Map Deadhand', 'Papyrus', cursive;">
+
+    <div id="login"
+      style="z-index:2; position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); min-width:220px; max-width:320px; width:92vw; background:linear-gradient(135deg,#111 60%,#900 100%); padding:24px 18px 16px 18px; border-radius: 12px; box-shadow:0 0 32px #000b; text-align:center; border:3px solid #ff2222;">
+      <canvas id="bgParticles"
+        style="position:absolute; left:0; top:0; width:100%; height:100%; z-index:0; pointer-events:none; border-radius:12px;"></canvas>
+      <div
+        style="font-family:'Pirata One',cursive; font-size:2.1em; color:#fff; margin-bottom:14px; letter-spacing:2px; text-shadow:2px 2px 0 #ff2222, 0 2px 8px #000a;">
+        <span style="font-size:1.1em; vertical-align:middle; margin-right:8px;">☠️</span>Pixel Yar
+      </div>
+      <input type="email" id="email" placeholder="Email"
+        style="margin-bottom:8px; width:92%; padding:7px; border-radius:6px; border:1px solid #ff2222; background:#222; color:#fff;"><br>
+      <input type="password" id="password" placeholder="Password"
+        style="margin-bottom:12px; width:92%; padding:7px; border-radius:6px; border:1px solid #ff2222; background:#222; color:#fff;"><br>
+      <button onclick="login()"
+        style="background:#ff2222; color:#fff; border:2px solid #fff; border-radius:6px; font-size:1em; margin-right:7px; cursor:pointer; padding:5px 14px; font-family:'Pirata One',cursive; letter-spacing:1px;">Login</button>
+      <button onclick="register()"
+        style="background:#111; color:#ff2222; border:2px solid #ff2222; border-radius:6px; font-size:1em; cursor:pointer; padding:5px 14px; font-family:'Pirata One',cursive; letter-spacing:1px;">Register</button>
+      <div id="loginStatus" style="margin-top:10px; color:#ff2222;"></div>
+      <div
+        style="margin-top:14px; color:#fff; font-size:1em; font-family:'Pirata One',cursive; letter-spacing:1px; opacity:0.95;">
+        <span style="font-size:0.95em;">powered by</span> <a href="https://supabase.com" target="_blank" rel="noopener"
+          style="font-weight:bold; color:#ff2222; letter-spacing:2px; text-decoration:none;">supabase</a>
+      </div>
+      <div style="margin-top:14px; color:#ffbbbb; font-size:0.92em; font-family:sans-serif; opacity:0.85;">
+        <b>Disclaimer:</b> This login is for demonstration only. Any email you enter will be wiped during patching and
+        is not stored for production use.
+      </div>
+    </div>
+    <div id="hud"
+      style="display:none; z-index:2; position:absolute; background: #2d1a06ee; border: 3px solid #FFD700; border-radius: 12px; box-shadow: 0 0 16px #000b; color: #FFD700; font-family: inherit;">
+      <div style="font-size:1.3em; font-weight:bold; letter-spacing:2px; text-shadow: 2px 2px 0 #8B5C2A;">🏴‍☠️ Pirate
+        Stats 🏴‍☠️</div>
+      <div id="playerStats" style="margin-bottom:10px;"></div>
+      <div id="moveTimer" style="font-size:1.1em; margin-bottom:10px; color:#FFD700; text-shadow:1px 1px 0 #8B5C2A;">
+      </div>
+      <div id="interactionLog"
+        style="min-height:90px; max-height:140px; overflow-y:auto; background:#1e3f66cc; border:2px solid #8B5C2A; border-radius:8px; margin-bottom:10px; padding:8px 10px; color:#FFD700; font-size:1em; font-family:inherit; box-shadow:0 0 8px #000a;">
+      </div>
+      <div id="nearbyPlayers"
+        style="margin-bottom:10px; padding:8px; background:#1e3f66cc; border:2px solid #8B5C2A; border-radius:8px; min-height:40px;">
+      </div>
+      <div id="inventory"
+        style="margin-bottom:10px; padding:8px; background:#1e3f66cc; border:2px solid #8B5C2A; border-radius:8px; min-height:60px;">
+        <div style="color:#FFD700; font-weight:bold; margin-bottom:4px;">🎒 Inventory</div>
+        <div id="inventoryItems" style="font-size:0.9em; color:#FFD700;"></div>
+      </div>
+      <button onclick="logout()"
+        style="background:#FF4444; color:#fff; border:2px solid #FFD700; border-radius:6px; font-size:1em; cursor:pointer;">🚪
+        Logout</button>
+    </div>
+
+    <!-- Player Interaction Modals -->
+    <div id="interactionModal"
+      style="display:none; position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); background:#2d1a06; border:4px solid #FFD700; border-radius:16px; padding:24px; z-index:1000; box-shadow:0 0 32px #000; min-width:400px; max-width:600px;">
+      <div id="modalContent"></div>
+    </div>
+
+    <!-- Combat Interface -->
+    <div id="combatInterface"
+      style="display:none; position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); background:#2d1a06; border:4px solid #FF4444; border-radius:16px; padding:24px; z-index:1000; box-shadow:0 0 32px #000; min-width:500px;">
+      <div style="text-align:center; font-size:1.8em; color:#FF4444; margin-bottom:20px;">⚔️ NAVAL COMBAT ⚔️</div>
+      <div id="combatStatus" style="margin-bottom:20px; text-align:center; color:#FFD700;"></div>
+      <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
+        <div style="flex:1; padding:10px; background:#1e3f66cc; border-radius:8px; margin-right:10px;">
+          <div style="color:#FFD700; font-weight:bold;">Your Ship</div>
+          <div id="playerCombatStats"></div>
+        </div>
+        <div style="flex:1; padding:10px; background:#1e3f66cc; border-radius:8px; margin-left:10px;">
+          <div style="color:#FFD700; font-weight:bold;">Enemy Ship</div>
+          <div id="enemyCombatStats"></div>
+        </div>
+      </div>
+      <div id="combatActions" style="text-align:center; margin-bottom:20px;"></div>
+      <div id="combatLog"
+        style="height:150px; overflow-y:auto; background:#1e3f66cc; border:2px solid #8B5C2A; border-radius:8px; padding:10px; margin-bottom:20px; color:#FFD700;">
+      </div>
+      <div style="text-align:center;">
+        <button onclick="closeCombat()"
+          style="background:#8B5C2A; color:#FFD700; border:2px solid #FFD700; border-radius:6px; padding:8px 16px; cursor:pointer;">Close
+          Combat</button>
+      </div>
+    </div>
+
+    <!-- Trade Interface -->
+    <div id="tradeInterface"
+      style="display:none; position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); background:#2d1a06; border:4px solid #00AA00; border-radius:16px; padding:24px; z-index:1000; box-shadow:0 0 32px #000; min-width:500px;">
+      <div style="text-align:center; font-size:1.8em; color:#00AA00; margin-bottom:20px;">💰 TRADE NEGOTIATIONS 💰</div>
+      <div id="tradeStatus" style="margin-bottom:20px; text-align:center; color:#FFD700;"></div>
+      <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
+        <div style="flex:1; padding:10px; background:#1e3f66cc; border-radius:8px; margin-right:10px;">
+          <div style="color:#FFD700; font-weight:bold;">Your Offer</div>
+          <div id="playerTradeOffer"></div>
+        </div>
+        <div style="flex:1; padding:10px; background:#1e3f66cc; border-radius:8px; margin-left:10px;">
+          <div style="color:#FFD700; font-weight:bold;">Their Offer</div>
+          <div id="enemyTradeOffer"></div>
+        </div>
+      </div>
+      <div id="tradeControls" style="margin-bottom:20px;"></div>
+      <div style="text-align:center;">
+        <button onclick="closeTrade()"
+          style="background:#8B5C2A; color:#FFD700; border:2px solid #FFD700; border-radius:6px; padding:8px 16px; cursor:pointer;">Close
+          Trade</button>
+      </div>
+    </div>
+
+    <!-- Chat Interface -->
+    <div id="chatInterface"
+      style="display:none; position:fixed; right:20px; top:20px; background:#2d1a06; border:4px solid #4444FF; border-radius:16px; padding:20px; z-index:1000; box-shadow:0 0 32px #000; width:350px; height:400px;">
+      <div style="text-align:center; font-size:1.5em; color:#4444FF; margin-bottom:15px;">💬 Ship-to-Ship Chat 💬</div>
+      <div id="chatWith" style="text-align:center; color:#FFD700; margin-bottom:15px;"></div>
+      <div id="chatMessages"
+        style="height:250px; overflow-y:auto; background:#1e3f66cc; border:2px solid #8B5C2A; border-radius:8px; padding:10px; margin-bottom:15px; color:#FFD700; font-size:0.9em;">
+      </div>
+      <div style="display:flex; margin-bottom:10px;">
+        <input type="text" id="chatInput" placeholder="Type your message..."
+          style="flex:1; padding:8px; border:1px solid #4444FF; border-radius:4px; background:#222; color:#fff; margin-right:8px;">
+        <button onclick="sendChatMessage()"
+          style="background:#4444FF; color:#fff; border:none; border-radius:4px; padding:8px 12px; cursor:pointer;">Send</button>
+      </div>
+      <div style="text-align:center;">
+        <button onclick="closeChat()"
+          style="background:#8B5C2A; color:#FFD700; border:2px solid #FFD700; border-radius:6px; padding:6px 12px; cursor:pointer;">Close
+          Chat</button>
+      </div>
+    </div>
+    <link href="https://fonts.googleapis.com/css2?family=Pirata+One&display=swap" rel="stylesheet">
+    <canvas id="oceanCanvas" width="3840" height="2160" style="z-index:1; position:absolute; left:0; top:0;"></canvas>
+  </div>
+  <script type="module" src="js/game.js"></script>
+</body>
+
+</html>
