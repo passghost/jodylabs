@@ -3,32 +3,320 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Photobooth</title>
+    <title>Retro 80s Instant Photo Booth - Vintage Camera Effects</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Interactive 80s-style instant photo booth with vintage neon aesthetics. Take instant photos with retro filters including grayscale, sepia, and invert effects. Perfect for parties, events, and nostalgic fun! No data is stored - all processing happens locally in your browser.">
+    <meta name="keywords" content="photobooth, instant photos, 80s, retro, vintage, camera, photo filters, neon, rainbow, party, event, webcam, photography, nostalgic, cyberpunk, privacy, local processing">
+    <meta name="author" content="JodyLabs">
+    <meta name="robots" content="index, follow">
+    <meta name="language" content="English">
+    
+    <!-- Open Graph Meta Tags for Social Media -->
+    <meta property="og:title" content="Retro 80s Instant Photo Booth - Vintage Camera Effects">
+    <meta property="og:description" content="Interactive 80s-style instant photo booth with vintage neon aesthetics. Take instant photos with retro filters! Privacy-focused - no data stored.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://jodylabs.com/PhotoBooth/Photobooth.html">
+    <meta property="og:image" content="https://jodylabs.com/PhotoBooth/photobooth-preview.jpg">
+    <meta property="og:site_name" content="JodyLabs">
+    <meta property="og:locale" content="en_US">
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Retro 80s Instant Photo Booth">
+    <meta name="twitter:description" content="Interactive 80s-style instant photo booth with vintage neon aesthetics and retro filters!">
+    <meta name="twitter:image" content="https://jodylabs.com/PhotoBooth/photobooth-preview.jpg">
+    <meta name="twitter:creator" content="@JodyLabs">
+    
+    <!-- Additional Meta Tags -->
+    <meta name="theme-color" content="#ff00ff">
+    <meta name="msapplication-TileColor" content="#000000">
+    <meta name="application-name" content="Retro Instant Photo Booth">
+    <meta name="apple-mobile-web-app-title" content="Retro Photo Booth">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://jodylabs.com/PhotoBooth/Photobooth.html">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    
+    <!-- Schema.org Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Retro 80s Instant Photo Booth",
+        "description": "Interactive 80s-style instant photo booth with vintage neon aesthetics. Take instant photos with retro filters including grayscale, sepia, and invert effects. Privacy-focused with no data storage - all processing happens locally in your browser.",
+        "url": "https://jodylabs.com/PhotoBooth/Photobooth.html",
+        "applicationCategory": "EntertainmentApplication",
+        "operatingSystem": "Web Browser",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+        },
+        "creator": {
+            "@type": "Organization",
+            "name": "JodyLabs",
+            "url": "https://jodylabs.com"
+        },
+        "keywords": "photobooth, instant photos, 80s, retro, vintage, camera, photo filters, neon, rainbow, party, event, webcam, photography, privacy, local processing",
+        "browserRequirements": "Requires webcam access and modern web browser",
+        "privacyPolicy": "No data is collected, stored, or transmitted. All photo processing happens locally in your browser."
+    }
+    </script>
     <style>
-        #photobooth {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-top: 20px;
-        }
-        #strip {
-            display: flex;
-            flex-direction: column;
-            border: 10px solid white;
-            padding: 10px;
-            background-color: white;
-        }
-        .photo {
-            margin-bottom: 10px;
-        }
-        video {
-            display: none;
-        }
-        #countdown {
-            font-size: 2em;
-            margin-top: 10px;
-        }
-    </style>
+            @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Audiowide&display=swap');
+            
+            body {
+                margin: 0;
+                font-family: 'Orbitron', monospace;
+                background: radial-gradient(ellipse at center, #1a1a1a 0%, #000000 70%);
+                color: #ffffff;
+                text-align: center;
+                overflow-x: hidden;
+                position: relative;
+            }
+
+            body::before {
+                content: '';
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: 
+                    linear-gradient(45deg, transparent 30%, rgba(255, 0, 255, 0.1) 50%, transparent 70%),
+                    linear-gradient(-45deg, transparent 30%, rgba(0, 255, 255, 0.1) 50%, transparent 70%);
+                background-size: 100px 100px, 80px 80px;
+                animation: neonPattern 8s linear infinite;
+                pointer-events: none;
+                z-index: -1;
+            }
+
+            @keyframes neonPattern {
+                0% { transform: translate(0, 0); }
+                100% { transform: translate(50px, 50px); }
+            }
+
+            #photobooth {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                margin: 20px auto;
+                max-width: 500px;
+                border: 4px solid transparent;
+                background: 
+                    linear-gradient(#000000, #1a1a1a) padding-box,
+                    linear-gradient(45deg, #ff00ff, #00ffff, #ff0080, #8000ff, #00ff40) border-box;
+                padding: 30px;
+                border-radius: 15px;
+                box-shadow: 
+                    0 0 30px rgba(255, 0, 255, 0.5),
+                    0 0 60px rgba(0, 255, 255, 0.3),
+                    inset 0 0 30px rgba(255, 255, 255, 0.1);
+                position: relative;
+                animation: borderGlow 3s ease-in-out infinite alternate;
+            }
+
+            @keyframes borderGlow {
+                0% { box-shadow: 0 0 30px rgba(255, 0, 255, 0.5), 0 0 60px rgba(0, 255, 255, 0.3), inset 0 0 30px rgba(255, 255, 255, 0.1); }
+                100% { box-shadow: 0 0 50px rgba(0, 255, 255, 0.7), 0 0 80px rgba(255, 0, 255, 0.5), inset 0 0 40px rgba(255, 255, 255, 0.2); }
+            }
+
+            #photobooth::before {
+                content: '⚡ RETRO PHOTO BOOTH ⚡';
+                position: absolute;
+                top: -15px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: linear-gradient(45deg, #ff00ff, #00ffff);
+                color: #000000;
+                padding: 8px 25px;
+                border-radius: 20px;
+                font-family: 'Audiowide', cursive;
+                font-size: 1.1em;
+                font-weight: bold;
+                border: 2px solid #ffffff;
+                box-shadow: 0 0 20px rgba(255, 0, 255, 0.8);
+                animation: titlePulse 2s ease-in-out infinite alternate;
+            }
+
+            @keyframes titlePulse {
+                0% { text-shadow: 0 0 5px #000000; }
+                100% { text-shadow: 0 0 15px #000000, 0 0 25px #ffffff; }
+            }
+
+            #strip {
+                display: flex;
+                flex-direction: column;
+                border: 8px solid #000000;
+                padding: 20px;
+                background: #000000;
+                border-radius: 10px;
+                box-shadow: 
+                    0 0 20px rgba(255, 0, 255, 0.6),
+                    inset 0 0 20px rgba(0, 255, 255, 0.3);
+                position: relative;
+                margin: 20px 0;
+            }
+
+            #strip::before {
+                content: '';
+                position: absolute;
+                top: -4px;
+                left: -4px;
+                right: -4px;
+                bottom: -4px;
+                background: linear-gradient(45deg, #ff00ff, #00ffff, #ff0080, #8000ff, #00ff40, #ff00ff);
+                background-size: 400% 400%;
+                animation: rainbowBorder 4s ease infinite;
+                border-radius: 12px;
+                z-index: -1;
+            }
+
+            @keyframes rainbowBorder {
+                0% { background-position: 0% 50%; }
+                50% { background-position: 100% 50%; }
+                100% { background-position: 0% 50%; }
+            }
+
+            .photo {
+                margin-bottom: 20px;
+                border: 10px solid #ffffff;
+                border-bottom: 40px solid #ffffff;
+                border-radius: 8px;
+                box-shadow: 
+                    0 0 15px rgba(255, 255, 255, 0.8),
+                    0 5px 15px rgba(0, 0, 0, 0.8);
+                position: relative;
+                background: #ffffff;
+                display: block;
+            }
+
+            .photo::after {
+                content: 'INSTANT ' attr(data-timestamp);
+                position: absolute;
+                bottom: -35px;
+                left: 50%;
+                transform: translateX(-50%);
+                color: #666666;
+                font-size: 0.7em;
+                font-family: 'Orbitron', monospace;
+                letter-spacing: 2px;
+            }
+
+            #filterIndicator {
+                background: linear-gradient(45deg, #ff00ff, #00ffff);
+                color: #000000;
+                padding: 8px 20px;
+                border-radius: 15px;
+                font-family: 'Audiowide', cursive;
+                font-size: 0.9em;
+                font-weight: bold;
+                margin: 10px;
+                border: 2px solid #ffffff;
+                box-shadow: 0 0 15px rgba(255, 0, 255, 0.6);
+                text-transform: uppercase;
+                letter-spacing: 1px;
+            }
+
+            #privacyNotice {
+                background: rgba(0, 0, 0, 0.8);
+                color: #00ffff;
+                padding: 10px 15px;
+                border-radius: 10px;
+                font-family: 'Orbitron', monospace;
+                font-size: 0.8em;
+                margin: 15px 0;
+                border: 1px solid #00ffff;
+                box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+                max-width: 400px;
+                line-height: 1.4;
+            }
+
+            video {
+                display: none;
+            }
+
+            #countdown {
+                font-size: 5em;
+                margin: 15px 0;
+                font-family: 'Audiowide', cursive;
+                background: linear-gradient(45deg, #ff00ff, #00ffff, #ff0080);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+                text-shadow: 0 0 30px rgba(255, 0, 255, 0.8);
+                animation: countdownPulse 1s ease-in-out infinite;
+            }
+
+            @keyframes countdownPulse {
+                0% { transform: scale(1) rotate(0deg); }
+                50% { transform: scale(1.2) rotate(2deg); }
+                100% { transform: scale(1) rotate(0deg); }
+            }
+
+            button, select {
+                background: linear-gradient(45deg, #1a1a1a, #333333);
+                color: #ffffff;
+                border: 2px solid transparent;
+                background-clip: padding-box;
+                border-radius: 25px;
+                padding: 15px 30px;
+                font-size: 1em;
+                font-family: 'Orbitron', monospace;
+                font-weight: bold;
+                cursor: pointer;
+                margin: 10px;
+                position: relative;
+                overflow: hidden;
+                transition: all 0.3s ease;
+                text-transform: uppercase;
+                letter-spacing: 2px;
+                box-shadow: 0 0 20px rgba(255, 0, 255, 0.4);
+            }
+
+            button::before, select::before {
+                content: '';
+                position: absolute;
+                top: -2px;
+                left: -2px;
+                right: -2px;
+                bottom: -2px;
+                background: linear-gradient(45deg, #ff00ff, #00ffff, #ff0080, #8000ff, #00ff40, #ff00ff);
+                background-size: 400% 400%;
+                animation: rainbowBorder 3s ease infinite;
+                border-radius: 27px;
+                z-index: -1;
+            }
+
+            button:hover, select:hover {
+                transform: translateY(-3px) scale(1.05);
+                box-shadow: 
+                    0 0 30px rgba(0, 255, 255, 0.8),
+                    0 10px 20px rgba(0, 0, 0, 0.5);
+                color: #00ffff;
+            }
+
+            button:active, select:active {
+                transform: translateY(0) scale(0.95);
+                box-shadow: 0 0 15px rgba(255, 0, 255, 0.6);
+            }
+
+            select {
+                background: #1a1a1a;
+                color: #ffffff;
+                appearance: none;
+                background-image: linear-gradient(45deg, transparent 50%, #00ffff 50%), linear-gradient(135deg, #00ffff 50%, transparent 50%);
+                background-position: calc(100% - 20px) center, calc(100% - 15px) center;
+                background-size: 5px 5px, 5px 5px;
+                background-repeat: no-repeat;
+            }
+        </style>
 </head>
 <body>
     <div id="photobooth">
@@ -63,8 +351,52 @@
             takePhoto();
         });
 
+        const filters = ['none', 'grayscale(100%)', 'sepia(100%)', 'invert(100%)'];
+        let currentFilterIndex = 0;
+        const shutterSound = new Audio('shutter.mp3'); // Add a shutter sound file in the same directory
+
+        // Add filter toggle button
+        const filterButton = document.createElement('button');
+        filterButton.textContent = 'Change Filter';
+        document.getElementById('photobooth').appendChild(filterButton);
+
+        // Add filter indicator
+        const filterIndicator = document.createElement('div');
+        filterIndicator.id = 'filterIndicator';
+        filterIndicator.textContent = `Current Filter: ${filters[currentFilterIndex] === 'none' ? 'Normal' : filters[currentFilterIndex].replace('(100%)', '')}`;
+        document.getElementById('photobooth').appendChild(filterIndicator);
+
+        // Add privacy notice
+        const privacyNotice = document.createElement('div');
+        privacyNotice.id = 'privacyNotice';
+        privacyNotice.innerHTML = '🔒 Privacy Protected: All photos are processed locally in your browser. No images are saved, stored, or transmitted to any server.';
+        document.getElementById('photobooth').appendChild(privacyNotice);
+
+        filterButton.addEventListener('click', () => {
+            currentFilterIndex = (currentFilterIndex + 1) % filters.length;
+            video.style.filter = filters[currentFilterIndex];
+            filterIndicator.textContent = `Current Filter: ${filters[currentFilterIndex] === 'none' ? 'Normal' : filters[currentFilterIndex].replace('(100%)', '')}`;
+        });
+
+        // Update dropdown to allow selecting between 1 and 8 photos
+        const photoCountDropdown = document.createElement('select');
+        [1, 2, 3, 4, 5, 6, 7, 8].forEach(num => {
+            const option = document.createElement('option');
+            option.value = num;
+            option.textContent = `${num} Photo${num > 1 ? 's' : ''}`;
+            if (num === 3) option.selected = true; // Set default to 3
+            photoCountDropdown.appendChild(option);
+        });
+        document.getElementById('photobooth').appendChild(photoCountDropdown);
+
+        photoCountDropdown.addEventListener('change', () => {
+            maxPhotos = parseInt(photoCountDropdown.value, 10);
+        });
+
+        let maxPhotos = 3; // Default to 3 photos
+
         function takePhoto() {
-            if (photoCount < 3) {
+            if (photoCount < maxPhotos) {
                 let count = 5;
                 countdown.innerHTML = count;
                 const interval = setInterval(() => {
@@ -73,15 +405,17 @@
                     if (count === 0) {
                         clearInterval(interval);
                         countdown.innerHTML = '';
+                        shutterSound.play(); // Play shutter sound
                         const canvas = document.createElement('canvas');
                         canvas.width = 320;
                         canvas.height = 240;
                         const context = canvas.getContext('2d');
-                        context.filter = 'grayscale(100%)';
+                        context.filter = filters[currentFilterIndex]; // Apply current filter
                         context.drawImage(video, 0, 0, canvas.width, canvas.height);
                         const img = document.createElement('img');
                         img.src = canvas.toDataURL('image/png');
                         img.classList.add('photo');
+                        img.setAttribute('data-timestamp', new Date().toLocaleString());
                         strip.appendChild(img);
                         photoCount++;
                         setTimeout(takePhoto, 1000); // Wait 1 second before starting the next countdown
