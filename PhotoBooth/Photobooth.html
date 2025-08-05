@@ -124,7 +124,7 @@
 
             @keyframes borderGlow {
                 0% { box-shadow: 0 0 30px rgba(255, 0, 255, 0.5), 0 0 60px rgba(0, 255, 255, 0.3), inset 0 0 30px rgba(255, 255, 255, 0.1); }
-                100% { box-shadow: 0 0 50px rgba(0, 255, 255, 0.7), 0 0 80px rgba(255, 0, 255, 0.5), inset 0 0 40px rgba(255, 255, 255, 0.2); }
+                100% { box-shadow: 0 0 50px rgba(255, 255, 0, 0.7), 0 0 80px rgba(255, 0, 255, 0.5), inset 0 0 40px rgba(255, 255, 255, 0.2); }
             }
 
             #photobooth::before {
@@ -340,6 +340,45 @@
                 background-position: calc(100% - 20px) center, calc(100% - 15px) center;
                 background-size: 5px 5px, 5px 5px;
                 background-repeat: no-repeat;
+            }
+
+            #start {
+                background: linear-gradient(45deg, #ff0000, #ff8000);
+                color: #ffffff;
+                border: 3px solid #ffffff;
+                border-radius: 30px;
+                padding: 20px 40px;
+                font-size: 1.2em;
+                font-family: 'Orbitron', monospace;
+                font-weight: bold;
+                cursor: pointer;
+                margin: 20px;
+                position: relative;
+                overflow: hidden;
+                transition: all 0.3s ease;
+                text-transform: uppercase;
+                letter-spacing: 2px;
+                box-shadow: 0 0 30px rgba(255, 0, 0, 0.6), 0 0 60px rgba(255, 128, 0, 0.4);
+                animation: pulseGlow 2s infinite alternate;
+            }
+
+            #start:hover {
+                transform: translateY(-3px) scale(1.1);
+                box-shadow: 0 0 40px rgba(255, 128, 0, 0.8), 0 10px 20px rgba(0, 0, 0, 0.5);
+            }
+
+            #start:active {
+                transform: translateY(0) scale(0.95);
+                box-shadow: 0 0 20px rgba(255, 0, 0, 0.8);
+            }
+
+            @keyframes pulseGlow {
+                0% {
+                    box-shadow: 0 0 30px rgba(255, 0, 0, 0.6), 0 0 60px rgba(255, 128, 0, 0.4);
+                }
+                100% {
+                    box-shadow: 0 0 50px rgba(255, 128, 0, 0.8), 0 0 80px rgba(255, 0, 0, 0.6);
+                }
             }
         </style>
 </head>
