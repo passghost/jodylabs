@@ -153,15 +153,18 @@
             #strip {
                 display: flex;
                 flex-direction: column;
-                border: 8px solid #000000;
-                padding: 20px;
-                background: #000000;
-                border-radius: 10px;
+                border: 0;
+                padding: 15px 25px;
+                background: linear-gradient(to right, #1a1a1a 0%, #2a2a2a 10%, #2a2a2a 90%, #1a1a1a 100%);
+                border-radius: 5px;
                 box-shadow: 
                     0 0 20px rgba(255, 0, 255, 0.6),
-                    inset 0 0 20px rgba(0, 255, 255, 0.3);
+                    inset 0 0 20px rgba(0, 255, 255, 0.3),
+                    inset -15px 0 0 #0a0a0a,
+                    inset 15px 0 0 #0a0a0a;
                 position: relative;
                 margin: 20px 0;
+                overflow: hidden;
             }
 
             #strip::before {
@@ -185,28 +188,50 @@
             }
 
             .photo {
-                margin-bottom: 20px;
-                border: 10px solid #ffffff;
-                border-bottom: 40px solid #ffffff;
-                border-radius: 8px;
+                margin-bottom: 5px;
+                border: 2px solid #333333;
+                border-radius: 0;
                 box-shadow: 
-                    0 0 15px rgba(255, 255, 255, 0.8),
-                    0 5px 15px rgba(0, 0, 0, 0.8);
+                    0 2px 8px rgba(0, 0, 0, 0.6),
+                    inset -10px 0 0 #222222,
+                    inset 10px 0 0 #222222;
                 position: relative;
-                background: #ffffff;
+                background: #1a1a1a;
                 display: block;
             }
 
-            .photo::after {
-                content: 'INSTANT ' attr(data-timestamp);
+            .photo::before {
+                content: '';
                 position: absolute;
-                bottom: -35px;
-                left: 50%;
-                transform: translateX(-50%);
-                color: #666666;
-                font-size: 0.7em;
-                font-family: 'Orbitron', monospace;
-                letter-spacing: 2px;
+                left: -8px;
+                top: 0;
+                bottom: 0;
+                width: 6px;
+                background: repeating-linear-gradient(
+                    to bottom,
+                    #222222 0px,
+                    #222222 8px,
+                    #000000 8px,
+                    #000000 12px
+                );
+                border-radius: 0;
+            }
+
+            .photo::after {
+                content: '';
+                position: absolute;
+                right: -8px;
+                top: 0;
+                bottom: 0;
+                width: 6px;
+                background: repeating-linear-gradient(
+                    to bottom,
+                    #222222 0px,
+                    #222222 8px,
+                    #000000 8px,
+                    #000000 12px
+                );
+                border-radius: 0;
             }
 
             #filterIndicator {
@@ -352,7 +377,8 @@
         });
 
         const filters = ['none', 'grayscale(100%)', 'sepia(100%)', 'invert(100%)'];
-        let currentFilterIndex = 0;
+        let currentFilterIndex = 1; // Default to grayscale (black and white) filter
+        video.style.filter = filters[currentFilterIndex]; // Apply default filter
         const shutterSound = new Audio('shutter.mp3'); // Add a shutter sound file in the same directory
 
         // Add filter toggle button
@@ -426,12 +452,56 @@
 
         saveButton.addEventListener('click', () => {
             const images = strip.getElementsByTagName('img');
-            for (let i = 0; i < images.length; i++) {
-                const link = document.createElement('a');
-                link.href = images[i].src;
-                link.download = `photo${i + 1}.png`;
-                link.click();
-            }
+            if (images.length === 0) return;
+
+            // Create a canvas to combine all photos into one film strip
+            const stripCanvas = document.createElement('canvas');
+            const stripCtx = stripCanvas.getContext('2d');
+            
+            // Set canvas dimensions for vertical film strip
+            const photoWidth = 320;
+            const photoHeight = 240;
+            const sprocketWidth = 30;
+            const photoSpacing = 10;
+            const totalPhotoHeight = photoHeight + photoSpacing;
+            
+            stripCanvas.width = photoWidth + (sprocketWidth * 2) + 20; // Photo width plus sprockets and padding
+            stripCanvas.height = images.length * totalPhotoHeight + 40; // Height for all photos plus padding
+            
+            // Fill background with dark film color
+            stripCtx.fillStyle = '#1a1a1a';
+            stripCtx.fillRect(0, 0, stripCanvas.width, stripCanvas.height);
+            
+            // Draw sprocket holes pattern on both sides
+            const drawSprocketHoles = (x, startY, endY) => {
+                stripCtx.fillStyle = '#000000';
+                for (let y = startY; y < endY; y += 20) {
+                    // Create rounded rectangle for sprocket holes
+                    stripCtx.beginPath();
+                    stripCtx.roundRect(x, y, 12, 8, 2);
+                    stripCtx.fill();
+                }
+            };
+            
+            // Draw each photo onto the strip canvas
+            let yOffset = 20; // Start with some padding
+            
+            Array.from(images).forEach((img, index) => {
+                // Draw sprocket holes on both sides
+                drawSprocketHoles(5, yOffset - 10, yOffset + photoHeight + 10);
+                drawSprocketHoles(stripCanvas.width - 17, yOffset - 10, yOffset + photoHeight + 10);
+                
+                // Draw the actual photo in the center
+                stripCtx.drawImage(img, sprocketWidth + 10, yOffset, photoWidth, photoHeight);
+                
+                yOffset += totalPhotoHeight;
+            });
+            
+            // Convert the strip canvas to a downloadable image
+            const link = document.createElement('a');
+            link.href = stripCanvas.toDataURL('image/png');
+            link.download = `film-strip-${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.png`;
+            link.click();
         });
     </script>
 </body>
