@@ -53,10 +53,19 @@ export class Game {
   }
 
   setupEventListeners() {
-    // Login form handlers
-    window.login = () => this.handleLogin();
-    window.register = () => this.handleRegister();
-    window.logout = () => this.logout();
+    // Login form handlers (override any existing functions)
+    window.login = () => {
+      console.log('Login function called');
+      this.handleLogin();
+    };
+    window.register = () => {
+      console.log('Register function called');
+      this.handleRegister();
+    };
+    window.logout = () => {
+      console.log('Logout function called');
+      this.logout();
+    };
 
 
 
@@ -1190,10 +1199,93 @@ export class Game {
 // Initialize game when DOM is loaded
 window.addEventListener('DOMContentLoaded', () => {
   try {
-    console.log('Initializing Pirate Pixel Yar game...');
+    console.log('DOM loaded, initializing Pirate Pixel Yar game...');
     window.game = new Game();
-    console.log('Game initialized successfully');
+    console.log('Game initialized successfully, login functions should be available');
+    console.log('window.login exists:', typeof window.login);
+    
+    // Clear loading message
+    const loginStatus = document.getElementById('loginStatus');
+    if (loginStatus) {
+      loginStatus.textContent = '';
+    }
   } catch (error) {
     console.error('Failed to initialize game:', error);
+    // Show error to user
+    const loginStatus = document.getElementById('loginStatus');
+    if (loginStatus) {
+      loginStatus.textContent = 'Game failed to initialize. Please refresh the page.';
+      loginStatus.style.color = '#ff0000';
+    }
   }
 });
+
+// Ensure login functions are available immediately (fallback)
+if (typeof window !== 'undefined') {
+  console.log('Setting up global login functions...');
+  
+  window.login = function() {
+    console.log('Login function called');
+    console.log('window.game exists:', !!window.game);
+    console.log('window.game type:', typeof window.game);
+    
+    if (window.game && typeof window.game.handleLogin === 'function') {
+      console.log('Calling game.handleLogin()');
+      window.game.handleLogin();
+    } else {
+      console.error('Game not ready. Game exists:', !!window.game);
+      if (window.game) {
+        console.log('Game methods:', Object.getOwnPropertyNames(window.game));
+      }
+      
+      const loginStatus = document.getElementById('loginStatus');
+      if (loginStatus) {
+        loginStatus.textContent = 'Game is still loading, please wait...';
+        loginStatus.style.color = '#ff6666';
+      }
+      
+      // Try again after a delay
+      setTimeout(() => {
+        if (window.game && typeof window.game.handleLogin === 'function') {
+          console.log('Retrying login after delay');
+          window.game.handleLogin();
+        } else {
+          console.error('Game still not ready after delay');
+          if (loginStatus) {
+            loginStatus.textContent = 'Game failed to load. Please refresh the page.';
+            loginStatus.style.color = '#ff0000';
+          }
+        }
+      }, 2000);
+    }
+  };
+
+  window.register = () => {
+    console.log('Register called, game exists:', !!window.game);
+    if (window.game && typeof window.game.handleRegister === 'function') {
+      window.game.handleRegister();
+    } else {
+      console.error('Game not initialized yet or handleRegister not available');
+      const loginStatus = document.getElementById('loginStatus');
+      if (loginStatus) {
+        loginStatus.textContent = 'Game is still loading, please wait...';
+        loginStatus.style.color = '#ff6666';
+      }
+      // Try again in a moment
+      setTimeout(() => {
+        if (window.game && typeof window.game.handleRegister === 'function') {
+          window.game.handleRegister();
+        }
+      }, 1000);
+    }
+  };
+
+  window.logout = () => {
+    console.log('Logout called, game exists:', !!window.game);
+    if (window.game && typeof window.game.logout === 'function') {
+      window.game.logout();
+    } else {
+      console.error('Game not initialized yet or logout not available');
+    }
+  };
+}
