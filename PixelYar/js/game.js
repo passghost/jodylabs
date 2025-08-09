@@ -284,6 +284,9 @@ export class Game {
       if (moveX !== 0 || moveY !== 0) {
         const distance = Math.sqrt((newX - oldX) ** 2 + (newY - oldY) ** 2);
         this.player.updateStat('distanceTraveled', distance);
+        
+        // Check for red sea entry/exit
+        this.checkRedSeaTransition(oldX, newX);
       }
     }
   }
@@ -344,6 +347,22 @@ export class Game {
     const timeUntilNext = CONFIG.INTERACTION_INTERVAL - timeSinceLastInteraction;
     
     return Math.max(0, timeUntilNext);
+  }
+
+  checkRedSeaTransition(oldX, newX) {
+    const wasInRedSea = oldX >= CONFIG.RED_SEA.START_X;
+    const isInRedSea = newX >= CONFIG.RED_SEA.START_X;
+    
+    if (!wasInRedSea && isInRedSea) {
+      // Entering red sea
+      this.addToInteractionHistory('🌊 ⚠️ ENTERING THE RED SEA! ⚠️');
+      this.addToInteractionHistory('🏴‍☠️ Danger increased, but better loot awaits...');
+      this.ui.showInventoryNotification('⚠️ ENTERED RED SEA - Higher Risk, Better Rewards!', 'error');
+    } else if (wasInRedSea && !isInRedSea) {
+      // Leaving red sea
+      this.addToInteractionHistory('🌊 Returning to safer blue waters...');
+      this.ui.showInventoryNotification('✅ Back in Blue Sea - Safer Waters', 'success');
+    }
   }
 
   updateDatabase() {
@@ -716,8 +735,23 @@ export class Game {
       // Store original hull for lucky charm protection
       const originalHull = this.currentPlayer.hull;
 
+      // Check if in red sea for enhanced danger
+      const isInRedSea = this.currentPlayer.x >= CONFIG.RED_SEA.START_X;
+      const dangerMultiplier = isInRedSea ? CONFIG.RED_SEA.DANGER_MULTIPLIER : 1;
+
       // Apply the interaction effect
       const result = this.pendingInteraction.action(this.currentPlayer);
+
+      // Apply red sea danger multiplier to damage
+      if (isInRedSea && this.currentPlayer.hull < originalHull) {
+        const damage = originalHull - this.currentPlayer.hull;
+        const enhancedDamage = Math.floor(damage * dangerMultiplier);
+        this.currentPlayer.hull = Math.max(0, originalHull - enhancedDamage);
+        
+        if (enhancedDamage > damage) {
+          this.addToInteractionHistory(`🌊 The red sea's curse amplifies the damage! (+${enhancedDamage - damage} extra damage)`);
+        }
+      }
 
       // Check for lucky charm protection
       if (this.currentPlayer.luckyCharmActive && this.currentPlayer.hull < originalHull) {
@@ -990,25 +1024,52 @@ export class Game {
     }
 
     console.log('Processing random interaction...');
+    
+    // Check if player is in red sea for enhanced danger/rewards
+    const isInRedSea = this.currentPlayer.x >= CONFIG.RED_SEA.START_X;
+    const dangerMultiplier = isInRedSea ? CONFIG.RED_SEA.DANGER_MULTIPLIER : 1;
+    const lootMultiplier = isInRedSea ? CONFIG.RED_SEA.LOOT_MULTIPLIER : 1;
+    
     const interaction = this.randomInteractions.getRandomInteraction();
-    console.log('Got interaction:', interaction.text);
+    console.log('Got interaction:', interaction.text, isInRedSea ? '(RED SEA)' : '(BLUE SEA)');
 
-    // Add inventory rewards to the interaction
-    const inventoryRewards = [
-      { chance: 0.15, items: [{ name: 'Gold Coins', quantity: [1, 5] }] },
-      { chance: 0.10, items: [{ name: 'Rum Bottles', quantity: [1, 2] }] },
-      { chance: 0.08, items: [{ name: 'Wooden Planks', quantity: [1, 3] }] },
-      { chance: 0.05, items: [{ name: 'Pearls', quantity: [1, 2] }] },
-      { chance: 0.03, items: [{ name: 'Treasure Maps', quantity: 1 }] },
-      { chance: 0.02, items: [{ name: 'Lucky Charm', quantity: 1 }] },
-      { chance: 0.04, items: [
-        { name: 'Red Pixel Pack', quantity: [1, 3] },
-        { name: 'Blue Pixel Pack', quantity: [1, 3] },
-        { name: 'Green Pixel Pack', quantity: [1, 3] },
-        { name: 'Yellow Pixel Pack', quantity: [1, 3] },
-        { name: 'Purple Pixel Pack', quantity: [1, 3] }
-      ]}
-    ];
+    // Enhanced inventory rewards based on sea type
+    let inventoryRewards;
+    if (isInRedSea) {
+      // Red sea has better rewards but more dangerous
+      inventoryRewards = [
+        { chance: 0.25, items: [{ name: 'Gold Coins', quantity: [5, 15] }] },
+        { chance: 0.20, items: [{ name: 'Pearls', quantity: [2, 6] }] },
+        { chance: 0.15, items: [{ name: 'Treasure Maps', quantity: [1, 3] }] },
+        { chance: 0.12, items: [{ name: 'Lucky Charm', quantity: 1 }] },
+        { chance: 0.10, items: [{ name: 'Rum Bottles', quantity: [2, 4] }] },
+        { chance: 0.08, items: [{ name: 'Medicine', quantity: [2, 5] }] },
+        { chance: 0.06, items: [
+          { name: 'Red Pixel Pack', quantity: [3, 8] },
+          { name: 'Blue Pixel Pack', quantity: [3, 8] },
+          { name: 'Green Pixel Pack', quantity: [3, 8] },
+          { name: 'Yellow Pixel Pack', quantity: [3, 8] },
+          { name: 'Purple Pixel Pack', quantity: [3, 8] }
+        ]}
+      ];
+    } else {
+      // Blue sea has normal rewards
+      inventoryRewards = [
+        { chance: 0.15, items: [{ name: 'Gold Coins', quantity: [1, 5] }] },
+        { chance: 0.10, items: [{ name: 'Rum Bottles', quantity: [1, 2] }] },
+        { chance: 0.08, items: [{ name: 'Wooden Planks', quantity: [1, 3] }] },
+        { chance: 0.05, items: [{ name: 'Pearls', quantity: [1, 2] }] },
+        { chance: 0.03, items: [{ name: 'Treasure Maps', quantity: 1 }] },
+        { chance: 0.02, items: [{ name: 'Lucky Charm', quantity: 1 }] },
+        { chance: 0.04, items: [
+          { name: 'Red Pixel Pack', quantity: [1, 3] },
+          { name: 'Blue Pixel Pack', quantity: [1, 3] },
+          { name: 'Green Pixel Pack', quantity: [1, 3] },
+          { name: 'Yellow Pixel Pack', quantity: [1, 3] },
+          { name: 'Purple Pixel Pack', quantity: [1, 3] }
+        ]}
+      ];
+    }
 
     // Check for inventory rewards and add to interaction
     for (const reward of inventoryRewards) {

@@ -47,7 +47,17 @@ export class InteractionManager {
       if (p.id === currentPlayer.id) return false;
       
       const distance = Math.sqrt(
-        Math.pow(p.x - currentPlayer.x, 2) + 
+        Math.pow(p.x - currentPlayer.x, 2) + Math.pow(p.y - currentPlayer.y, 2)
+      );
+      
+      return distance <= this.interactionRange;
+    });
+
+    // Update nearby players list
+    this.nearbyPlayers = nearby;
+    
+    // Update UI with nearby players
+    this.updateNearbyPlayersUI(); 
         Math.pow(p.y - currentPlayer.y, 2)
       );
       
@@ -117,6 +127,13 @@ export class InteractionManager {
       return;
     }
 
+    // Handle AI ship interactions directly
+    if (targetPlayer.isAI) {
+      this.handleAIInteraction(targetPlayer, interactionType);
+      return;
+    }
+
+    // Handle real player interactions through database
     try {
       const { data, error } = await this.supabase
         .from('player_interactions')
@@ -147,6 +164,33 @@ export class InteractionManager {
       console.error('Failed to initiate interaction:', error);
       this.uiManager.addToInteractionHistory('Failed to send interaction request');
     }
+  }
+
+  async handleAIInteraction(aiShip, interactionType) {
+    const currentPlayer = this.playerManager.getCurrentPlayer();
+    
+    // Create a mock interaction object for AI
+    const mockInteraction = {
+      id: `ai_${Date.now()}`,
+      initiator_id: currentPlayer.id,
+      target_id: aiShip.id,
+      interaction_type: interactionType,
+      status: 'accepted', // AI always accepts combat
+      data: {
+        initiator_name: currentPlayer.email.split('@')[0],
+        target_name: aiShip.email.split('@')[0],
+        timestamp: new Date().toISOString(),
+        isAI: true,
+        aiShip: aiShip
+      }
+    };
+
+    this.uiManager.addToInteractionHistory(
+      `Engaging ${aiShip.email.split('@')[0]} in ${interactionType}!`
+    );
+
+    // Start the interaction immediately
+    await this.startInteractionSession(mockInteraction);
   }
 
   async handleInteractionUpdate(payload) {

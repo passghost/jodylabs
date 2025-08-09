@@ -13,17 +13,42 @@ export class Renderer {
   drawOcean(islands, waterObjects = [], placedPixels = []) {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     
-    // Solid vivid blue base
+    // Blue sea base
     this.ctx.fillStyle = '#2196F3';
     this.ctx.fillRect(0, 0, CONFIG.OCEAN_WIDTH, CONFIG.OCEAN_HEIGHT);
     
-    // Water texture overlay
-    for (let i = 0; i < 24000; i++) {
+    // Red sea area (dangerous zone)
+    this.ctx.fillStyle = '#8B0000'; // Dark red base
+    this.ctx.fillRect(CONFIG.RED_SEA.START_X, 0, CONFIG.OCEAN_WIDTH - CONFIG.RED_SEA.START_X, CONFIG.OCEAN_HEIGHT);
+    
+    // Red sea gradient border
+    const gradient = this.ctx.createLinearGradient(CONFIG.RED_SEA.START_X - 50, 0, CONFIG.RED_SEA.START_X + 50, 0);
+    gradient.addColorStop(0, 'rgba(33, 150, 243, 1)'); // Blue
+    gradient.addColorStop(0.5, 'rgba(139, 0, 0, 0.8)'); // Red transition
+    gradient.addColorStop(1, 'rgba(139, 0, 0, 1)'); // Full red
+    this.ctx.fillStyle = gradient;
+    this.ctx.fillRect(CONFIG.RED_SEA.START_X - 50, 0, 100, CONFIG.OCEAN_HEIGHT);
+    
+    // Blue sea water texture
+    for (let i = 0; i < 18000; i++) {
+      const x = Math.random() * CONFIG.RED_SEA.START_X;
+      const y = Math.random() * CONFIG.OCEAN_HEIGHT;
       const alpha = Math.random() * 0.25 + 0.12;
       const blue = 180 + Math.floor(Math.random() * 70);
       const green = 140 + Math.floor(Math.random() * 80);
       this.ctx.fillStyle = `rgba(30,${green},${blue},${alpha})`;
-      this.ctx.fillRect(Math.random() * CONFIG.OCEAN_WIDTH, Math.random() * CONFIG.OCEAN_HEIGHT, 2, 2);
+      this.ctx.fillRect(x, y, 2, 2);
+    }
+    
+    // Red sea water texture (more ominous)
+    for (let i = 0; i < 12000; i++) {
+      const x = CONFIG.RED_SEA.START_X + Math.random() * (CONFIG.OCEAN_WIDTH - CONFIG.RED_SEA.START_X);
+      const y = Math.random() * CONFIG.OCEAN_HEIGHT;
+      const alpha = Math.random() * 0.3 + 0.15;
+      const red = 100 + Math.floor(Math.random() * 50);
+      const green = Math.floor(Math.random() * 30);
+      this.ctx.fillStyle = `rgba(${red},${green},0,${alpha})`;
+      this.ctx.fillRect(x, y, 2, 2);
     }
     
     // Draw islands
@@ -79,6 +104,9 @@ export class Renderer {
       this.ctx.stroke();
     }
 
+    // Draw red sea boundary markers
+    this.drawRedSeaBoundary();
+    
     // Draw water objects
     this.drawWaterObjects(waterObjects);
     
@@ -476,5 +504,44 @@ export class Renderer {
     const worldY = (canvasY - this.panY) / this.zoom;
     
     return { x: Math.max(0, Math.min(CONFIG.OCEAN_WIDTH, worldX)), y: Math.max(0, Math.min(CONFIG.OCEAN_HEIGHT, worldY)) };
+  }
+
+  drawRedSeaBoundary() {
+    this.ctx.save();
+    
+    // Draw warning buoys along the boundary
+    const buoySpacing = 100;
+    for (let y = 0; y < CONFIG.OCEAN_HEIGHT; y += buoySpacing) {
+      // Warning buoy
+      this.ctx.fillStyle = '#FF4444';
+      this.ctx.beginPath();
+      this.ctx.arc(CONFIG.RED_SEA.START_X - 10, y, 3, 0, 2 * Math.PI);
+      this.ctx.fill();
+      
+      // Buoy light (blinking effect based on time)
+      if (Math.floor(Date.now() / 500) % 2 === 0) {
+        this.ctx.fillStyle = '#FFFF00';
+        this.ctx.beginPath();
+        this.ctx.arc(CONFIG.RED_SEA.START_X - 10, y, 1, 0, 2 * Math.PI);
+        this.ctx.fill();
+      }
+    }
+    
+    // Draw danger zone text
+    this.ctx.fillStyle = '#FF0000';
+    this.ctx.font = 'bold 16px Arial';
+    this.ctx.textAlign = 'center';
+    this.ctx.strokeStyle = '#000000';
+    this.ctx.lineWidth = 2;
+    
+    const warningY = CONFIG.OCEAN_HEIGHT / 2;
+    this.ctx.strokeText('⚠️ DANGER ZONE ⚠️', CONFIG.RED_SEA.START_X + 200, warningY - 20);
+    this.ctx.fillText('⚠️ DANGER ZONE ⚠️', CONFIG.RED_SEA.START_X + 200, warningY - 20);
+    
+    this.ctx.font = '12px Arial';
+    this.ctx.strokeText('Higher Risk • Better Rewards', CONFIG.RED_SEA.START_X + 200, warningY + 5);
+    this.ctx.fillText('Higher Risk • Better Rewards', CONFIG.RED_SEA.START_X + 200, warningY + 5);
+    
+    this.ctx.restore();
   }
 }

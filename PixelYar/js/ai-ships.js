@@ -14,41 +14,62 @@ export class AIShipManager {
   }
 
   initializeAIShips() {
-    // Create 3-5 AI enemy ships
-    const numShips = Math.floor(Math.random() * 3) + 3;
-
-    for (let i = 0; i < numShips; i++) {
-      const ship = this.createAIShip();
+    // Create AI ships for blue sea
+    for (let i = 0; i < CONFIG.AI_SHIPS.BLUE_SEA_COUNT; i++) {
+      const ship = this.createAIShip('blue');
       this.aiShips.push(ship);
     }
+
+    // Create AI ships for red sea
+    for (let i = 0; i < CONFIG.AI_SHIPS.RED_SEA_COUNT; i++) {
+      const ship = this.createAIShip('red');
+      this.aiShips.push(ship);
+    }
+
+    // Start spawning new ships periodically
+    this.startShipSpawning();
   }
 
-  createAIShip() {
-    // Find a valid spawn position
+  createAIShip(seaType = 'blue') {
+    // Find a valid spawn position based on sea type
     let x, y;
     let attempts = 0;
+    
     do {
-      x = Math.floor(Math.random() * CONFIG.OCEAN_WIDTH);
-      y = Math.floor(Math.random() * CONFIG.OCEAN_HEIGHT);
+      if (seaType === 'red') {
+        // Spawn in red sea area (right 25% of ocean)
+        x = CONFIG.RED_SEA.START_X + Math.floor(Math.random() * (CONFIG.OCEAN_WIDTH - CONFIG.RED_SEA.START_X));
+        y = Math.floor(Math.random() * CONFIG.OCEAN_HEIGHT);
+      } else {
+        // Spawn in blue sea area (left 75% of ocean)
+        x = Math.floor(Math.random() * CONFIG.RED_SEA.START_X);
+        y = Math.floor(Math.random() * CONFIG.OCEAN_HEIGHT);
+      }
       attempts++;
     } while (!this.worldManager.isValidPosition(x, y) && attempts < 100);
 
     // If we couldn't find a valid position, place at a default location
     if (attempts >= 100) {
-      x = Math.floor(CONFIG.OCEAN_WIDTH / 2);
+      x = seaType === 'red' ? CONFIG.RED_SEA.START_X + 100 : CONFIG.OCEAN_WIDTH / 4;
       y = Math.floor(CONFIG.OCEAN_HEIGHT / 2);
     }
+
+    // Red sea ships are more dangerous
+    const isRedSea = seaType === 'red';
+    const dangerMultiplier = isRedSea ? CONFIG.RED_SEA.DANGER_MULTIPLIER : 1;
 
     return {
       id: `ai_ship_${this.shipIdCounter++}`,
       x: x,
       y: y,
-      hull: 80 + Math.floor(Math.random() * 40), // 80-120 hull
-      crew: 8 + Math.floor(Math.random() * 8), // 8-16 crew
-      booty: Math.floor(Math.random() * 20), // 0-20 booty
-      color: '#000000', // Black ships for enemies
-      email: `AI_Pirate_${this.shipIdCounter - 1}@blackflag.sea`,
+      hull: Math.floor((80 + Math.random() * 40) * dangerMultiplier), // Stronger in red sea
+      crew: Math.floor((8 + Math.random() * 8) * dangerMultiplier), // More crew in red sea
+      booty: Math.floor(Math.random() * 20 * (isRedSea ? CONFIG.RED_SEA.LOOT_MULTIPLIER : 1)), // Better loot in red sea
+      color: isRedSea ? '#660000' : '#000000', // Dark red for red sea ships, black for blue sea
+      email: `AI_${isRedSea ? 'RedSea' : 'BlueSea'}_Pirate_${this.shipIdCounter - 1}@blackflag.sea`,
+      seaType: seaType,
       isAI: true,
+      dangerLevel: isRedSea ? 'high' : 'normal',
       lastMove: Date.now(),
       lastBehaviorUpdate: Date.now(),
       moveDirection: { dx: 0, dy: 0 },
@@ -261,5 +282,73 @@ export class AIShipManager {
         setTimeout(() => this.maintainAIFleet(), 1000);
       }
     }
+  }
+
+  // Start periodic ship spawning
+  startShipSpawning() {
+    setInterval(() => {
+      this.spawnNewShip();
+    }, CONFIG.AI_SHIPS.SPAWN_INTERVAL);
+  }
+
+  // Spawn a new AI ship if under the limit
+  spawnNewShip() {
+    if (this.aiShips.length >= CONFIG.AI_SHIPS.MAX_TOTAL) {
+      return; // At maximum capacity
+    }
+
+    // Randomly choose sea type based on current distribution
+    const redSeaShips = this.aiShips.filter(ship => ship.seaType === 'red').length;
+    const blueSeaShips = this.aiShips.filter(ship => ship.seaType === 'blue').length;
+    
+    let seaType = 'blue';
+    if (redSeaShips < CONFIG.AI_SHIPS.RED_SEA_COUNT && Math.random() < 0.6) {
+      seaType = 'red';
+    }
+
+    const newShip = this.createAIShip(seaType);
+    this.aiShips.push(newShip);
+    
+    console.log(`Spawned new ${seaType} sea AI ship. Total: ${this.aiShips.length}`);
+  }
+
+  // Enhanced fleet maintenance with sea type balancing
+  maintainAIFleet() {
+    // Remove ships with 0 hull
+    this.aiShips = this.aiShips.filter(ship => ship.hull > 0);
+
+    // Maintain minimum fleet sizes for each sea
+    const redSeaShips = this.aiShips.filter(ship => ship.seaType === 'red').length;
+    const blueSeaShips = this.aiShips.filter(ship => ship.seaType === 'blue').length;
+
+    // Spawn blue sea ships if needed
+    while (blueSeaShips < Math.floor(CONFIG.AI_SHIPS.BLUE_SEA_COUNT / 2)) {
+      const newShip = this.createAIShip('blue');
+      this.aiShips.push(newShip);
+    }
+
+    // Spawn red sea ships if needed
+    while (redSeaShips < Math.floor(CONFIG.AI_SHIPS.RED_SEA_COUNT / 2)) {
+      const newShip = this.createAIShip('red');
+      this.aiShips.push(newShip);
+    }
+  }
+
+  // Get ships in a specific area (for red sea encounters)
+  getShipsInArea(x, y, radius) {
+    return this.aiShips.filter(ship => {
+      const distance = this.getDistance(ship, { x, y });
+      return distance <= radius;
+    });
+  }
+
+  // Check if position is in red sea
+  isInRedSea(x, y) {
+    return x >= CONFIG.RED_SEA.START_X;
+  }
+
+  // Get danger level for a position
+  getDangerLevel(x, y) {
+    return this.isInRedSea(x, y) ? 'high' : 'normal';
   }
 }

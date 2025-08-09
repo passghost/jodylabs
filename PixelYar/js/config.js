@@ -29,5 +29,20 @@ export const CONFIG = {
     MAX_COUNT: 10,
     MIN_RADIUS: 20,
     MAX_RADIUS: 40
+  },
+  
+  RED_SEA: {
+    START_X: 2880, // Red sea starts at 75% of ocean width
+    DANGER_MULTIPLIER: 2.5, // 2.5x more dangerous
+    LOOT_MULTIPLIER: 3.0, // 3x better loot
+    COLOR: '#330000', // Dark red tint
+    AI_SHIP_MULTIPLIER: 3 // 3x more AI ships
+  },
+  
+  AI_SHIPS: {
+    BLUE_SEA_COUNT: 8, // Base number of AI ships in blue area
+    RED_SEA_COUNT: 24, // Additional AI ships in red sea
+    SPAWN_INTERVAL: 30000, // Spawn new AI ship every 30 seconds
+    MAX_TOTAL: 32 // Maximum total AI ships
   }
 };
