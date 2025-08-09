@@ -9,6 +9,7 @@ import { PlayerManager } from './player.js';
 import { InteractionManager } from './interaction-manager.js';
 import { AIShipManager } from './ai-ships.js';
 import { InventoryManager } from './inventory.js';
+import { PixelManager } from './pixel-manager.js';
 
 export class Game {
   constructor() {
@@ -28,6 +29,7 @@ export class Game {
     this.aiShips = null; // Will be initialized after world manager
     this.inventory = new InventoryManager();
     console.log('InventoryManager created');
+    this.pixelManager = null; // Will be initialized after login
 
     // Real-time movement state
     this.isGameRunning = false;
@@ -63,6 +65,9 @@ export class Game {
         this.renderer.zoomOut();
       }
     });
+
+    // Canvas click for pixel placement
+    this.renderer.canvas.addEventListener('click', (e) => this.handleCanvasClick(e));
 
     // Real-time keyboard input
     window.addEventListener('keydown', (e) => this.handleKeyDown(e));
@@ -115,6 +120,8 @@ export class Game {
         this.inventory.addItem('Gold Coins', 10);
         this.inventory.addItem('Rum Bottles', 3);
         this.inventory.addItem('Cannon Balls', 20);
+        this.inventory.addItem('Red Pixel Pack', 2);
+        this.inventory.addItem('Blue Pixel Pack', 2);
       }
 
       // Pass Supabase client to world manager and load islands
@@ -144,6 +151,12 @@ export class Game {
         this.player,
         this.ui
       );
+
+      // Initialize pixel manager
+      this.pixelManager = new PixelManager(this.auth.getSupabase());
+      
+      // Ensure all pixels are loaded for this player
+      await this.pixelManager.loadPlacedPixels();
 
       // Set initial zoom and center on player
       this.renderer.setZoom(CONFIG.ZOOM.DEFAULT);
@@ -291,6 +304,8 @@ export class Game {
     // Clean up old water objects periodically
     this.world.cleanupOldObjects();
 
+    // Pixels are now permanent - no cleanup needed
+
     // Update AI ships
     if (this.aiShips) {
       this.aiShips.updateAIShipsRealtime();
@@ -301,11 +316,18 @@ export class Game {
     const aiShips = this.aiShips ? this.aiShips.getAIShips() : [];
     const allShips = [...allPlayers, ...aiShips];
 
-    this.renderer.drawOcean(this.world.getIslands(), this.world.getWaterObjects());
+    // Get placed pixels for rendering
+    const placedPixels = this.pixelManager ? this.pixelManager.getAllPixels() : [];
+
+    this.renderer.drawOcean(this.world.getIslands(), this.world.getWaterObjects(), placedPixels);
     this.renderer.drawPlayers(allShips, this.currentPlayer, this.playerRotation);
     this.renderer.centerOnPlayer(this.currentPlayer);
     this.ui.updatePlayerStats(this.currentPlayer, this.renderer.getZoom());
     this.ui.updateInventory(this.inventory);
+    
+    // Update UI with pixel mode status
+    const pixelMode = this.pixelManager ? this.pixelManager.getCurrentPixelColor() : null;
+    this.ui.updateMoveTimer(0, false, true, pixelMode);
 
     // Check for nearby trading ports
     this.checkNearbyTradingPorts();
@@ -335,6 +357,10 @@ export class Game {
     if (key === 'd') this.keys.d = true;
     if (key === 'r') this.repairShip();
     if (key === 'i') this.showFullInventory();
+    if (key === 'escape' && this.pixelManager && this.pixelManager.isPixelModeActive()) {
+      this.pixelManager.deactivatePixelMode();
+      this.addToInteractionHistory('Pixel placement mode cancelled.');
+    }
   }
 
   handleKeyUp(e) {
@@ -690,6 +716,12 @@ export class Game {
       // Logout from auth
       await this.auth.logout();
 
+      // Clean up pixel manager
+      if (this.pixelManager) {
+        this.pixelManager.destroy();
+        this.pixelManager = null;
+      }
+
       // Reset game state
       this.currentPlayer = null;
       this.isInteractionBlocked = false;
@@ -703,6 +735,46 @@ export class Game {
     }
   }
 
+  // Canvas click handler for pixel placement
+  handleCanvasClick(e) {
+    if (!this.pixelManager || !this.pixelManager.isPixelModeActive()) return;
+
+    const worldCoords = this.renderer.screenToWorld(e.clientX, e.clientY);
+    
+    // Check if click is within game bounds
+    if (worldCoords.x < 0 || worldCoords.x >= CONFIG.OCEAN_WIDTH || 
+        worldCoords.y < 0 || worldCoords.y >= CONFIG.OCEAN_HEIGHT) {
+      return;
+    }
+
+    // Check if click is on an island (don't allow pixel placement on islands)
+    if (!this.world.isValidPosition(Math.round(worldCoords.x), Math.round(worldCoords.y))) {
+      this.addToInteractionHistory('❌ Cannot place pixels on islands!');
+      this.ui.showInventoryNotification('Cannot place pixels on islands!', 'error');
+      return;
+    }
+
+    this.placePixel(worldCoords.x, worldCoords.y);
+  }
+
+  async placePixel(x, y) {
+    if (!this.pixelManager || !this.currentPlayer) return;
+
+    const result = await this.pixelManager.placePixel(x, y, this.currentPlayer.id);
+    
+    if (result.success) {
+      this.addToInteractionHistory(result.message);
+      this.ui.showInventoryNotification(result.message, 'success');
+      
+      // Deactivate pixel mode after successful placement
+      this.pixelManager.deactivatePixelMode();
+      this.addToInteractionHistory('Pixel mode deactivated. Use another pixel pack to continue placing pixels.');
+    } else {
+      this.addToInteractionHistory(`❌ ${result.message}`);
+      this.ui.showInventoryNotification(result.message, 'error');
+    }
+  }
+
   // Inventory management methods
   useInventoryItem(itemName) {
     if (!this.currentPlayer || !this.inventory) return;
@@ -712,6 +784,12 @@ export class Game {
     if (result.success) {
       this.addToInteractionHistory(result.message);
       this.ui.showInventoryNotification(result.message, 'success');
+
+      // Handle pixel pack activation
+      if (result.activatePixelMode && this.pixelManager) {
+        this.pixelManager.activatePixelMode(result.activatePixelMode);
+        this.addToInteractionHistory('Click on the map to place your pixel!');
+      }
 
       // Update UI to reflect changes
       this.ui.updateInventory(this.inventory);
@@ -785,7 +863,14 @@ export class Game {
       { chance: 0.08, items: [{ name: 'Wooden Planks', quantity: [1, 3] }] },
       { chance: 0.05, items: [{ name: 'Pearls', quantity: [1, 2] }] },
       { chance: 0.03, items: [{ name: 'Treasure Maps', quantity: 1 }] },
-      { chance: 0.02, items: [{ name: 'Lucky Charm', quantity: 1 }] }
+      { chance: 0.02, items: [{ name: 'Lucky Charm', quantity: 1 }] },
+      { chance: 0.04, items: [
+        { name: 'Red Pixel Pack', quantity: [1, 3] },
+        { name: 'Blue Pixel Pack', quantity: [1, 3] },
+        { name: 'Green Pixel Pack', quantity: [1, 3] },
+        { name: 'Yellow Pixel Pack', quantity: [1, 3] },
+        { name: 'Purple Pixel Pack', quantity: [1, 3] }
+      ]}
     ];
 
     // Check for inventory rewards and add to interaction

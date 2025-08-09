@@ -10,7 +10,7 @@ export class Renderer {
     this.panY = 0;
   }
 
-  drawOcean(islands, waterObjects = []) {
+  drawOcean(islands, waterObjects = [], placedPixels = []) {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     
     // Solid vivid blue base
@@ -81,6 +81,9 @@ export class Renderer {
 
     // Draw water objects
     this.drawWaterObjects(waterObjects);
+    
+    // Draw placed pixels
+    this.drawPlacedPixels(placedPixels);
   }
 
   drawPlayers(allPlayers, currentPlayer, playerRotation = 0) {
@@ -424,5 +427,54 @@ export class Renderer {
       
       this.ctx.restore();
     }
+  }
+
+  drawPlacedPixels(placedPixels) {
+    if (!placedPixels || placedPixels.length === 0) return;
+
+    this.ctx.save();
+    
+    // Define pixel colors
+    const pixelColors = {
+      'red': '#FF0000',
+      'blue': '#0000FF', 
+      'green': '#00FF00',
+      'yellow': '#FFFF00',
+      'purple': '#800080'
+    };
+
+    // Draw each placed pixel
+    for (const pixel of placedPixels) {
+      const color = pixelColors[pixel.color] || '#FFFFFF';
+      
+      // Add a subtle glow effect to make pixels more visible
+      this.ctx.shadowColor = color;
+      this.ctx.shadowBlur = 2;
+      this.ctx.fillStyle = color;
+      
+      // Draw the pixel as a small square
+      this.ctx.fillRect(pixel.x - 0.5, pixel.y - 0.5, 1, 1);
+      
+      // Add a white border for better visibility
+      this.ctx.shadowBlur = 0;
+      this.ctx.strokeStyle = '#FFFFFF';
+      this.ctx.lineWidth = 0.2;
+      this.ctx.strokeRect(pixel.x - 0.5, pixel.y - 0.5, 1, 1);
+    }
+    
+    this.ctx.restore();
+  }
+
+  // Helper method to convert screen coordinates to world coordinates
+  screenToWorld(screenX, screenY) {
+    const rect = this.canvas.getBoundingClientRect();
+    const canvasX = screenX - rect.left;
+    const canvasY = screenY - rect.top;
+    
+    // Account for zoom and pan - the canvas is scaled via CSS transform
+    const worldX = (canvasX - this.panX) / this.zoom;
+    const worldY = (canvasY - this.panY) / this.zoom;
+    
+    return { x: Math.max(0, Math.min(CONFIG.OCEAN_WIDTH, worldX)), y: Math.max(0, Math.min(CONFIG.OCEAN_HEIGHT, worldY)) };
   }
 }

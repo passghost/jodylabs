@@ -58,7 +58,7 @@ export class UIManager {
     
     let html = displayItems.map(item => {
       const quantityText = item.quantity > 1 ? ` x${item.quantity}` : '';
-      const clickable = ['Rum Bottles', 'Medicine', 'Wooden Planks', 'Gunpowder', 'Lucky Charm', 'Treasure Maps'].includes(item.name);
+      const clickable = ['Rum Bottles', 'Medicine', 'Wooden Planks', 'Gunpowder', 'Lucky Charm', 'Treasure Maps', 'Red Pixel Pack', 'Blue Pixel Pack', 'Green Pixel Pack', 'Yellow Pixel Pack', 'Purple Pixel Pack'].includes(item.name);
       const style = clickable ? 'cursor:pointer; padding:2px; border-radius:3px;' : '';
       const hoverStyle = clickable ? 'onmouseover="this.style.backgroundColor=\'#444\'" onmouseout="this.style.backgroundColor=\'transparent\'"' : '';
       const onclick = clickable ? `onclick="window.game.useInventoryItem('${item.name}')"` : '';
@@ -145,7 +145,7 @@ export class UIManager {
         
         items.forEach(item => {
           const quantityText = item.quantity > 1 ? ` x${item.quantity}` : '';
-          const clickable = ['Rum Bottles', 'Medicine', 'Wooden Planks', 'Gunpowder', 'Lucky Charm', 'Treasure Maps'].includes(item.name);
+          const clickable = ['Rum Bottles', 'Medicine', 'Wooden Planks', 'Gunpowder', 'Lucky Charm', 'Treasure Maps', 'Red Pixel Pack', 'Blue Pixel Pack', 'Green Pixel Pack', 'Yellow Pixel Pack', 'Purple Pixel Pack'].includes(item.name);
           const style = clickable ? 'cursor:pointer; padding:4px; border-radius:3px; background: #333;' : 'padding:4px;';
           const onclick = clickable ? `onclick="window.game.useInventoryItem('${item.name}'); document.getElementById('inventoryModal').remove();"` : '';
           
@@ -225,16 +225,35 @@ export class UIManager {
     document.addEventListener('keydown', handleEscape);
   }
 
-  updateMoveTimer(countdown, isRepairing = false, isRealtime = false) {
+  updateMoveTimer(countdown, isRepairing = false, isRealtime = false, pixelMode = null) {
     const timerDiv = document.getElementById('moveTimer');
     if (!timerDiv) return;
 
     if (isRealtime) {
-      timerDiv.innerHTML = `
+      let html = `
         <div style="font-size:15px; margin-bottom:2px; color:#00FF00;">⚡ Real-time Sailing!</div>
         <div style="font-size:11px; color:#aaa; margin-top:8px;">Hold WASD to sail, R to repair, I for inventory</div>
         <div style="font-size:10px; color:#888; margin-top:4px;">Mouse wheel to zoom</div>
       `;
+      
+      if (pixelMode) {
+        const pixelColors = {
+          'red': '#FF0000',
+          'blue': '#0000FF', 
+          'green': '#00FF00',
+          'yellow': '#FFFF00',
+          'purple': '#800080'
+        };
+        const color = pixelColors[pixelMode] || '#FFFFFF';
+        html += `
+          <div style="font-size:13px; color:${color}; margin-top:8px; border:2px solid ${color}; padding:4px; border-radius:4px; background:rgba(0,0,0,0.3);">
+            🎨 ${pixelMode.toUpperCase()} PIXEL MODE
+          </div>
+          <div style="font-size:10px; color:#aaa; margin-top:4px;">Click on map to place pixel • ESC to cancel</div>
+        `;
+      }
+      
+      timerDiv.innerHTML = html;
       timerDiv.style.textAlign = 'right';
       return;
     }

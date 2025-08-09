@@ -399,3 +399,33 @@ The game now features a comprehensive trading system with synchronized islands a
 - **Automatic Restocking**: Ports periodically restock with random quantities and prices
 
 The trading system adds economic gameplay depth, encouraging exploration and strategic resource management!
+
+## Pixel Pack System
+
+### Pixel Placement Features
+- **5 Colored Pixel Packs**: Red, Blue, Green, Yellow, and Purple pixel packs available
+- **Map Decoration**: Place colored pixels anywhere on the ocean that are visible to all players
+- **Permanent Placement**: Placed pixels remain on the map forever, creating a collaborative canvas
+- **One Pixel Per Location**: Only one pixel can exist at each coordinate
+- **Island Protection**: Cannot place pixels on islands, only in open water
+- **Littered Ocean**: Over time, the ocean becomes filled with player-placed pixels showing their creativity
+
+### How to Use Pixel Packs
+1. **Acquire Pixel Packs**: Buy from trading ports or find them through random interactions
+2. **Activate Pack**: Click on a pixel pack in your inventory or use the 'I' key to open full inventory
+3. **Place Pixel**: Click anywhere on the ocean to place your colored pixel
+4. **Cancel Mode**: Press ESC to cancel pixel placement mode
+
+### Pixel Pack Availability
+- **Trading Ports**: All ports sell pixel packs for 8-12 gold each
+- **Random Interactions**: 4% chance to find 1-3 pixel packs during sailing encounters
+- **Starting Items**: New players receive 2 Red and 2 Blue pixel packs
+
+### Visual Features
+- **Glowing Effect**: Placed pixels have a subtle glow effect for visibility
+- **White Border**: Each pixel has a white border to stand out against the ocean
+- **Real-time Updates**: Pixels appear immediately for all players via real-time synchronization
+- **Pixel Mode Indicator**: UI shows active pixel placement mode with color coding
+- **Persistent Canvas**: All pixels from all players are loaded when joining the game
+
+The pixel pack system allows players to leave their permanent mark on the world, creating a collaborative canvas where pirates can express creativity, mark territories, and illustrate what they want to see in the water. Over time, the ocean becomes a living artwork filled with player contributions!

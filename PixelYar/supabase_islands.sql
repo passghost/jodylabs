@@ -54,7 +54,12 @@ BEGIN
     (port_island_id, 'Medicine', 10 + FLOOR(RANDOM() * 15), 8 + FLOOR(RANDOM() * 4), 6 + FLOOR(RANDOM() * 3), NOW()),
     (port_island_id, 'Spices', 5 + FLOOR(RANDOM() * 10), 4 + FLOOR(RANDOM() * 3), 3 + FLOOR(RANDOM() * 2), NOW()),
     (port_island_id, 'Silk', 3 + FLOOR(RANDOM() * 8), 5 + FLOOR(RANDOM() * 3), 4 + FLOOR(RANDOM() * 2), NOW()),
-    (port_island_id, 'Pearls', 2 + FLOOR(RANDOM() * 5), 6 + FLOOR(RANDOM() * 4), 5 + FLOOR(RANDOM() * 3), NOW())
+    (port_island_id, 'Pearls', 2 + FLOOR(RANDOM() * 5), 6 + FLOOR(RANDOM() * 4), 5 + FLOOR(RANDOM() * 3), NOW()),
+    (port_island_id, 'Red Pixel Pack', 5 + FLOOR(RANDOM() * 10), 8 + FLOOR(RANDOM() * 4), 6 + FLOOR(RANDOM() * 3), NOW()),
+    (port_island_id, 'Blue Pixel Pack', 5 + FLOOR(RANDOM() * 10), 8 + FLOOR(RANDOM() * 4), 6 + FLOOR(RANDOM() * 3), NOW()),
+    (port_island_id, 'Green Pixel Pack', 5 + FLOOR(RANDOM() * 10), 8 + FLOOR(RANDOM() * 4), 6 + FLOOR(RANDOM() * 3), NOW()),
+    (port_island_id, 'Yellow Pixel Pack', 5 + FLOOR(RANDOM() * 10), 8 + FLOOR(RANDOM() * 4), 6 + FLOOR(RANDOM() * 3), NOW()),
+    (port_island_id, 'Purple Pixel Pack', 5 + FLOOR(RANDOM() * 10), 8 + FLOOR(RANDOM() * 4), 6 + FLOOR(RANDOM() * 3), NOW())
   ON CONFLICT (island_id, item_name) 
   DO UPDATE SET 
     stock_quantity = EXCLUDED.stock_quantity,

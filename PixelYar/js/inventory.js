@@ -29,7 +29,12 @@ export class InventoryManager {
       { name: 'Wooden Planks', icon: '🪵', description: 'For ship repairs', stackable: true, maxStack: 50 },
       { name: 'Rope', icon: '🪢', description: 'Essential for rigging', stackable: true, maxStack: 25 },
       { name: 'Gunpowder', icon: '💥', description: 'Explosive material', stackable: true, maxStack: 20 },
-      { name: 'Medicine', icon: '💊', description: 'Heals crew ailments', stackable: true, maxStack: 15 }
+      { name: 'Medicine', icon: '💊', description: 'Heals crew ailments', stackable: true, maxStack: 15 },
+      { name: 'Red Pixel Pack', icon: '🔴', description: 'Place red pixels on the map', stackable: true, maxStack: 50 },
+      { name: 'Blue Pixel Pack', icon: '🔵', description: 'Place blue pixels on the map', stackable: true, maxStack: 50 },
+      { name: 'Green Pixel Pack', icon: '🟢', description: 'Place green pixels on the map', stackable: true, maxStack: 50 },
+      { name: 'Yellow Pixel Pack', icon: '🟡', description: 'Place yellow pixels on the map', stackable: true, maxStack: 50 },
+      { name: 'Purple Pixel Pack', icon: '🟣', description: 'Place purple pixels on the map', stackable: true, maxStack: 50 }
     ];
 
     items.forEach(item => {
@@ -194,6 +199,21 @@ export class InventoryManager {
         const amount = Math.floor(Math.random() * 5) + 3;
         this.addItem(foundItem, amount);
         return { success: true, message: `🗺️ Following the map, you discover ${amount} ${foundItem}!` };
+      },
+      'Red Pixel Pack': () => {
+        return { success: true, message: '🔴 Red pixel pack activated! Click on the map to place red pixels!', activatePixelMode: 'red' };
+      },
+      'Blue Pixel Pack': () => {
+        return { success: true, message: '🔵 Blue pixel pack activated! Click on the map to place blue pixels!', activatePixelMode: 'blue' };
+      },
+      'Green Pixel Pack': () => {
+        return { success: true, message: '🟢 Green pixel pack activated! Click on the map to place green pixels!', activatePixelMode: 'green' };
+      },
+      'Yellow Pixel Pack': () => {
+        return { success: true, message: '🟡 Yellow pixel pack activated! Click on the map to place yellow pixels!', activatePixelMode: 'yellow' };
+      },
+      'Purple Pixel Pack': () => {
+        return { success: true, message: '🟣 Purple pixel pack activated! Click on the map to place purple pixels!', activatePixelMode: 'purple' };
       }
     };
 
@@ -313,7 +333,8 @@ export class InventoryManager {
       'Materials': ['Wooden Planks', 'Rope', 'Cannon Balls'],
       'Valuables': ['Pearls', 'Spices', 'Silk', 'Treasure Maps'],
       'Tools': ['Compass', 'Spyglass', 'Rusty Cutlass', 'Fishing Net', 'Lantern'],
-      'Special': ['Lucky Charm', 'Parrot', 'Ship Bell', 'Anchor']
+      'Special': ['Lucky Charm', 'Parrot', 'Ship Bell', 'Anchor'],
+      'Pixel Packs': ['Red Pixel Pack', 'Blue Pixel Pack', 'Green Pixel Pack', 'Yellow Pixel Pack', 'Purple Pixel Pack']
     };
 
     const result = {};
@@ -350,7 +371,7 @@ export class InventoryManager {
       description: itemDef.description,
       stackable: itemDef.stackable,
       maxStack: itemDef.maxStack,
-      canUse: ['Rum Bottles', 'Medicine', 'Wooden Planks', 'Gunpowder', 'Lucky Charm', 'Treasure Maps'].includes(itemName)
+      canUse: ['Rum Bottles', 'Medicine', 'Wooden Planks', 'Gunpowder', 'Lucky Charm', 'Treasure Maps', 'Red Pixel Pack', 'Blue Pixel Pack', 'Green Pixel Pack', 'Yellow Pixel Pack', 'Purple Pixel Pack'].includes(itemName)
     };
   }
 }
