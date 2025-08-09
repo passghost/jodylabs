@@ -57,14 +57,6 @@ export class InteractionManager {
     this.nearbyPlayers = nearby;
     
     // Update UI with nearby players
-    this.updateNearbyPlayersUI(); 
-        Math.pow(p.y - currentPlayer.y, 2)
-      );
-      
-      return distance <= this.interactionRange;
-    });
-
-    this.nearbyPlayers = nearby;
     this.updateNearbyPlayersUI();
   }
 
