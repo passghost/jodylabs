@@ -113,8 +113,8 @@ export class Game {
       this.currentPlayer = this.player.getCurrentPlayer();
 
       // Load player inventory
-      if (this.currentPlayer.inventory) {
-        this.inventory.loadInventoryData(this.currentPlayer.inventory);
+      if (this.currentPlayer.items) {
+        this.inventory.loadInventoryData(this.currentPlayer.items);
       } else {
         // Give new players starting items
         this.inventory.addItem('Gold Coins', 10);
@@ -326,10 +326,15 @@ export class Game {
   updateDisplay() {
     if (!this.currentPlayer) return;
 
-    // Clean up old water objects periodically
-    this.world.cleanupOldObjects();
-
-    // Pixels are now permanent - no cleanup needed
+    // Only do expensive operations occasionally
+    const now = Date.now();
+    if (!this.lastExpensiveUpdate) this.lastExpensiveUpdate = 0;
+    
+    // Clean up old water objects only every 5 seconds
+    if (now - this.lastExpensiveUpdate > 5000) {
+      this.world.cleanupOldObjects();
+      this.lastExpensiveUpdate = now;
+    }
 
     // Update AI ships
     if (this.aiShips) {
@@ -341,21 +346,37 @@ export class Game {
     const aiShips = this.aiShips ? this.aiShips.getAIShips() : [];
     const allShips = [...allPlayers, ...aiShips];
 
-    // Get placed pixels for rendering
-    const placedPixels = this.pixelManager ? this.pixelManager.getAllPixels() : [];
+    // Get placed pixels for rendering (cache this)
+    if (!this.cachedPixels || now - this.lastPixelUpdate > 1000) {
+      this.cachedPixels = this.pixelManager ? this.pixelManager.getAllPixels() : [];
+      this.lastPixelUpdate = now;
+    }
 
-    this.renderer.drawOcean(this.world.getIslands(), this.world.getWaterObjects(), placedPixels);
+    // Core rendering (this needs to happen every frame)
+    this.renderer.drawOcean(this.world.getIslands(), this.world.getWaterObjects(), this.cachedPixels);
     this.renderer.drawPlayers(allShips, this.currentPlayer, this.playerRotation);
     this.renderer.centerOnPlayer(this.currentPlayer);
-    this.ui.updatePlayerStats(this.currentPlayer, this.renderer.getZoom(), this.player);
-    this.ui.updateInventory(this.inventory);
     
-    // Update UI with pixel mode status
-    const pixelMode = this.pixelManager ? this.pixelManager.getCurrentPixelColor() : null;
-    this.ui.updateMoveTimer(0, false, true, pixelMode);
-
-    // Check for nearby trading ports
-    this.checkNearbyTradingPorts();
+    // Update UI less frequently (every 100ms)
+    if (!this.lastUIUpdate) this.lastUIUpdate = 0;
+    if (now - this.lastUIUpdate > 100) {
+      this.ui.updatePlayerStats(this.currentPlayer, this.renderer.getZoom(), this.player);
+      
+      // Update UI with pixel mode status
+      const pixelMode = this.pixelManager ? this.pixelManager.getCurrentPixelColor() : null;
+      this.ui.updateMoveTimer(0, false, true, pixelMode);
+      
+      // Check for nearby trading ports
+      this.checkNearbyTradingPorts();
+      
+      this.lastUIUpdate = now;
+    }
+    
+    // Always update inventory when it changes (but not every frame)
+    if (this.inventoryNeedsUpdate) {
+      this.ui.updateInventory(this.inventory);
+      this.inventoryNeedsUpdate = false;
+    }
   }
 
   async updateMultiplayer() {
@@ -709,9 +730,8 @@ export class Game {
         this.addToInteractionHistory('Ye get an extra move! The winds favor ye!');
       }
 
-      // Update UI
-      this.ui.updatePlayerStats(this.currentPlayer, this.renderer.getZoom());
-      this.ui.updateInventory(this.inventory);
+      // Mark inventory for update
+      this.inventoryNeedsUpdate = true;
 
       // Save to database
       await this.savePlayerData();
@@ -744,9 +764,11 @@ export class Game {
           Math.round(this.currentPlayer.y)
         );
 
-        // Save inventory and final stats
+        // Update local player object and save inventory and final stats
+        this.currentPlayer.items = this.inventory.getInventoryData();
+        
         await this.player.updatePlayerStats({
-          inventory: this.inventory.getInventoryData(),
+          items: this.currentPlayer.items,
           booty: this.currentPlayer.booty,
           hull: this.currentPlayer.hull,
           crew: this.currentPlayer.crew
@@ -780,7 +802,9 @@ export class Game {
 
   // Canvas click handler for pixel placement
   handleCanvasClick(e) {
-    if (!this.pixelManager || !this.pixelManager.isPixelModeActive()) return;
+    if (!this.pixelManager || !this.pixelManager.isPixelModeActive()) {
+      return;
+    }
 
     const worldCoords = this.renderer.screenToWorld(e.clientX, e.clientY);
     
@@ -813,6 +837,10 @@ export class Game {
       this.player.updateStat('pixelsPlaced', 1);
       this.player.addXP(10, 'Pixel placed!');
       
+      // Invalidate pixel cache to show new pixel immediately
+      this.cachedPixels = null;
+      this.lastPixelUpdate = 0;
+      
       // Deactivate pixel mode after successful placement
       this.pixelManager.deactivatePixelMode();
       this.addToInteractionHistory('Pixel mode deactivated. Use another pixel pack to continue placing pixels.');
@@ -838,9 +866,8 @@ export class Game {
         this.addToInteractionHistory('Click on the map to place your pixel!');
       }
 
-      // Update UI to reflect changes
-      this.ui.updateInventory(this.inventory);
-      this.ui.updatePlayerStats(this.currentPlayer, this.renderer.getZoom());
+      // Mark inventory for update
+      this.inventoryNeedsUpdate = true;
 
       // Save changes to database
       this.savePlayerData();
@@ -868,8 +895,8 @@ export class Game {
       this.player.updateStat('itemsCrafted', 1);
       this.player.addXP(25, 'Item crafted!');
 
-      // Update UI to reflect changes
-      this.ui.updateInventory(this.inventory);
+      // Mark inventory for update
+      this.inventoryNeedsUpdate = true;
 
       // Save changes to database
       this.savePlayerData();
@@ -894,14 +921,22 @@ export class Game {
       // Update play time before saving
       this.updatePlayTime();
       
-      await this.player.updatePlayerStats({
+      // Update local player object to keep it in sync
+      this.currentPlayer.items = this.inventory.getInventoryData();
+      
+      const success = await this.player.updatePlayerStats({
         hull: this.currentPlayer.hull,
         crew: this.currentPlayer.crew,
         booty: this.currentPlayer.booty,
-        inventory: this.inventory.getInventoryData()
+        items: this.currentPlayer.items
       });
+
+      if (!success) {
+        console.warn('Database save failed, but game continues with local data');
+      }
     } catch (error) {
       console.error('Failed to save player data:', error);
+      // Game continues - data is still preserved locally
     }
   }
 
@@ -993,8 +1028,8 @@ export class Game {
       this.player.updateStat('tradesCompleted', 1);
       this.player.addXP(20, 'Item purchased!');
 
-      // Update UI
-      this.ui.updateInventory(this.inventory);
+      // Mark inventory for update
+      this.inventoryNeedsUpdate = true;
       await this.savePlayerData();
 
       // Close and reopen trading menu to refresh
@@ -1034,8 +1069,8 @@ export class Game {
       this.player.updateStat('tradesCompleted', 1);
       this.player.addXP(15, 'Item sold!');
 
-      // Update UI
-      this.ui.updateInventory(this.inventory);
+      // Mark inventory for update
+      this.inventoryNeedsUpdate = true;
       await this.savePlayerData();
 
       // Close and reopen trading menu to refresh

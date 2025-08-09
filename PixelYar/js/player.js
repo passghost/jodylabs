@@ -89,16 +89,25 @@ export class PlayerManager {
   async updatePlayerStats(stats) {
     if (!this.currentPlayer) return;
 
-    // Update local player object
+    // Update local player object first
     Object.assign(this.currentPlayer, stats);
 
-    const { error } = await this.supabase
-      .from('pirates')
-      .update(stats)
-      .eq('id', this.currentPlayer.id);
+    try {
+      const { error } = await this.supabase
+        .from('pirates')
+        .update(stats)
+        .eq('id', this.currentPlayer.id);
 
-    if (error) {
-      throw new Error(`Failed to update stats: ${error.message}`);
+      if (error) {
+        console.error('Database update failed:', error.message);
+        // Don't throw error - allow game to continue with local data
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error('Failed to update player stats:', error);
+      // Game continues with local data
+      return false;
     }
   }
 
@@ -414,7 +423,7 @@ export class PlayerManager {
         hull: this.currentPlayer.hull,
         crew: this.currentPlayer.crew,
         booty: this.currentPlayer.booty,
-        inventory: this.currentPlayer.inventory || 'empty'
+        items: this.currentPlayer.items || 'empty'
       },
       localStorageStats: this.playerStats,
       statsKey: `pixelyar_stats_${this.currentPlayer.id}`,
