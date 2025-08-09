@@ -179,10 +179,14 @@ export class Game {
         trade: null,
         chat: null,
         aiShips: this.aiShips,
+        player: this.player,
         addToInteractionHistory: (message) => this.addToInteractionHistory(message),
         useInventoryItem: (itemName) => this.useInventoryItem(itemName),
         showFullInventory: () => this.showFullInventory(),
         craftItem: (recipeName) => this.craftItem(recipeName),
+        // Enhanced stats methods
+        showAchievements: () => this.ui.showAchievements(this.player),
+        showDetailedStats: () => this.ui.showDetailedStats(this.player),
         // Debug methods
         checkKeys: () => console.log('Keys:', this.keys, 'Velocity:', this.velocity),
         resetKeys: () => this.resetKeys(),
@@ -243,6 +247,10 @@ export class Game {
       this.targetRotation = Math.atan2(moveY, moveX);
     }
 
+    // Store old position for distance calculation
+    const oldX = this.currentPlayer.x;
+    const oldY = this.currentPlayer.y;
+
     // Apply velocity to position
     const newX = this.currentPlayer.x + this.velocity.x;
     const newY = this.currentPlayer.y + this.velocity.y;
@@ -251,6 +259,12 @@ export class Game {
     if (this.isValidPosition(newX, newY)) {
       this.currentPlayer.x = newX;
       this.currentPlayer.y = newY;
+
+      // Track distance traveled for stats
+      if (moveX !== 0 || moveY !== 0) {
+        const distance = Math.sqrt((newX - oldX) ** 2 + (newY - oldY) ** 2);
+        this.player.updateStat('distanceTraveled', distance);
+      }
     }
   }
 
@@ -322,7 +336,7 @@ export class Game {
     this.renderer.drawOcean(this.world.getIslands(), this.world.getWaterObjects(), placedPixels);
     this.renderer.drawPlayers(allShips, this.currentPlayer, this.playerRotation);
     this.renderer.centerOnPlayer(this.currentPlayer);
-    this.ui.updatePlayerStats(this.currentPlayer, this.renderer.getZoom());
+    this.ui.updatePlayerStats(this.currentPlayer, this.renderer.getZoom(), this.player);
     this.ui.updateInventory(this.inventory);
     
     // Update UI with pixel mode status
@@ -656,6 +670,14 @@ export class Game {
           const message = `🎁 Bonus: Found ${reward.quantity} ${reward.item}!`;
           this.addToInteractionHistory(message);
           this.ui.showInventoryNotification(message, 'success');
+          
+          // Track treasure finding and award XP
+          if (reward.item.includes('Treasure') || reward.item.includes('Gold') || reward.item.includes('Pearls')) {
+            await this.player.updateStat('treasuresFound', 1);
+            await this.player.addXP(50, 'Treasure found!');
+          } else {
+            await this.player.addXP(15, 'Item found!');
+          }
         }
       }
 
@@ -766,6 +788,10 @@ export class Game {
       this.addToInteractionHistory(result.message);
       this.ui.showInventoryNotification(result.message, 'success');
       
+      // Track pixel placement and award XP
+      await this.player.updateStat('pixelsPlaced', 1);
+      await this.player.addXP(10, 'Pixel placed!');
+      
       // Deactivate pixel mode after successful placement
       this.pixelManager.deactivatePixelMode();
       this.addToInteractionHistory('Pixel mode deactivated. Use another pixel pack to continue placing pixels.');
@@ -808,7 +834,7 @@ export class Game {
     this.ui.showFullInventory(this.inventory);
   }
 
-  craftItem(recipeName) {
+  async craftItem(recipeName) {
     if (!this.inventory) return;
 
     const result = this.inventory.craftItem(recipeName);
@@ -816,6 +842,10 @@ export class Game {
     if (result.success) {
       this.addToInteractionHistory(result.message);
       this.ui.showInventoryNotification(result.message, 'success');
+
+      // Track crafting and award XP
+      await this.player.updateStat('itemsCrafted', 1);
+      await this.player.addXP(25, 'Item crafted!');
 
       // Update UI to reflect changes
       this.ui.updateInventory(this.inventory);

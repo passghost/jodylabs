@@ -34,10 +34,53 @@ export class UIManager {
     }
   }
 
-  updatePlayerStats(player, zoom) {
+  updatePlayerStats(player, zoom, playerManager = null) {
     const statsDiv = document.getElementById('playerStats');
     if (statsDiv && player) {
-      statsDiv.innerText = `Hull: ${player.hull}\nCrew: ${player.crew}\nPos: (${Math.round(player.x)},${Math.round(player.y)})\nZoom: ${zoom}x`;
+      let statsHTML = `
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
+          <div><strong>🏴‍☠️ Level:</strong> ${player.level || 1}</div>
+          <div><strong>⚡ XP:</strong> ${player.xp || 0}</div>
+          <div><strong>💰 Booty:</strong> ${player.booty || 0}</div>
+          <div><strong>🏆 Score:</strong> ${player.total_score || 0}</div>
+          <div><strong>⚔️ Wins:</strong> ${player.combat_wins || 0}</div>
+          <div><strong>💀 Losses:</strong> ${player.combat_losses || 0}</div>
+        </div>
+        <div style="margin-bottom: 8px;">
+          <strong>🛡️ Hull:</strong> ${player.hull} | <strong>👥 Crew:</strong> ${player.crew}
+        </div>
+        <div style="margin-bottom: 8px;">
+          <strong>📍 Position:</strong> (${Math.round(player.x)}, ${Math.round(player.y)}) | <strong>🔍 Zoom:</strong> ${zoom}x
+        </div>
+      `;
+
+      if (playerManager) {
+        const xpToNext = playerManager.getXPForNextLevel();
+        const loginStreak = player.login_streak || 1;
+        
+        statsHTML += `
+          <div style="margin-bottom: 8px;">
+            <strong>📈 Next Level:</strong> ${xpToNext} XP | <strong>🔥 Streak:</strong> ${loginStreak} days
+          </div>
+        `;
+
+        // XP Progress Bar
+        const currentLevelXP = player.xp || 0;
+        const nextLevelXP = currentLevelXP + xpToNext;
+        const levelStartXP = nextLevelXP - (100 + ((player.level || 1) - 1) * 50);
+        const progressPercent = ((currentLevelXP - levelStartXP) / (nextLevelXP - levelStartXP)) * 100;
+
+        statsHTML += `
+          <div style="margin-bottom: 8px;">
+            <div style="background: #1e3f66; border-radius: 10px; height: 8px; overflow: hidden;">
+              <div style="background: linear-gradient(90deg, #FFD700, #FFA500); height: 100%; width: ${progressPercent}%; transition: width 0.3s ease;"></div>
+            </div>
+            <div style="font-size: 0.8em; color: #FFD700; text-align: center; margin-top: 2px;">XP Progress: ${Math.round(progressPercent)}%</div>
+          </div>
+        `;
+      }
+
+      statsDiv.innerHTML = statsHTML;
     }
   }
 
@@ -577,5 +620,129 @@ export class UIManager {
     };
 
     animateParticles();
+  }
+
+  showAchievements(playerManager) {
+    if (!playerManager) return;
+
+    const achievements = playerManager.getAchievementProgress();
+    const modal = document.getElementById('interactionModal');
+    const content = document.getElementById('modalContent');
+
+    let achievementsHTML = `
+      <div style="text-align:center; color:#FFD700; font-size:1.8em; margin-bottom:20px;">
+        🏆 Achievements 🏆
+      </div>
+      <div style="max-height: 400px; overflow-y: auto;">
+    `;
+
+    achievements.forEach(achievement => {
+      const statusIcon = achievement.completed ? '✅' : '⏳';
+      const statusColor = achievement.completed ? '#4CAF50' : '#FFA500';
+      
+      achievementsHTML += `
+        <div style="background: rgba(30, 63, 102, 0.3); border: 2px solid ${statusColor}; border-radius: 8px; padding: 12px; margin-bottom: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <div style="color: #FFD700; font-weight: bold; font-size: 1.1em;">${statusIcon} ${achievement.name}</div>
+            <div style="color: ${statusColor}; font-size: 0.9em;">${achievement.progress}/${achievement.target}</div>
+          </div>
+          <div style="color: #CCCCCC; font-size: 0.9em; margin-bottom: 8px;">${achievement.description}</div>
+          <div style="background: #1e3f66; border-radius: 10px; height: 6px; overflow: hidden;">
+            <div style="background: linear-gradient(90deg, ${statusColor}, #FFD700); height: 100%; width: ${achievement.progressPercent}%; transition: width 0.3s ease;"></div>
+          </div>
+        </div>
+      `;
+    });
+
+    achievementsHTML += `
+      </div>
+      <div style="text-align:center; margin-top: 20px;">
+        <button onclick="document.getElementById('interactionModal').style.display='none'" 
+                style="background:#FFD700; color:#2d1a06; border:none; border-radius:6px; padding:12px 24px; cursor:pointer; font-size:1.1em; font-weight:bold;">
+          Close
+        </button>
+      </div>
+    `;
+
+    content.innerHTML = achievementsHTML;
+    modal.style.display = 'block';
+  }
+
+  showDetailedStats(playerManager) {
+    if (!playerManager) return;
+
+    const stats = playerManager.getPlayerStats();
+    const modal = document.getElementById('interactionModal');
+    const content = document.getElementById('modalContent');
+
+    const playTimeHours = Math.floor(stats.playTime / 3600);
+    const playTimeMinutes = Math.floor((stats.playTime % 3600) / 60);
+
+    let statsHTML = `
+      <div style="text-align:center; color:#FFD700; font-size:1.8em; margin-bottom:20px;">
+        📊 Detailed Statistics 📊
+      </div>
+      <div style="max-height: 400px; overflow-y: auto;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+          <div style="background: rgba(30, 63, 102, 0.3); border: 2px solid #FFD700; border-radius: 8px; padding: 12px;">
+            <h4 style="color: #FFD700; margin-bottom: 10px;">⚔️ Combat Stats</h4>
+            <div style="color: #CCCCCC;">
+              <div>Wins: ${stats.combatWins}</div>
+              <div>Losses: ${stats.combatLosses}</div>
+              <div>Win Rate: ${stats.combatWins + stats.combatLosses > 0 ? Math.round((stats.combatWins / (stats.combatWins + stats.combatLosses)) * 100) : 0}%</div>
+            </div>
+          </div>
+          
+          <div style="background: rgba(30, 63, 102, 0.3); border: 2px solid #FFD700; border-radius: 8px; padding: 12px;">
+            <h4 style="color: #FFD700; margin-bottom: 10px;">💰 Trading Stats</h4>
+            <div style="color: #CCCCCC;">
+              <div>Trades: ${stats.tradesCompleted}</div>
+              <div>Treasures: ${stats.treasuresFound}</div>
+              <div>Items Crafted: ${stats.itemsCrafted}</div>
+            </div>
+          </div>
+          
+          <div style="background: rgba(30, 63, 102, 0.3); border: 2px solid #FFD700; border-radius: 8px; padding: 12px;">
+            <h4 style="color: #FFD700; margin-bottom: 10px;">🎨 Creative Stats</h4>
+            <div style="color: #CCCCCC;">
+              <div>Pixels Placed: ${stats.pixelsPlaced}</div>
+              <div>Distance Traveled: ${Math.round(stats.distanceTraveled)}</div>
+            </div>
+          </div>
+          
+          <div style="background: rgba(30, 63, 102, 0.3); border: 2px solid #FFD700; border-radius: 8px; padding: 12px;">
+            <h4 style="color: #FFD700; margin-bottom: 10px;">⏰ Time Stats</h4>
+            <div style="color: #CCCCCC;">
+              <div>Play Time: ${playTimeHours}h ${playTimeMinutes}m</div>
+              <div>Login Streak: ${stats.loginStreak} days</div>
+              <div>Games Played: ${stats.gamesPlayed}</div>
+            </div>
+          </div>
+        </div>
+        
+        <div style="background: rgba(30, 63, 102, 0.3); border: 2px solid #FFD700; border-radius: 8px; padding: 12px; margin-top: 15px;">
+          <h4 style="color: #FFD700; margin-bottom: 10px;">🏆 Overall Progress</h4>
+          <div style="color: #CCCCCC;">
+            <div>Level: ${stats.level}</div>
+            <div>Total XP: ${stats.xp}</div>
+            <div>Total Score: ${stats.totalScore}</div>
+            <div>Achievements: ${stats.achievements.length}/10</div>
+          </div>
+        </div>
+      </div>
+      <div style="text-align:center; margin-top: 20px;">
+        <button onclick="window.game.showAchievements()" 
+                style="background:#4CAF50; color:white; border:none; border-radius:6px; padding:8px 16px; cursor:pointer; margin-right: 10px;">
+          View Achievements
+        </button>
+        <button onclick="document.getElementById('interactionModal').style.display='none'" 
+                style="background:#FFD700; color:#2d1a06; border:none; border-radius:6px; padding:8px 16px; cursor:pointer;">
+          Close
+        </button>
+      </div>
+    `;
+
+    content.innerHTML = statsHTML;
+    modal.style.display = 'block';
   }
 }
