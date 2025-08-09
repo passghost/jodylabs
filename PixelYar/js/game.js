@@ -172,6 +172,14 @@ export class Game {
       // Start polling for other players
       setInterval(() => this.updateMultiplayer(), CONFIG.PLAYER_POLLING_INTERVAL);
 
+      // Auto-save player data every 30 seconds and track play time
+      this.sessionStartTime = Date.now();
+      this.autoSaveInterval = setInterval(() => {
+        this.updatePlayTime();
+        this.savePlayerData();
+        this.player.saveStatsToLocal(); // Also save stats to localStorage
+      }, 30000);
+
       // Make interaction managers globally available for HTML onclick handlers
       window.game = {
         interactions: this.interactions,
@@ -187,9 +195,12 @@ export class Game {
         // Enhanced stats methods
         showAchievements: () => this.ui.showAchievements(this.player),
         showDetailedStats: () => this.ui.showDetailedStats(this.player),
-        // Debug methods
+        showPlayerProfile: () => this.ui.showPlayerProfile(this.player, this.inventory),
+        // Debug and verification methods
         checkKeys: () => console.log('Keys:', this.keys, 'Velocity:', this.velocity),
         resetKeys: () => this.resetKeys(),
+        verifyStatsConnection: () => this.player.verifyStatsConnection(),
+        getPlayerDataSummary: () => this.player.getPlayerDataSummary(),
         // Trading methods
         openTradingMenu: (port) => this.openTradingMenu(port),
         buyItem: (itemName, price, portId) => this.buyItem(itemName, price, portId),
@@ -673,10 +684,10 @@ export class Game {
           
           // Track treasure finding and award XP
           if (reward.item.includes('Treasure') || reward.item.includes('Gold') || reward.item.includes('Pearls')) {
-            await this.player.updateStat('treasuresFound', 1);
-            await this.player.addXP(50, 'Treasure found!');
+            this.player.updateStat('treasuresFound', 1);
+            this.player.addXP(50, 'Treasure found!');
           } else {
-            await this.player.addXP(15, 'Item found!');
+            this.player.addXP(15, 'Item found!');
           }
         }
       }
@@ -719,8 +730,12 @@ export class Game {
 
   async logout() {
     try {
-      // Stop the game loop
+      // Stop the game loop and auto-save
       this.isGameRunning = false;
+      if (this.autoSaveInterval) {
+        clearInterval(this.autoSaveInterval);
+        this.autoSaveInterval = null;
+      }
 
       // Update final position and inventory to database
       if (this.currentPlayer) {
@@ -729,10 +744,16 @@ export class Game {
           Math.round(this.currentPlayer.y)
         );
 
-        // Save inventory
+        // Save inventory and final stats
         await this.player.updatePlayerStats({
-          inventory: this.inventory.getInventoryData()
+          inventory: this.inventory.getInventoryData(),
+          booty: this.currentPlayer.booty,
+          hull: this.currentPlayer.hull,
+          crew: this.currentPlayer.crew
         });
+
+        // Save extended stats to localStorage
+        this.player.saveStatsToLocal();
       }
 
       // Logout from auth
@@ -789,8 +810,8 @@ export class Game {
       this.ui.showInventoryNotification(result.message, 'success');
       
       // Track pixel placement and award XP
-      await this.player.updateStat('pixelsPlaced', 1);
-      await this.player.addXP(10, 'Pixel placed!');
+      this.player.updateStat('pixelsPlaced', 1);
+      this.player.addXP(10, 'Pixel placed!');
       
       // Deactivate pixel mode after successful placement
       this.pixelManager.deactivatePixelMode();
@@ -844,8 +865,8 @@ export class Game {
       this.ui.showInventoryNotification(result.message, 'success');
 
       // Track crafting and award XP
-      await this.player.updateStat('itemsCrafted', 1);
-      await this.player.addXP(25, 'Item crafted!');
+      this.player.updateStat('itemsCrafted', 1);
+      this.player.addXP(25, 'Item crafted!');
 
       // Update UI to reflect changes
       this.ui.updateInventory(this.inventory);
@@ -858,13 +879,25 @@ export class Game {
     }
   }
 
+  updatePlayTime() {
+    if (!this.sessionStartTime || !this.player) return;
+    
+    const sessionTime = Math.floor((Date.now() - this.sessionStartTime) / 1000);
+    this.player.updateStat('playTime', sessionTime);
+    this.sessionStartTime = Date.now(); // Reset for next interval
+  }
+
   async savePlayerData() {
     if (!this.currentPlayer) return;
 
     try {
+      // Update play time before saving
+      this.updatePlayTime();
+      
       await this.player.updatePlayerStats({
         hull: this.currentPlayer.hull,
         crew: this.currentPlayer.crew,
+        booty: this.currentPlayer.booty,
         inventory: this.inventory.getInventoryData()
       });
     } catch (error) {
@@ -956,6 +989,10 @@ export class Game {
       this.ui.showInventoryNotification(`✅ Bought ${itemName} for ${price} gold!`, 'success');
       this.addToInteractionHistory(`🛒 Purchased ${itemName} for ${price} gold`);
 
+      // Track trading stats
+      this.player.updateStat('tradesCompleted', 1);
+      this.player.addXP(20, 'Item purchased!');
+
       // Update UI
       this.ui.updateInventory(this.inventory);
       await this.savePlayerData();
@@ -992,6 +1029,10 @@ export class Game {
 
       this.ui.showInventoryNotification(`✅ Sold ${itemName} for ${price} gold!`, 'success');
       this.addToInteractionHistory(`💰 Sold ${itemName} for ${price} gold`);
+
+      // Track trading stats
+      this.player.updateStat('tradesCompleted', 1);
+      this.player.addXP(15, 'Item sold!');
 
       // Update UI
       this.ui.updateInventory(this.inventory);

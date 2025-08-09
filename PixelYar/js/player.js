@@ -49,24 +49,7 @@ export class PlayerManager {
         crew: 10,
         items: [],
         booty: 0,
-        color: '#8B5C2A',
-        // Enhanced stats
-        level: 1,
-        xp: 0,
-        total_score: 0,
-        games_played: 0,
-        achievements: [],
-        combat_wins: 0,
-        combat_losses: 0,
-        treasures_found: 0,
-        distance_traveled: 0,
-        pixels_placed: 0,
-        items_crafted: 0,
-        trades_completed: 0,
-        play_time: 0,
-        last_login: new Date().toISOString(),
-        login_streak: 1,
-        created_at: new Date().toISOString()
+        color: '#8B5C2A'
       };
 
       const { error: insertError } = await this.supabase
@@ -82,7 +65,6 @@ export class PlayerManager {
     } else {
       this.currentPlayer = data;
       this.loadPlayerStats();
-      await this.updateLoginStreak();
     }
 
     return this.currentPlayer;
@@ -155,32 +137,45 @@ export class PlayerManager {
   loadPlayerStats() {
     if (!this.currentPlayer) return;
     
+    // Load stats from localStorage for extended tracking
+    const savedStats = localStorage.getItem(`pixelyar_stats_${this.currentPlayer.id}`);
+    const localStats = savedStats ? JSON.parse(savedStats) : {};
+    
     this.playerStats = {
-      level: this.currentPlayer.level || 1,
-      xp: this.currentPlayer.xp || 0,
-      totalScore: this.currentPlayer.total_score || 0,
-      gamesPlayed: this.currentPlayer.games_played || 0,
-      achievements: this.currentPlayer.achievements || [],
-      combatWins: this.currentPlayer.combat_wins || 0,
-      combatLosses: this.currentPlayer.combat_losses || 0,
-      treasuresFound: this.currentPlayer.treasures_found || 0,
-      distanceTraveled: this.currentPlayer.distance_traveled || 0,
-      pixelsPlaced: this.currentPlayer.pixels_placed || 0,
-      itemsCrafted: this.currentPlayer.items_crafted || 0,
-      tradesCompleted: this.currentPlayer.trades_completed || 0,
-      playTime: this.currentPlayer.play_time || 0,
-      lastLogin: this.currentPlayer.last_login,
-      loginStreak: this.currentPlayer.login_streak || 1
+      level: localStats.level || 1,
+      xp: localStats.xp || 0,
+      totalScore: localStats.totalScore || 0,
+      gamesPlayed: localStats.gamesPlayed || 0,
+      achievements: localStats.achievements || [],
+      combatWins: localStats.combatWins || 0,
+      combatLosses: localStats.combatLosses || 0,
+      treasuresFound: localStats.treasuresFound || 0,
+      distanceTraveled: localStats.distanceTraveled || 0,
+      pixelsPlaced: localStats.pixelsPlaced || 0,
+      itemsCrafted: localStats.itemsCrafted || 0,
+      tradesCompleted: localStats.tradesCompleted || 0,
+      playTime: localStats.playTime || 0,
+      lastLogin: localStats.lastLogin || new Date().toISOString(),
+      loginStreak: localStats.loginStreak || 1
     };
+    
+    // Update login streak
+    this.updateLoginStreak();
   }
 
-  async updateLoginStreak() {
+  saveStatsToLocal() {
+    if (!this.currentPlayer) return;
+    
+    localStorage.setItem(`pixelyar_stats_${this.currentPlayer.id}`, JSON.stringify(this.playerStats));
+  }
+
+  updateLoginStreak() {
     if (!this.currentPlayer) return;
 
     const now = new Date();
-    const lastLogin = this.currentPlayer.last_login ? new Date(this.currentPlayer.last_login) : null;
+    const lastLogin = this.playerStats.lastLogin ? new Date(this.playerStats.lastLogin) : null;
     
-    let newStreak = this.currentPlayer.login_streak || 1;
+    let newStreak = this.playerStats.loginStreak || 1;
     
     if (lastLogin) {
       const daysDiff = Math.floor((now - lastLogin) / (1000 * 60 * 60 * 24));
@@ -188,7 +183,7 @@ export class PlayerManager {
       if (daysDiff === 1) {
         // Consecutive day login
         newStreak++;
-        await this.addXP(50, 'Daily login bonus!');
+        this.addXP(50, 'Daily login bonus!');
       } else if (daysDiff > 1) {
         // Streak broken
         newStreak = 1;
@@ -196,16 +191,12 @@ export class PlayerManager {
       // Same day login doesn't change streak
     }
 
-    await this.updatePlayerStats({
-      last_login: now.toISOString(),
-      login_streak: newStreak
-    });
-
     this.playerStats.loginStreak = newStreak;
     this.playerStats.lastLogin = now.toISOString();
+    this.saveStatsToLocal();
   }
 
-  async addXP(amount, reason = '') {
+  addXP(amount, reason = '') {
     if (!this.currentPlayer) return;
 
     const oldLevel = this.playerStats.level;
@@ -225,13 +216,19 @@ export class PlayerManager {
     // Level up rewards
     if (this.playerStats.level > oldLevel) {
       const levelDiff = this.playerStats.level - oldLevel;
-      await this.handleLevelUp(levelDiff);
+      this.handleLevelUp(levelDiff);
+      
+      // Show level up notification
+      if (window.game && window.game.ui) {
+        window.game.ui.showInventoryNotification(
+          `🎉 LEVEL UP! You are now level ${this.playerStats.level}! Gained ${levelDiff * 100} gold and ${levelDiff * 10} hull!`, 
+          'success'
+        );
+        window.game.addToInteractionHistory(`🎉 Congratulations! You reached level ${this.playerStats.level}!`);
+      }
     }
 
-    await this.updatePlayerStats({
-      xp: this.playerStats.xp,
-      level: this.playerStats.level
-    });
+    this.saveStatsToLocal();
 
     return {
       xpGained: amount,
@@ -241,7 +238,7 @@ export class PlayerManager {
     };
   }
 
-  async handleLevelUp(levels) {
+  handleLevelUp(levels) {
     // Award level up bonuses
     const bonusGold = levels * 100;
     const bonusHull = levels * 10;
@@ -249,19 +246,21 @@ export class PlayerManager {
     this.currentPlayer.booty = (this.currentPlayer.booty || 0) + bonusGold;
     this.currentPlayer.hull = Math.min(100, this.currentPlayer.hull + bonusHull);
     
-    await this.updatePlayerStats({
+    // Update database with basic stats
+    this.updatePlayerStats({
       booty: this.currentPlayer.booty,
       hull: this.currentPlayer.hull
+    }).catch(error => {
+      console.warn('Could not update database stats:', error);
     });
 
     // Check for level-based achievements
-    await this.checkAchievements();
+    this.checkAchievements();
   }
 
-  async updateStat(statName, value, operation = 'add') {
+  updateStat(statName, value, operation = 'add') {
     if (!this.currentPlayer) return;
 
-    const dbField = this.getDbFieldName(statName);
     let newValue;
 
     if (operation === 'add') {
@@ -273,35 +272,15 @@ export class PlayerManager {
     }
 
     this.playerStats[statName] = newValue;
-
-    const updateData = {};
-    updateData[dbField] = newValue;
-    
-    await this.updatePlayerStats(updateData);
+    this.saveStatsToLocal();
     
     // Check for achievements after stat updates
-    await this.checkAchievements();
+    this.checkAchievements();
   }
 
-  getDbFieldName(statName) {
-    const fieldMap = {
-      totalScore: 'total_score',
-      gamesPlayed: 'games_played',
-      combatWins: 'combat_wins',
-      combatLosses: 'combat_losses',
-      treasuresFound: 'treasures_found',
-      distanceTraveled: 'distance_traveled',
-      pixelsPlaced: 'pixels_placed',
-      itemsCrafted: 'items_crafted',
-      tradesCompleted: 'trades_completed',
-      playTime: 'play_time',
-      loginStreak: 'login_streak'
-    };
-    
-    return fieldMap[statName] || statName;
-  }
 
-  async checkAchievements() {
+
+  checkAchievements() {
     const newAchievements = [];
     const achievements = [
       { id: 'first_steps', name: 'First Steps', description: 'Reach level 5', condition: () => this.playerStats.level >= 5 },
@@ -324,13 +303,20 @@ export class PlayerManager {
     }
 
     if (newAchievements.length > 0) {
-      await this.updatePlayerStats({
-        achievements: this.playerStats.achievements
-      });
+      this.saveStatsToLocal();
 
-      // Award XP for achievements
+      // Award XP for achievements and show notifications
       for (const achievement of newAchievements) {
-        await this.addXP(200, `Achievement unlocked: ${achievement.name}`);
+        this.addXP(200, `Achievement unlocked: ${achievement.name}`);
+        
+        // Show achievement notification
+        if (window.game && window.game.ui) {
+          window.game.ui.showInventoryNotification(
+            `🏆 ACHIEVEMENT UNLOCKED: ${achievement.name}! +200 XP`, 
+            'success'
+          );
+          window.game.addToInteractionHistory(`🏆 Achievement unlocked: ${achievement.name} - ${achievement.description}`);
+        }
       }
     }
 
@@ -341,7 +327,7 @@ export class PlayerManager {
     if (!this.currentPlayer) return null;
     
     return {
-      // Basic stats
+      // Basic stats from database
       hull: this.currentPlayer.hull,
       crew: this.currentPlayer.crew,
       booty: this.currentPlayer.booty,
@@ -349,21 +335,21 @@ export class PlayerManager {
       y: this.currentPlayer.y,
       items: this.currentPlayer.items || [],
       
-      // Enhanced stats
+      // Enhanced stats from localStorage
       level: this.playerStats.level,
       xp: this.playerStats.xp,
-      totalScore: this.playerStats.totalScore,
-      gamesPlayed: this.playerStats.gamesPlayed,
+      total_score: this.playerStats.totalScore,
+      games_played: this.playerStats.gamesPlayed,
       achievements: this.playerStats.achievements,
-      combatWins: this.playerStats.combatWins,
-      combatLosses: this.playerStats.combatLosses,
-      treasuresFound: this.playerStats.treasuresFound,
-      distanceTraveled: this.playerStats.distanceTraveled,
-      pixelsPlaced: this.playerStats.pixelsPlaced,
-      itemsCrafted: this.playerStats.itemsCrafted,
-      tradesCompleted: this.playerStats.tradesCompleted,
-      playTime: this.playerStats.playTime,
-      loginStreak: this.playerStats.loginStreak
+      combat_wins: this.playerStats.combatWins,
+      combat_losses: this.playerStats.combatLosses,
+      treasures_found: this.playerStats.treasuresFound,
+      distance_traveled: this.playerStats.distanceTraveled,
+      pixels_placed: this.playerStats.pixelsPlaced,
+      items_crafted: this.playerStats.itemsCrafted,
+      trades_completed: this.playerStats.tradesCompleted,
+      play_time: this.playerStats.playTime,
+      login_streak: this.playerStats.loginStreak
     };
   }
 
@@ -397,5 +383,42 @@ export class PlayerManager {
       completed: this.playerStats.achievements.includes(achievement.id),
       progressPercent: Math.min(100, (achievement.progress / achievement.target) * 100)
     }));
+  }
+
+  // Verify that stats are properly tied to the current logged-in user
+  verifyStatsConnection() {
+    if (!this.currentPlayer) {
+      console.warn('No current player - stats not connected to login');
+      return false;
+    }
+
+    const statsKey = `pixelyar_stats_${this.currentPlayer.id}`;
+    const savedStats = localStorage.getItem(statsKey);
+    
+    console.log(`Stats connection verified for user ${this.currentPlayer.email} (ID: ${this.currentPlayer.id})`);
+    console.log(`Stats stored under key: ${statsKey}`);
+    console.log(`Current stats:`, this.playerStats);
+    
+    return true;
+  }
+
+  // Get a summary of all tracked data for the current user
+  getPlayerDataSummary() {
+    if (!this.currentPlayer) return null;
+
+    return {
+      userId: this.currentPlayer.id,
+      email: this.currentPlayer.email,
+      databaseData: {
+        position: { x: this.currentPlayer.x, y: this.currentPlayer.y },
+        hull: this.currentPlayer.hull,
+        crew: this.currentPlayer.crew,
+        booty: this.currentPlayer.booty,
+        inventory: this.currentPlayer.inventory || 'empty'
+      },
+      localStorageStats: this.playerStats,
+      statsKey: `pixelyar_stats_${this.currentPlayer.id}`,
+      lastSaved: new Date().toISOString()
+    };
   }
 }

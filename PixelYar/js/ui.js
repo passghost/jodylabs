@@ -37,14 +37,16 @@ export class UIManager {
   updatePlayerStats(player, zoom, playerManager = null) {
     const statsDiv = document.getElementById('playerStats');
     if (statsDiv && player) {
+      const stats = playerManager ? playerManager.getPlayerStats() : player;
+
       let statsHTML = `
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
-          <div><strong>🏴‍☠️ Level:</strong> ${player.level || 1}</div>
-          <div><strong>⚡ XP:</strong> ${player.xp || 0}</div>
+          <div><strong>🏴‍☠️ Level:</strong> ${stats.level || 1}</div>
+          <div><strong>⚡ XP:</strong> ${stats.xp || 0}</div>
           <div><strong>💰 Booty:</strong> ${player.booty || 0}</div>
-          <div><strong>🏆 Score:</strong> ${player.total_score || 0}</div>
-          <div><strong>⚔️ Wins:</strong> ${player.combat_wins || 0}</div>
-          <div><strong>💀 Losses:</strong> ${player.combat_losses || 0}</div>
+          <div><strong>🏆 Score:</strong> ${stats.total_score || 0}</div>
+          <div><strong>⚔️ Wins:</strong> ${stats.combat_wins || 0}</div>
+          <div><strong>💀 Losses:</strong> ${stats.combat_losses || 0}</div>
         </div>
         <div style="margin-bottom: 8px;">
           <strong>🛡️ Hull:</strong> ${player.hull} | <strong>👥 Crew:</strong> ${player.crew}
@@ -56,26 +58,30 @@ export class UIManager {
 
       if (playerManager) {
         const xpToNext = playerManager.getXPForNextLevel();
-        const loginStreak = player.login_streak || 1;
-        
+        const loginStreak = stats.login_streak || 1;
+
         statsHTML += `
           <div style="margin-bottom: 8px;">
             <strong>📈 Next Level:</strong> ${xpToNext} XP | <strong>🔥 Streak:</strong> ${loginStreak} days
           </div>
+          <div style="margin-bottom: 8px; font-size: 0.8em; color: #90EE90;">
+            ✅ Stats linked to: ${playerManager.getCurrentPlayer().email}
+          </div>
         `;
 
         // XP Progress Bar
-        const currentLevelXP = player.xp || 0;
-        const nextLevelXP = currentLevelXP + xpToNext;
-        const levelStartXP = nextLevelXP - (100 + ((player.level || 1) - 1) * 50);
-        const progressPercent = ((currentLevelXP - levelStartXP) / (nextLevelXP - levelStartXP)) * 100;
+        const currentLevelXP = stats.xp || 0;
+        const currentLevel = stats.level || 1;
+        const xpForCurrentLevel = 100 + (currentLevel - 1) * 50;
+        const xpInCurrentLevel = currentLevelXP % xpForCurrentLevel;
+        const progressPercent = (xpInCurrentLevel / xpForCurrentLevel) * 100;
 
         statsHTML += `
           <div style="margin-bottom: 8px;">
             <div style="background: #1e3f66; border-radius: 10px; height: 8px; overflow: hidden;">
-              <div style="background: linear-gradient(90deg, #FFD700, #FFA500); height: 100%; width: ${progressPercent}%; transition: width 0.3s ease;"></div>
+              <div style="background: linear-gradient(90deg, #FFD700, #FFA500); height: 100%; width: ${Math.max(0, Math.min(100, progressPercent))}%; transition: width 0.3s ease;"></div>
             </div>
-            <div style="font-size: 0.8em; color: #FFD700; text-align: center; margin-top: 2px;">XP Progress: ${Math.round(progressPercent)}%</div>
+            <div style="font-size: 0.8em; color: #FFD700; text-align: center; margin-top: 2px;">XP Progress: ${Math.round(Math.max(0, Math.min(100, progressPercent)))}%</div>
           </div>
         `;
       }
@@ -89,7 +95,7 @@ export class UIManager {
     if (!inventoryDiv || !inventory) return;
 
     const items = inventory.getAllItems();
-    
+
     if (items.length === 0) {
       inventoryDiv.innerHTML = '<div style="color:#888; font-style:italic;">Empty hold</div>';
       return;
@@ -98,14 +104,14 @@ export class UIManager {
     // Show top 6 items, with total value
     const displayItems = items.slice(0, 6);
     const totalValue = inventory.getTotalValue();
-    
+
     let html = displayItems.map(item => {
       const quantityText = item.quantity > 1 ? ` x${item.quantity}` : '';
       const clickable = ['Rum Bottles', 'Medicine', 'Wooden Planks', 'Gunpowder', 'Lucky Charm', 'Treasure Maps', 'Red Pixel Pack', 'Blue Pixel Pack', 'Green Pixel Pack', 'Yellow Pixel Pack', 'Purple Pixel Pack'].includes(item.name);
       const style = clickable ? 'cursor:pointer; padding:2px; border-radius:3px;' : '';
       const hoverStyle = clickable ? 'onmouseover="this.style.backgroundColor=\'#444\'" onmouseout="this.style.backgroundColor=\'transparent\'"' : '';
       const onclick = clickable ? `onclick="window.game.useInventoryItem('${item.name}')"` : '';
-      
+
       return `<div style="margin-bottom:2px; ${style}" ${hoverStyle} ${onclick} title="${item.description}">${item.icon} ${item.name}${quantityText}</div>`;
     }).join('');
 
@@ -115,7 +121,7 @@ export class UIManager {
 
     html += `<div style="color:#FFD700; font-weight:bold; margin-top:6px; border-top:1px solid #8B5C2A; padding-top:4px;">💰 Total Value: ${totalValue}</div>`;
     html += `<div style="color:#888; font-size:10px; margin-top:4px;">Click items to use • I for full inventory</div>`;
-    
+
     // Add quick action buttons for common items
     const quickActions = [];
     if (inventory.hasItem('Medicine')) {
@@ -127,7 +133,7 @@ export class UIManager {
     if (inventory.hasItem('Wooden Planks')) {
       quickActions.push(`<button onclick="window.game.useInventoryItem('Wooden Planks')" style="background:#8B4513; color:white; border:none; padding:2px 6px; border-radius:3px; font-size:10px; cursor:pointer; margin:2px;">🪵 Repair</button>`);
     }
-    
+
     if (quickActions.length > 0) {
       html += `<div style="margin-top:6px; padding-top:4px; border-top:1px solid #8B5C2A;">${quickActions.join('')}</div>`;
     }
@@ -185,13 +191,13 @@ export class UIManager {
           <div style="margin-bottom: 15px;">
             <h4 style="color: #DDD; margin: 5px 0; font-size: 14px;">${category}</h4>
         `;
-        
+
         items.forEach(item => {
           const quantityText = item.quantity > 1 ? ` x${item.quantity}` : '';
           const clickable = ['Rum Bottles', 'Medicine', 'Wooden Planks', 'Gunpowder', 'Lucky Charm', 'Treasure Maps', 'Red Pixel Pack', 'Blue Pixel Pack', 'Green Pixel Pack', 'Yellow Pixel Pack', 'Purple Pixel Pack'].includes(item.name);
           const style = clickable ? 'cursor:pointer; padding:4px; border-radius:3px; background: #333;' : 'padding:4px;';
           const onclick = clickable ? `onclick="window.game.useInventoryItem('${item.name}'); document.getElementById('inventoryModal').remove();"` : '';
-          
+
           html += `
             <div style="margin: 3px 0; ${style}" ${onclick} title="${item.description}">
               ${item.icon} ${item.name}${quantityText}
@@ -199,7 +205,7 @@ export class UIManager {
             </div>
           `;
         });
-        
+
         html += `</div>`;
       }
     }
@@ -215,19 +221,19 @@ export class UIManager {
     } else {
       recipes.forEach(recipe => {
         const canCraft = recipe.canCraft;
-        const buttonStyle = canCraft ? 
-          'background: #4a7c59; color: white; cursor: pointer;' : 
+        const buttonStyle = canCraft ?
+          'background: #4a7c59; color: white; cursor: pointer;' :
           'background: #666; color: #999; cursor: not-allowed;';
-        
+
         html += `
           <div style="margin-bottom: 15px; padding: 10px; background: #333; border-radius: 5px;">
             <div style="font-weight: bold; margin-bottom: 5px;">${recipe.name}</div>
             <div style="font-size: 12px; color: #ccc; margin-bottom: 8px;">${recipe.description}</div>
             <div style="font-size: 11px; margin-bottom: 8px;">
               <strong>Ingredients:</strong><br>
-              ${Object.entries(recipe.ingredients).map(([item, qty]) => 
-                `${inventory.getItemQuantity(item)}/${qty} ${item}`
-              ).join('<br>')}
+              ${Object.entries(recipe.ingredients).map(([item, qty]) =>
+          `${inventory.getItemQuantity(item)}/${qty} ${item}`
+        ).join('<br>')}
             </div>
             <div style="font-size: 11px; margin-bottom: 8px;">
               <strong>Result:</strong> ${recipe.result.quantity} ${recipe.result.item}
@@ -278,11 +284,11 @@ export class UIManager {
         <div style="font-size:11px; color:#aaa; margin-top:8px;">Hold WASD to sail, R to repair, I for inventory</div>
         <div style="font-size:10px; color:#888; margin-top:4px;">Mouse wheel to zoom</div>
       `;
-      
+
       if (pixelMode) {
         const pixelColors = {
           'red': '#FF0000',
-          'blue': '#0000FF', 
+          'blue': '#0000FF',
           'green': '#00FF00',
           'yellow': '#FFFF00',
           'purple': '#800080'
@@ -295,7 +301,7 @@ export class UIManager {
           <div style="font-size:10px; color:#aaa; margin-top:4px;">Click on map to place pixel • ESC to cancel</div>
         `;
       }
-      
+
       timerDiv.innerHTML = html;
       timerDiv.style.textAlign = 'right';
       return;
@@ -353,15 +359,15 @@ export class UIManager {
       transition: transform 0.3s ease-in-out;
       max-width: 300px;
     `;
-    
+
     notification.innerHTML = message;
     document.body.appendChild(notification);
-    
+
     // Animate in
     setTimeout(() => {
       notification.style.transform = 'translateX(0)';
     }, 10);
-    
+
     // Animate out and remove
     setTimeout(() => {
       notification.style.transform = 'translateX(100%)';
@@ -375,7 +381,7 @@ export class UIManager {
 
   showTradingPortButton(port) {
     let button = document.getElementById('tradingPortButton');
-    
+
     if (!button) {
       button = document.createElement('button');
       button.id = 'tradingPortButton';
@@ -396,20 +402,20 @@ export class UIManager {
         font-family: 'Courier New', monospace;
         transition: all 0.3s ease;
       `;
-      
+
       button.onmouseover = () => {
         button.style.background = '#5a9c69';
         button.style.transform = 'scale(1.05)';
       };
-      
+
       button.onmouseout = () => {
         button.style.background = '#4a7c59';
         button.style.transform = 'scale(1)';
       };
-      
+
       document.body.appendChild(button);
     }
-    
+
     button.innerHTML = `🏪 Trade at ${port.portName}`;
     button.onclick = () => window.game.openTradingMenu(port);
     button.style.display = 'block';
@@ -475,10 +481,10 @@ export class UIManager {
     stocks.forEach(stock => {
       if (stock.stockQuantity > 0) {
         const canAfford = playerGold >= stock.buyPrice;
-        const buttonStyle = canAfford ? 
-          'background: #4a7c59; color: white; cursor: pointer;' : 
+        const buttonStyle = canAfford ?
+          'background: #4a7c59; color: white; cursor: pointer;' :
           'background: #666; color: #999; cursor: not-allowed;';
-        
+
         html += `
           <div style="margin-bottom: 12px; padding: 12px; background: #333; border-radius: 6px;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -510,14 +516,14 @@ export class UIManager {
     // Show player's sellable items
     const playerItems = playerInventory.getAllItems();
     const sellableItems = playerItems.filter(item => item.name !== 'Gold Coins');
-    
+
     if (sellableItems.length === 0) {
       html += `<div style="color: #888; font-style: italic; padding: 20px; text-align: center;">No items to sell</div>`;
     } else {
       sellableItems.forEach(item => {
         const stock = stocks.find(s => s.itemName === item.name);
         const sellPrice = stock ? stock.sellPrice : Math.floor(Math.random() * 3) + 1;
-        
+
         html += `
           <div style="margin-bottom: 12px; padding: 12px; background: #333; border-radius: 6px;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -569,7 +575,7 @@ export class UIManager {
       bgCanvas.width = this.loginBox.clientWidth;
       bgCanvas.height = this.loginBox.clientHeight;
     };
-    
+
     resizeBg();
     window.addEventListener('resize', resizeBg);
 
@@ -639,7 +645,7 @@ export class UIManager {
     achievements.forEach(achievement => {
       const statusIcon = achievement.completed ? '✅' : '⏳';
       const statusColor = achievement.completed ? '#4CAF50' : '#FFA500';
-      
+
       achievementsHTML += `
         <div style="background: rgba(30, 63, 102, 0.3); border: 2px solid ${statusColor}; border-radius: 8px; padding: 12px; margin-bottom: 10px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
@@ -675,8 +681,8 @@ export class UIManager {
     const modal = document.getElementById('interactionModal');
     const content = document.getElementById('modalContent');
 
-    const playTimeHours = Math.floor(stats.playTime / 3600);
-    const playTimeMinutes = Math.floor((stats.playTime % 3600) / 60);
+    const playTimeHours = Math.floor(stats.play_time / 3600);
+    const playTimeMinutes = Math.floor((stats.play_time % 3600) / 60);
 
     let statsHTML = `
       <div style="text-align:center; color:#FFD700; font-size:1.8em; margin-bottom:20px;">
@@ -687,26 +693,26 @@ export class UIManager {
           <div style="background: rgba(30, 63, 102, 0.3); border: 2px solid #FFD700; border-radius: 8px; padding: 12px;">
             <h4 style="color: #FFD700; margin-bottom: 10px;">⚔️ Combat Stats</h4>
             <div style="color: #CCCCCC;">
-              <div>Wins: ${stats.combatWins}</div>
-              <div>Losses: ${stats.combatLosses}</div>
-              <div>Win Rate: ${stats.combatWins + stats.combatLosses > 0 ? Math.round((stats.combatWins / (stats.combatWins + stats.combatLosses)) * 100) : 0}%</div>
+              <div>Wins: ${stats.combat_wins}</div>
+              <div>Losses: ${stats.combat_losses}</div>
+              <div>Win Rate: ${stats.combat_wins + stats.combat_losses > 0 ? Math.round((stats.combat_wins / (stats.combat_wins + stats.combat_losses)) * 100) : 0}%</div>
             </div>
           </div>
           
           <div style="background: rgba(30, 63, 102, 0.3); border: 2px solid #FFD700; border-radius: 8px; padding: 12px;">
             <h4 style="color: #FFD700; margin-bottom: 10px;">💰 Trading Stats</h4>
             <div style="color: #CCCCCC;">
-              <div>Trades: ${stats.tradesCompleted}</div>
-              <div>Treasures: ${stats.treasuresFound}</div>
-              <div>Items Crafted: ${stats.itemsCrafted}</div>
+              <div>Trades: ${stats.trades_completed}</div>
+              <div>Treasures: ${stats.treasures_found}</div>
+              <div>Items Crafted: ${stats.items_crafted}</div>
             </div>
           </div>
           
           <div style="background: rgba(30, 63, 102, 0.3); border: 2px solid #FFD700; border-radius: 8px; padding: 12px;">
             <h4 style="color: #FFD700; margin-bottom: 10px;">🎨 Creative Stats</h4>
             <div style="color: #CCCCCC;">
-              <div>Pixels Placed: ${stats.pixelsPlaced}</div>
-              <div>Distance Traveled: ${Math.round(stats.distanceTraveled)}</div>
+              <div>Pixels Placed: ${stats.pixels_placed}</div>
+              <div>Distance Traveled: ${Math.round(stats.distance_traveled)}</div>
             </div>
           </div>
           
@@ -714,8 +720,8 @@ export class UIManager {
             <h4 style="color: #FFD700; margin-bottom: 10px;">⏰ Time Stats</h4>
             <div style="color: #CCCCCC;">
               <div>Play Time: ${playTimeHours}h ${playTimeMinutes}m</div>
-              <div>Login Streak: ${stats.loginStreak} days</div>
-              <div>Games Played: ${stats.gamesPlayed}</div>
+              <div>Login Streak: ${stats.login_streak} days</div>
+              <div>Games Played: ${stats.games_played}</div>
             </div>
           </div>
         </div>
@@ -725,7 +731,7 @@ export class UIManager {
           <div style="color: #CCCCCC;">
             <div>Level: ${stats.level}</div>
             <div>Total XP: ${stats.xp}</div>
-            <div>Total Score: ${stats.totalScore}</div>
+            <div>Total Score: ${stats.total_score}</div>
             <div>Achievements: ${stats.achievements.length}/10</div>
           </div>
         </div>
@@ -743,6 +749,98 @@ export class UIManager {
     `;
 
     content.innerHTML = statsHTML;
+    modal.style.display = 'block';
+  }
+
+  showPlayerProfile(playerManager, inventory) {
+    if (!playerManager || !inventory) return;
+
+    const stats = playerManager.getPlayerStats();
+    const player = playerManager.getCurrentPlayer();
+    const modal = document.getElementById('interactionModal');
+    const content = document.getElementById('modalContent');
+
+    const playTimeHours = Math.floor(stats.play_time / 3600);
+    const playTimeMinutes = Math.floor((stats.play_time % 3600) / 60);
+    const joinDate = new Date(stats.lastLogin).toLocaleDateString();
+
+    let profileHTML = `
+      <div style="text-align:center; color:#FFD700; font-size:1.8em; margin-bottom:20px;">
+        👤 Player Profile 👤
+      </div>
+      <div style="max-height: 400px; overflow-y: auto;">
+        <div style="background: rgba(30, 63, 102, 0.3); border: 2px solid #FFD700; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+          <h4 style="color: #FFD700; margin-bottom: 10px;">⚓ Captain Information</h4>
+          <div style="color: #CCCCCC;">
+            <div><strong>Email:</strong> ${player.email}</div>
+            <div><strong>Level:</strong> ${stats.level} (${stats.xp} XP)</div>
+            <div><strong>Current Location:</strong> (${Math.round(player.x)}, ${Math.round(player.y)})</div>
+            <div><strong>Ship Status:</strong> Hull ${player.hull}%, Crew ${player.crew}</div>
+            <div><strong>Wealth:</strong> ${player.booty} gold coins</div>
+          </div>
+        </div>
+
+        <div style="background: rgba(30, 63, 102, 0.3); border: 2px solid #FFD700; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+          <h4 style="color: #FFD700; margin-bottom: 10px;">📊 Activity Summary</h4>
+          <div style="color: #CCCCCC;">
+            <div><strong>Play Time:</strong> ${playTimeHours}h ${playTimeMinutes}m</div>
+            <div><strong>Login Streak:</strong> ${stats.login_streak} days</div>
+            <div><strong>Distance Traveled:</strong> ${Math.round(stats.distance_traveled)} units</div>
+            <div><strong>Total Score:</strong> ${stats.total_score}</div>
+          </div>
+        </div>
+
+        <div style="background: rgba(30, 63, 102, 0.3); border: 2px solid #FFD700; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+          <h4 style="color: #FFD700; margin-bottom: 10px;">🎯 Accomplishments</h4>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; color: #CCCCCC;">
+            <div>Combat Wins: ${stats.combat_wins}</div>
+            <div>Combat Losses: ${stats.combat_losses}</div>
+            <div>Trades Completed: ${stats.trades_completed}</div>
+            <div>Treasures Found: ${stats.treasures_found}</div>
+            <div>Pixels Placed: ${stats.pixels_placed}</div>
+            <div>Items Crafted: ${stats.items_crafted}</div>
+          </div>
+        </div>
+
+        <div style="background: rgba(30, 63, 102, 0.3); border: 2px solid #FFD700; border-radius: 8px; padding: 15px;">
+          <h4 style="color: #FFD700; margin-bottom: 10px;">🎒 Current Inventory (${inventory.getAllItems().length} items)</h4>
+          <div style="max-height: 120px; overflow-y: auto; color: #CCCCCC;">
+    `;
+
+    const items = inventory.getAllItems();
+    if (items.length === 0) {
+      profileHTML += '<div style="font-style: italic; color: #888;">Empty inventory</div>';
+    } else {
+      items.forEach(item => {
+        const quantityText = item.quantity > 1 ? ` x${item.quantity}` : '';
+        profileHTML += `<div style="margin-bottom: 3px;">${item.icon} ${item.name}${quantityText}</div>`;
+      });
+    }
+
+    profileHTML += `
+          </div>
+          <div style="margin-top: 10px; color: #FFD700; font-weight: bold;">
+            💰 Total Inventory Value: ${inventory.getTotalValue()} gold
+          </div>
+        </div>
+      </div>
+      <div style="text-align:center; margin-top: 20px;">
+        <button onclick="window.game.showDetailedStats()" 
+                style="background:#4CAF50; color:white; border:none; border-radius:6px; padding:8px 16px; cursor:pointer; margin-right: 10px;">
+          📊 Detailed Stats
+        </button>
+        <button onclick="window.game.showAchievements()" 
+                style="background:#FF9800; color:white; border:none; border-radius:6px; padding:8px 16px; cursor:pointer; margin-right: 10px;">
+          🏆 Achievements
+        </button>
+        <button onclick="document.getElementById('interactionModal').style.display='none'" 
+                style="background:#FFD700; color:#2d1a06; border:none; border-radius:6px; padding:8px 16px; cursor:pointer;">
+          Close
+        </button>
+      </div>
+    `;
+
+    content.innerHTML = profileHTML;
     modal.style.display = 'block';
   }
 }
