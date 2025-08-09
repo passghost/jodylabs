@@ -9,7 +9,7 @@ export const CONFIG = {
   MOVE_INTERVAL: 5000, // 5 seconds (legacy - now used for interaction checks)
   
   PLAYER_POLLING_INTERVAL: 2000,
-  INTERACTION_CHANCE: 0.003, // 0.3% chance per check (every 0.5 seconds while moving)
+  INTERACTION_INTERVAL: 15000, // Pirate interactions every 15 seconds of sailing time
   
   REALTIME_MOVEMENT: {
     SPEED: 0.5, // pixels per frame at 60fps

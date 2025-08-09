@@ -43,6 +43,10 @@ export class Game {
     this.lastInteractionCheck = 0;
     this.isInteractionBlocked = false;
     this.pendingInteraction = null;
+    
+    // Sailing interaction timing
+    this.sailingStartTime = null;
+    this.lastInteractionTime = 0;
 
     this.setupEventListeners();
     console.log('Event listeners set up, Game constructor complete');
@@ -167,6 +171,11 @@ export class Game {
 
       // Start real-time game loop
       this.isGameRunning = true;
+      
+      // Reset sailing interaction timers
+      this.sailingStartTime = null;
+      this.lastInteractionTime = Date.now();
+      
       this.startRealtimeGameLoop();
 
       // Start polling for other players
@@ -302,10 +311,39 @@ export class Game {
     // Only check for interactions if player is actively moving
     const isMoving = this.keys.w || this.keys.s || this.keys.a || this.keys.d;
 
-    if (isMoving && Math.random() < CONFIG.INTERACTION_CHANCE && !this.isInteractionBlocked) {
-      console.log('Triggering random interaction...');
-      this.processRandomInteraction();
+    if (isMoving) {
+      // Initialize sailing timer if not set
+      if (!this.sailingStartTime) {
+        this.sailingStartTime = now;
+        this.lastInteractionTime = now;
+        this.addToInteractionHistory('⛵ You begin sailing... pirate encounters happen every 15 seconds!');
+      }
+      
+      // Trigger interaction every 15 seconds of sailing time
+      if (now - this.lastInteractionTime >= CONFIG.INTERACTION_INTERVAL && !this.isInteractionBlocked) {
+        console.log('Triggering pirate interaction after 15 seconds of sailing...');
+        this.addToInteractionHistory('🏴‍☠️ After 15 seconds of sailing, you encounter something...');
+        this.processRandomInteraction();
+        this.lastInteractionTime = now;
+      }
+    } else {
+      // Reset sailing timer when not moving
+      this.sailingStartTime = null;
     }
+  }
+
+  getSailingTimeUntilNextInteraction() {
+    const now = Date.now();
+    const isMoving = this.keys.w || this.keys.s || this.keys.a || this.keys.d;
+    
+    if (!isMoving || !this.sailingStartTime) {
+      return null; // Not sailing, no timer to show
+    }
+    
+    const timeSinceLastInteraction = now - this.lastInteractionTime;
+    const timeUntilNext = CONFIG.INTERACTION_INTERVAL - timeSinceLastInteraction;
+    
+    return Math.max(0, timeUntilNext);
   }
 
   updateDatabase() {
@@ -362,9 +400,10 @@ export class Game {
     if (now - this.lastUIUpdate > 100) {
       this.ui.updatePlayerStats(this.currentPlayer, this.renderer.getZoom(), this.player);
       
-      // Update UI with pixel mode status
+      // Update UI with pixel mode status and sailing timer
       const pixelMode = this.pixelManager ? this.pixelManager.getCurrentPixelColor() : null;
-      this.ui.updateMoveTimer(0, false, true, pixelMode);
+      const sailingTimer = this.getSailingTimeUntilNextInteraction();
+      this.ui.updateMoveTimer(0, false, true, pixelMode, sailingTimer);
       
       // Check for nearby trading ports
       this.checkNearbyTradingPorts();

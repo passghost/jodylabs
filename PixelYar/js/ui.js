@@ -274,7 +274,7 @@ export class UIManager {
     document.addEventListener('keydown', handleEscape);
   }
 
-  updateMoveTimer(countdown, isRepairing = false, isRealtime = false, pixelMode = null) {
+  updateMoveTimer(countdown, isRepairing = false, isRealtime = false, pixelMode = null, sailingTimer = null) {
     const timerDiv = document.getElementById('moveTimer');
     if (!timerDiv) return;
 
@@ -284,6 +284,24 @@ export class UIManager {
         <div style="font-size:11px; color:#aaa; margin-top:8px;">Hold WASD to sail, R to repair, I for inventory</div>
         <div style="font-size:10px; color:#888; margin-top:4px;">Mouse wheel to zoom</div>
       `;
+
+      // Add sailing interaction timer
+      if (sailingTimer !== null) {
+        const timeLeft = Math.max(0, Math.ceil(sailingTimer / 1000));
+        if (timeLeft > 0) {
+          html += `
+            <div style="font-size:12px; color:#FFD700; margin-top:8px; border:1px solid #FFD700; padding:3px; border-radius:4px; background:rgba(255,215,0,0.1);">
+              🏴‍☠️ Next Pirate Encounter: ${timeLeft}s
+            </div>
+          `;
+        } else {
+          html += `
+            <div style="font-size:12px; color:#FF6666; margin-top:8px; border:1px solid #FF6666; padding:3px; border-radius:4px; background:rgba(255,102,102,0.1);">
+              🏴‍☠️ Pirate Encounter Ready!
+            </div>
+          `;
+        }
+      }
 
       if (pixelMode) {
         const pixelColors = {
