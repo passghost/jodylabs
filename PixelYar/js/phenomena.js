@@ -23,7 +23,6 @@ export class PhenomenaManager {
       this.phenomena.push(phenomenon);
     }
 
-    console.log(`Initialized ${this.phenomena.length} sea phenomena`);
   }
 
   createRandomPhenomenon() {

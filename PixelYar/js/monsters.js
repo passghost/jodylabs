@@ -22,7 +22,6 @@ export class MonsterManager {
       this.monsters.push(monster);
     }
 
-    console.log(`Initialized ${this.monsters.length} sea monsters in the red sea`);
   }
 
   createMonster() {

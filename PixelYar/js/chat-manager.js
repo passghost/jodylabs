@@ -317,7 +317,6 @@ export class ChatManager {
       oscillator.stop(audioContext.currentTime + 0.2);
     } catch (error) {
       // Fallback: no sound if Web Audio API is not available
-      console.log('Notification sound not available');
     }
   }
 

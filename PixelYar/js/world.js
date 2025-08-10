@@ -40,7 +40,6 @@ export class WorldManager {
         portType: island.port_type
       }));
 
-      console.log(`Loaded ${this.islands.length} islands from database`);
       
       // Load trading stocks for all islands
       await this.loadTradingStocks();
@@ -79,7 +78,6 @@ export class WorldManager {
         });
       });
 
-      console.log(`Loaded trading stocks for ${this.tradingStocks.size} islands`);
       
     } catch (error) {
       console.error('Failed to load trading stocks:', error);
@@ -187,7 +185,6 @@ export class WorldManager {
       this.tradingStocks.set(island.id, stocks);
     }
     
-    console.log(`Generated trading stocks for ${this.tradingStocks.size} islands with pixel packs at every port`);
   }
 
   // Legacy method for compatibility
@@ -195,11 +192,7 @@ export class WorldManager {
     return this.loadIslands();
   }
 
-  // Ensure loadIslands method exists (debugging)
-  async loadIslandsDebug() {
-    console.log('loadIslandsDebug called');
-    return this.loadIslands();
-  }
+
 
   isIsland(x, y) {
     for (const isl of this.islands) {

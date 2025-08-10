@@ -733,14 +733,9 @@ export class Renderer {
   }
 
   drawCannonBalls(cannonBalls) {
-    if (cannonBalls.length > 0) {
-      console.log('Drawing', cannonBalls.length, 'cannon balls');
-    }
-    
     this.ctx.save();
     
     for (const ball of cannonBalls) {
-      console.log('Drawing cannon ball at:', ball.x, ball.y, 'velocity:', ball.vx, ball.vy);
       
       // Draw cannon ball
       this.ctx.fillStyle = '#222222';

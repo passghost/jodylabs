@@ -453,9 +453,6 @@ export class PlayerManager {
     const statsKey = `pixelyar_stats_${this.currentPlayer.id}`;
     const savedStats = localStorage.getItem(statsKey);
     
-    console.log(`Stats connection verified for user ${this.currentPlayer.email} (ID: ${this.currentPlayer.id})`);
-    console.log(`Stats stored under key: ${statsKey}`);
-    console.log(`Current stats:`, this.playerStats);
     
     return true;
   }

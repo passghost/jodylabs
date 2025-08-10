@@ -169,7 +169,6 @@ export class BoatManager {
         await this.savePlayerBoat();
       }
 
-      console.log('Loaded player boat:', this.currentBoat.name);
       return this.currentBoat;
     } catch (error) {
       console.error('Failed to load player boat:', error);
@@ -195,7 +194,6 @@ export class BoatManager {
 
       if (error) throw error;
 
-      console.log('Saved player boat to database');
     } catch (error) {
       console.error('Failed to save player boat:', error);
     }

@@ -521,7 +521,6 @@ export class InventoryManager {
   // Database persistence methods
   async loadInventoryFromDatabase() {
     if (!this.auth || !this.auth.user) {
-      console.log('No auth user, using local inventory');
       return;
     }
 
@@ -543,9 +542,7 @@ export class InventoryManager {
             this.items.set(row.item_name, row.quantity);
           }
         }
-        console.log(`Loaded ${data.length} inventory items from database`);
       } else {
-        console.log('No inventory data found, starting with empty inventory');
       }
 
       this.isLoaded = true;
@@ -558,7 +555,6 @@ export class InventoryManager {
 
   async saveInventoryToDatabase() {
     if (!this.auth || !this.auth.user || !this.isLoaded) {
-      console.log('Cannot save inventory: no auth user or not loaded');
       return;
     }
 
@@ -599,7 +595,6 @@ export class InventoryManager {
         console.warn('Failed to delete empty inventory items:', deleteError);
       }
 
-      console.log('Inventory saved to database successfully');
     } catch (error) {
       console.error('Failed to save inventory to database:', error);
     }

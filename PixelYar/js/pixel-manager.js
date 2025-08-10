@@ -42,7 +42,6 @@ export class PixelManager {
                 });
             });
 
-            console.log(`Loaded ${pixels.length} permanent placed pixels`);
         } catch (error) {
             console.error('Failed to load placed pixels:', error);
         }
@@ -82,12 +81,10 @@ export class PixelManager {
 
     activatePixelMode(color) {
         this.pixelMode = color;
-        console.log(`Pixel mode activated: ${color}`);
     }
 
     deactivatePixelMode() {
         this.pixelMode = null;
-        console.log('Pixel mode deactivated');
     }
 
     isPixelModeActive() {

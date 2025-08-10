@@ -16,26 +16,19 @@ import { BoatManager } from './boat-manager.js';
 
 export class Game {
   constructor() {
-    console.log('Creating Game instance...');
     this.auth = new AuthManager();
-    console.log('AuthManager created');
     this.ui = new UIManager();
-    console.log('UIManager created');
     this.world = new WorldManager(null); // Will set supabase later
-    console.log('WorldManager created');
     const canvas = document.getElementById('oceanCanvas');
     if (!canvas) {
       throw new Error('Canvas element not found! Make sure oceanCanvas exists in HTML.');
     }
     this.renderer = new Renderer(canvas);
-    console.log('Renderer created');
     this.randomInteractions = null; // Will be initialized after world manager
     this.player = new PlayerManager(this.auth.getSupabase());
-    console.log('PlayerManager created');
     this.interactions = null; // Will be initialized after login
     this.aiShips = null; // Will be initialized after world manager
     this.inventory = new InventoryManager();
-    console.log('InventoryManager created');
     this.boatManager = null; // Will be initialized after login
     this.pixelManager = null; // Will be initialized after login
     this.monsters = null; // Will be initialized after world manager
@@ -67,21 +60,17 @@ export class Game {
     this.lastInteractionTime = 0;
 
     this.setupEventListeners();
-    console.log('Event listeners set up, Game constructor complete');
   }
 
   setupEventListeners() {
     // Login form handlers (override any existing functions)
     window.login = () => {
-      console.log('Login function called');
       this.handleLogin();
     };
     window.register = () => {
-      console.log('Register function called');
       this.handleRegister();
     };
     window.logout = () => {
-      console.log('Logout function called');
       this.logout();
     };
 
@@ -152,16 +141,11 @@ export class Game {
 
   async startGame(user) {
     try {
-      console.log('Starting game for user:', user.email);
-      
       // Initialize game components
-      console.log('Initializing player...');
       await this.player.initPlayer(user);
       this.currentPlayer = this.player.getCurrentPlayer();
-      console.log('Player initialized:', this.currentPlayer);
 
       // Load player inventory
-      console.log('Loading inventory...');
       if (this.currentPlayer.items) {
         this.inventory.loadInventoryData(this.currentPlayer.items);
       } else {
@@ -172,44 +156,34 @@ export class Game {
         this.inventory.addItem('Red Pixel Pack', 2);
         this.inventory.addItem('Blue Pixel Pack', 2);
       }
-      console.log('Inventory loaded');
 
       // Pass Supabase client to world manager and load islands
-      console.log('Setting up world manager...');
       this.world.supabase = this.auth.getSupabase();
 
       // Add missing methods directly to the world instance
       this.setupWorldManagerMethods();
 
       // Try to load islands
-      console.log('Loading islands...');
       try {
         await this.world.loadIslands();
-        console.log('Islands loaded from database');
       } catch (error) {
         console.error('Error loading islands:', error);
-        console.log('Falling back to local island generation');
         this.world.generateLocalIslands();
       }
 
       // Initialize random interactions with world manager
-      console.log('Initializing random interactions...');
       this.randomInteractions = new RandomInteractionManager(this.world);
 
       // Initialize AI ships
-      console.log('Initializing AI ships...');
       this.aiShips = new AIShipManager(this.world, this.randomInteractions);
 
       // Initialize monsters
-      console.log('Initializing monsters...');
       this.monsters = new MonsterManager(this.world);
 
       // Initialize phenomena
-      console.log('Initializing phenomena...');
       this.phenomena = new PhenomenaManager(this.world);
 
       // Initialize player interaction system
-      console.log('Initializing player interactions...');
       this.interactions = new InteractionManager(
         this.auth.getSupabase(),
         this.player,
@@ -217,40 +191,30 @@ export class Game {
       );
 
       // Initialize inventory with auth manager
-      console.log('Setting up inventory with auth...');
       this.inventory.setAuthManager(this.auth);
       await this.inventory.loadInventoryFromDatabase();
-      console.log('Inventory loaded from database');
 
       // Initialize boat manager
-      console.log('Initializing boat manager...');
       this.boatManager = new BoatManager(this.auth, this.inventory);
       await this.boatManager.loadPlayerBoat();
-      console.log('Boat manager initialized');
 
       // Apply boat stats to player
       this.applyBoatStatsToPlayer();
 
       // Initialize pixel manager
-      console.log('Initializing pixel manager...');
       this.pixelManager = new PixelManager(this.auth.getSupabase());
       
       // Ensure all pixels are loaded for this player
-      console.log('Loading placed pixels...');
       try {
         await this.pixelManager.loadPlacedPixels();
-        console.log('Pixels loaded successfully');
       } catch (error) {
         console.error('Error loading pixels:', error);
-        console.log('Continuing without pixels...');
       }
 
       // Set initial zoom and center on player
-      console.log('Setting up renderer...');
       try {
         this.renderer.setZoom(CONFIG.ZOOM.DEFAULT);
         this.renderer.centerOnPlayer(this.currentPlayer);
-        console.log('Renderer setup complete');
       } catch (rendererError) {
         console.error('Error setting up renderer:', rendererError);
         throw new Error('Renderer initialization failed: ' + rendererError.message);
@@ -266,10 +230,8 @@ export class Game {
       this.sailingStartTime = null;
       this.lastInteractionTime = Date.now();
       
-      console.log('Starting real-time game loop...');
       try {
         this.startRealtimeGameLoop();
-        console.log('Game loop started successfully');
       } catch (gameLoopError) {
         console.error('Error starting game loop:', gameLoopError);
         throw new Error('Game loop failed to start: ' + gameLoopError.message);
@@ -310,7 +272,7 @@ export class Game {
         showDetailedStats: () => this.ui.showDetailedStats(this.player),
         showPlayerProfile: () => this.ui.showPlayerProfile(this.player, this.inventory),
         // Debug and verification methods
-        checkKeys: () => console.log('Keys:', this.keys, 'Velocity:', this.velocity),
+        checkKeys: () => { /* Debug method removed */ },
         resetKeys: () => this.resetKeys(),
         verifyStatsConnection: () => this.player.verifyStatsConnection(),
         getPlayerDataSummary: () => this.player.getPlayerDataSummary(),
@@ -321,16 +283,13 @@ export class Game {
       };
 
       // Update UI to show real-time controls
-      console.log('Updating UI for real-time mode...');
       try {
         this.ui.updateMoveTimer(0, false, true); // true for real-time mode
-        console.log('UI updated successfully');
       } catch (uiError) {
         console.error('Error updating UI:', uiError);
         // Continue anyway - don't let UI errors stop the game
       }
 
-      console.log('Game started successfully!');
 
     } catch (error) {
       console.error('Failed to start game:', error);
@@ -472,7 +431,6 @@ export class Game {
       
       // Trigger interaction every 15 seconds of sailing time
       if (now - this.lastInteractionTime >= CONFIG.INTERACTION_INTERVAL && !this.isInteractionBlocked) {
-        console.log('Triggering pirate interaction after 15 seconds of sailing...');
         this.addToInteractionHistory('🏴‍☠️ After 15 seconds of sailing, you encounter something...');
         this.processRandomInteraction();
         this.lastInteractionTime = now;
@@ -609,9 +567,7 @@ export class Game {
       allCannonBalls.push(...this.aiShips.getAllAICannonBalls());
     }
     
-    if (allCannonBalls.length > 0) {
-      console.log('Rendering', allCannonBalls.length, 'cannon balls');
-    }
+
     
     // Get monsters and phenomena for rendering
     const monsters = this.monsters ? this.monsters.getMonsters() : [];
@@ -729,7 +685,6 @@ export class Game {
           portType: island.port_type
         }));
 
-        console.log(`Loaded ${this.world.islands.length} islands from database`);
 
         // Load trading stocks for all islands
         await this.world.loadTradingStocks();
@@ -769,7 +724,6 @@ export class Game {
           });
         });
 
-        console.log(`Loaded trading stocks for ${this.world.tradingStocks.size} islands`);
 
       } catch (error) {
         console.error('Failed to load trading stocks:', error);
@@ -806,7 +760,6 @@ export class Game {
         });
       }
 
-      console.log(`Generated ${this.world.islands.length} local islands`);
     };
 
     // Add isNearPort method
@@ -906,15 +859,12 @@ export class Game {
   }
 
   showInteractionPrompt(interaction) {
-    console.log('showInteractionPrompt called with:', interaction.text);
     this.isInteractionBlocked = true;
     this.pendingInteraction = interaction;
 
     // Show interaction modal
     const modal = document.getElementById('interactionModal');
     const content = document.getElementById('modalContent');
-
-    console.log('Modal elements:', { modal: !!modal, content: !!content });
 
     content.innerHTML = `
       <div style="text-align:center; color:#FFD700; font-size:1.5em; margin-bottom:20px;">
@@ -1091,11 +1041,8 @@ export class Game {
 
   // Canvas click handler for pixel placement and cannon firing
   handleCanvasClick(e) {
-    console.log('Canvas clicked!');
-    console.log('Pixel mode active:', this.pixelManager && this.pixelManager.isPixelModeActive());
     
     if (this.pixelManager && this.pixelManager.isPixelModeActive()) {
-      console.log('Placing pixel...');
       const worldCoords = this.renderer.screenToWorld(e.clientX, e.clientY);
       
       // Check if click is within game bounds
@@ -1114,7 +1061,6 @@ export class Game {
       this.placePixel(worldCoords.x, worldCoords.y);
     } else {
       // Fire cannon
-      console.log('Firing cannon...');
       this.fireCannon();
     }
   }
@@ -1159,25 +1105,18 @@ export class Game {
   }
 
   fireCannon() {
-    console.log('fireCannon called');
-    console.log('currentPlayer:', !!this.currentPlayer);
-    console.log('has cannon balls:', this.inventory.hasItem('Cannon Balls'));
-    console.log('cannon balls count:', this.inventory.getItemQuantity('Cannon Balls'));
     
     if (!this.currentPlayer) {
-      console.log('No current player - cannot fire');
       return;
     }
     
     if (!this.inventory.hasItem('Cannon Balls')) {
-      console.log('No cannon balls in inventory - cannot fire');
       this.addToInteractionHistory('💥 No cannon balls! Visit a port to buy more.');
       return;
     }
     
     const now = Date.now();
     if (now - this.lastCannonFire < 500) {
-      console.log('Cannon on cooldown');
       return; // 0.5 second cooldown
     }
     
@@ -1187,8 +1126,6 @@ export class Game {
     this.inventory.removeItem('Cannon Balls', 1);
     this.inventoryNeedsUpdate = true;
     
-    console.log('Creating cannon ball at:', this.currentPlayer.x, this.currentPlayer.y);
-    console.log('Cannon angle:', this.cannonAngle);
     
     // Create cannon ball using current cannon angle (smoothed)
     const cannonBall = {
@@ -1202,13 +1139,11 @@ export class Game {
     };
     
     this.cannonBalls.push(cannonBall);
-    console.log('Cannon ball added to array. Total cannon balls:', this.cannonBalls.length);
     this.addToInteractionHistory('💥 Cannon fired!');
   }
 
   updateCannonBalls() {
     if (this.cannonBalls.length > 0) {
-      console.log('Updating', this.cannonBalls.length, 'cannon balls');
     }
     
     for (let i = this.cannonBalls.length - 1; i >= 0; i--) {
@@ -1223,7 +1158,6 @@ export class Game {
       if (ball.x < 0 || ball.x >= CONFIG.OCEAN_WIDTH || 
           ball.y < 0 || ball.y >= CONFIG.OCEAN_HEIGHT || 
           ball.life <= 0) {
-        console.log('Removing cannon ball - out of bounds or life expired');
         this.cannonBalls.splice(i, 1);
         continue;
       }
@@ -1567,7 +1501,6 @@ export class Game {
     // Store boat stats for use in game mechanics
     this.currentPlayer.boatStats = stats;
     
-    console.log('Applied boat stats to player:', stats);
   }
 
   async craftItem(recipeName) {
@@ -1631,14 +1564,12 @@ export class Game {
   // Enhanced interaction system with inventory rewards
   async processRandomInteraction() {
     if (!this.randomInteractions || !this.currentPlayer) {
-      console.log('processRandomInteraction early return:', {
         randomInteractions: !!this.randomInteractions,
         currentPlayer: !!this.currentPlayer
       });
       return;
     }
 
-    console.log('Processing random interaction...');
     
     // Check if player is in red sea for enhanced danger/rewards
     const isInRedSea = this.currentPlayer.x >= CONFIG.RED_SEA.START_X;
@@ -1646,7 +1577,6 @@ export class Game {
     const lootMultiplier = isInRedSea ? CONFIG.RED_SEA.LOOT_MULTIPLIER : 1;
     
     const interaction = this.randomInteractions.getRandomInteraction();
-    console.log('Got interaction:', interaction.text, isInRedSea ? '(RED SEA)' : '(BLUE SEA)');
 
     // Enhanced inventory rewards based on sea type
     let inventoryRewards;
@@ -1700,7 +1630,6 @@ export class Game {
     }
 
     // Show the interaction prompt instead of applying immediately
-    console.log('Showing interaction prompt for:', interaction.text);
     this.showInteractionPrompt(interaction);
   }
 
@@ -1805,10 +1734,7 @@ export class Game {
 // Initialize game when DOM is loaded
 window.addEventListener('DOMContentLoaded', () => {
   try {
-    console.log('DOM loaded, initializing Pirate Pixel Yar game...');
     window.game = new Game();
-    console.log('Game initialized successfully, login functions should be available');
-    console.log('window.login exists:', typeof window.login);
     
     // Clear loading message
     const loginStatus = document.getElementById('loginStatus');
@@ -1828,20 +1754,14 @@ window.addEventListener('DOMContentLoaded', () => {
 
 // Ensure login functions are available immediately (fallback)
 if (typeof window !== 'undefined') {
-  console.log('Setting up global login functions...');
   
   window.login = function() {
-    console.log('Login function called');
-    console.log('window.game exists:', !!window.game);
-    console.log('window.game type:', typeof window.game);
     
     if (window.game && typeof window.game.handleLogin === 'function') {
-      console.log('Calling game.handleLogin()');
       window.game.handleLogin();
     } else {
       console.error('Game not ready. Game exists:', !!window.game);
       if (window.game) {
-        console.log('Game methods:', Object.getOwnPropertyNames(window.game));
       }
       
       const loginStatus = document.getElementById('loginStatus');
@@ -1853,7 +1773,6 @@ if (typeof window !== 'undefined') {
       // Try again after a delay
       setTimeout(() => {
         if (window.game && typeof window.game.handleLogin === 'function') {
-          console.log('Retrying login after delay');
           window.game.handleLogin();
         } else {
           console.error('Game still not ready after delay');
@@ -1867,7 +1786,6 @@ if (typeof window !== 'undefined') {
   };
 
   window.register = () => {
-    console.log('Register called, game exists:', !!window.game);
     if (window.game && typeof window.game.handleRegister === 'function') {
       window.game.handleRegister();
     } else {
@@ -1887,7 +1805,6 @@ if (typeof window !== 'undefined') {
   };
 
   window.logout = () => {
-    console.log('Logout called, game exists:', !!window.game);
     if (window.game && typeof window.game.logout === 'function') {
       window.game.logout();
     } else {
