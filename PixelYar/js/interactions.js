@@ -5,49 +5,262 @@ export class InteractionManager {
   constructor(worldManager) {
     this.worldManager = worldManager;
     this.interactions = [
-      // Enhanced interactions with inventory integration
-      { text: 'Rough waves! Hull takes 5 damage!', action: (player) => { player.hull = Math.max(0, player.hull - 5); } },
-      { text: 'It\'s a clear day to sail! Take one more move, matey!', action: (player) => { return { extraMove: true }; } },
-      { text: 'A storm sweeps a crew member overboard! -1 crew!', action: (player) => { player.crew = Math.max(0, player.crew - 1); } },
-      { text: 'Ye find a floating barrel of rum! Crew morale rises. +2 crew!', action: (player) => { player.crew += 2; }, waterObject: 'floating_barrel' },
-      { text: 'A sneaky kraken nicks yer hull! -10 hull!', action: (player) => { player.hull = Math.max(0, player.hull - 10); }, waterObject: 'kraken_tentacle' },
-      { text: 'A rival pirate fires a warning shot! -3 hull!', action: (player) => { player.hull = Math.max(0, player.hull - 3); } },
-      { text: 'A mutiny brews! Lose 2 crew!', action: (player) => { player.crew = Math.max(0, player.crew - 2); } },
-      { text: 'A friendly merchant gifts ye supplies. +3 hull!', action: (player) => { player.hull += 3; } },
-      { text: 'Ye rescue a stranded sailor. +1 crew!', action: (player) => { player.crew += 1; } },
-      { text: 'A cannon misfires! -2 hull!', action: (player) => { player.hull = Math.max(0, player.hull - 2); } },
-      { text: 'A sea monster attacks! -4 hull, -1 crew!', action: (player) => { player.hull = Math.max(0, player.hull - 4); player.crew = Math.max(0, player.crew - 1); } },
-      { text: 'A parrot squawks a warning—ye dodge danger! Nothing happens.', action: () => { } },
-      { text: 'A mysterious fog—ye lose yer bearings. No effect.', action: () => { } },
-      { text: 'A sea witch curses yer hull! -6 hull!', action: (player) => { player.hull = Math.max(0, player.hull - 6); } },
-      { text: 'A pod of whales guides ye to safety. +2 hull!', action: (player) => { player.hull += 2; } },
-      { text: 'A cannonball narrowly misses! No effect.', action: () => { } },
-      { text: 'A lucky wind fills yer sails! Take another move!', action: () => { return { extraMove: true }; } },
-      { text: 'A shark bites yer hull! -8 hull!', action: (player) => { player.hull = Math.max(0, player.hull - 8); } },
-      { text: 'A crew member falls ill. -1 crew!', action: (player) => { player.crew = Math.max(0, player.crew - 1); } },
-      { text: 'A cannon explodes! -3 hull, -1 crew!', action: (player) => { player.hull = Math.max(0, player.hull - 3); player.crew = Math.max(0, player.crew - 1); } },
-      { text: 'A rival pirate challenges ye—lose 2 crew!', action: (player) => { player.crew = Math.max(0, player.crew - 2); } },
-      { text: 'A sudden calm—nothing happens.', action: () => { } },
-      { text: 'A mermaid blesses yer voyage! +2 hull!', action: (player) => { player.hull += 2; }, waterObject: 'siren_rock' },
-      { text: 'A pirate legend inspires yer crew! +3 crew!', action: (player) => { player.crew += 3; } },
+      // TREASURE & DISCOVERY INTERACTIONS
+      { 
+        text: 'Ye discover a sunken Spanish galleon! Ancient gold coins spill from its broken hull!', 
+        action: (player, inventory) => { 
+          player.hull = Math.max(0, player.hull - 3); 
+          return { inventoryReward: { item: 'Gold Coins', quantity: 25 } }; 
+        }, 
+        waterObject: 'shipwreck' 
+      },
+      { 
+        text: 'A mysterious floating chest bobs in the waves! Inside ye find exotic spices from distant lands!', 
+        action: (player, inventory) => { 
+          return { inventoryReward: { item: 'Spices', quantity: 4 } }; 
+        }, 
+        waterObject: 'treasure_chest' 
+      },
+      { 
+        text: 'Ye net a massive pearl from an oyster bed! The crew cheers at yer fortune!', 
+        action: (player, inventory) => { 
+          player.crew += 1; 
+          return { inventoryReward: { item: 'Pearls', quantity: 3 } }; 
+        } 
+      },
+      { 
+        text: 'A merchant vessel\'s cargo floats nearby! Ye salvage fine silk and trading goods!', 
+        action: (player, inventory) => { 
+          return { inventoryReward: { item: 'Silk', quantity: 2 } }; 
+        }, 
+        waterObject: 'merchant_cargo' 
+      },
+      { 
+        text: 'An old pirate\'s treasure map floats in a bottle! X marks the spot for future adventures!', 
+        action: (player, inventory) => { 
+          return { inventoryReward: { item: 'Treasure Maps', quantity: 1 } }; 
+        }, 
+        waterObject: 'message_bottle' 
+      },
 
-      // New inventory-focused interactions
-      { text: 'A merchant ship offers to trade supplies!', action: () => { }, waterObject: 'merchant_ship' },
-      { text: 'Ye discover a shipwreck with salvageable materials!', action: (player) => { player.hull = Math.max(0, player.hull - 2); }, waterObject: 'shipwreck' },
-      { text: 'A fishing boat shares their catch with ye!', action: (player) => { player.crew += 1; }, waterObject: 'fishing_boat' },
-      { text: 'Pirates attack from the shadows! Defend yerself!', action: (player) => { player.hull = Math.max(0, player.hull - 8); player.crew = Math.max(0, player.crew - 1); } },
-      { text: 'A friendly dolphin guides ye to calmer waters. +1 hull!', action: (player) => { player.hull += 1; } },
-      { text: 'Ye spot a treasure island in the distance!', action: () => { }, waterObject: 'treasure_island' },
-      { text: 'A storm damages yer sails but ye find driftwood. Hull -3!', action: (player) => { player.hull = Math.max(0, player.hull - 3); } },
-      { text: 'Ye encounter a ghost ship that phases through yer vessel!', action: () => { }, waterObject: 'ghost_ship' },
-      { text: 'A sea turtle brings good luck! Nothing bad happens.', action: () => { } },
-      { text: 'Ye find an abandoned raft with supplies floating nearby!', action: (player) => { player.hull += 2; }, waterObject: 'abandoned_raft' },
-      { text: 'A whirlpool threatens yer ship! -5 hull from the turbulence!', action: (player) => { player.hull = Math.max(0, player.hull - 5); }, waterObject: 'whirlpool' },
-      { text: 'Ye rescue a castaway who knows valuable trade routes!', action: (player) => { player.crew += 1; } },
-      { text: 'A rival captain challenges ye to a drinking contest!', action: (player) => { player.crew = Math.max(0, player.crew - 1); } },
-      { text: 'Ye find a message in a bottle with a treasure map!', action: () => { }, waterObject: 'message_bottle' },
-      { text: 'A school of flying fish damages yer rigging! -2 hull!', action: (player) => { player.hull = Math.max(0, player.hull - 2); } },
-      { text: 'Ye discover an underwater cave with ancient treasures!', action: (player) => { player.hull += 1; }, waterObject: 'underwater_cave' },
+      // SUPPLY & CRAFTING INTERACTIONS
+      { 
+        text: 'Ye find a floating barrel of the finest Caribbean rum! The crew\'s spirits soar!', 
+        action: (player, inventory) => { 
+          player.crew += 2; 
+          return { inventoryReward: { item: 'Rum Bottles', quantity: 5 } }; 
+        }, 
+        waterObject: 'floating_barrel' 
+      },
+      { 
+        text: 'A shipwright\'s supplies drift past! Wooden planks and rope - perfect for repairs!', 
+        action: (player, inventory) => { 
+          player.hull += 5; 
+          return { inventoryReward: { item: 'Wooden Planks', quantity: 8 } }; 
+        } 
+      },
+      { 
+        text: 'Ye discover a naval supply cache! Gunpowder and cannon balls for yer arsenal!', 
+        action: (player, inventory) => { 
+          return { inventoryReward: { item: 'Cannon Balls', quantity: 15 } }; 
+        } 
+      },
+      { 
+        text: 'A ship\'s doctor\'s bag washes ashore on a small island! Medicine for the crew!', 
+        action: (player, inventory) => { 
+          return { inventoryReward: { item: 'Medicine', quantity: 3 } }; 
+        } 
+      },
+      { 
+        text: 'Ye salvage rope and rigging from a wrecked vessel! Essential supplies for any pirate!', 
+        action: (player, inventory) => { 
+          return { inventoryReward: { item: 'Rope', quantity: 6 } }; 
+        } 
+      },
+
+      // MAGICAL & MYSTICAL INTERACTIONS
+      { 
+        text: 'A sea witch emerges from the depths! She curses yer hull but gifts ye a lucky charm!', 
+        action: (player, inventory) => { 
+          player.hull = Math.max(0, player.hull - 8); 
+          return { inventoryReward: { item: 'Lucky Charm', quantity: 1 } }; 
+        }, 
+        waterObject: 'siren_rock' 
+      },
+      { 
+        text: 'Ye encounter a mystical kraken! It damages yer ship but drops enchanted pearls!', 
+        action: (player, inventory) => { 
+          player.hull = Math.max(0, player.hull - 12); 
+          return { inventoryReward: { item: 'Pearls', quantity: 5 } }; 
+        }, 
+        waterObject: 'kraken_tentacle' 
+      },
+      { 
+        text: 'A ghostly pirate captain appears! He challenges ye to a duel, then vanishes, leaving treasure!', 
+        action: (player, inventory) => { 
+          player.crew = Math.max(0, player.crew - 1); 
+          return { inventoryReward: { item: 'Gold Coins', quantity: 20 } }; 
+        }, 
+        waterObject: 'ghost_ship' 
+      },
+      { 
+        text: 'Mermaids sing an enchanting song! They heal yer wounds and gift ye ocean treasures!', 
+        action: (player, inventory) => { 
+          player.hull += 8; 
+          return { inventoryReward: { item: 'Pearls', quantity: 2 } }; 
+        } 
+      },
+
+      // COMBAT & DANGER INTERACTIONS
+      { 
+        text: 'Rival pirates ambush ye from behind a fog bank! Ye fight them off but take damage!', 
+        action: (player, inventory) => { 
+          player.hull = Math.max(0, player.hull - 10); 
+          player.crew = Math.max(0, player.crew - 1); 
+          return { inventoryReward: { item: 'Gold Coins', quantity: 8 } }; 
+        } 
+      },
+      { 
+        text: 'A naval patrol spots ye! Ye outrun them but yer cannon overheats and misfires!', 
+        action: (player, inventory) => { 
+          player.hull = Math.max(0, player.hull - 6); 
+          return { inventoryReward: { item: 'Gunpowder', quantity: 2 } }; 
+        } 
+      },
+      { 
+        text: 'Sea monsters attack from the depths! Ye fend them off with cannon fire!', 
+        action: (player, inventory) => { 
+          player.hull = Math.max(0, player.hull - 8); 
+          return { inventoryReward: { item: 'Medicine', quantity: 2 } }; 
+        } 
+      },
+      { 
+        text: 'A massive storm batters yer ship! Lightning strikes but ye salvage metal from the mast!', 
+        action: (player, inventory) => { 
+          player.hull = Math.max(0, player.hull - 7); 
+          return { inventoryReward: { item: 'Rope', quantity: 4 } }; 
+        } 
+      },
+
+      // CREW & SOCIAL INTERACTIONS
+      { 
+        text: 'Ye rescue a skilled navigator from a sinking vessel! He joins yer crew with his instruments!', 
+        action: (player, inventory) => { 
+          player.crew += 2; 
+          return { inventoryReward: { item: 'Spyglass', quantity: 1 } }; 
+        } 
+      },
+      { 
+        text: 'A famous pirate legend shares tales with yer crew! They\'re inspired and work harder!', 
+        action: (player, inventory) => { 
+          player.crew += 3; 
+          player.hull += 5; 
+          return { inventoryReward: { item: 'Rum Bottles', quantity: 3 } }; 
+        } 
+      },
+      { 
+        text: 'Ye encounter a friendly merchant who trades exotic goods for yer protection!', 
+        action: (player, inventory) => { 
+          return { inventoryReward: { item: 'Spices', quantity: 3 } }; 
+        }, 
+        waterObject: 'merchant_cargo' 
+      },
+      { 
+        text: 'A castaway with knowledge of secret trade routes joins yer crew!', 
+        action: (player, inventory) => { 
+          player.crew += 1; 
+          return { inventoryReward: { item: 'Treasure Maps', quantity: 2 } }; 
+        } 
+      },
+
+      // EXPLORATION & ADVENTURE INTERACTIONS
+      { 
+        text: 'Ye discover an uncharted island with rare resources! Time to stock up on supplies!', 
+        action: (player, inventory) => { 
+          return { inventoryReward: { item: 'Wooden Planks', quantity: 6 } }; 
+        }, 
+        waterObject: 'treasure_island' 
+      },
+      { 
+        text: 'A pod of dolphins leads ye to a hidden cove filled with ancient artifacts!', 
+        action: (player, inventory) => { 
+          player.hull += 3; 
+          return { inventoryReward: { item: 'Gold Coins', quantity: 15 } }; 
+        } 
+      },
+      { 
+        text: 'Ye find a derelict pirate ship with its cargo intact! Rum, gold, and supplies!', 
+        action: (player, inventory) => { 
+          return { inventoryReward: { item: 'Rum Bottles', quantity: 4 } }; 
+        }, 
+        waterObject: 'abandoned_raft' 
+      },
+      { 
+        text: 'An underwater cave reveals itself at low tide! Inside, ye find pirate treasure!', 
+        action: (player, inventory) => { 
+          return { inventoryReward: { item: 'Pearls', quantity: 4 } }; 
+        }, 
+        waterObject: 'underwater_cave' 
+      },
+
+      // PIXEL PACK INTERACTIONS
+      { 
+        text: 'A mysterious artist\'s supplies float by! Colorful paints for marking yer territory!', 
+        action: (player, inventory) => { 
+          const colors = ['Red Pixel Pack', 'Blue Pixel Pack', 'Green Pixel Pack', 'Yellow Pixel Pack', 'Purple Pixel Pack'];
+          const randomColor = colors[Math.floor(Math.random() * colors.length)];
+          return { inventoryReward: { item: randomColor, quantity: 3 } }; 
+        } 
+      },
+      { 
+        text: 'Ye discover a cartographer\'s lost supplies! Perfect for marking important locations!', 
+        action: (player, inventory) => { 
+          return { inventoryReward: { item: 'Blue Pixel Pack', quantity: 5 } }; 
+        } 
+      },
+
+      // POSITIVE FORTUNE INTERACTIONS
+      { 
+        text: 'The wind gods favor ye today! Yer sails fill with perfect breeze!', 
+        action: (player, inventory) => { 
+          return { extraMove: true }; 
+        } 
+      },
+      { 
+        text: 'A school of flying fish brings good luck! They guide ye to calmer waters!', 
+        action: (player, inventory) => { 
+          player.hull += 4; 
+          return { extraMove: true }; 
+        } 
+      },
+      { 
+        text: 'Ye spot a rainbow after a storm! Legend says it leads to treasure!', 
+        action: (player, inventory) => { 
+          return { inventoryReward: { item: 'Gold Coins', quantity: 12 } }; 
+        } 
+      },
+
+      // NEUTRAL/ATMOSPHERIC INTERACTIONS
+      { 
+        text: 'A wise old sea turtle surfaces near yer ship. It nods knowingly before diving deep.', 
+        action: (player, inventory) => { 
+          player.hull += 2; 
+        } 
+      },
+      { 
+        text: 'Ye sail through a patch of bioluminescent plankton! The sea glows like stars!', 
+        action: (player, inventory) => { 
+          // Pure atmosphere - small hull bonus for the beautiful sight
+          player.hull += 1; 
+        } 
+      },
+      { 
+        text: 'A majestic whale breaches nearby, spraying yer ship with refreshing seawater!', 
+        action: (player, inventory) => { 
+          player.hull += 3; 
+          player.crew += 1; 
+        } 
+      }
       { text: 'A lighthouse keeper warns ye of dangerous rocks ahead!', action: () => { }, waterObject: 'lighthouse' },
       { text: 'Ye encounter a naval patrol - they inspect yer ship!', action: (player) => { player.crew = Math.max(0, player.crew - 1); } },
       { text: 'A friendly sea captain shares navigation tips!', action: (player) => { player.hull += 2; } },

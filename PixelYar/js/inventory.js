@@ -10,31 +10,87 @@ export class InventoryManager {
   initializeItemDefinitions() {
     // Define all possible inventory items
     const items = [
-      { name: 'Gold Coins', icon: '🪙', description: 'Shiny pirate currency', stackable: true, maxStack: 999 },
-      { name: 'Rum Bottles', icon: '🍺', description: 'Boosts crew morale', stackable: true, maxStack: 50 },
-      { name: 'Cannon Balls', icon: '⚫', description: 'Essential for naval combat', stackable: true, maxStack: 100 },
-      { name: 'Treasure Maps', icon: '🗺️', description: 'Lead to hidden riches', stackable: true, maxStack: 10 },
-      { name: 'Spices', icon: '🌶️', description: 'Valuable trade goods', stackable: true, maxStack: 25 },
-      { name: 'Silk', icon: '🧵', description: 'Luxury fabric from distant lands', stackable: true, maxStack: 20 },
-      { name: 'Pearls', icon: '🦪', description: 'Precious ocean gems', stackable: true, maxStack: 30 },
-      { name: 'Compass', icon: '🧭', description: 'Never lose your way', stackable: false, maxStack: 1 },
-      { name: 'Lucky Charm', icon: '🍀', description: 'Reduces hull damage', stackable: false, maxStack: 1 },
-      { name: 'Rusty Cutlass', icon: '⚔️', description: 'An old but trusty blade', stackable: false, maxStack: 1 },
-      { name: 'Spyglass', icon: '🔭', description: 'See distant ships clearly', stackable: false, maxStack: 1 },
-      { name: 'Parrot', icon: '🦜', description: 'A loyal feathered companion', stackable: false, maxStack: 1 },
-      { name: 'Ship Bell', icon: '🔔', description: 'Brings good luck to your vessel', stackable: false, maxStack: 1 },
-      { name: 'Anchor', icon: '⚓', description: 'A sturdy ship anchor', stackable: false, maxStack: 1 },
-      { name: 'Fishing Net', icon: '🕸️', description: 'Catch fish and salvage', stackable: false, maxStack: 1 },
-      { name: 'Lantern', icon: '🏮', description: 'Lights the way in dark waters', stackable: false, maxStack: 1 },
-      { name: 'Wooden Planks', icon: '🪵', description: 'For ship repairs', stackable: true, maxStack: 50 },
-      { name: 'Rope', icon: '🪢', description: 'Essential for rigging', stackable: true, maxStack: 25 },
-      { name: 'Gunpowder', icon: '💥', description: 'Explosive material', stackable: true, maxStack: 20 },
-      { name: 'Medicine', icon: '💊', description: 'Heals crew ailments', stackable: true, maxStack: 15 },
-      { name: 'Red Pixel Pack', icon: '🔴', description: 'Place red pixels on the map', stackable: true, maxStack: 50 },
-      { name: 'Blue Pixel Pack', icon: '🔵', description: 'Place blue pixels on the map', stackable: true, maxStack: 50 },
-      { name: 'Green Pixel Pack', icon: '🟢', description: 'Place green pixels on the map', stackable: true, maxStack: 50 },
-      { name: 'Yellow Pixel Pack', icon: '🟡', description: 'Place yellow pixels on the map', stackable: true, maxStack: 50 },
-      { name: 'Purple Pixel Pack', icon: '🟣', description: 'Place purple pixels on the map', stackable: true, maxStack: 50 }
+      // Currency & Valuables
+      { name: 'Gold Coins', icon: '🪙', description: 'Shiny pirate currency', stackable: true, maxStack: 999, category: 'Currency' },
+      { name: 'Pearls', icon: '🦪', description: 'Precious ocean gems', stackable: true, maxStack: 50, category: 'Valuables' },
+      { name: 'Emeralds', icon: '💎', description: 'Rare green gemstones', stackable: true, maxStack: 20, category: 'Valuables' },
+      { name: 'Rubies', icon: '♦️', description: 'Blood-red precious stones', stackable: true, maxStack: 15, category: 'Valuables' },
+      { name: 'Ancient Coins', icon: '🏺', description: 'Currency from lost civilizations', stackable: true, maxStack: 30, category: 'Valuables' },
+      
+      // Trade Goods
+      { name: 'Spices', icon: '🌶️', description: 'Valuable trade goods from exotic lands', stackable: true, maxStack: 40, category: 'Trade Goods' },
+      { name: 'Silk', icon: '🧵', description: 'Luxury fabric from distant shores', stackable: true, maxStack: 30, category: 'Trade Goods' },
+      { name: 'Coffee Beans', icon: '☕', description: 'Aromatic beans from tropical islands', stackable: true, maxStack: 35, category: 'Trade Goods' },
+      { name: 'Tobacco Leaves', icon: '🍃', description: 'Premium smoking leaves', stackable: true, maxStack: 25, category: 'Trade Goods' },
+      { name: 'Ivory', icon: '🦷', description: 'Rare ivory from distant lands', stackable: true, maxStack: 10, category: 'Trade Goods' },
+      { name: 'Exotic Furs', icon: '🦫', description: 'Luxurious pelts from northern seas', stackable: true, maxStack: 15, category: 'Trade Goods' },
+      
+      // Consumables & Supplies
+      { name: 'Rum Bottles', icon: '🍺', description: 'Boosts crew morale and courage', stackable: true, maxStack: 60, category: 'Consumables' },
+      { name: 'Medicine', icon: '💊', description: 'Heals wounds and cures ailments', stackable: true, maxStack: 25, category: 'Consumables' },
+      { name: 'Hardtack', icon: '🍞', description: 'Long-lasting ship biscuits', stackable: true, maxStack: 50, category: 'Consumables' },
+      { name: 'Fresh Water', icon: '💧', description: 'Essential for long voyages', stackable: true, maxStack: 40, category: 'Consumables' },
+      { name: 'Salted Meat', icon: '🥩', description: 'Preserved protein for the crew', stackable: true, maxStack: 30, category: 'Consumables' },
+      
+      // Combat & Weapons
+      { name: 'Cannon Balls', icon: '⚫', description: 'Essential ammunition for naval combat', stackable: true, maxStack: 150, category: 'Combat' },
+      { name: 'Gunpowder', icon: '💥', description: 'Explosive black powder', stackable: true, maxStack: 30, category: 'Combat' },
+      { name: 'Grapeshot', icon: '🔘', description: 'Anti-personnel cannon ammunition', stackable: true, maxStack: 50, category: 'Combat' },
+      { name: 'Chain Shot', icon: '⛓️', description: 'Specialized ammo for destroying sails', stackable: true, maxStack: 40, category: 'Combat' },
+      { name: 'Muskets', icon: '🔫', description: 'Firearms for boarding actions', stackable: true, maxStack: 10, category: 'Combat' },
+      { name: 'Cutlasses', icon: '⚔️', description: 'Sharp curved swords for close combat', stackable: true, maxStack: 15, category: 'Combat' },
+      
+      // Ship Materials
+      { name: 'Wooden Planks', icon: '🪵', description: 'Oak planks for hull repairs', stackable: true, maxStack: 80, category: 'Materials' },
+      { name: 'Rope', icon: '🪢', description: 'Hemp rope for rigging and repairs', stackable: true, maxStack: 50, category: 'Materials' },
+      { name: 'Canvas', icon: '⛵', description: 'Sailcloth for repairing sails', stackable: true, maxStack: 20, category: 'Materials' },
+      { name: 'Iron Nails', icon: '🔩', description: 'Essential fasteners for ship repairs', stackable: true, maxStack: 100, category: 'Materials' },
+      { name: 'Tar', icon: '🛢️', description: 'Waterproofing compound for hulls', stackable: true, maxStack: 15, category: 'Materials' },
+      { name: 'Copper Sheets', icon: '🟫', description: 'Metal plating for hull protection', stackable: true, maxStack: 25, category: 'Materials' },
+      
+      // Navigation & Tools
+      { name: 'Compass', icon: '🧭', description: 'Magnetic navigation instrument', stackable: false, maxStack: 1, category: 'Navigation' },
+      { name: 'Spyglass', icon: '🔭', description: 'Extends vision across the seas', stackable: false, maxStack: 1, category: 'Navigation' },
+      { name: 'Sextant', icon: '📐', description: 'Celestial navigation tool', stackable: false, maxStack: 1, category: 'Navigation' },
+      { name: 'Treasure Maps', icon: '🗺️', description: 'Charts leading to buried treasure', stackable: true, maxStack: 15, category: 'Navigation' },
+      { name: 'Sea Charts', icon: '🗞️', description: 'Detailed maps of shipping routes', stackable: true, maxStack: 10, category: 'Navigation' },
+      { name: 'Astrolabe', icon: '⭐', description: 'Ancient navigation instrument', stackable: false, maxStack: 1, category: 'Navigation' },
+      
+      // Magical & Special Items
+      { name: 'Lucky Charm', icon: '🍀', description: 'Mystical protection against harm', stackable: false, maxStack: 1, category: 'Magical' },
+      { name: 'Cursed Medallion', icon: '🏅', description: 'Brings misfortune to enemies', stackable: false, maxStack: 1, category: 'Magical' },
+      { name: 'Mermaid Scale', icon: '🐠', description: 'Grants favor with sea creatures', stackable: true, maxStack: 5, category: 'Magical' },
+      { name: 'Kraken Ink', icon: '🖤', description: 'Mysterious black substance', stackable: true, maxStack: 8, category: 'Magical' },
+      { name: 'Phoenix Feather', icon: '🪶', description: 'Legendary item of rebirth', stackable: false, maxStack: 1, category: 'Magical' },
+      
+      // Crew & Companions
+      { name: 'Parrot', icon: '🦜', description: 'Colorful talking companion', stackable: false, maxStack: 1, category: 'Companions' },
+      { name: 'Ship Cat', icon: '🐱', description: 'Keeps the ship free of rats', stackable: false, maxStack: 1, category: 'Companions' },
+      { name: 'Monkey', icon: '🐒', description: 'Agile helper for rigging work', stackable: false, maxStack: 1, category: 'Companions' },
+      
+      // Ship Equipment
+      { name: 'Ship Bell', icon: '🔔', description: 'Bronze bell for ship communications', stackable: false, maxStack: 1, category: 'Equipment' },
+      { name: 'Anchor', icon: '⚓', description: 'Heavy iron anchor', stackable: false, maxStack: 1, category: 'Equipment' },
+      { name: 'Fishing Net', icon: '🕸️', description: 'Large net for catching fish', stackable: false, maxStack: 1, category: 'Equipment' },
+      { name: 'Lantern', icon: '🏮', description: 'Oil lamp for night navigation', stackable: true, maxStack: 5, category: 'Equipment' },
+      { name: 'Barrel', icon: '🛢️', description: 'Storage container for supplies', stackable: true, maxStack: 10, category: 'Equipment' },
+      { name: 'Hammock', icon: '🛏️', description: 'Sleeping quarters for crew', stackable: true, maxStack: 20, category: 'Equipment' },
+      
+      // Pixel Packs
+      { name: 'Red Pixel Pack', icon: '🔴', description: 'Crimson paint for marking territory', stackable: true, maxStack: 50, category: 'Art Supplies' },
+      { name: 'Blue Pixel Pack', icon: '🔵', description: 'Ocean blue paint for sea charts', stackable: true, maxStack: 50, category: 'Art Supplies' },
+      { name: 'Green Pixel Pack', icon: '🟢', description: 'Forest green paint for islands', stackable: true, maxStack: 50, category: 'Art Supplies' },
+      { name: 'Yellow Pixel Pack', icon: '🟡', description: 'Golden paint for treasure marks', stackable: true, maxStack: 50, category: 'Art Supplies' },
+      { name: 'Purple Pixel Pack', icon: '🟣', description: 'Royal purple paint for prestige', stackable: true, maxStack: 50, category: 'Art Supplies' },
+      { name: 'Black Pixel Pack', icon: '⚫', description: 'Midnight black paint for warnings', stackable: true, maxStack: 50, category: 'Art Supplies' },
+      { name: 'White Pixel Pack', icon: '⚪', description: 'Pure white paint for peace flags', stackable: true, maxStack: 50, category: 'Art Supplies' },
+      
+      // Rare & Legendary Items
+      { name: 'Golden Skull', icon: '💀', description: 'Legendary pirate artifact', stackable: false, maxStack: 1, category: 'Legendary' },
+      { name: 'Davy Jones Locker Key', icon: '🗝️', description: 'Opens the deepest treasures', stackable: false, maxStack: 1, category: 'Legendary' },
+      { name: 'Blackbeard\'s Rum', icon: '🍾', description: 'The finest rum ever distilled', stackable: false, maxStack: 1, category: 'Legendary' },
+      { name: 'Siren\'s Song', icon: '🎵', description: 'Enchanted music box', stackable: false, maxStack: 1, category: 'Legendary' },
+      { name: 'Neptune\'s Trident', icon: '🔱', description: 'Weapon of the sea god', stackable: false, maxStack: 1, category: 'Legendary' }
     ];
 
     items.forEach(item => {
@@ -327,34 +383,44 @@ export class InventoryManager {
 
   // Enhanced item management
   getItemsByCategory() {
-    const categories = {
-      'Currency': ['Gold Coins'],
-      'Consumables': ['Rum Bottles', 'Medicine', 'Gunpowder'],
-      'Materials': ['Wooden Planks', 'Rope', 'Cannon Balls'],
-      'Valuables': ['Pearls', 'Spices', 'Silk', 'Treasure Maps'],
-      'Tools': ['Compass', 'Spyglass', 'Rusty Cutlass', 'Fishing Net', 'Lantern'],
-      'Special': ['Lucky Charm', 'Parrot', 'Ship Bell', 'Anchor'],
-      'Pixel Packs': ['Red Pixel Pack', 'Blue Pixel Pack', 'Green Pixel Pack', 'Yellow Pixel Pack', 'Purple Pixel Pack']
-    };
-
     const result = {};
-    for (const [category, itemNames] of Object.entries(categories)) {
-      result[category] = [];
-      for (const itemName of itemNames) {
-        const quantity = this.getItemQuantity(itemName);
-        if (quantity > 0) {
-          const itemDef = this.itemDefinitions.get(itemName);
+    
+    // Group items by their defined categories
+    for (const [itemName, quantity] of this.items.entries()) {
+      if (quantity > 0) {
+        const itemDef = this.itemDefinitions.get(itemName);
+        if (itemDef) {
+          const category = itemDef.category || 'Miscellaneous';
+          
+          if (!result[category]) {
+            result[category] = [];
+          }
+          
           result[category].push({
             name: itemName,
             quantity,
-            icon: itemDef?.icon || '📦',
-            description: itemDef?.description || 'Unknown item'
+            icon: itemDef.icon || '📦',
+            description: itemDef.description || 'Unknown item'
           });
         }
       }
     }
 
-    return result;
+    // Sort categories by importance
+    const categoryOrder = [
+      'Currency', 'Valuables', 'Trade Goods', 'Combat', 'Materials', 
+      'Consumables', 'Navigation', 'Equipment', 'Companions', 'Magical', 
+      'Art Supplies', 'Legendary', 'Miscellaneous'
+    ];
+
+    const sortedResult = {};
+    for (const category of categoryOrder) {
+      if (result[category]) {
+        sortedResult[category] = result[category];
+      }
+    }
+
+    return sortedResult;
   }
 
   // Get detailed item information

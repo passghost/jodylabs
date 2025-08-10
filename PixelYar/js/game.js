@@ -1225,10 +1225,10 @@ export class Game {
       // Update AI ship
       const oldHull = targetShip.hull;
       targetShip.hull = Math.max(0, targetShip.hull - damage);
-      this.addToInteractionHistory(`💥 Direct hit on ${targetShip.email.split('@')[0]}! -${damage} hull damage!`);
+      this.addToInteractionHistory(`💥 Direct hit on enemy ship! -${damage} hull damage!`);
       
       if (targetShip.hull <= 0) {
-        this.addToInteractionHistory(`🏴‍☠️ ${targetShip.email.split('@')[0]} has been sunk!`);
+        this.addToInteractionHistory(`🏴‍☠️ Enemy ship has been sunk!`);
         this.player.addXP(100, 'Enemy ship sunk!');
         this.player.updateStat('combatWins', 1);
         

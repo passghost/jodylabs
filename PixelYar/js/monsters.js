@@ -303,7 +303,7 @@ export class MonsterManager {
       } else if (target.isAI) {
         // Attack AI ship
         target.hull = Math.max(0, target.hull - damage);
-        window.game.addToInteractionHistory(`🦈 ${this.getMonsterName(monster)} attacks ${target.email.split('@')[0]}!`);
+        // Monster attacks AI ship silently
       }
     }
   }

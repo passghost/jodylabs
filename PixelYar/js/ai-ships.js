@@ -314,7 +314,7 @@ export class AIShipManager {
     const newShip = this.createAIShip(seaType);
     this.aiShips.push(newShip);
     
-    console.log(`Spawned new ${seaType} sea AI ship. Total: ${this.aiShips.length}`);
+    // AI ship spawned silently
   }
 
   // Enhanced fleet maintenance with sea type balancing
@@ -468,10 +468,10 @@ export class AIShipManager {
       if (target.id === window.game.currentPlayer.id) {
         // Hit player
         target.hull = Math.max(0, target.hull - damage);
-        window.game.addToInteractionHistory(`💥 ${aiShip.email.split('@')[0]} hits you for ${damage} damage!`);
+        window.game.addToInteractionHistory(`💥 Enemy ship hits you for ${damage} damage!`);
         
         if (target.hull <= 0) {
-          window.game.addToInteractionHistory(`💀 You have been sunk by ${aiShip.email.split('@')[0]}!`);
+          window.game.addToInteractionHistory(`💀 You have been sunk by an enemy ship!`);
           window.game.player.updateStat('combatLosses', 1);
         }
       }
