@@ -1,6 +1,7 @@
 // renderer.js - Canvas rendering and visual effects
 import { CONFIG } from './config.js';
 import { MonsterRenderer } from './monster-renderer.js';
+import { PhenomenaRenderer } from './phenomena-renderer.js';
 
 export class Renderer {
   constructor(canvas) {
@@ -10,6 +11,7 @@ export class Renderer {
     this.panX = 0;
     this.panY = 0;
     this.monsterRenderer = new MonsterRenderer(this.ctx);
+    this.phenomenaRenderer = new PhenomenaRenderer(this.ctx);
   }
 
   drawOcean(islands, waterObjects = [], placedPixels = []) {
@@ -116,8 +118,11 @@ export class Renderer {
     this.drawPlacedPixels(placedPixels);
   }
 
-  drawPlayers(allPlayers, currentPlayer, playerRotation = 0, cannonAngle = 0, cannonBalls = [], monsters = []) {
-    // Draw monsters first (behind ships)
+  drawPlayers(allPlayers, currentPlayer, playerRotation = 0, cannonAngle = 0, cannonBalls = [], monsters = [], phenomena = []) {
+    // Draw phenomena first (background effects)
+    this.phenomenaRenderer.drawPhenomena(phenomena);
+    
+    // Draw monsters (behind ships)
     this.monsterRenderer.drawMonsters(monsters);
     
     // Draw all other pirates first (no glow)

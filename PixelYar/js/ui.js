@@ -331,6 +331,41 @@ export class UIManager {
         `;
       }
 
+      // Show phenomena information
+      if (window.game && window.game.phenomena) {
+        const phenomena = window.game.phenomena.getPhenomena();
+        const phenomenaCount = phenomena.length;
+        
+        if (phenomenaCount > 0) {
+          const phenomenaTypes = [...new Set(phenomena.map(p => p.type))];
+          const typeIcons = {
+            ufo: '🛸',
+            vortex: '🌪️',
+            portal: '🌀',
+            siren: '🧜‍♀️',
+            dolphin: '🐬',
+            storm: '⛈️'
+          };
+          
+          const iconString = phenomenaTypes.map(type => typeIcons[type] || '🌊').join(' ');
+          
+          html += `
+            <div style="font-size:11px; color:#9370DB; margin-top:6px; border:1px solid #9370DB; padding:3px; border-radius:4px; background:rgba(147,112,219,0.1);">
+              🌊 ${phenomenaCount} Phenomena: ${iconString}
+            </div>
+          `;
+          
+          // Show if player is trapped
+          if (window.game.currentPlayer && window.game.phenomena.isShipTrapped(window.game.currentPlayer.id)) {
+            html += `
+              <div style="font-size:11px; color:#FF6666; margin-top:4px; border:1px solid #FF6666; padding:3px; border-radius:4px; background:rgba(255,102,102,0.1);">
+                🌪️ TRAPPED IN VORTEX!
+              </div>
+            `;
+          }
+        }
+      }
+
       timerDiv.innerHTML = html;
       timerDiv.style.textAlign = 'right';
       return;

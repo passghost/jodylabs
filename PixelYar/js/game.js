@@ -11,6 +11,7 @@ import { AIShipManager } from './ai-ships.js';
 import { InventoryManager } from './inventory.js';
 import { PixelManager } from './pixel-manager.js';
 import { MonsterManager } from './monsters.js';
+import { PhenomenaManager } from './phenomena.js';
 
 export class Game {
   constructor() {
@@ -32,6 +33,7 @@ export class Game {
     console.log('InventoryManager created');
     this.pixelManager = null; // Will be initialized after login
     this.monsters = null; // Will be initialized after world manager
+    this.phenomena = null; // Will be initialized after world manager
 
     // Real-time movement state
     this.isGameRunning = false;
@@ -171,6 +173,9 @@ export class Game {
       // Initialize monsters
       this.monsters = new MonsterManager(this.world);
 
+      // Initialize phenomena
+      this.phenomena = new PhenomenaManager(this.world);
+
       // Initialize player interaction system
       this.interactions = new InteractionManager(
         this.auth.getSupabase(),
@@ -219,6 +224,7 @@ export class Game {
         chat: null,
         aiShips: this.aiShips,
         monsters: this.monsters,
+        phenomena: this.phenomena,
         player: this.player,
         currentPlayer: this.currentPlayer,
         inventory: this.inventory,
@@ -260,6 +266,7 @@ export class Game {
       this.updatePlayerRotation();
       this.updateCannonBalls();
       this.updateMonsters();
+      this.updatePhenomena();
       this.checkInteractions();
       this.updateDatabase();
       this.updateDisplay();
@@ -273,6 +280,9 @@ export class Game {
   updatePlayerMovement() {
     if (this.isInteractionBlocked || !this.currentPlayer) return;
 
+    // Check if player is trapped in a vortex
+    const isTrapped = this.phenomena && this.phenomena.isShipTrapped(this.currentPlayer.id);
+    
     // Calculate movement based on keys pressed
     let moveX = 0, moveY = 0;
 
@@ -287,9 +297,12 @@ export class Game {
       moveY *= 0.707;
     }
 
+    // Reduce movement speed if trapped in vortex
+    const speedMultiplier = isTrapped ? 0.2 : 1.0;
+    
     // Apply movement speed
-    this.velocity.x = moveX * CONFIG.REALTIME_MOVEMENT.SPEED;
-    this.velocity.y = moveY * CONFIG.REALTIME_MOVEMENT.SPEED;
+    this.velocity.x = moveX * CONFIG.REALTIME_MOVEMENT.SPEED * speedMultiplier;
+    this.velocity.y = moveY * CONFIG.REALTIME_MOVEMENT.SPEED * speedMultiplier;
 
     // Calculate target rotation based on movement
     if (moveX !== 0 || moveY !== 0) {
@@ -447,10 +460,11 @@ export class Game {
       allCannonBalls.push(...this.aiShips.getAllAICannonBalls());
     }
     
-    // Get monsters for rendering
+    // Get monsters and phenomena for rendering
     const monsters = this.monsters ? this.monsters.getMonsters() : [];
+    const phenomena = this.phenomena ? this.phenomena.getPhenomena() : [];
     
-    this.renderer.drawPlayers(allShips, this.currentPlayer, this.playerRotation, this.cannonAngle, allCannonBalls, monsters);
+    this.renderer.drawPlayers(allShips, this.currentPlayer, this.playerRotation, this.cannonAngle, allCannonBalls, monsters, phenomena);
     this.renderer.centerOnPlayer(this.currentPlayer);
     
     // Update UI less frequently (every 100ms)
@@ -1029,6 +1043,16 @@ export class Game {
             break;
           }
         }
+        
+        // Check collision with phenomena (some can be disrupted)
+        if (this.phenomena) {
+          const hitPhenomenon = this.phenomena.getPhenomenonAt(ball.x, ball.y, 5);
+          if (hitPhenomenon) {
+            this.cannonBalls.splice(i, 1);
+            this.handlePhenomenonHit(hitPhenomenon);
+            break;
+          }
+        }
       }
     }
   }
@@ -1036,6 +1060,46 @@ export class Game {
   updateMonsters() {
     if (this.monsters) {
       this.monsters.updateMonstersRealtime();
+    }
+  }
+
+  updatePhenomena() {
+    if (this.phenomena) {
+      this.phenomena.updatePhenomenaRealtime();
+    }
+  }
+
+  handlePhenomenonHit(phenomenon) {
+    switch (phenomenon.type) {
+      case 'vortex':
+        // Cannon balls can disrupt vortexes
+        phenomenon.duration = Math.max(0, phenomenon.duration - 5000);
+        phenomenon.trappedShips.clear();
+        this.addToInteractionHistory('💥 Cannon fire disrupts the vortex!');
+        break;
+      case 'storm':
+        // Cannon balls can disperse storms slightly
+        phenomenon.duration = Math.max(0, phenomenon.duration - 3000);
+        this.addToInteractionHistory('💥 Cannon fire weakens the storm!');
+        break;
+      case 'siren':
+        // Cannon balls scare away sirens
+        phenomenon.duration = Math.max(0, phenomenon.duration - 8000);
+        this.addToInteractionHistory('💥 Cannon fire scares away the siren!');
+        break;
+      case 'ufo':
+        // UFOs are immune but may retaliate
+        if (Math.random() < 0.3) {
+          this.currentPlayer.hull = Math.max(0, this.currentPlayer.hull - 10);
+          this.addToInteractionHistory('🛸 UFO retaliates with energy beam! -10 hull!');
+        } else {
+          this.addToInteractionHistory('💥 Cannon ball passes through the UFO!');
+        }
+        break;
+      default:
+        // Other phenomena are unaffected
+        this.addToInteractionHistory(`💥 Cannon ball passes through the ${phenomenon.type}!`);
+        break;
     }
   }
 
