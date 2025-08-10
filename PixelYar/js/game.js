@@ -1564,9 +1564,6 @@ export class Game {
   // Enhanced interaction system with inventory rewards
   async processRandomInteraction() {
     if (!this.randomInteractions || !this.currentPlayer) {
-        randomInteractions: !!this.randomInteractions,
-        currentPlayer: !!this.currentPlayer
-      });
       return;
     }
 
@@ -1756,13 +1753,10 @@ window.addEventListener('DOMContentLoaded', () => {
 if (typeof window !== 'undefined') {
   
   window.login = function() {
-    
     if (window.game && typeof window.game.handleLogin === 'function') {
       window.game.handleLogin();
     } else {
       console.error('Game not ready. Game exists:', !!window.game);
-      if (window.game) {
-      }
       
       const loginStatus = document.getElementById('loginStatus');
       if (loginStatus) {
