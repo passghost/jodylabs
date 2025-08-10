@@ -118,7 +118,7 @@ export class Renderer {
     this.drawPlacedPixels(placedPixels);
   }
 
-  drawPlayers(allPlayers, currentPlayer, playerRotation = 0, cannonAngle = 0, cannonBalls = [], monsters = [], phenomena = []) {
+  drawPlayers(allPlayers, currentPlayer, playerRotation = 0, cannonAngle = 0, cannonBalls = [], monsters = [], phenomena = [], mouseX = 0, mouseY = 0) {
     // Draw phenomena first (background effects)
     this.phenomenaRenderer.drawPhenomena(phenomena);
     
@@ -143,6 +143,12 @@ export class Renderer {
     
     // Draw player's cannon circle and cannon
     this.drawCannon(currentPlayer.x, currentPlayer.y, cannonAngle, true);
+    
+    // Draw crosshair at mouse position (if within reasonable range)
+    const distance = Math.sqrt((mouseX - currentPlayer.x) ** 2 + (mouseY - currentPlayer.y) ** 2);
+    if (distance < 100 && mouseX > 0 && mouseY > 0) { // Only show if mouse is tracked and nearby
+      this.drawCrosshair(mouseX, mouseY);
+    }
     
     // Draw all cannon balls
     this.drawCannonBalls(cannonBalls);
@@ -570,32 +576,39 @@ export class Renderer {
     this.ctx.save();
     
     if (isPlayer) {
-      // Draw cannon range circle for player
-      this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
-      this.ctx.lineWidth = 1;
-      this.ctx.setLineDash([5, 5]);
+      // Draw cannon range circle for player (smaller and more subtle)
+      this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
+      this.ctx.lineWidth = 0.5;
+      this.ctx.setLineDash([3, 3]);
       this.ctx.beginPath();
-      this.ctx.arc(shipX, shipY, 15, 0, 2 * Math.PI);
+      this.ctx.arc(shipX, shipY, 12, 0, 2 * Math.PI);
       this.ctx.stroke();
       this.ctx.setLineDash([]);
     }
     
-    // Draw cannon barrel
-    const cannonLength = 8;
+    // Draw smaller cannon barrel
+    const cannonLength = 5; // Reduced from 8 to 5
     const cannonX = shipX + Math.cos(cannonAngle) * cannonLength;
     const cannonY = shipY + Math.sin(cannonAngle) * cannonLength;
     
+    // Cannon base (small circle at ship center)
+    this.ctx.fillStyle = '#444444';
+    this.ctx.beginPath();
+    this.ctx.arc(shipX, shipY, 1.5, 0, 2 * Math.PI);
+    this.ctx.fill();
+    
+    // Cannon barrel (thinner)
     this.ctx.strokeStyle = '#333333';
-    this.ctx.lineWidth = 2;
+    this.ctx.lineWidth = 1.5; // Reduced from 2 to 1.5
     this.ctx.beginPath();
     this.ctx.moveTo(shipX, shipY);
     this.ctx.lineTo(cannonX, cannonY);
     this.ctx.stroke();
     
-    // Draw cannon tip
+    // Draw smaller cannon tip
     this.ctx.fillStyle = '#222222';
     this.ctx.beginPath();
-    this.ctx.arc(cannonX, cannonY, 1, 0, 2 * Math.PI);
+    this.ctx.arc(cannonX, cannonY, 0.8, 0, 2 * Math.PI); // Reduced from 1 to 0.8
     this.ctx.fill();
     
     this.ctx.restore();
@@ -619,6 +632,36 @@ export class Renderer {
       this.ctx.lineTo(ball.x, ball.y);
       this.ctx.stroke();
     }
+    
+    this.ctx.restore();
+  }
+
+  drawCrosshair(x, y) {
+    this.ctx.save();
+    
+    // Draw subtle crosshair at mouse position
+    this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+    this.ctx.lineWidth = 1;
+    this.ctx.setLineDash([2, 2]);
+    
+    // Horizontal line
+    this.ctx.beginPath();
+    this.ctx.moveTo(x - 6, y);
+    this.ctx.lineTo(x + 6, y);
+    this.ctx.stroke();
+    
+    // Vertical line
+    this.ctx.beginPath();
+    this.ctx.moveTo(x, y - 6);
+    this.ctx.lineTo(x, y + 6);
+    this.ctx.stroke();
+    
+    // Center dot
+    this.ctx.setLineDash([]);
+    this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+    this.ctx.beginPath();
+    this.ctx.arc(x, y, 1, 0, 2 * Math.PI);
+    this.ctx.fill();
     
     this.ctx.restore();
   }

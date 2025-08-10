@@ -57,6 +57,7 @@ export class Game {
     this.mouseX = 0;
     this.mouseY = 0;
     this.cannonAngle = 0;
+    this.targetCannonAngle = 0;
     this.lastCannonFire = 0;
     
     // Sailing interaction timing
@@ -97,6 +98,18 @@ export class Game {
     // Canvas click for pixel placement and cannon firing
     this.renderer.canvas.addEventListener('click', (e) => this.handleCanvasClick(e));
     this.renderer.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
+    
+    // Also track mouse movement on the entire window to ensure cannon always follows cursor
+    window.addEventListener('mousemove', (e) => this.handleGlobalMouseMove(e));
+    
+    // Change cursor style when over canvas
+    this.renderer.canvas.addEventListener('mouseenter', () => {
+      this.renderer.canvas.style.cursor = 'crosshair';
+    });
+    
+    this.renderer.canvas.addEventListener('mouseleave', () => {
+      this.renderer.canvas.style.cursor = 'default';
+    });
 
     // Real-time keyboard input
     window.addEventListener('keydown', (e) => this.handleKeyDown(e));
@@ -318,6 +331,7 @@ export class Game {
 
       this.updatePlayerMovement();
       this.updatePlayerRotation();
+      this.updateCannonRotation();
       this.updateCannonBalls();
       this.updateMonsters();
       this.updatePhenomena();
@@ -398,6 +412,24 @@ export class Game {
     // Apply rotation speed
     if (Math.abs(rotDiff) > 0.01) {
       this.playerRotation += rotDiff * CONFIG.REALTIME_MOVEMENT.ROTATION_SPEED;
+    }
+  }
+
+  updateCannonRotation() {
+    // Smooth cannon rotation towards target (faster than ship rotation)
+    let cannonRotDiff = this.targetCannonAngle - this.cannonAngle;
+
+    // Handle rotation wrapping
+    if (cannonRotDiff > Math.PI) cannonRotDiff -= 2 * Math.PI;
+    if (cannonRotDiff < -Math.PI) cannonRotDiff += 2 * Math.PI;
+
+    // Apply cannon rotation speed (much faster for cursor following)
+    const cannonRotationSpeed = 0.25; // Increased from 0.15 for better cursor tracking
+    if (Math.abs(cannonRotDiff) > 0.005) { // Reduced threshold for smoother tracking
+      this.cannonAngle += cannonRotDiff * cannonRotationSpeed;
+    } else {
+      // Snap to target when very close to prevent jitter
+      this.cannonAngle = this.targetCannonAngle;
     }
   }
 
@@ -518,7 +550,7 @@ export class Game {
     const monsters = this.monsters ? this.monsters.getMonsters() : [];
     const phenomena = this.phenomena ? this.phenomena.getPhenomena() : [];
     
-    this.renderer.drawPlayers(allShips, this.currentPlayer, this.playerRotation, this.cannonAngle, allCannonBalls, monsters, phenomena);
+    this.renderer.drawPlayers(allShips, this.currentPlayer, this.playerRotation, this.cannonAngle, allCannonBalls, monsters, phenomena, this.mouseX, this.mouseY);
     this.renderer.centerOnPlayer(this.currentPlayer);
     
     // Update UI less frequently (every 100ms)
@@ -1019,10 +1051,36 @@ export class Game {
     this.mouseX = worldPos.x;
     this.mouseY = worldPos.y;
     
-    // Calculate cannon angle
+    // Calculate target cannon angle
     const dx = this.mouseX - this.currentPlayer.x;
     const dy = this.mouseY - this.currentPlayer.y;
-    this.cannonAngle = Math.atan2(dy, dx);
+    this.targetCannonAngle = Math.atan2(dy, dx);
+  }
+
+  handleGlobalMouseMove(e) {
+    if (!this.currentPlayer || !this.isGameRunning) return;
+    
+    // Check if mouse is over the canvas
+    const canvasRect = this.renderer.canvas.getBoundingClientRect();
+    const isOverCanvas = e.clientX >= canvasRect.left && 
+                        e.clientX <= canvasRect.right && 
+                        e.clientY >= canvasRect.top && 
+                        e.clientY <= canvasRect.bottom;
+    
+    if (isOverCanvas) {
+      // Use the canvas-specific handler for accurate world coordinates
+      this.handleMouseMove(e);
+    } else {
+      // When mouse is outside canvas, point cannon toward the edge of the screen
+      const worldPos = this.renderer.screenToWorld(e.clientX, e.clientY);
+      this.mouseX = worldPos.x;
+      this.mouseY = worldPos.y;
+      
+      // Calculate target cannon angle
+      const dx = this.mouseX - this.currentPlayer.x;
+      const dy = this.mouseY - this.currentPlayer.y;
+      this.targetCannonAngle = Math.atan2(dy, dx);
+    }
   }
 
   fireCannon() {
@@ -1037,7 +1095,7 @@ export class Game {
     this.inventory.removeItem('Cannon Balls', 1);
     this.inventoryNeedsUpdate = true;
     
-    // Create cannon ball
+    // Create cannon ball using current cannon angle (smoothed)
     const cannonBall = {
       id: Date.now() + Math.random(),
       x: this.currentPlayer.x,
