@@ -261,14 +261,14 @@ export class PhenomenaManager {
         const crewLost = Math.min(2, ship.crew);
         ship.crew = Math.max(0, ship.crew - crewLost);
         if (isPlayer && window.game) {
-          window.game.addToInteractionHistory(`🛸 UFO abducts ${crewLost} crew members!`);
+          // Don't add to interaction history - phenomena are silent
           window.game.ui.showInventoryNotification('👽 Alien Abduction!', 'error');
         }
       } else {
         // Give alien tech (gold)
         if (isPlayer && window.game) {
           window.game.inventory.addItem('Gold Coins', 15);
-          window.game.addToInteractionHistory('🛸 UFO drops alien technology worth 15 gold!');
+          // Don't add to interaction history - phenomena are silent
           window.game.ui.showInventoryNotification('👽 Alien Technology!', 'success');
         }
       }
@@ -295,7 +295,7 @@ export class PhenomenaManager {
     ship.hull = Math.max(0, ship.hull - damage);
     
     if (isPlayer && window.game) {
-      window.game.addToInteractionHistory(`🌪️ Vortex pulls you in! -${damage} hull damage!`);
+      // Don't add to interaction history - phenomena are silent
       if (Math.random() < 0.1) {
         window.game.ui.showInventoryNotification('🌪️ Trapped in Vortex!', 'error');
       }
@@ -321,7 +321,7 @@ export class PhenomenaManager {
       ship.y = destination.y;
       
       if (isPlayer && window.game) {
-        window.game.addToInteractionHistory(`🌀 Portal teleports you across the sea!`);
+        // Don't add to interaction history - phenomena are silent
         window.game.ui.showInventoryNotification('🌀 Teleported!', 'success');
       }
     }
@@ -346,12 +346,12 @@ export class PhenomenaManager {
         if (Math.random() < 0.5) {
           ship.crew = Math.max(0, ship.crew - 1);
           if (isPlayer && window.game) {
-            window.game.addToInteractionHistory('🧜‍♀️ Siren song mesmerizes a crew member!');
+            // Don't add to interaction history - phenomena are silent
           }
         } else {
           ship.hull = Math.max(0, ship.hull - 5);
           if (isPlayer && window.game) {
-            window.game.addToInteractionHistory('🧜‍♀️ Siren song causes navigation errors! -5 hull!');
+            // Don't add to interaction history - phenomena are silent
           }
         }
       }
@@ -366,14 +366,14 @@ export class PhenomenaManager {
         const repair = Math.floor(Math.random() * 8) + 3;
         ship.hull = Math.min(100, ship.hull + repair);
         if (isPlayer && window.game) {
-          window.game.addToInteractionHistory(`🐬 Friendly dolphins help repair your ship! +${repair} hull!`);
+          // Don't add to interaction history - phenomena are silent
           window.game.ui.showInventoryNotification('🐬 Dolphin Assistance!', 'success');
         }
       } else {
         // Add crew (dolphins guide lost sailors to you)
         ship.crew += 1;
         if (isPlayer && window.game) {
-          window.game.addToInteractionHistory('🐬 Dolphins guide a lost sailor to your ship! +1 crew!');
+          // Don't add to interaction history - phenomena are silent
         }
       }
     }
@@ -387,7 +387,7 @@ export class PhenomenaManager {
         const damage = Math.floor(Math.random() * 12) + 5;
         ship.hull = Math.max(0, ship.hull - damage);
         if (isPlayer && window.game) {
-          window.game.addToInteractionHistory(`⛈️ Lightning strikes your ship! -${damage} hull damage!`);
+          // Don't add to interaction history - phenomena are silent
           if (Math.random() < 0.2) {
             window.game.ui.showInventoryNotification('⚡ Lightning Strike!', 'error');
           }
@@ -404,7 +404,7 @@ export class PhenomenaManager {
           ship.x = newX;
           ship.y = newY;
           if (isPlayer && window.game) {
-            window.game.addToInteractionHistory('⛈️ Storm winds carry your ship to new waters!');
+            // Don't add to interaction history - phenomena are silent
           }
         }
       }
@@ -455,7 +455,7 @@ export class PhenomenaManager {
         storm: '⛈️ Storm clouds gather on the horizon!'
       };
       
-      window.game.addToInteractionHistory(messages[newPhenomenon.type] || '🌊 Strange phenomenon appears!');
+      // Don't add to interaction history - phenomena are silent
     }
   }
 
@@ -475,7 +475,7 @@ export class PhenomenaManager {
         storm: '⛈️ The storm passes!'
       };
       
-      window.game.addToInteractionHistory(messages[phenomenon.type] || '🌊 The phenomenon disappears!');
+      // Don't add to interaction history - phenomena are silent
     }
   }
 

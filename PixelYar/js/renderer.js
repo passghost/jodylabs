@@ -473,6 +473,104 @@ export class Renderer {
           this.ctx.fillStyle = '#FF0000';
           this.ctx.fillRect(obj.x + 1, obj.y - 1, 2, 2);
           break;
+
+        // NEW SPECIAL EVENT WATER OBJECTS
+        case 'treasure_location':
+          // Large glowing treasure cache
+          this.ctx.fillStyle = obj.data.collected ? '#8B7D6B' : '#FFD700';
+          this.ctx.shadowColor = obj.data.collected ? '#696969' : '#FFA500';
+          this.ctx.shadowBlur = obj.data.collected ? 2 : 12;
+          this.ctx.beginPath();
+          this.ctx.arc(obj.x, obj.y, obj.data.collected ? 2 : 4, 0, 2 * Math.PI);
+          this.ctx.fill();
+          if (!obj.data.collected) {
+            // Add sparkle effect
+            for (let i = 0; i < 6; i++) {
+              const angle = (i * Math.PI) / 3;
+              const sparkleX = obj.x + Math.cos(angle) * 6;
+              const sparkleY = obj.y + Math.sin(angle) * 6;
+              this.ctx.fillStyle = '#FFFF00';
+              this.ctx.fillRect(sparkleX, sparkleY, 1, 1);
+            }
+          }
+          break;
+
+        case 'butt_shark':
+          this.ctx.fillStyle = '#4169E1';
+          this.ctx.shadowColor = '#0000FF';
+          this.ctx.shadowBlur = 8;
+          this.ctx.beginPath();
+          this.ctx.ellipse(obj.x, obj.y, 6, 3, 0, 0, 2 * Math.PI);
+          this.ctx.fill();
+          // Add fin
+          this.ctx.fillStyle = '#1E90FF';
+          this.ctx.beginPath();
+          this.ctx.moveTo(obj.x - 3, obj.y - 2);
+          this.ctx.lineTo(obj.x - 6, obj.y - 4);
+          this.ctx.lineTo(obj.x - 3, obj.y);
+          this.ctx.fill();
+          break;
+
+        case 'meteor_crash':
+          this.ctx.fillStyle = '#FF4500';
+          this.ctx.shadowColor = '#FFD700';
+          this.ctx.shadowBlur = 10;
+          this.ctx.beginPath();
+          this.ctx.arc(obj.x, obj.y, 5, 0, 2 * Math.PI);
+          this.ctx.fill();
+          // Add crater effect
+          this.ctx.strokeStyle = '#8B4513';
+          this.ctx.lineWidth = 2;
+          this.ctx.beginPath();
+          this.ctx.arc(obj.x, obj.y, 8, 0, 2 * Math.PI);
+          this.ctx.stroke();
+          break;
+
+        case 'ancient_kraken':
+          this.ctx.fillStyle = '#2F4F4F';
+          this.ctx.shadowColor = '#000080';
+          this.ctx.shadowBlur = 12;
+          this.ctx.beginPath();
+          this.ctx.arc(obj.x, obj.y, 8, 0, 2 * Math.PI);
+          this.ctx.fill();
+          // Add tentacles
+          for (let i = 0; i < 8; i++) {
+            const angle = (i * Math.PI) / 4;
+            this.ctx.beginPath();
+            this.ctx.ellipse(
+              obj.x + Math.cos(angle) * 6, 
+              obj.y + Math.sin(angle) * 6, 
+              3, 1, angle, 0, 2 * Math.PI
+            );
+            this.ctx.fill();
+          }
+          break;
+
+        case 'ghost_fleet':
+          this.ctx.fillStyle = 'rgba(255,255,255,0.4)';
+          this.ctx.shadowColor = '#FFFFFF';
+          this.ctx.shadowBlur = 15;
+          // Draw multiple ghost ships
+          for (let i = 0; i < 3; i++) {
+            const offsetX = (i - 1) * 4;
+            const offsetY = Math.sin(i) * 2;
+            this.ctx.fillRect(obj.x + offsetX - 2, obj.y + offsetY - 2, 4, 4);
+          }
+          break;
+
+        case 'mysterious_island':
+          this.ctx.fillStyle = '#8B5C2A';
+          this.ctx.shadowColor = '#654321';
+          this.ctx.shadowBlur = 8;
+          this.ctx.beginPath();
+          this.ctx.ellipse(obj.x, obj.y, 10, 6, 0, 0, 2 * Math.PI);
+          this.ctx.fill();
+          // Add mysterious glow
+          this.ctx.fillStyle = 'rgba(138, 43, 226, 0.3)';
+          this.ctx.beginPath();
+          this.ctx.ellipse(obj.x, obj.y, 12, 8, 0, 0, 2 * Math.PI);
+          this.ctx.fill();
+          break;
           
         default:
           // Generic water object

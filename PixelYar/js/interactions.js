@@ -318,9 +318,52 @@ text: 'The cursed idol whispers dark secrets! Gain forbidden knowledge! +1 crew!
       { text: 'The floating corpse is actually sleeping! He joins yer crew! +1 crew!', action: (player) => { player.crew += 1; }, waterObject: 'floating_corpse' },
       { text: 'Merchant cargo contains rare maps of secret routes! +4 booty!', action: (player) => { player.booty += 4; }, waterObject: 'merchant_cargo' },
       { text: 'The cursed idol crumbles to dust, breaking its curse! +2 hull!', action: (player) => { player.hull += 2; }, waterObject: 'cursed_idol' },
-      { text: 'Ye throw gold to the sirens as tribute! They let ye pass! -2 booty!', action: (player) => { player.booty = Math.max(0, player.booty - 2); }, waterObject: 'siren_rock' }
+      { text: 'Ye throw gold to the sirens as tribute! They let ye pass! -2 booty!', action: (player) => { player.booty = Math.max(0, player.booty - 2); }, waterObject: 'siren_rock' },
+
+      // NEW SPECIAL EVENT TYPES
+      { 
+        text: '🦈 BUTT SHARK IS TRYING TO SHOW YEE THE WAY! The legendary guide appears with ancient charts!', 
+        action: (player, inventory) => { 
+          return { inventoryReward: { item: 'Treasure Maps', quantity: 5 } }; 
+        },
+        waterObject: 'butt_shark'
+      },
+      { 
+        text: '🌟 A shooting star crashes into the ocean! Stardust and cosmic treasures float to the surface!', 
+        action: (player, inventory) => { 
+          player.hull += 10;
+          return { inventoryReward: { item: 'Gold Coins', quantity: 30 } }; 
+        },
+        waterObject: 'meteor_crash'
+      },
+      { 
+        text: '🐙 The Ancient Kraken awakens from its slumber! It tests yer courage with riddles and rewards!', 
+        action: (player, inventory) => { 
+          player.crew = Math.max(0, player.crew - 2);
+          return { inventoryReward: { item: 'Pearls', quantity: 8 } }; 
+        },
+        waterObject: 'ancient_kraken'
+      },
+      { 
+        text: '👻 A ghostly pirate fleet emerges from the mist! They challenge ye to a spectral duel!', 
+        action: (player, inventory) => { 
+          player.hull = Math.max(0, player.hull - 15);
+          return { inventoryReward: { item: 'Lucky Charm', quantity: 2 } }; 
+        },
+        waterObject: 'ghost_fleet'
+      },
+      { 
+        text: '🏝️ A mysterious island rises from the depths! Ancient ruins hold forgotten treasures!', 
+        action: (player, inventory) => { 
+          return { 
+            inventoryReward: { item: 'Treasure Maps', quantity: 3 },
+            treasureLocation: true
+          }; 
+        },
+        waterObject: 'mysterious_island'
+      }
     ];
-  }  t
+  }
 riggerRandomInteraction(player, playerX, playerY, inventory) {
     // Don't do the random check here - it's already done in the game loop
     const interaction = this.interactions[Math.floor(Math.random() * this.interactions.length)];

@@ -249,12 +249,31 @@ export class InventoryManager {
         return { success: true, message: '🍀 Lucky charm activated! Next 3 hull damages will be reduced!' };
       },
       'Treasure Maps': () => {
-        // Treasure maps give random valuable items
-        const treasureItems = ['Gold Coins', 'Pearls', 'Spices', 'Silk'];
-        const foundItem = treasureItems[Math.floor(Math.random() * treasureItems.length)];
-        const amount = Math.floor(Math.random() * 5) + 3;
-        this.addItem(foundItem, amount);
-        return { success: true, message: `🗺️ Following the map, you discover ${amount} ${foundItem}!` };
+        // Treasure maps create treasure locations with large yields
+        this.removeItem('Treasure Maps', 1);
+        
+        // Create a treasure location on the map
+        if (window.game && window.game.world) {
+          const treasureLocation = this.createTreasureLocation();
+          window.game.world.addWaterObject(treasureLocation.x, treasureLocation.y, 'treasure_location', {
+            treasureValue: treasureLocation.value,
+            treasureItems: treasureLocation.items,
+            fromTreasureMap: true
+          });
+          
+          return { 
+            success: true, 
+            message: `🗺️ Treasure map reveals a location at (${treasureLocation.x}, ${treasureLocation.y})! Large treasure cache awaits!`,
+            treasureLocation: treasureLocation
+          };
+        } else {
+          // Fallback if world manager not available
+          const treasureItems = ['Gold Coins', 'Pearls', 'Spices', 'Silk'];
+          const foundItem = treasureItems[Math.floor(Math.random() * treasureItems.length)];
+          const amount = Math.floor(Math.random() * 15) + 10; // 10-24 items (much larger yield)
+          this.addItem(foundItem, amount);
+          return { success: true, message: `🗺️ Following the map, you discover ${amount} ${foundItem}!` };
+        }
       },
       'Red Pixel Pack': () => {
         return { success: true, message: '🔴 Red pixel pack activated! Click on the map to place red pixels!', activatePixelMode: 'red' };
@@ -438,6 +457,62 @@ export class InventoryManager {
       stackable: itemDef.stackable,
       maxStack: itemDef.maxStack,
       canUse: ['Rum Bottles', 'Medicine', 'Wooden Planks', 'Gunpowder', 'Lucky Charm', 'Treasure Maps', 'Red Pixel Pack', 'Blue Pixel Pack', 'Green Pixel Pack', 'Yellow Pixel Pack', 'Purple Pixel Pack'].includes(itemName)
+    };
+  }
+
+  // Create a treasure location from a treasure map
+  createTreasureLocation() {
+    // Find a valid location for treasure
+    let x, y;
+    let attempts = 0;
+    
+    do {
+      x = Math.floor(Math.random() * (window.game?.world?.CONFIG?.OCEAN_WIDTH || 3840));
+      y = Math.floor(Math.random() * (window.game?.world?.CONFIG?.OCEAN_HEIGHT || 2160));
+      attempts++;
+    } while (attempts < 100 && window.game?.world && !window.game.world.isValidPosition(x, y));
+
+    // If we couldn't find a valid position, use a default safe location
+    if (attempts >= 100) {
+      x = Math.floor((window.game?.world?.CONFIG?.OCEAN_WIDTH || 3840) / 2);
+      y = Math.floor((window.game?.world?.CONFIG?.OCEAN_HEIGHT || 2160) / 2);
+    }
+
+    // Generate treasure contents - much more valuable than regular interactions
+    const treasureTypes = [
+      { items: [{ name: 'Gold Coins', quantity: [25, 50] }], weight: 30 },
+      { items: [{ name: 'Pearls', quantity: [8, 15] }], weight: 25 },
+      { items: [{ name: 'Gold Coins', quantity: [15, 25] }, { name: 'Pearls', quantity: [3, 8] }], weight: 20 },
+      { items: [{ name: 'Spices', quantity: [10, 20] }, { name: 'Silk', quantity: [5, 12] }], weight: 15 },
+      { items: [{ name: 'Lucky Charm', quantity: 2 }, { name: 'Gold Coins', quantity: [20, 35] }], weight: 10 }
+    ];
+
+    // Select treasure type based on weight
+    const totalWeight = treasureTypes.reduce((sum, type) => sum + type.weight, 0);
+    let random = Math.random() * totalWeight;
+    let selectedTreasure = treasureTypes[0];
+
+    for (const treasureType of treasureTypes) {
+      random -= treasureType.weight;
+      if (random <= 0) {
+        selectedTreasure = treasureType;
+        break;
+      }
+    }
+
+    // Generate actual quantities
+    const items = selectedTreasure.items.map(item => ({
+      name: item.name,
+      quantity: Array.isArray(item.quantity) 
+        ? Math.floor(Math.random() * (item.quantity[1] - item.quantity[0] + 1)) + item.quantity[0]
+        : item.quantity
+    }));
+
+    return {
+      x: x,
+      y: y,
+      items: items,
+      value: items.reduce((total, item) => total + (this.getItemValue(item.name) * item.quantity), 0)
     };
   }
 }

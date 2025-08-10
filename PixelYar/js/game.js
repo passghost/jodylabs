@@ -397,6 +397,9 @@ export class Game {
         
         // Check for red sea entry/exit
         this.checkRedSeaTransition(oldX, newX);
+        
+        // Check for treasure location interaction
+        this.checkTreasureLocationInteraction();
       }
     }
   }
@@ -490,6 +493,49 @@ export class Game {
       // Leaving red sea
       this.addToInteractionHistory('🌊 Returning to safer blue waters...');
       this.ui.showInventoryNotification('✅ Back in Blue Sea - Safer Waters', 'success');
+    }
+  }
+
+  checkTreasureLocationInteraction() {
+    if (!this.currentPlayer || !this.world) return;
+
+    // Check for treasure locations within interaction range
+    const interactionRange = 15;
+    const nearbyObjects = this.world.getWaterObjects().filter(obj => {
+      const distance = Math.sqrt(
+        (obj.x - this.currentPlayer.x) ** 2 + 
+        (obj.y - this.currentPlayer.y) ** 2
+      );
+      return distance <= interactionRange && obj.type === 'treasure_location';
+    });
+
+    for (const treasureObj of nearbyObjects) {
+      if (treasureObj.data.fromTreasureMap && !treasureObj.data.collected) {
+        // Collect the treasure
+        treasureObj.data.collected = true;
+        
+        // Award the treasure items
+        let totalValue = 0;
+        let itemsText = '';
+        
+        for (const item of treasureObj.data.treasureItems) {
+          this.inventory.addItem(item.name, item.quantity);
+          totalValue += this.inventory.getItemValue(item.name) * item.quantity;
+          itemsText += `${item.quantity} ${item.name}, `;
+        }
+        
+        itemsText = itemsText.slice(0, -2); // Remove trailing comma
+        
+        this.addToInteractionHistory(`💰 TREASURE FOUND! You discover: ${itemsText}!`);
+        this.ui.showInventoryNotification(`💰 Treasure Cache Discovered!`, 'success');
+        
+        // Remove the treasure location after collection
+        this.world.removeWaterObject(treasureObj.id);
+        
+        // Update stats
+        this.player.updateStat('treasuresFound', 1);
+        this.player.updateStat('goldEarned', totalValue);
+      }
     }
   }
 
