@@ -157,6 +157,18 @@ export class Renderer {
   drawPirateShip(x, y, color, isCurrentPlayer = false, isAI = false, rotation = 0) {
     this.ctx.save();
     
+    // Get boat properties for current player
+    let boatSize = { width: 8, height: 4 };
+    let boatColor = color;
+    
+    if (isCurrentPlayer && window.game && window.game.boatManager) {
+      const boatStats = window.game.boatManager.getBoatStats();
+      if (boatStats) {
+        boatSize = boatStats.size;
+        boatColor = boatStats.color;
+      }
+    }
+    
     // Apply rotation for current player
     if (isCurrentPlayer && rotation !== 0) {
       this.ctx.translate(x, y);
@@ -170,32 +182,40 @@ export class Renderer {
       this.ctx.shadowBlur = 8;
     }
 
-    // Ship hull (main body)
-    this.ctx.fillStyle = color;
+    // Ship hull (main body) - scaled by boat size
+    const hullWidth = boatSize.width / 2;
+    const hullHeight = boatSize.height / 2;
+    
+    this.ctx.fillStyle = boatColor;
     this.ctx.beginPath();
-    this.ctx.ellipse(x, y, 4, 2, 0, 0, 2 * Math.PI);
+    this.ctx.ellipse(x, y, hullWidth, hullHeight, 0, 0, 2 * Math.PI);
     this.ctx.fill();
 
-    // Ship deck (lighter brown)
-    this.ctx.fillStyle = this.lightenColor(color, 0.3);
+    // Ship deck (lighter color) - scaled
+    const deckWidth = hullWidth * 0.75;
+    const deckHeight = hullHeight * 0.6;
     this.ctx.beginPath();
-    this.ctx.ellipse(x, y - 0.5, 3, 1.2, 0, 0, 2 * Math.PI);
+    this.ctx.ellipse(x, y - 0.5, deckWidth, deckHeight, 0, 0, 2 * Math.PI);
     this.ctx.fill();
 
-    // Mast
+    // Mast - scaled by boat size
+    const mastHeight = boatSize.height * 2;
     this.ctx.fillStyle = '#654321';
-    this.ctx.fillRect(x - 0.5, y - 6, 1, 8);
+    this.ctx.fillRect(x - 0.5, y - mastHeight, 1, mastHeight + 2);
 
-    // Main sail
+    // Main sail - scaled
     let sailColor = '#F5F5DC'; // Default cream
     if (isCurrentPlayer) sailColor = '#FFD700'; // Gold for player
     if (isAI) sailColor = '#8B0000'; // Dark red for AI ships
     
+    const sailWidth = hullWidth;
+    const sailHeight = mastHeight * 0.6;
+    
     this.ctx.fillStyle = sailColor;
     this.ctx.beginPath();
-    this.ctx.moveTo(x + 0.5, y - 5);
-    this.ctx.lineTo(x + 4, y - 4);
-    this.ctx.lineTo(x + 4, y - 1);
+    this.ctx.moveTo(x + 0.5, y - sailHeight);
+    this.ctx.lineTo(x + sailWidth, y - sailHeight + 1);
+    this.ctx.lineTo(x + sailWidth, y - 1);
     this.ctx.lineTo(x + 0.5, y - 2);
     this.ctx.closePath();
     this.ctx.fill();

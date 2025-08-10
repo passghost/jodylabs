@@ -51,6 +51,24 @@ export class UIManager {
         <div style="margin-bottom: 8px;">
           <strong>🛡️ Hull:</strong> ${player.hull} | <strong>👥 Crew:</strong> ${player.crew}
         </div>
+      `;
+
+      // Add boat information if available
+      if (window.game && window.game.boatManager) {
+        const boatStats = window.game.boatManager.getBoatStats();
+        if (boatStats) {
+          statsHTML += `
+            <div style="margin-bottom: 8px; padding: 4px; background: rgba(255,215,0,0.1); border-radius: 4px;">
+              <strong>${boatStats.icon} ${boatStats.name}</strong><br>
+              <span style="font-size: 0.8em; color: #FFD700;">
+                Max Hull: ${boatStats.stats.maxHull} | Max Crew: ${boatStats.stats.maxCrew} | Speed: ${boatStats.stats.speed}x
+              </span>
+            </div>
+          `;
+        }
+      }
+
+      statsHTML += `
         <div style="margin-bottom: 8px;">
           <strong>📍 Position:</strong> (${Math.round(player.x)}, ${Math.round(player.y)}) | <strong>🔍 Zoom:</strong> ${zoom}x
         </div>

@@ -12,6 +12,7 @@ import { InventoryManager } from './inventory.js';
 import { PixelManager } from './pixel-manager.js';
 import { MonsterManager } from './monsters.js';
 import { PhenomenaManager } from './phenomena.js';
+import { BoatManager } from './boat-manager.js';
 
 export class Game {
   constructor() {
@@ -35,6 +36,7 @@ export class Game {
     this.aiShips = null; // Will be initialized after world manager
     this.inventory = new InventoryManager();
     console.log('InventoryManager created');
+    this.boatManager = null; // Will be initialized after login
     this.pixelManager = null; // Will be initialized after login
     this.monsters = null; // Will be initialized after world manager
     this.phenomena = null; // Will be initialized after world manager
@@ -213,6 +215,21 @@ export class Game {
         this.player,
         this.ui
       );
+
+      // Initialize inventory with auth manager
+      console.log('Setting up inventory with auth...');
+      this.inventory.setAuthManager(this.auth);
+      await this.inventory.loadInventoryFromDatabase();
+      console.log('Inventory loaded from database');
+
+      // Initialize boat manager
+      console.log('Initializing boat manager...');
+      this.boatManager = new BoatManager(this.auth, this.inventory);
+      await this.boatManager.loadPlayerBoat();
+      console.log('Boat manager initialized');
+
+      // Apply boat stats to player
+      this.applyBoatStatsToPlayer();
 
       // Initialize pixel manager
       console.log('Initializing pixel manager...');
@@ -863,8 +880,11 @@ export class Game {
   async repairShip() {
     if (!this.currentPlayer || this.isInteractionBlocked) return;
 
+    // Get max hull from boat stats
+    const maxHull = this.currentPlayer.maxHull || 100;
+    
     // Check if player needs repairs
-    if (this.currentPlayer.hull >= 100) {
+    if (this.currentPlayer.hull >= maxHull) {
       this.addToInteractionHistory('Yer ship is already in perfect condition!');
       return;
     }
@@ -872,7 +892,7 @@ export class Game {
     try {
       // Repair 15-25 hull points
       const repairAmount = Math.floor(Math.random() * 11) + 15;
-      const newHull = Math.min(100, this.currentPlayer.hull + repairAmount);
+      const newHull = Math.min(maxHull, this.currentPlayer.hull + repairAmount);
 
       await this.player.updatePlayerStats({ hull: newHull });
       this.currentPlayer.hull = newHull;
@@ -1467,6 +1487,87 @@ export class Game {
   showFullInventory() {
     if (!this.inventory) return;
     this.ui.showFullInventory(this.inventory);
+  }
+
+  showBoatShop() {
+    if (!this.boatManager) return;
+    
+    const shopHTML = this.boatManager.showBoatShop();
+    
+    // Create modal
+    const modal = document.createElement('div');
+    modal.id = 'inventoryModal';
+    modal.style.cssText = `
+      position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
+      background: #2d1a06; border: 4px solid #FFD700; border-radius: 16px;
+      padding: 24px; z-index: 1000; box-shadow: 0 0 32px #000;
+      min-width: 600px; max-width: 800px; max-height: 80vh; overflow-y: auto;
+    `;
+    
+    modal.innerHTML = `
+      ${shopHTML}
+      <div style="text-align: center; margin-top: 20px;">
+        <button onclick="document.getElementById('inventoryModal').remove()" 
+          style="background: #8B5C2A; color: #FFD700; border: 2px solid #FFD700; 
+                 border-radius: 6px; padding: 8px 16px; cursor: pointer;">
+          Close Shop
+        </button>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+  }
+
+  showBoatUpgrades() {
+    if (!this.boatManager) return;
+    
+    const upgradeHTML = this.boatManager.showBoatUpgrades();
+    
+    // Create modal
+    const modal = document.createElement('div');
+    modal.id = 'inventoryModal';
+    modal.style.cssText = `
+      position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
+      background: #2d1a06; border: 4px solid #FFD700; border-radius: 16px;
+      padding: 24px; z-index: 1000; box-shadow: 0 0 32px #000;
+      min-width: 600px; max-width: 800px; max-height: 80vh; overflow-y: auto;
+    `;
+    
+    modal.innerHTML = `
+      ${upgradeHTML}
+      <div style="text-align: center; margin-top: 20px;">
+        <button onclick="document.getElementById('inventoryModal').remove()" 
+          style="background: #8B5C2A; color: #FFD700; border: 2px solid #FFD700; 
+                 border-radius: 6px; padding: 8px 16px; cursor: pointer;">
+          Close Upgrades
+        </button>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+  }
+
+  applyBoatStatsToPlayer() {
+    if (!this.boatManager || !this.currentPlayer) return;
+
+    const boatStats = this.boatManager.getBoatStats();
+    if (!boatStats) return;
+
+    // Apply boat stats to current player
+    const stats = boatStats.stats;
+    
+    // Set max values based on boat
+    this.currentPlayer.maxHull = stats.maxHull;
+    this.currentPlayer.maxCrew = stats.maxCrew;
+    
+    // Ensure current values don't exceed new maximums
+    this.currentPlayer.hull = Math.min(this.currentPlayer.hull || stats.hull, stats.maxHull);
+    this.currentPlayer.crew = Math.min(this.currentPlayer.crew || stats.crew, stats.maxCrew);
+    
+    // Store boat stats for use in game mechanics
+    this.currentPlayer.boatStats = stats;
+    
+    console.log('Applied boat stats to player:', stats);
   }
 
   async craftItem(recipeName) {

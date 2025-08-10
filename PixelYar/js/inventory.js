@@ -1,8 +1,10 @@
 // inventory.js - Player inventory management system
 export class InventoryManager {
-  constructor() {
+  constructor(authManager = null) {
     this.items = new Map(); // Map of item name to quantity
     this.itemDefinitions = new Map(); // Map of item name to item data
+    this.auth = authManager;
+    this.isLoaded = false;
     
     this.initializeItemDefinitions();
   }
@@ -514,5 +516,172 @@ export class InventoryManager {
       items: items,
       value: items.reduce((total, item) => total + (this.getItemValue(item.name) * item.quantity), 0)
     };
+  }
+
+  // Database persistence methods
+  async loadInventoryFromDatabase() {
+    if (!this.auth || !this.auth.user) {
+      console.log('No auth user, using local inventory');
+      return;
+    }
+
+    try {
+      const { data, error } = await this.auth.getSupabase()
+        .from('player_inventory')
+        .select('item_name, quantity')
+        .eq('user_id', this.auth.user.id);
+
+      if (error) throw error;
+
+      // Clear current inventory
+      this.items.clear();
+
+      // Load from database
+      if (data && data.length > 0) {
+        for (const row of data) {
+          if (row.quantity > 0) {
+            this.items.set(row.item_name, row.quantity);
+          }
+        }
+        console.log(`Loaded ${data.length} inventory items from database`);
+      } else {
+        console.log('No inventory data found, starting with empty inventory');
+      }
+
+      this.isLoaded = true;
+    } catch (error) {
+      console.error('Failed to load inventory from database:', error);
+      // Continue with empty inventory on error
+      this.isLoaded = true;
+    }
+  }
+
+  async saveInventoryToDatabase() {
+    if (!this.auth || !this.auth.user || !this.isLoaded) {
+      console.log('Cannot save inventory: no auth user or not loaded');
+      return;
+    }
+
+    try {
+      // Prepare data for upsert
+      const inventoryData = [];
+      for (const [itemName, quantity] of this.items.entries()) {
+        if (quantity > 0) {
+          inventoryData.push({
+            user_id: this.auth.user.id,
+            item_name: itemName,
+            quantity: quantity,
+            updated_at: new Date().toISOString()
+          });
+        }
+      }
+
+      if (inventoryData.length > 0) {
+        // Upsert inventory items
+        const { error } = await this.auth.getSupabase()
+          .from('player_inventory')
+          .upsert(inventoryData, { 
+            onConflict: 'user_id,item_name',
+            ignoreDuplicates: false 
+          });
+
+        if (error) throw error;
+      }
+
+      // Delete items with 0 quantity
+      const { error: deleteError } = await this.auth.getSupabase()
+        .from('player_inventory')
+        .delete()
+        .eq('user_id', this.auth.user.id)
+        .eq('quantity', 0);
+
+      if (deleteError) {
+        console.warn('Failed to delete empty inventory items:', deleteError);
+      }
+
+      console.log('Inventory saved to database successfully');
+    } catch (error) {
+      console.error('Failed to save inventory to database:', error);
+    }
+  }
+
+  // Override addItem to auto-save
+  addItem(itemName, quantity = 1) {
+    const result = this.addItemLocal(itemName, quantity);
+    
+    // Auto-save to database (debounced)
+    if (this.isLoaded) {
+      this.debouncedSave();
+    }
+    
+    return result;
+  }
+
+  // Override removeItem to auto-save
+  removeItem(itemName, quantity = 1) {
+    const result = this.removeItemLocal(itemName, quantity);
+    
+    // Auto-save to database (debounced)
+    if (this.isLoaded) {
+      this.debouncedSave();
+    }
+    
+    return result;
+  }
+
+  // Rename original methods
+  addItemLocal(itemName, quantity = 1) {
+    if (!this.itemDefinitions.has(itemName)) {
+      console.warn(`Unknown item: ${itemName}`);
+      return false;
+    }
+
+    const itemDef = this.itemDefinitions.get(itemName);
+    const currentQuantity = this.items.get(itemName) || 0;
+    const newQuantity = Math.min(currentQuantity + quantity, itemDef.maxStack);
+    
+    this.items.set(itemName, newQuantity);
+    
+    if (window.game && window.game.ui) {
+      window.game.ui.updateInventoryDisplay();
+    }
+    
+    return newQuantity > currentQuantity;
+  }
+
+  removeItemLocal(itemName, quantity = 1) {
+    const currentQuantity = this.items.get(itemName) || 0;
+    if (currentQuantity < quantity) {
+      return false;
+    }
+    
+    const newQuantity = currentQuantity - quantity;
+    if (newQuantity <= 0) {
+      this.items.delete(itemName);
+    } else {
+      this.items.set(itemName, newQuantity);
+    }
+    
+    if (window.game && window.game.ui) {
+      window.game.ui.updateInventoryDisplay();
+    }
+    
+    return true;
+  }
+
+  // Debounced save to avoid too many database calls
+  debouncedSave() {
+    if (this.saveTimeout) {
+      clearTimeout(this.saveTimeout);
+    }
+    
+    this.saveTimeout = setTimeout(() => {
+      this.saveInventoryToDatabase();
+    }, 2000); // Save 2 seconds after last change
+  }
+
+  // Set auth manager (for when it's available later)
+  setAuthManager(authManager) {
+    this.auth = authManager;
   }
 }
