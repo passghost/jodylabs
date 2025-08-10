@@ -22,7 +22,11 @@ export class Game {
     console.log('UIManager created');
     this.world = new WorldManager(null); // Will set supabase later
     console.log('WorldManager created');
-    this.renderer = new Renderer(document.getElementById('oceanCanvas'));
+    const canvas = document.getElementById('oceanCanvas');
+    if (!canvas) {
+      throw new Error('Canvas element not found! Make sure oceanCanvas exists in HTML.');
+    }
+    this.renderer = new Renderer(canvas);
     console.log('Renderer created');
     this.randomInteractions = null; // Will be initialized after world manager
     this.player = new PlayerManager(this.auth.getSupabase());
@@ -133,11 +137,16 @@ export class Game {
 
   async startGame(user) {
     try {
+      console.log('Starting game for user:', user.email);
+      
       // Initialize game components
+      console.log('Initializing player...');
       await this.player.initPlayer(user);
       this.currentPlayer = this.player.getCurrentPlayer();
+      console.log('Player initialized:', this.currentPlayer);
 
       // Load player inventory
+      console.log('Loading inventory...');
       if (this.currentPlayer.items) {
         this.inventory.loadInventoryData(this.currentPlayer.items);
       } else {
@@ -148,35 +157,44 @@ export class Game {
         this.inventory.addItem('Red Pixel Pack', 2);
         this.inventory.addItem('Blue Pixel Pack', 2);
       }
+      console.log('Inventory loaded');
 
       // Pass Supabase client to world manager and load islands
-      // Set up world manager with supabase client and ensure all methods exist
+      console.log('Setting up world manager...');
       this.world.supabase = this.auth.getSupabase();
 
       // Add missing methods directly to the world instance
       this.setupWorldManagerMethods();
 
       // Try to load islands
+      console.log('Loading islands...');
       try {
         await this.world.loadIslands();
+        console.log('Islands loaded from database');
       } catch (error) {
         console.error('Error loading islands:', error);
+        console.log('Falling back to local island generation');
         this.world.generateLocalIslands();
       }
 
       // Initialize random interactions with world manager
+      console.log('Initializing random interactions...');
       this.randomInteractions = new RandomInteractionManager(this.world);
 
       // Initialize AI ships
+      console.log('Initializing AI ships...');
       this.aiShips = new AIShipManager(this.world, this.randomInteractions);
 
       // Initialize monsters
+      console.log('Initializing monsters...');
       this.monsters = new MonsterManager(this.world);
 
       // Initialize phenomena
+      console.log('Initializing phenomena...');
       this.phenomena = new PhenomenaManager(this.world);
 
       // Initialize player interaction system
+      console.log('Initializing player interactions...');
       this.interactions = new InteractionManager(
         this.auth.getSupabase(),
         this.player,
@@ -184,14 +202,29 @@ export class Game {
       );
 
       // Initialize pixel manager
+      console.log('Initializing pixel manager...');
       this.pixelManager = new PixelManager(this.auth.getSupabase());
       
       // Ensure all pixels are loaded for this player
-      await this.pixelManager.loadPlacedPixels();
+      console.log('Loading placed pixels...');
+      try {
+        await this.pixelManager.loadPlacedPixels();
+        console.log('Pixels loaded successfully');
+      } catch (error) {
+        console.error('Error loading pixels:', error);
+        console.log('Continuing without pixels...');
+      }
 
       // Set initial zoom and center on player
-      this.renderer.setZoom(CONFIG.ZOOM.DEFAULT);
-      this.renderer.centerOnPlayer(this.currentPlayer);
+      console.log('Setting up renderer...');
+      try {
+        this.renderer.setZoom(CONFIG.ZOOM.DEFAULT);
+        this.renderer.centerOnPlayer(this.currentPlayer);
+        console.log('Renderer setup complete');
+      } catch (rendererError) {
+        console.error('Error setting up renderer:', rendererError);
+        throw new Error('Renderer initialization failed: ' + rendererError.message);
+      }
 
       // Reset keys and movement state before starting
       this.resetKeys();
@@ -203,7 +236,14 @@ export class Game {
       this.sailingStartTime = null;
       this.lastInteractionTime = Date.now();
       
-      this.startRealtimeGameLoop();
+      console.log('Starting real-time game loop...');
+      try {
+        this.startRealtimeGameLoop();
+        console.log('Game loop started successfully');
+      } catch (gameLoopError) {
+        console.error('Error starting game loop:', gameLoopError);
+        throw new Error('Game loop failed to start: ' + gameLoopError.message);
+      }
 
       // Start polling for other players
       setInterval(() => this.updateMultiplayer(), CONFIG.PLAYER_POLLING_INTERVAL);
@@ -250,11 +290,24 @@ export class Game {
       };
 
       // Update UI to show real-time controls
-      this.ui.updateMoveTimer(0, false, true); // true for real-time mode
+      console.log('Updating UI for real-time mode...');
+      try {
+        this.ui.updateMoveTimer(0, false, true); // true for real-time mode
+        console.log('UI updated successfully');
+      } catch (uiError) {
+        console.error('Error updating UI:', uiError);
+        // Continue anyway - don't let UI errors stop the game
+      }
+
+      console.log('Game started successfully!');
 
     } catch (error) {
       console.error('Failed to start game:', error);
+      console.error('Error stack:', error.stack);
       this.ui.updateLoginStatus('Failed to start game: ' + error.message);
+      
+      // Show the login screen again if game fails to start
+      this.ui.showLogin();
     }
   }
 

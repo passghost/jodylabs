@@ -1,4 +1,6 @@
 // ui.js - UI management and particle effects
+import { CONFIG } from './config.js';
+
 export class UIManager {
   constructor() {
     this.loginBox = document.getElementById('login');
