@@ -10,6 +10,7 @@ import { InteractionManager } from './interaction-manager.js';
 import { AIShipManager } from './ai-ships.js';
 import { InventoryManager } from './inventory.js';
 import { PixelManager } from './pixel-manager.js';
+import { MonsterManager } from './monsters.js';
 
 export class Game {
   constructor() {
@@ -30,6 +31,7 @@ export class Game {
     this.inventory = new InventoryManager();
     console.log('InventoryManager created');
     this.pixelManager = null; // Will be initialized after login
+    this.monsters = null; // Will be initialized after world manager
 
     // Real-time movement state
     this.isGameRunning = false;
@@ -166,6 +168,9 @@ export class Game {
       // Initialize AI ships
       this.aiShips = new AIShipManager(this.world, this.randomInteractions);
 
+      // Initialize monsters
+      this.monsters = new MonsterManager(this.world);
+
       // Initialize player interaction system
       this.interactions = new InteractionManager(
         this.auth.getSupabase(),
@@ -213,7 +218,12 @@ export class Game {
         trade: null,
         chat: null,
         aiShips: this.aiShips,
+        monsters: this.monsters,
         player: this.player,
+        currentPlayer: this.currentPlayer,
+        inventory: this.inventory,
+        ui: this.ui,
+        cannonBalls: this.cannonBalls,
         addToInteractionHistory: (message) => this.addToInteractionHistory(message),
         useInventoryItem: (itemName) => this.useInventoryItem(itemName),
         showFullInventory: () => this.showFullInventory(),
@@ -249,6 +259,7 @@ export class Game {
       this.updatePlayerMovement();
       this.updatePlayerRotation();
       this.updateCannonBalls();
+      this.updateMonsters();
       this.checkInteractions();
       this.updateDatabase();
       this.updateDisplay();
@@ -436,7 +447,10 @@ export class Game {
       allCannonBalls.push(...this.aiShips.getAllAICannonBalls());
     }
     
-    this.renderer.drawPlayers(allShips, this.currentPlayer, this.playerRotation, this.cannonAngle, allCannonBalls);
+    // Get monsters for rendering
+    const monsters = this.monsters ? this.monsters.getMonsters() : [];
+    
+    this.renderer.drawPlayers(allShips, this.currentPlayer, this.playerRotation, this.cannonAngle, allCannonBalls, monsters);
     this.renderer.centerOnPlayer(this.currentPlayer);
     
     // Update UI less frequently (every 100ms)
@@ -1004,7 +1018,24 @@ export class Game {
             break;
           }
         }
+        
+        // Check collision with monsters
+        if (this.monsters) {
+          const hitMonster = this.monsters.getMonsterAt(ball.x, ball.y, 3);
+          if (hitMonster) {
+            this.cannonBalls.splice(i, 1);
+            const damage = 25 + Math.floor(Math.random() * 15); // 25-40 damage to monsters
+            this.monsters.damageMonster(hitMonster.id, damage);
+            break;
+          }
+        }
       }
+    }
+  }
+
+  updateMonsters() {
+    if (this.monsters) {
+      this.monsters.updateMonstersRealtime();
     }
   }
 
