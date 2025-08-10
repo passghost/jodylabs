@@ -347,3 +347,58 @@ BEGIN
     RAISE NOTICE 'PixelYar database setup complete! All tables, indexes, and functions have been created.';
     RAISE NOTICE 'Make sure to adjust RLS policies and permissions according to your security requirements.';
 END $$;
+-
+- 22. Create player_stats table for comprehensive player tracking
+CREATE TABLE IF NOT EXISTS player_stats (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    level INTEGER DEFAULT 1,
+    xp INTEGER DEFAULT 0,
+    total_score INTEGER DEFAULT 0,
+    combat_wins INTEGER DEFAULT 0,
+    combat_losses INTEGER DEFAULT 0,
+    distance_traveled FLOAT DEFAULT 0,
+    items_crafted INTEGER DEFAULT 0,
+    gold_earned INTEGER DEFAULT 0,
+    login_streak INTEGER DEFAULT 1,
+    play_time INTEGER DEFAULT 0,
+    last_login TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(user_id)
+);
+
+-- Enable RLS for player_stats
+ALTER TABLE player_stats ENABLE ROW LEVEL SECURITY;
+
+-- Create RLS policies for player_stats
+CREATE POLICY "Users can view their own stats" ON player_stats
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own stats" ON player_stats
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own stats" ON player_stats
+    FOR UPDATE USING (auth.uid() = user_id);
+
+-- Create index and grant permissions
+CREATE INDEX IF NOT EXISTS idx_player_stats_user_id ON player_stats(user_id);
+GRANT ALL ON player_stats TO authenticated;
+
+-- Create trigger for player_stats
+CREATE TRIGGER update_player_stats_updated_at 
+    BEFORE UPDATE ON player_stats 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Initialize player_stats for existing users
+INSERT INTO player_stats (user_id)
+SELECT id as user_id
+FROM auth.users
+WHERE id NOT IN (SELECT user_id FROM player_stats);
+
+-- Additional message for player_stats
+DO $
+BEGIN
+    RAISE NOTICE 'Player stats table has been added for comprehensive player tracking.';
+    RAISE NOTICE 'This table is required for the boat system and advanced features.';
+END $;
