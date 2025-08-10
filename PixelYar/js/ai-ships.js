@@ -76,7 +76,10 @@ export class AIShipManager {
       behaviorState: 'wandering', // wandering, hunting, fleeing, repairing
       target: null,
       repairCooldown: 0,
-      aggressionLevel: Math.random() * 0.8 + 0.2 // 0.2 to 1.0
+      aggressionLevel: Math.random() * 0.8 + 0.2, // 0.2 to 1.0
+      cannonAngle: 0,
+      lastCannonFire: 0,
+      cannonBalls: []
     };
   }
 
@@ -88,6 +91,8 @@ export class AIShipManager {
 
     for (const ship of this.aiShips) {
       this.updateAIShipRealtime(ship);
+      this.updateAICannonBalls(ship);
+      this.checkAICannonFiring(ship);
     }
   }
 
@@ -350,5 +355,135 @@ export class AIShipManager {
   // Get danger level for a position
   getDangerLevel(x, y) {
     return this.isInRedSea(x, y) ? 'high' : 'normal';
+  }
+
+  checkAICannonFiring(ship) {
+    const now = Date.now();
+    if (now - ship.lastCannonFire < 2000) return; // 2 second cooldown for AI
+    
+    // Find nearby targets (player or other AI ships)
+    const allTargets = [];
+    
+    // Add player if available
+    if (window.game && window.game.currentPlayer) {
+      allTargets.push(window.game.currentPlayer);
+    }
+    
+    // Add other AI ships
+    for (const otherShip of this.aiShips) {
+      if (otherShip.id !== ship.id) {
+        allTargets.push(otherShip);
+      }
+    }
+    
+    // Find closest target within range
+    let closestTarget = null;
+    let closestDistance = Infinity;
+    const fireRange = 25;
+    
+    for (const target of allTargets) {
+      const distance = this.getDistance(ship, target);
+      if (distance < fireRange && distance < closestDistance) {
+        closestTarget = target;
+        closestDistance = distance;
+      }
+    }
+    
+    // Fire at closest target if found
+    if (closestTarget && Math.random() < ship.aggressionLevel * 0.3) {
+      this.fireAICannon(ship, closestTarget);
+    }
+  }
+
+  fireAICannon(ship, target) {
+    const now = Date.now();
+    ship.lastCannonFire = now;
+    
+    // Calculate angle to target
+    const dx = target.x - ship.x;
+    const dy = target.y - ship.y;
+    ship.cannonAngle = Math.atan2(dy, dx);
+    
+    // Create cannon ball
+    const cannonBall = {
+      id: Date.now() + Math.random(),
+      x: ship.x,
+      y: ship.y,
+      vx: Math.cos(ship.cannonAngle) * 2.5, // Slightly slower than player
+      vy: Math.sin(ship.cannonAngle) * 2.5,
+      life: 80, // Shorter range than player
+      fromAI: true,
+      aiShipId: ship.id
+    };
+    
+    ship.cannonBalls.push(cannonBall);
+    
+    // Add to global cannon balls if game is available
+    if (window.game && window.game.cannonBalls) {
+      window.game.cannonBalls.push(cannonBall);
+    }
+  }
+
+  updateAICannonBalls(ship) {
+    for (let i = ship.cannonBalls.length - 1; i >= 0; i--) {
+      const ball = ship.cannonBalls[i];
+      
+      // Update position
+      ball.x += ball.vx;
+      ball.y += ball.vy;
+      ball.life--;
+      
+      // Check bounds
+      if (ball.x < 0 || ball.x >= CONFIG.OCEAN_WIDTH || 
+          ball.y < 0 || ball.y >= CONFIG.OCEAN_HEIGHT || 
+          ball.life <= 0) {
+        ship.cannonBalls.splice(i, 1);
+        continue;
+      }
+      
+      // Check collision with islands
+      if (this.worldManager.isIsland(ball.x, ball.y)) {
+        ship.cannonBalls.splice(i, 1);
+        continue;
+      }
+      
+      // Check collision with player
+      if (window.game && window.game.currentPlayer) {
+        const player = window.game.currentPlayer;
+        const distance = Math.sqrt((ball.x - player.x) ** 2 + (ball.y - player.y) ** 2);
+        if (distance < 5) {
+          // Hit player!
+          ship.cannonBalls.splice(i, 1);
+          this.handleAICannonHit(player, ball, ship);
+          continue;
+        }
+      }
+    }
+  }
+
+  handleAICannonHit(target, cannonBall, aiShip) {
+    const damage = 10 + Math.floor(Math.random() * 8); // 10-18 damage (less than player)
+    
+    if (window.game) {
+      if (target.id === window.game.currentPlayer.id) {
+        // Hit player
+        target.hull = Math.max(0, target.hull - damage);
+        window.game.addToInteractionHistory(`💥 ${aiShip.email.split('@')[0]} hits you for ${damage} damage!`);
+        
+        if (target.hull <= 0) {
+          window.game.addToInteractionHistory(`💀 You have been sunk by ${aiShip.email.split('@')[0]}!`);
+          window.game.player.updateStat('combatLosses', 1);
+        }
+      }
+    }
+  }
+
+  // Get all cannon balls from all AI ships for rendering
+  getAllAICannonBalls() {
+    const allBalls = [];
+    for (const ship of this.aiShips) {
+      allBalls.push(...ship.cannonBalls);
+    }
+    return allBalls;
   }
 }

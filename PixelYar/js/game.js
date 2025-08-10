@@ -44,6 +44,13 @@ export class Game {
     this.isInteractionBlocked = false;
     this.pendingInteraction = null;
     
+    // Cannon system
+    this.cannonBalls = [];
+    this.mouseX = 0;
+    this.mouseY = 0;
+    this.cannonAngle = 0;
+    this.lastCannonFire = 0;
+    
     // Sailing interaction timing
     this.sailingStartTime = null;
     this.lastInteractionTime = 0;
@@ -79,8 +86,9 @@ export class Game {
       }
     });
 
-    // Canvas click for pixel placement
+    // Canvas click for pixel placement and cannon firing
     this.renderer.canvas.addEventListener('click', (e) => this.handleCanvasClick(e));
+    this.renderer.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
 
     // Real-time keyboard input
     window.addEventListener('keydown', (e) => this.handleKeyDown(e));
@@ -240,6 +248,7 @@ export class Game {
 
       this.updatePlayerMovement();
       this.updatePlayerRotation();
+      this.updateCannonBalls();
       this.checkInteractions();
       this.updateDatabase();
       this.updateDisplay();
@@ -420,7 +429,14 @@ export class Game {
 
     // Core rendering (this needs to happen every frame)
     this.renderer.drawOcean(this.world.getIslands(), this.world.getWaterObjects(), this.cachedPixels);
-    this.renderer.drawPlayers(allShips, this.currentPlayer, this.playerRotation);
+    
+    // Combine player and AI cannon balls
+    const allCannonBalls = [...this.cannonBalls];
+    if (this.aiShips) {
+      allCannonBalls.push(...this.aiShips.getAllAICannonBalls());
+    }
+    
+    this.renderer.drawPlayers(allShips, this.currentPlayer, this.playerRotation, this.cannonAngle, allCannonBalls);
     this.renderer.centerOnPlayer(this.currentPlayer);
     
     // Update UI less frequently (every 100ms)
@@ -470,6 +486,10 @@ export class Game {
     if (key === 'd') this.keys.d = true;
     if (key === 'r') this.repairShip();
     if (key === 'i') this.showFullInventory();
+    if (key === ' ') {
+      e.preventDefault();
+      this.fireCannon();
+    }
     if (key === 'escape' && this.pixelManager && this.pixelManager.isPixelModeActive()) {
       this.pixelManager.deactivatePixelMode();
       this.addToInteractionHistory('Pixel placement mode cancelled.');
@@ -882,28 +902,134 @@ export class Game {
     }
   }
 
-  // Canvas click handler for pixel placement
+  // Canvas click handler for pixel placement and cannon firing
   handleCanvasClick(e) {
-    if (!this.pixelManager || !this.pixelManager.isPixelModeActive()) {
-      return;
-    }
+    if (this.pixelManager && this.pixelManager.isPixelModeActive()) {
+      const worldCoords = this.renderer.screenToWorld(e.clientX, e.clientY);
+      
+      // Check if click is within game bounds
+      if (worldCoords.x < 0 || worldCoords.x >= CONFIG.OCEAN_WIDTH || 
+          worldCoords.y < 0 || worldCoords.y >= CONFIG.OCEAN_HEIGHT) {
+        return;
+      }
 
-    const worldCoords = this.renderer.screenToWorld(e.clientX, e.clientY);
+      // Check if click is on an island (don't allow pixel placement on islands)
+      if (!this.world.isValidPosition(Math.round(worldCoords.x), Math.round(worldCoords.y))) {
+        this.addToInteractionHistory('❌ Cannot place pixels on islands!');
+        this.ui.showInventoryNotification('Cannot place pixels on islands!', 'error');
+        return;
+      }
+
+      this.placePixel(worldCoords.x, worldCoords.y);
+    } else {
+      // Fire cannon
+      this.fireCannon();
+    }
+  }
+
+  handleMouseMove(e) {
+    if (!this.currentPlayer) return;
     
-    // Check if click is within game bounds
-    if (worldCoords.x < 0 || worldCoords.x >= CONFIG.OCEAN_WIDTH || 
-        worldCoords.y < 0 || worldCoords.y >= CONFIG.OCEAN_HEIGHT) {
-      return;
-    }
+    const worldPos = this.renderer.screenToWorld(e.clientX, e.clientY);
+    this.mouseX = worldPos.x;
+    this.mouseY = worldPos.y;
+    
+    // Calculate cannon angle
+    const dx = this.mouseX - this.currentPlayer.x;
+    const dy = this.mouseY - this.currentPlayer.y;
+    this.cannonAngle = Math.atan2(dy, dx);
+  }
 
-    // Check if click is on an island (don't allow pixel placement on islands)
-    if (!this.world.isValidPosition(Math.round(worldCoords.x), Math.round(worldCoords.y))) {
-      this.addToInteractionHistory('❌ Cannot place pixels on islands!');
-      this.ui.showInventoryNotification('Cannot place pixels on islands!', 'error');
-      return;
-    }
+  fireCannon() {
+    if (!this.currentPlayer || !this.inventory.hasItem('Cannon Balls')) return;
+    
+    const now = Date.now();
+    if (now - this.lastCannonFire < 500) return; // 0.5 second cooldown
+    
+    this.lastCannonFire = now;
+    
+    // Remove cannon ball from inventory
+    this.inventory.removeItem('Cannon Balls', 1);
+    this.inventoryNeedsUpdate = true;
+    
+    // Create cannon ball
+    const cannonBall = {
+      id: Date.now() + Math.random(),
+      x: this.currentPlayer.x,
+      y: this.currentPlayer.y,
+      vx: Math.cos(this.cannonAngle) * 3,
+      vy: Math.sin(this.cannonAngle) * 3,
+      life: 100, // Travel distance
+      fromPlayer: true
+    };
+    
+    this.cannonBalls.push(cannonBall);
+    this.addToInteractionHistory('💥 Cannon fired!');
+  }
 
-    this.placePixel(worldCoords.x, worldCoords.y);
+  updateCannonBalls() {
+    for (let i = this.cannonBalls.length - 1; i >= 0; i--) {
+      const ball = this.cannonBalls[i];
+      
+      // Update position
+      ball.x += ball.vx;
+      ball.y += ball.vy;
+      ball.life--;
+      
+      // Check bounds
+      if (ball.x < 0 || ball.x >= CONFIG.OCEAN_WIDTH || 
+          ball.y < 0 || ball.y >= CONFIG.OCEAN_HEIGHT || 
+          ball.life <= 0) {
+        this.cannonBalls.splice(i, 1);
+        continue;
+      }
+      
+      // Check collision with islands
+      if (this.world.isIsland(ball.x, ball.y)) {
+        this.cannonBalls.splice(i, 1);
+        continue;
+      }
+      
+      // Check collision with other ships (if from player)
+      if (ball.fromPlayer) {
+        const allShips = [...this.player.getAllPlayers(), ...(this.aiShips ? this.aiShips.getAIShips() : [])];
+        for (const ship of allShips) {
+          if (ship.id === this.currentPlayer.id) continue;
+          
+          const distance = Math.sqrt((ball.x - ship.x) ** 2 + (ball.y - ship.y) ** 2);
+          if (distance < 5) {
+            // Hit!
+            this.cannonBalls.splice(i, 1);
+            this.handleCannonHit(ship, ball);
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  handleCannonHit(targetShip, cannonBall) {
+    const damage = 15 + Math.floor(Math.random() * 10); // 15-25 damage
+    
+    if (targetShip.isAI) {
+      // Update AI ship
+      targetShip.hull = Math.max(0, targetShip.hull - damage);
+      this.addToInteractionHistory(`💥 Direct hit on ${targetShip.email.split('@')[0]}! -${damage} hull damage!`);
+      
+      if (targetShip.hull <= 0) {
+        this.addToInteractionHistory(`🏴‍☠️ ${targetShip.email.split('@')[0]} has been sunk!`);
+        this.player.addXP(100, 'Enemy ship sunk!');
+        this.player.updateStat('combatWins', 1);
+        
+        // Award loot
+        const loot = Math.floor(Math.random() * 20) + 10;
+        this.inventory.addItem('Gold Coins', loot);
+        this.ui.showInventoryNotification(`💰 Looted ${loot} gold coins!`, 'success');
+      }
+    } else {
+      // Real player hit - would need database update
+      this.addToInteractionHistory(`💥 Hit ${targetShip.email.split('@')[0]} for ${damage} damage!`);
+    }
   }
 
   async placePixel(x, y) {

@@ -281,8 +281,8 @@ export class UIManager {
     if (isRealtime) {
       let html = `
         <div style="font-size:15px; margin-bottom:2px; color:#00FF00;">⚡ Real-time Sailing!</div>
-        <div style="font-size:11px; color:#aaa; margin-top:8px;">Hold WASD to sail, R to repair, I for inventory</div>
-        <div style="font-size:10px; color:#888; margin-top:4px;">Mouse wheel to zoom</div>
+        <div style="font-size:11px; color:#aaa; margin-top:8px;">WASD to sail, R to repair, I for inventory</div>
+        <div style="font-size:10px; color:#888; margin-top:4px;">Click or SPACE to fire cannons • Mouse wheel to zoom</div>
       `;
 
       // Add sailing interaction timer

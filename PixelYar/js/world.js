@@ -115,6 +115,79 @@ export class WorldManager {
         portType: 'trading'
       });
     }
+    
+    // Generate trading stocks for each island including pixel packs
+    this.generateLocalTradingStocks();
+  }
+
+  generateLocalTradingStocks() {
+    this.tradingStocks.clear();
+    
+    const baseItems = [
+      { name: 'Rum Bottles', buyPrice: 5, sellPrice: 3, baseStock: 20 },
+      { name: 'Cannon Balls', buyPrice: 2, sellPrice: 1, baseStock: 50 },
+      { name: 'Wooden Planks', buyPrice: 3, sellPrice: 2, baseStock: 30 },
+      { name: 'Medicine', buyPrice: 8, sellPrice: 5, baseStock: 15 },
+      { name: 'Rope', buyPrice: 4, sellPrice: 2, baseStock: 25 },
+      { name: 'Spices', buyPrice: 12, sellPrice: 8, baseStock: 10 },
+      { name: 'Silk', buyPrice: 15, sellPrice: 10, baseStock: 8 }
+    ];
+    
+    const pixelPacks = [
+      { name: 'Red Pixel Pack', buyPrice: 10, sellPrice: 6, baseStock: 15 },
+      { name: 'Blue Pixel Pack', buyPrice: 10, sellPrice: 6, baseStock: 15 },
+      { name: 'Green Pixel Pack', buyPrice: 10, sellPrice: 6, baseStock: 15 },
+      { name: 'Yellow Pixel Pack', buyPrice: 10, sellPrice: 6, baseStock: 15 },
+      { name: 'Purple Pixel Pack', buyPrice: 10, sellPrice: 6, baseStock: 15 }
+    ];
+    
+    for (const island of this.islands) {
+      const stocks = [];
+      
+      // Add base items with some variation
+      for (const item of baseItems) {
+        const variation = 0.8 + Math.random() * 0.4; // 80% to 120% of base
+        stocks.push({
+          itemName: item.name,
+          stockQuantity: Math.floor(item.baseStock * variation),
+          buyPrice: Math.floor(item.buyPrice * variation),
+          sellPrice: Math.floor(item.sellPrice * variation),
+          lastRestock: new Date().toISOString()
+        });
+      }
+      
+      // Always add ALL pixel packs to every port
+      for (const pixelPack of pixelPacks) {
+        stocks.push({
+          itemName: pixelPack.name,
+          stockQuantity: pixelPack.baseStock,
+          buyPrice: pixelPack.buyPrice,
+          sellPrice: pixelPack.sellPrice,
+          lastRestock: new Date().toISOString()
+        });
+      }
+      
+      // Add some random luxury items
+      const luxuryItems = ['Pearls', 'Treasure Maps', 'Lucky Charm', 'Spyglass'];
+      const numLuxury = Math.floor(Math.random() * 3) + 1;
+      
+      for (let i = 0; i < numLuxury; i++) {
+        const luxuryItem = luxuryItems[Math.floor(Math.random() * luxuryItems.length)];
+        if (!stocks.find(s => s.itemName === luxuryItem)) {
+          stocks.push({
+            itemName: luxuryItem,
+            stockQuantity: Math.floor(Math.random() * 5) + 2,
+            buyPrice: Math.floor(Math.random() * 20) + 15,
+            sellPrice: Math.floor(Math.random() * 10) + 8,
+            lastRestock: new Date().toISOString()
+          });
+        }
+      }
+      
+      this.tradingStocks.set(island.id, stocks);
+    }
+    
+    console.log(`Generated trading stocks for ${this.tradingStocks.size} islands with pixel packs at every port`);
   }
 
   // Legacy method for compatibility

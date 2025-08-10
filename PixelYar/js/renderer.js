@@ -114,17 +114,28 @@ export class Renderer {
     this.drawPlacedPixels(placedPixels);
   }
 
-  drawPlayers(allPlayers, currentPlayer, playerRotation = 0) {
+  drawPlayers(allPlayers, currentPlayer, playerRotation = 0, cannonAngle = 0, cannonBalls = []) {
     // Draw all other pirates first (no glow)
     allPlayers.forEach(p => {
       if (p.id !== currentPlayer.id) {
         const isAI = p.isAI || false;
         this.drawPirateShip(p.x, p.y, p.color || '#8B5C2A', false, isAI, 0);
+        
+        // Draw AI ship cannon if they're firing
+        if (isAI && p.cannonAngle !== undefined) {
+          this.drawCannon(p.x, p.y, p.cannonAngle, false);
+        }
       }
     });
 
     // Draw the player's own ship with glow and rotation
     this.drawPirateShip(currentPlayer.x, currentPlayer.y, '#8B5C2A', true, false, playerRotation);
+    
+    // Draw player's cannon circle and cannon
+    this.drawCannon(currentPlayer.x, currentPlayer.y, cannonAngle, true);
+    
+    // Draw all cannon balls
+    this.drawCannonBalls(cannonBalls);
   }
 
   drawPirateShip(x, y, color, isCurrentPlayer = false, isAI = false, rotation = 0) {
@@ -541,6 +552,63 @@ export class Renderer {
     this.ctx.font = '12px Arial';
     this.ctx.strokeText('Higher Risk • Better Rewards', CONFIG.RED_SEA.START_X + 200, warningY + 5);
     this.ctx.fillText('Higher Risk • Better Rewards', CONFIG.RED_SEA.START_X + 200, warningY + 5);
+    
+    this.ctx.restore();
+  }
+
+  drawCannon(shipX, shipY, cannonAngle, isPlayer = false) {
+    this.ctx.save();
+    
+    if (isPlayer) {
+      // Draw cannon range circle for player
+      this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+      this.ctx.lineWidth = 1;
+      this.ctx.setLineDash([5, 5]);
+      this.ctx.beginPath();
+      this.ctx.arc(shipX, shipY, 15, 0, 2 * Math.PI);
+      this.ctx.stroke();
+      this.ctx.setLineDash([]);
+    }
+    
+    // Draw cannon barrel
+    const cannonLength = 8;
+    const cannonX = shipX + Math.cos(cannonAngle) * cannonLength;
+    const cannonY = shipY + Math.sin(cannonAngle) * cannonLength;
+    
+    this.ctx.strokeStyle = '#333333';
+    this.ctx.lineWidth = 2;
+    this.ctx.beginPath();
+    this.ctx.moveTo(shipX, shipY);
+    this.ctx.lineTo(cannonX, cannonY);
+    this.ctx.stroke();
+    
+    // Draw cannon tip
+    this.ctx.fillStyle = '#222222';
+    this.ctx.beginPath();
+    this.ctx.arc(cannonX, cannonY, 1, 0, 2 * Math.PI);
+    this.ctx.fill();
+    
+    this.ctx.restore();
+  }
+
+  drawCannonBalls(cannonBalls) {
+    this.ctx.save();
+    
+    for (const ball of cannonBalls) {
+      // Draw cannon ball
+      this.ctx.fillStyle = '#222222';
+      this.ctx.beginPath();
+      this.ctx.arc(ball.x, ball.y, 1.5, 0, 2 * Math.PI);
+      this.ctx.fill();
+      
+      // Draw trail effect
+      this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+      this.ctx.lineWidth = 1;
+      this.ctx.beginPath();
+      this.ctx.moveTo(ball.x - ball.vx * 2, ball.y - ball.vy * 2);
+      this.ctx.lineTo(ball.x, ball.y);
+      this.ctx.stroke();
+    }
     
     this.ctx.restore();
   }
