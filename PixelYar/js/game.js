@@ -270,6 +270,7 @@ export class Game {
         inventory: this.inventory,
         ui: this.ui,
         cannonBalls: this.cannonBalls,
+        CONFIG: CONFIG, // Make CONFIG globally available
         addToInteractionHistory: (message) => this.addToInteractionHistory(message),
         useInventoryItem: (itemName) => this.useInventoryItem(itemName),
         showFullInventory: () => this.showFullInventory(),

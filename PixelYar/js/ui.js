@@ -1,6 +1,4 @@
 // ui.js - UI management and particle effects
-import { CONFIG } from './config.js';
-
 export class UIManager {
   constructor() {
     this.loginBox = document.getElementById('login');
@@ -280,6 +278,9 @@ export class UIManager {
     const timerDiv = document.getElementById('moveTimer');
     if (!timerDiv) return;
 
+    // Get CONFIG safely
+    const config = window.game?.CONFIG || { RED_SEA: { START_X: 2880 } };
+
     if (isRealtime) {
       let html = `
         <div style="font-size:15px; margin-bottom:2px; color:#00FF00;">⚡ Real-time Sailing!</div>
@@ -324,7 +325,8 @@ export class UIManager {
       }
 
       // Show monster warning in red sea
-      if (window.game && window.game.currentPlayer && window.game.currentPlayer.x >= CONFIG.RED_SEA.START_X) {
+      const redSeaStartX = config.RED_SEA.START_X;
+      if (window.game && window.game.currentPlayer && window.game.currentPlayer.x >= redSeaStartX) {
         const monsterCount = window.game.monsters ? window.game.monsters.getMonsters().length : 0;
         html += `
           <div style="font-size:12px; color:#FF4444; margin-top:8px; border:2px solid #FF4444; padding:4px; border-radius:4px; background:rgba(139,0,0,0.2);">
