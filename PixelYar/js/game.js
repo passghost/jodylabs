@@ -546,6 +546,10 @@ export class Game {
       allCannonBalls.push(...this.aiShips.getAllAICannonBalls());
     }
     
+    if (allCannonBalls.length > 0) {
+      console.log('Rendering', allCannonBalls.length, 'cannon balls');
+    }
+    
     // Get monsters and phenomena for rendering
     const monsters = this.monsters ? this.monsters.getMonsters() : [];
     const phenomena = this.phenomena ? this.phenomena.getPhenomena() : [];
@@ -1021,7 +1025,11 @@ export class Game {
 
   // Canvas click handler for pixel placement and cannon firing
   handleCanvasClick(e) {
+    console.log('Canvas clicked!');
+    console.log('Pixel mode active:', this.pixelManager && this.pixelManager.isPixelModeActive());
+    
     if (this.pixelManager && this.pixelManager.isPixelModeActive()) {
+      console.log('Placing pixel...');
       const worldCoords = this.renderer.screenToWorld(e.clientX, e.clientY);
       
       // Check if click is within game bounds
@@ -1040,6 +1048,7 @@ export class Game {
       this.placePixel(worldCoords.x, worldCoords.y);
     } else {
       // Fire cannon
+      console.log('Firing cannon...');
       this.fireCannon();
     }
   }
@@ -1084,16 +1093,36 @@ export class Game {
   }
 
   fireCannon() {
-    if (!this.currentPlayer || !this.inventory.hasItem('Cannon Balls')) return;
+    console.log('fireCannon called');
+    console.log('currentPlayer:', !!this.currentPlayer);
+    console.log('has cannon balls:', this.inventory.hasItem('Cannon Balls'));
+    console.log('cannon balls count:', this.inventory.getItemQuantity('Cannon Balls'));
+    
+    if (!this.currentPlayer) {
+      console.log('No current player - cannot fire');
+      return;
+    }
+    
+    if (!this.inventory.hasItem('Cannon Balls')) {
+      console.log('No cannon balls in inventory - cannot fire');
+      this.addToInteractionHistory('💥 No cannon balls! Visit a port to buy more.');
+      return;
+    }
     
     const now = Date.now();
-    if (now - this.lastCannonFire < 500) return; // 0.5 second cooldown
+    if (now - this.lastCannonFire < 500) {
+      console.log('Cannon on cooldown');
+      return; // 0.5 second cooldown
+    }
     
     this.lastCannonFire = now;
     
     // Remove cannon ball from inventory
     this.inventory.removeItem('Cannon Balls', 1);
     this.inventoryNeedsUpdate = true;
+    
+    console.log('Creating cannon ball at:', this.currentPlayer.x, this.currentPlayer.y);
+    console.log('Cannon angle:', this.cannonAngle);
     
     // Create cannon ball using current cannon angle (smoothed)
     const cannonBall = {
@@ -1107,10 +1136,15 @@ export class Game {
     };
     
     this.cannonBalls.push(cannonBall);
+    console.log('Cannon ball added to array. Total cannon balls:', this.cannonBalls.length);
     this.addToInteractionHistory('💥 Cannon fired!');
   }
 
   updateCannonBalls() {
+    if (this.cannonBalls.length > 0) {
+      console.log('Updating', this.cannonBalls.length, 'cannon balls');
+    }
+    
     for (let i = this.cannonBalls.length - 1; i >= 0; i--) {
       const ball = this.cannonBalls[i];
       
@@ -1123,6 +1157,7 @@ export class Game {
       if (ball.x < 0 || ball.x >= CONFIG.OCEAN_WIDTH || 
           ball.y < 0 || ball.y >= CONFIG.OCEAN_HEIGHT || 
           ball.life <= 0) {
+        console.log('Removing cannon ball - out of bounds or life expired');
         this.cannonBalls.splice(i, 1);
         continue;
       }

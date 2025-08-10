@@ -260,7 +260,7 @@ export class InteractionManager {
           player.hull += 3; 
           player.crew += 1; 
         } 
-      }
+      },
       { text: 'A lighthouse keeper warns ye of dangerous rocks ahead!', action: () => { }, waterObject: 'lighthouse' },
       { text: 'Ye encounter a naval patrol - they inspect yer ship!', action: (player) => { player.crew = Math.max(0, player.crew - 1); } },
       { text: 'A friendly sea captain shares navigation tips!', action: (player) => { player.hull += 2; } },
