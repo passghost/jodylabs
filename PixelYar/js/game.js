@@ -894,6 +894,9 @@ export class Game {
           Math.round(this.currentPlayer.y)
         );
 
+        // Clean up player subscriptions
+        this.player.cleanup();
+
         // Update local player object and save inventory and final stats
         this.currentPlayer.items = this.inventory.getInventoryData();
         
@@ -1103,11 +1106,12 @@ export class Game {
     }
   }
 
-  handleCannonHit(targetShip, cannonBall) {
+  async handleCannonHit(targetShip, cannonBall) {
     const damage = 15 + Math.floor(Math.random() * 10); // 15-25 damage
     
     if (targetShip.isAI) {
       // Update AI ship
+      const oldHull = targetShip.hull;
       targetShip.hull = Math.max(0, targetShip.hull - damage);
       this.addToInteractionHistory(`💥 Direct hit on ${targetShip.email.split('@')[0]}! -${damage} hull damage!`);
       
@@ -1122,8 +1126,95 @@ export class Game {
         this.ui.showInventoryNotification(`💰 Looted ${loot} gold coins!`, 'success');
       }
     } else {
-      // Real player hit - would need database update
-      this.addToInteractionHistory(`💥 Hit ${targetShip.email.split('@')[0]} for ${damage} damage!`);
+      // Real player hit - update their hull in database and log combat
+      try {
+        const oldHull = targetShip.hull;
+        const newHull = Math.max(0, targetShip.hull - damage);
+        const currentPlayerHull = this.currentPlayer.hull;
+        
+        // Log combat event first
+        const { error: logError } = await this.auth.getSupabase()
+          .rpc('log_combat_event', {
+            attacker_uuid: this.currentPlayer.id,
+            defender_uuid: targetShip.id,
+            damage: damage,
+            attacker_hull_before: currentPlayerHull,
+            attacker_hull_after: currentPlayerHull,
+            defender_hull_before: oldHull,
+            defender_hull_after: newHull,
+            winner_uuid: newHull <= 0 ? this.currentPlayer.id : null,
+            combat_type_param: 'cannon',
+            location_x_param: Math.round(targetShip.x),
+            location_y_param: Math.round(targetShip.y)
+          });
+
+        if (logError) {
+          console.warn('Failed to log combat event:', logError);
+        }
+        
+        // Update target player's hull in database
+        const { error } = await this.auth.getSupabase()
+          .from('pirates')
+          .update({ hull: newHull })
+          .eq('id', targetShip.id);
+
+        if (!error) {
+          // Update local data
+          targetShip.hull = newHull;
+          this.addToInteractionHistory(`💥 Direct hit on ${targetShip.email.split('@')[0]}! -${damage} hull damage!`);
+          
+          // Award XP and stats for successful hit
+          this.player.addXP(25, 'Player ship hit!');
+          
+          if (newHull <= 0) {
+            this.addToInteractionHistory(`🏴‍☠️ ${targetShip.email.split('@')[0]} has been sunk!`);
+            this.player.addXP(150, 'Player ship sunk!');
+            this.player.updateStat('combatWins', 1);
+            
+            // Award loot for sinking player
+            const loot = Math.floor(Math.random() * 30) + 20;
+            this.inventory.addItem('Gold Coins', loot);
+            this.ui.showInventoryNotification(`💰 Looted ${loot} gold from ${targetShip.email.split('@')[0]}!`, 'success');
+            
+            // Respawn the defeated player at a safe location
+            await this.respawnPlayer(targetShip);
+          }
+        } else {
+          console.error('Failed to update target player hull:', error);
+          this.addToInteractionHistory(`💥 Hit ${targetShip.email.split('@')[0]} but failed to sync damage!`);
+        }
+      } catch (error) {
+        console.error('Error in player combat:', error);
+        this.addToInteractionHistory(`💥 Hit ${targetShip.email.split('@')[0]} but connection failed!`);
+      }
+    }
+  }
+
+  async respawnPlayer(defeatedPlayer) {
+    // Respawn defeated player at a random safe location with restored hull
+    const safeX = Math.floor(Math.random() * (CONFIG.RED_SEA.START_X - 200)) + 100;
+    const safeY = Math.floor(Math.random() * (CONFIG.OCEAN_HEIGHT - 200)) + 100;
+    
+    try {
+      const { error } = await this.auth.getSupabase()
+        .from('pirates')
+        .update({ 
+          hull: 50, // Respawn with half hull
+          x: safeX,
+          y: safeY
+        })
+        .eq('id', defeatedPlayer.id);
+
+      if (!error) {
+        // Update local data if this is visible
+        defeatedPlayer.hull = 50;
+        defeatedPlayer.x = safeX;
+        defeatedPlayer.y = safeY;
+        
+        this.addToInteractionHistory(`⚓ ${defeatedPlayer.email.split('@')[0]} respawned at safe harbor!`);
+      }
+    } catch (error) {
+      console.error('Failed to respawn player:', error);
     }
   }
 

@@ -47,9 +47,10 @@ export class PlayerManager {
         x, y,
         hull: 100,
         crew: 10,
-        items: [],
+        items: {},
         booty: 0,
-        color: '#8B5C2A'
+        color: '#8B5C2A',
+        last_login: new Date().toISOString()
       };
 
       const { error: insertError } = await this.supabase
@@ -65,9 +66,57 @@ export class PlayerManager {
     } else {
       this.currentPlayer = data;
       this.loadPlayerStats();
+      
+      // Update last login
+      await this.updatePlayerStats({ last_login: new Date().toISOString() });
     }
 
+    // Set up combat notifications
+    this.setupCombatNotifications();
+
     return this.currentPlayer;
+  }
+
+  setupCombatNotifications() {
+    if (!this.currentPlayer) return;
+
+    // Listen for combat notifications
+    const channel = this.supabase
+      .channel(`player_hit_${this.currentPlayer.id}`)
+      .on('postgres_changes', 
+        { 
+          event: 'INSERT', 
+          schema: 'public', 
+          table: 'combat_logs',
+          filter: `defender_id=eq.${this.currentPlayer.id}`
+        },
+        (payload) => this.handleCombatNotification(payload.new)
+      )
+      .subscribe();
+
+    this.combatChannel = channel;
+  }
+
+  handleCombatNotification(combatLog) {
+    if (!window.game) return;
+
+    const damage = combatLog.damage_dealt;
+    const newHull = combatLog.defender_hull_after;
+    
+    // Update local hull
+    if (this.currentPlayer) {
+      this.currentPlayer.hull = newHull;
+    }
+
+    // Show notification
+    window.game.addToInteractionHistory(`💥 You've been hit by enemy cannon fire! -${damage} hull damage!`);
+    window.game.ui.showInventoryNotification(`💥 Under Attack! -${damage} Hull`, 'error');
+
+    if (newHull <= 0) {
+      window.game.addToInteractionHistory('💀 Your ship has been sunk! Respawning at safe harbor...');
+      window.game.ui.showInventoryNotification('💀 Ship Sunk! Respawning...', 'error');
+      this.updateStat('combatLosses', 1);
+    }
   }
 
   async updatePlayerPosition(x, y) {
@@ -429,5 +478,13 @@ export class PlayerManager {
       statsKey: `pixelyar_stats_${this.currentPlayer.id}`,
       lastSaved: new Date().toISOString()
     };
+  }
+
+  // Cleanup method for when player logs out
+  cleanup() {
+    if (this.combatChannel) {
+      this.combatChannel.unsubscribe();
+      this.combatChannel = null;
+    }
   }
 }
