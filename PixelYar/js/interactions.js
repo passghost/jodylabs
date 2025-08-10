@@ -51,9 +51,9 @@ export class InteractionManager {
           return { inventoryReward: { item: 'Rum Bottles', quantity: 5 } }; 
         }, 
         waterObject: 'floating_barrel' 
-      },
-      { 
-        text: 'A shipwright\'s supplies drift past! Wooden planks and rope - perfect for repairs!', 
+      },      { 
+ 
+       text: 'A shipwright\'s supplies drift past! Wooden planks and rope - perfect for repairs!', 
         action: (player, inventory) => { 
           player.hull += 5; 
           return { inventoryReward: { item: 'Wooden Planks', quantity: 8 } }; 
@@ -119,8 +119,8 @@ export class InteractionManager {
           player.crew = Math.max(0, player.crew - 1); 
           return { inventoryReward: { item: 'Gold Coins', quantity: 8 } }; 
         } 
-      },
-      { 
+      },     
+ { 
         text: 'A naval patrol spots ye! Ye outrun them but yer cannon overheats and misfires!', 
         action: (player, inventory) => { 
           player.hull = Math.max(0, player.hull - 6); 
@@ -180,8 +180,8 @@ export class InteractionManager {
           return { inventoryReward: { item: 'Wooden Planks', quantity: 6 } }; 
         }, 
         waterObject: 'treasure_island' 
-      },
-      { 
+      }, 
+     { 
         text: 'A pod of dolphins leads ye to a hidden cove filled with ancient artifacts!', 
         action: (player, inventory) => { 
           player.hull += 3; 
@@ -246,8 +246,8 @@ export class InteractionManager {
         action: (player, inventory) => { 
           player.hull += 2; 
         } 
-      },
-      { 
+      },    
+  { 
         text: 'Ye sail through a patch of bioluminescent plankton! The sea glows like stars!', 
         action: (player, inventory) => { 
           // Pure atmosphere - small hull bonus for the beautiful sight
@@ -286,8 +286,8 @@ export class InteractionManager {
       { text: 'A maelstrom threatens to pull ye under! Fight the current! -6 hull!', action: (player) => { player.hull = Math.max(0, player.hull - 6); }, waterObject: 'whirlpool' },
       { text: 'Ye trigger an old naval mine! Massive explosion! -15 hull!', action: (player) => { player.hull = Math.max(0, player.hull - 15); }, waterObject: 'sea_mine' },
       { text: 'A dead pirate captain floats by with his treasure map! +6 booty!', action: (player) => { player.booty += 6; }, waterObject: 'floating_corpse' },
-      { text: 'Spilled merchant spices create a fragrant trail! +2 booty from trade!', action: (player) => { player.booty += 2; }, waterObject: 'merchant_cargo' },
-      { text: 'The cursed idol whispers dark secrets! Gain forbidden knowledge! +1 crew!', action: (player) => { player.crew += 1; }, waterObject: 'cursed_idol' },
+      { text: 'Spilled merchant spices create a fragrant trail! +2 booty from trade!', action: (player) => { player.booty += 2; }, waterObject: 'merchant_cargo' },      { 
+text: 'The cursed idol whispers dark secrets! Gain forbidden knowledge! +1 crew!', action: (player) => { player.crew += 1; }, waterObject: 'cursed_idol' },
       { text: 'Siren song lures yer ship toward jagged rocks! -4 hull damage!', action: (player) => { player.hull = Math.max(0, player.hull - 4); }, waterObject: 'siren_rock' },
       { text: 'A massive kraken tentacle slams yer deck! -8 hull, -1 crew!', action: (player) => { player.hull = Math.max(0, player.hull - 8); player.crew = Math.max(0, player.crew - 1); }, waterObject: 'kraken_tentacle' },
       { text: 'Molten volcanic rock hisses as it hits the water! Steam cloud! No effect!', action: () => { }, waterObject: 'volcanic_rock' },
@@ -320,9 +320,8 @@ export class InteractionManager {
       { text: 'The cursed idol crumbles to dust, breaking its curse! +2 hull!', action: (player) => { player.hull += 2; }, waterObject: 'cursed_idol' },
       { text: 'Ye throw gold to the sirens as tribute! They let ye pass! -2 booty!', action: (player) => { player.booty = Math.max(0, player.booty - 2); }, waterObject: 'siren_rock' }
     ];
-  }
-
-  triggerRandomInteraction(player, playerX, playerY, inventory) {
+  }  t
+riggerRandomInteraction(player, playerX, playerY, inventory) {
     // Don't do the random check here - it's already done in the game loop
     const interaction = this.interactions[Math.floor(Math.random() * this.interactions.length)];
     const result = interaction.action(player, inventory) || {};
