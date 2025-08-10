@@ -335,7 +335,7 @@ export class UIManager {
       if (window.game && window.game.phenomena) {
         const phenomena = window.game.phenomena.getPhenomena();
         const phenomenaCount = phenomena.length;
-        
+
         if (phenomenaCount > 0) {
           const phenomenaTypes = [...new Set(phenomena.map(p => p.type))];
           const typeIcons = {
@@ -346,15 +346,15 @@ export class UIManager {
             dolphin: '🐬',
             storm: '⛈️'
           };
-          
+
           const iconString = phenomenaTypes.map(type => typeIcons[type] || '🌊').join(' ');
-          
+
           html += `
             <div style="font-size:11px; color:#9370DB; margin-top:6px; border:1px solid #9370DB; padding:3px; border-radius:4px; background:rgba(147,112,219,0.1);">
               🌊 ${phenomenaCount} Phenomena: ${iconString}
             </div>
           `;
-          
+
           // Show if player is trapped
           if (window.game.currentPlayer && window.game.phenomena.isShipTrapped(window.game.currentPlayer.id)) {
             html += `
