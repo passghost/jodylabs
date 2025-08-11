@@ -1,42 +1,46 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JodyLabs - Web Tools & Interactive Projects | Free Browser Games</title>
-    
+
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="/jodylabs/Images/Bleedingtoothfungus.png">
     <link rel="shortcut icon" type="image/png" href="/jodylabs/Images/Bleedingtoothfungus.png">
     <link rel="apple-touch-icon" href="/jodylabs/Images/Bleedingtoothfungus.png">
-    
+
     <!-- SEO Meta Tags -->
-    <meta name="description" content="JodyLabs - A collection of AI collaboration usefulness of games and software for your enjoyment. PS. Not a real doctor">
-    <meta name="keywords" content="JodyLabs, AI games, web games, browser games, interactive tools, AI projects, web applications, HTML5 games, JavaScript games, online games, free games, web development, AI tools">
+    <meta name="description"
+        content="JodyLabs - A collection of AI collaboration usefulness of games and software for your enjoyment. PS. Not a real doctor">
+    <meta name="keywords"
+        content="JodyLabs, AI games, web games, browser games, interactive tools, AI projects, web applications, HTML5 games, JavaScript games, online games, free games, web development, AI tools">
     <meta name="author" content="JodyLabs">
     <meta name="robots" content="index, follow">
-    
+
     <!-- Open Graph Meta Tags -->
     <meta property="og:title" content="JodyLabs">
-    <meta property="og:description" content="JodyLabs - A collection of AI collaboration usefulness of games and software for your enjoyment. PS. Not a real doctor">
+    <meta property="og:description"
+        content="JodyLabs - A collection of AI collaboration usefulness of games and software for your enjoyment. PS. Not a real doctor">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://passghost.github.io/jodylabs/">
     <meta property="og:site_name" content="JodyLabs">
     <meta property="og:image" content="https://passghost.github.io/jodylabs/Images/Bleedingtoothfungus.png">
-    
+
     <!-- Canonical URL -->
     <link rel="canonical" href="https://passghost.github.io/jodylabs/">
-    
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
-        
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         :root {
             --primary-color: #0a0a0a;
             --secondary-color: #1a1a1a;
@@ -52,7 +56,7 @@
 
         body {
             font-family: 'Rajdhani', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: 
+            background:
                 radial-gradient(circle at 20% 50%, rgba(230, 57, 70, 0.1) 0%, transparent 50%),
                 radial-gradient(circle at 80% 20%, rgba(230, 57, 70, 0.08) 0%, transparent 50%),
                 radial-gradient(circle at 40% 80%, rgba(230, 57, 70, 0.06) 0%, transparent 50%),
@@ -71,7 +75,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: 
+            background:
                 radial-gradient(2px 2px at 20px 30px, rgba(230, 57, 70, 0.3), transparent),
                 radial-gradient(2px 2px at 40px 70px, rgba(255, 255, 255, 0.1), transparent),
                 radial-gradient(1px 1px at 90px 40px, rgba(230, 57, 70, 0.2), transparent),
@@ -85,8 +89,17 @@
         }
 
         @keyframes sparkle {
-            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 1; }
-            50% { transform: translateY(-10px) rotate(180deg); opacity: 0.8; }
+
+            0%,
+            100% {
+                transform: translateY(0px) rotate(0deg);
+                opacity: 1;
+            }
+
+            50% {
+                transform: translateY(-10px) rotate(180deg);
+                opacity: 0.8;
+            }
         }
 
         .hero {
@@ -94,7 +107,7 @@
             z-index: 2;
             text-align: center;
             padding: 100px 20px 60px 20px;
-            background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 100%);
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.4) 100%);
         }
 
         .hero-title {
@@ -102,7 +115,7 @@
             font-size: clamp(2.5rem, 6vw, 4.5rem);
             font-weight: 900;
             color: #fff;
-            text-shadow: 
+            text-shadow:
                 0 0 20px var(--accent-color),
                 0 0 40px var(--accent-color),
                 0 0 60px rgba(230, 57, 70, 0.5),
@@ -119,19 +132,25 @@
         }
 
         @keyframes titlePulse {
-            from { transform: scale(1); }
-            to { transform: scale(1.02); }
+            from {
+                transform: scale(1);
+            }
+
+            to {
+                transform: scale(1.02);
+            }
         }
 
         @keyframes titleGlow {
-            from { 
-                text-shadow: 
+            from {
+                text-shadow:
                     0 0 20px var(--accent-color),
                     0 0 40px var(--accent-color),
                     0 0 60px rgba(230, 57, 70, 0.5);
             }
-            to { 
-                text-shadow: 
+
+            to {
+                text-shadow:
                     0 0 30px var(--accent-color),
                     0 0 60px var(--accent-color),
                     0 0 90px rgba(230, 57, 70, 0.7);
@@ -139,8 +158,29 @@
         }
 
         @keyframes gradientShift {
-            0%, 100% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
+
+            0%,
+            100% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(1.05);
+                opacity: 0.9;
+            }
         }
 
         .hero-desc {
@@ -178,7 +218,7 @@
             border: 2px solid rgba(230, 57, 70, 0.2);
             position: relative;
             overflow: hidden;
-            box-shadow: 
+            box-shadow:
                 0 8px 32px rgba(0, 0, 0, 0.4),
                 0 0 0 1px rgba(255, 255, 255, 0.05),
                 inset 0 1px 0 rgba(255, 255, 255, 0.1);
@@ -205,7 +245,7 @@
 
         .card:hover {
             transform: translateY(-12px) scale(1.02) rotateX(5deg);
-            box-shadow: 
+            box-shadow:
                 0 20px 60px rgba(0, 0, 0, 0.6),
                 0 0 40px var(--glow-primary),
                 inset 0 1px 0 rgba(255, 255, 255, 0.2);
@@ -250,8 +290,10 @@
         /* Animated Eye Component */
         .eye-container {
             position: absolute;
-            top: 40%; /* Moved up to align better with title center */
-            left: calc(50% - 350px); /* Moved farther left to avoid title overlap */
+            top: 40%;
+            /* Moved up to align better with title center */
+            left: calc(50% - 350px);
+            /* Moved farther left to avoid title overlap */
             transform: translate(-50%, -50%);
             width: 120px;
             height: 120px;
@@ -265,7 +307,7 @@
             height: 100%;
             border-radius: 50%;
             background: radial-gradient(circle at center, #1a1a1a 0%, #000 100%);
-            box-shadow: 
+            box-shadow:
                 inset 0 0 20px rgba(0, 0, 0, 0.8),
                 0 0 20px rgba(230, 57, 70, 0.3);
             overflow: hidden;
@@ -274,13 +316,15 @@
 
         .eyeball {
             position: absolute;
-            width: 90px; /* Increased from 80px for better eyelid contact */
+            width: 90px;
+            /* Increased from 80px for better eyelid contact */
             height: 90px;
             border-radius: 50%;
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
-            background-color: #333; /* Fallback color */
+            background-color: #333;
+            /* Fallback color */
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
@@ -289,10 +333,12 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .eyelid-top, .eyelid-bottom {
+        .eyelid-top,
+        .eyelid-bottom {
             position: absolute;
             width: 100%;
-            height: 50%; /* Increased from 45% for better coverage */
+            height: 50%;
+            /* Increased from 45% for better coverage */
             background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
             border-radius: 60px;
             transition: all 0.15s ease-out;
@@ -301,22 +347,26 @@
         }
 
         .eyelid-top {
-            top: -20%; /* More relaxed - moved down from -30% */
+            top: -20%;
+            /* More relaxed - moved down from -30% */
             border-bottom-left-radius: 10px;
             border-bottom-right-radius: 10px;
             transform-origin: bottom center;
-            transform: rotate(-2deg); /* Natural slight rotation for expression */
+            transform: rotate(-2deg);
+            /* Natural slight rotation for expression */
         }
 
         .eyelid-bottom {
-            bottom: -20%; /* More relaxed - moved up from -30% */
+            bottom: -20%;
+            /* More relaxed - moved up from -30% */
             border-top-left-radius: 10px;
             border-top-right-radius: 10px;
             transform-origin: top center;
         }
 
         .eye-container.blinking .eyelid-top {
-            transform: translateY(70%) scaleY(1.2) rotate(-2deg); /* Maintain rotation during blink */
+            transform: translateY(70%) scaleY(1.2) rotate(-2deg);
+            /* Maintain rotation during blink */
         }
 
         .eye-container.blinking .eyelid-bottom {
@@ -325,13 +375,16 @@
 
         /* Eye glow animation */
         @keyframes eyeGlow {
-            0%, 100% { 
-                box-shadow: 
+
+            0%,
+            100% {
+                box-shadow:
                     inset 0 0 20px rgba(0, 0, 0, 0.8),
                     0 0 20px rgba(230, 57, 70, 0.3);
             }
-            50% { 
-                box-shadow: 
+
+            50% {
+                box-shadow:
                     inset 0 0 20px rgba(0, 0, 0, 0.8),
                     0 0 30px rgba(230, 57, 70, 0.6);
             }
@@ -344,24 +397,25 @@
         /* Responsive adjustments for eye positioning */
         @media (max-width: 1200px) {
             .eye-container {
-                left: calc(50% - 280px); /* Adjusted for farther left positioning */
+                left: calc(50% - 280px);
+                /* Adjusted for farther left positioning */
                 width: 100px;
                 height: 100px;
             }
-            
+
             .eyeball {
                 width: 75px;
                 height: 75px;
             }
         }
-        
+
         @media (max-width: 900px) {
             .eye-container {
                 left: calc(50% - 200px);
                 width: 90px;
                 height: 90px;
             }
-            
+
             .eyeball {
                 width: 65px;
                 height: 65px;
@@ -374,11 +428,11 @@
                 gap: 2rem;
                 padding: 0 1.5rem 3rem 1.5rem;
             }
-            
+
             .card {
                 padding: 2.5rem 2rem;
             }
-            
+
             .hero {
                 padding: 80px 20px 40px 20px;
             }
@@ -393,9 +447,10 @@
                 width: 80px;
                 height: 80px;
             }
-            
+
             .eyeball {
-                width: 55px; /* Adjusted for mobile */
+                width: 55px;
+                /* Adjusted for mobile */
                 height: 55px;
             }
         }
@@ -405,7 +460,7 @@
                 font-size: 1.4rem;
                 gap: 0.8rem;
             }
-            
+
             .card .card-icon {
                 width: 2rem;
                 height: 2rem;
@@ -415,13 +470,14 @@
                 width: 60px;
                 height: 60px;
             }
-            
+
             .eyeball {
-                width: 45px; /* Adjusted for small mobile */
+                width: 45px;
+                /* Adjusted for small mobile */
                 height: 45px;
             }
         }
-        
+
         .support-button {
             position: fixed;
             bottom: 20px;
@@ -449,55 +505,213 @@
 
         /* --- Glowing Dragonfly Styles (Red) --- */
         #dragonfly-container {
-          position: fixed;
-          left: 50vw;
-          top: 40vh;
-          width: 75px;
-          height: 75px;
-          z-index: 2000;
-          pointer-events: none;
+            position: fixed;
+            left: 50vw;
+            top: 40vh;
+            width: 75px;
+            height: 75px;
+            z-index: 2000;
+            pointer-events: none;
         }
+
         .dragonfly {
-          position: relative;
-          width: 75px;
-          height: 75px;
-          animation: glow-red 2s infinite alternate;
-          display: flex;
-          justify-content: center;
-          align-items: center;
+            position: relative;
+            width: 75px;
+            height: 75px;
+            animation: glow-red 2s infinite alternate;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
-        .dragonfly.player { animation: player-glow-red 2s infinite alternate; }
+
+        .dragonfly.player {
+            animation: player-glow-red 2s infinite alternate;
+        }
+
         @keyframes glow-red {
-          0% { filter: drop-shadow(0 0 20px #ff003c); }
-          100% { filter: drop-shadow(0 0 40px #ff003c); }
+            0% {
+                filter: drop-shadow(0 0 20px #ff003c);
+            }
+
+            100% {
+                filter: drop-shadow(0 0 40px #ff003c);
+            }
         }
+
         @keyframes player-glow-red {
-          0% { filter: drop-shadow(0 0 20px #ff003c); }
-          100% { filter: drop-shadow(0 0 40px #ff003c); }
+            0% {
+                filter: drop-shadow(0 0 20px #ff003c);
+            }
+
+            100% {
+                filter: drop-shadow(0 0 40px #ff003c);
+            }
         }
-        .wings { position: absolute; width: 96px; height: 32px; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 1; }
-        .wing { position: absolute; width: 48px; height: 5.5px; background: rgba(255,0,60,0.18); border-radius: 24px / 3.5px; border: 1px solid #ff003c; box-shadow: 0 0 7.5px 1.25px #ff003c; z-index: 2; }
-        .wing.left-top { left: 0; top: 2px; transform-origin: 100% 50%; animation: flap-left-top 0.03s infinite alternate cubic-bezier(.4,0,.6,1); z-index: 2; animation-delay: 0s; }
-        .wing.left-bottom { left: 0; top: 22px; transform-origin: 100% 50%; animation: flap-left-bottom 0.03s infinite alternate cubic-bezier(.4,0,.6,1); z-index: 2; animation-delay: 0.015s; }
-        .wing.right-top { left: 48px; top: 2px; transform-origin: 0 50%; animation: flap-right-top 0.03s infinite alternate cubic-bezier(.4,0,.6,1); z-index: 2; animation-delay: 0.015s; }
-        .wing.right-bottom { left: 48px; top: 22px; transform-origin: 0 50%; animation: flap-right-bottom 0.03s infinite alternate cubic-bezier(.4,0,.6,1); z-index: 2; animation-delay: 0s; }
-        @keyframes flap-left-top { 0% { transform: rotate(-55deg); } 100% { transform: rotate(0deg); } }
-        @keyframes flap-left-bottom { 0% { transform: rotate(-5deg); } 100% { transform: rotate(-60deg); } }
-        @keyframes flap-right-top { 0% { transform: rotate(55deg); } 100% { transform: rotate(0deg); } }
-        @keyframes flap-right-bottom { 0% { transform: rotate(5deg); } 100% { transform: rotate(60deg); } }
-        .body { position: absolute; left: 50%; top: 50%; width: 4px; height: 30px; background: linear-gradient(to bottom, #ff003c 60%, #ff4d6d 100%); border-radius: 2px 2px 5px 5px; transform: translate(-50%, -50%) rotate(0deg); box-shadow: 0 0 7.5px #ff003c, 0 0 2.5px #ff4d6d inset; z-index: 3; }
-        .tail { position: absolute; left: 50%; top: 92%; width: 2px; height: 17.5px; background: linear-gradient(to bottom, #ff003c 60%, #ff4d6d 100%); border-radius: 2.5px 2.5px 7.5px 7.5px; transform: translate(-50%, -90%) rotate(0deg); box-shadow: 0 0 5px #ff003c, 0 0 2.5px #ff4d6d inset; z-index: 2; }
-        .head { position: absolute; left: 50%; top: 20%; width: 9.5px; height: 9.5px; background: radial-gradient(circle, #ff003c 70%, #ff4d6d 100%); border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 5px #ff003c, 0 0 2.5px #ff4d6d inset; z-index: 3; }
-        .antenna { position: absolute; width: 1px; height: 10px; background: linear-gradient(to top, #ff003c 60%, #ff4d6d 100%); border-radius: 1px 1px 2.5px 2.5px; top: 28%; z-index: 4; }
-        .antenna.left { left: 47%; transform: rotate(-20deg); }
-        .antenna.right { left: 53%; transform: rotate(20deg); }
+
+        .wings {
+            position: absolute;
+            width: 96px;
+            height: 32px;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1;
+        }
+
+        .wing {
+            position: absolute;
+            width: 48px;
+            height: 5.5px;
+            background: rgba(255, 0, 60, 0.18);
+            border-radius: 24px / 3.5px;
+            border: 1px solid #ff003c;
+            box-shadow: 0 0 7.5px 1.25px #ff003c;
+            z-index: 2;
+        }
+
+        .wing.left-top {
+            left: 0;
+            top: 2px;
+            transform-origin: 100% 50%;
+            animation: flap-left-top 0.03s infinite alternate cubic-bezier(.4, 0, .6, 1);
+            z-index: 2;
+            animation-delay: 0s;
+        }
+
+        .wing.left-bottom {
+            left: 0;
+            top: 22px;
+            transform-origin: 100% 50%;
+            animation: flap-left-bottom 0.03s infinite alternate cubic-bezier(.4, 0, .6, 1);
+            z-index: 2;
+            animation-delay: 0.015s;
+        }
+
+        .wing.right-top {
+            left: 48px;
+            top: 2px;
+            transform-origin: 0 50%;
+            animation: flap-right-top 0.03s infinite alternate cubic-bezier(.4, 0, .6, 1);
+            z-index: 2;
+            animation-delay: 0.015s;
+        }
+
+        .wing.right-bottom {
+            left: 48px;
+            top: 22px;
+            transform-origin: 0 50%;
+            animation: flap-right-bottom 0.03s infinite alternate cubic-bezier(.4, 0, .6, 1);
+            z-index: 2;
+            animation-delay: 0s;
+        }
+
+        @keyframes flap-left-top {
+            0% {
+                transform: rotate(-55deg);
+            }
+
+            100% {
+                transform: rotate(0deg);
+            }
+        }
+
+        @keyframes flap-left-bottom {
+            0% {
+                transform: rotate(-5deg);
+            }
+
+            100% {
+                transform: rotate(-60deg);
+            }
+        }
+
+        @keyframes flap-right-top {
+            0% {
+                transform: rotate(55deg);
+            }
+
+            100% {
+                transform: rotate(0deg);
+            }
+        }
+
+        @keyframes flap-right-bottom {
+            0% {
+                transform: rotate(5deg);
+            }
+
+            100% {
+                transform: rotate(60deg);
+            }
+        }
+
+        .body {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 4px;
+            height: 30px;
+            background: linear-gradient(to bottom, #ff003c 60%, #ff4d6d 100%);
+            border-radius: 2px 2px 5px 5px;
+            transform: translate(-50%, -50%) rotate(0deg);
+            box-shadow: 0 0 7.5px #ff003c, 0 0 2.5px #ff4d6d inset;
+            z-index: 3;
+        }
+
+        .tail {
+            position: absolute;
+            left: 50%;
+            top: 92%;
+            width: 2px;
+            height: 17.5px;
+            background: linear-gradient(to bottom, #ff003c 60%, #ff4d6d 100%);
+            border-radius: 2.5px 2.5px 7.5px 7.5px;
+            transform: translate(-50%, -90%) rotate(0deg);
+            box-shadow: 0 0 5px #ff003c, 0 0 2.5px #ff4d6d inset;
+            z-index: 2;
+        }
+
+        .head {
+            position: absolute;
+            left: 50%;
+            top: 20%;
+            width: 9.5px;
+            height: 9.5px;
+            background: radial-gradient(circle, #ff003c 70%, #ff4d6d 100%);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 5px #ff003c, 0 0 2.5px #ff4d6d inset;
+            z-index: 3;
+        }
+
+        .antenna {
+            position: absolute;
+            width: 1px;
+            height: 10px;
+            background: linear-gradient(to top, #ff003c 60%, #ff4d6d 100%);
+            border-radius: 1px 1px 2.5px 2.5px;
+            top: 28%;
+            z-index: 4;
+        }
+
+        .antenna.left {
+            left: 47%;
+            transform: rotate(-20deg);
+        }
+
+        .antenna.right {
+            left: 53%;
+            transform: rotate(20deg);
+        }
     </style>
 </head>
+
 <body>
     <div class="support-button">
-        <a href="https://www.paypal.com/donate/?business=TE5MW5QV6RRCS&no_recurring=1&item_name=Donations+encouraged%2C+but+of+course+not+expected.+Thanks+for+visiting!&currency_code=USD" target="_blank">Support Me</a>
+        <a href="https://www.paypal.com/donate/?business=TE5MW5QV6RRCS&no_recurring=1&item_name=Donations+encouraged%2C+but+of+course+not+expected.+Thanks+for+visiting!&currency_code=USD"
+            target="_blank">Support Me</a>
     </div>
-    
+
     <div class="hero">
         <!-- Animated Eye Component -->
         <div class="eye-container" id="eyeContainer">
@@ -507,7 +721,7 @@
                 <div class="eyelid-bottom"></div>
             </div>
         </div>
-        
+
         <h1 class="hero-title">JODYLABS</h1>
         <p class="hero-desc">(Not a real eye doctor)</p>
     </div>
@@ -520,41 +734,47 @@
 
         <a href="FGC.html" class="card">
             <h2><img src="Images/gem3.png" alt="Gem" class="card-icon">Game Dev Resources</h2>
-            <p>Free images, sound and assets if you need a free resource or an idea. No limits on usage on your own projects.</p>
+            <p>Free images, sound and assets if you need a free resource or an idea. No limits on usage on your own
+                projects.</p>
         </a>
 
         <a href="VibeCode.html" class="card">
             <h2><img src="Images/emrald.png" alt="Emerald" class="card-icon">The Vibe Code Registry</h2>
-            <p>A curated registry of interactive games, creative tools, and digital experiences. Play, create, and vibe with unique web projects from JodyLabs.</p>
+            <p>A curated registry of interactive games, creative tools, and digital experiences. Play, create, and vibe
+                with unique web projects from JodyLabs.</p>
         </a>
 
-        <a href="ArtAt3AM/index.html" class="card">
-            <h2><img src="Images/gem5.png" alt="Art at 3am" class="card-icon">Art at 3am</h2>
-            <p><span style="font-style:italic;">-experimental-</span> Brought to you by the fine members of  r/IndyGameGarage and r/TheMasterArtIndex these are the select picks for the last 100 posts</p>
+        <a href="https://passghost.github.io/OrbiqWebsite/" target="_blank" class="card" style="position: relative;">
+            <span
+                style="position: absolute; top: 15px; right: 15px; background: linear-gradient(45deg, #e63946, #ff4757); color: white; padding: 6px 12px; border-radius: 12px; font-size: 0.85rem; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 2px 8px rgba(230, 57, 70, 0.4); animation: pulse 2s infinite;">NEW</span>
+            <h2 style="font-size: 1.8rem;"><img src="Images/orbiq-icon.png" alt="Orbiq" class="card-icon"
+                    style="width: 3rem; height: 3rem;">Orbiq</h2>
+            <p style="font-size: 1.5rem; font-weight: 500;">The launcher your desktop's been dreaming of.</p>
         </a>
 
         <a href="https://jodylabs2.surge.sh" target="_blank" class="card">
             <h2><img src="Images/gem4.png" alt="Gem" class="card-icon">DX10</h2>
-            <p>A game modeled after a game we all used to play DX2. Not a sequel but absolutely fan made. Plays on anything, absolutely free. Enjoy.</p>
+            <p>A game modeled after a game we all used to play DX2. Not a sequel but absolutely fan made. Plays on
+                anything, absolutely free. Enjoy.</p>
         </a>
 
         <!-- Stats card removed for privacy -->
     </div>
 
     <div id="dragonfly-container">
-      <div class="dragonfly player">
-        <div class="wings">
-          <div class="wing left-top"></div>
-          <div class="wing right-top"></div>
-          <div class="wing left-bottom"></div>
-          <div class="wing right-bottom"></div>
+        <div class="dragonfly player">
+            <div class="wings">
+                <div class="wing left-top"></div>
+                <div class="wing right-top"></div>
+                <div class="wing left-bottom"></div>
+                <div class="wing right-bottom"></div>
+            </div>
+            <div class="body"></div>
+            <div class="tail"></div>
+            <div class="head"></div>
+            <div class="antenna left"></div>
+            <div class="antenna right"></div>
         </div>
-        <div class="body"></div>
-        <div class="tail"></div>
-        <div class="head"></div>
-        <div class="antenna left"></div>
-        <div class="antenna right"></div>
-      </div>
     </div>
 
     <script>
@@ -599,23 +819,23 @@
                 this.isBlinking = false;
                 this.lastMouseMove = Date.now();
                 this.lookAroundInterval = null;
-                
+
                 this.init();
             }
 
             init() {
                 // Set random eyeball image
                 this.setRandomEyeball();
-                
+
                 // Mouse tracking
                 document.addEventListener('mousemove', (e) => this.trackMouse(e));
-                
+
                 // Random blinking
                 this.startBlinking();
-                
+
                 // Random looking around when mouse is idle
                 this.startLookingAround();
-                
+
                 // Change eyeball occasionally
                 setInterval(() => this.setRandomEyeball(), 30000); // Change every 30 seconds
             }
@@ -624,7 +844,7 @@
                 const randomIndex = Math.floor(Math.random() * eyeballImages.length);
                 const selectedImage = eyeballImages[randomIndex];
                 console.log('🎯 Loading random eyeball:', selectedImage);
-                
+
                 // Test if the image loads properly
                 const img = new Image();
                 img.onload = () => {
@@ -653,30 +873,30 @@
 
             trackMouse(e) {
                 if (this.isBlinking) return;
-                
+
                 this.lastMouseMove = Date.now();
-                
+
                 const eyeRect = this.eyeContainer.getBoundingClientRect();
                 const eyeCenterX = eyeRect.left + eyeRect.width / 2;
                 const eyeCenterY = eyeRect.top + eyeRect.height / 2;
-                
+
                 const mouseX = e.clientX;
                 const mouseY = e.clientY;
-                
+
                 const deltaX = mouseX - eyeCenterX;
                 const deltaY = mouseY - eyeCenterY;
-                
+
                 // Calculate distance and angle
                 const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
                 const maxDistance = 15; // Maximum movement range
-                
+
                 // Limit the movement
                 const limitedDistance = Math.min(distance, maxDistance);
                 const angle = Math.atan2(deltaY, deltaX);
-                
+
                 const moveX = Math.cos(angle) * (limitedDistance / maxDistance) * 15;
                 const moveY = Math.sin(angle) * (limitedDistance / maxDistance) * 15;
-                
+
                 this.eyeball.style.transform = `translate(calc(-50% + ${moveX}px), calc(-50% + ${moveY}px))`;
             }
 
@@ -685,14 +905,14 @@
                     if (Math.random() < 0.4) { // 40% chance to blink
                         this.isBlinking = true;
                         this.eyeContainer.classList.add('blinking');
-                        
+
                         setTimeout(() => {
                             this.eyeContainer.classList.remove('blinking');
                             this.isBlinking = false;
                         }, 120); // Shorter, more natural blink duration
                     }
                 };
-                
+
                 // Random blinking interval between 3-8 seconds (more realistic)
                 const scheduleNextBlink = () => {
                     const delay = 3000 + Math.random() * 5000;
@@ -701,7 +921,7 @@
                         scheduleNextBlink();
                     }, delay);
                 };
-                
+
                 scheduleNextBlink();
             }
 
@@ -711,9 +931,9 @@
                     if (Date.now() - this.lastMouseMove > 3000 && !this.isBlinking) {
                         const randomX = (Math.random() - 0.5) * 20;
                         const randomY = (Math.random() - 0.5) * 20;
-                        
+
                         this.eyeball.style.transform = `translate(calc(-50% + ${randomX}px), calc(-50% + ${randomY}px))`;
-                        
+
                         // Return to center after a moment
                         setTimeout(() => {
                             if (Date.now() - this.lastMouseMove > 2000) {
@@ -730,7 +950,7 @@
             new AnimatedEye();
         });
     </script>
-    
+
     <!-- Fallback: Inline hit counter if external script fails -->
     <script>
         // Simple fallback hit counter
@@ -738,7 +958,7 @@
             constructor() {
                 this.showSimpleCounter();
             }
-            
+
             showSimpleCounter() {
                 const counter = document.createElement('div');
                 counter.style.cssText = `
@@ -758,14 +978,14 @@
                 `;
                 counter.textContent = 'Visitors: Loading...';
                 document.body.appendChild(counter);
-                
+
                 // Simulate loading
                 setTimeout(() => {
                     counter.textContent = 'Visitors: 1337';
                 }, 1000);
             }
         }
-        
+
         // Global script loading state
         window.counterScriptLoaded = false;
         window.counterScriptError = false;
@@ -782,7 +1002,7 @@
                 this.showCounter = options.showCounter !== false;
                 this.animated = options.animated !== false;
                 this.theme = options.theme || 'jody';
-                
+
                 this.init();
             }
 
@@ -815,15 +1035,15 @@
                         method: 'GET',
                         headers: this.headers
                     });
-                    
+
                     if (getResponse.ok) {
                         const existingData = await getResponse.json();
-                        
+
                         if (existingData.length > 0) {
                             // Update existing
                             const record = existingData[0];
                             const newCount = record.hit_count + 1;
-                            
+
                             const updateResponse = await fetch(`${this.apiUrl}/rest/v1/page_hits?id=eq.${record.id}`, {
                                 method: 'PATCH',
                                 headers: this.headers,
@@ -833,7 +1053,7 @@
                                     updated_at: new Date().toISOString()
                                 })
                             });
-                            
+
                             if (updateResponse.ok) {
                                 this.currentHits = newCount;
                                 console.log('📊 Hit recorded, total hits:', this.currentHits);
@@ -852,7 +1072,7 @@
                                     last_ip_hash: 'browser-' + Math.random().toString(36).substring(7)
                                 })
                             });
-                            
+
                             if (createResponse.ok) {
                                 this.currentHits = 1;
                                 console.log('📊 First hit recorded');
@@ -869,7 +1089,7 @@
 
             displayCounter() {
                 if (!this.currentHits) return;
-                
+
                 this.counterElement = document.createElement('div');
                 this.counterElement.style.cssText = `
                     position: fixed;
@@ -888,19 +1108,19 @@
                     transition: all 0.3s ease;
                     cursor: pointer;
                 `;
-                
+
                 this.counterElement.onmouseenter = () => {
                     this.counterElement.style.transform = 'scale(1.05)';
                     this.counterElement.style.boxShadow = '0 0 30px rgba(230, 57, 70, 0.5)';
                 };
-                
+
                 this.counterElement.onmouseleave = () => {
                     this.counterElement.style.transform = 'scale(1)';
                     this.counterElement.style.boxShadow = '0 0 20px rgba(230, 57, 70, 0.3)';
                 };
-                
+
                 document.body.appendChild(this.counterElement);
-                
+
                 // Animate counter
                 if (this.animated && this.currentHits > 1) {
                     let current = Math.max(1, this.currentHits - 10);
@@ -940,64 +1160,65 @@
             }
         });
     </script>
-    
+
     <!-- --- Glowing Dragonfly Controls --- -->
     <script>
-    (function(){
-const container = document.getElementById('dragonfly-container');
-const dragonflyHeight = 75;
-const dragonflyWidth = 75;
-let posX = window.innerWidth / 2 - dragonflyWidth / 2;
-let posY = window.innerHeight * 0.4;
-let velX = 0;
-let velY = 0;
-let gravity = 0.12;
-let thrust = 0.7;
-let thrustUp = 0.7;
-let maxVel = 8;
-let landed = false;
-function clamp(val, min, max) { return Math.max(min, Math.min(max, val)); }
-document.addEventListener('keydown', (e) => {
-  if (landed && (e.key === 'w' || e.key === 'a' || e.key === 's' || e.key === 'd')) { landed = false; }
-  if (e.repeat) return;
-  switch (e.key.toLowerCase()) {
-    case 'w': velY -= thrustUp; break;
-    case 'a': velX -= thrust; break;
-    case 'd': velX += thrust; break;
-    case 's': velY += thrust; break;
-  }
-});
-const keys = { w: false, a: false, s: false, d: false };
-document.addEventListener('keydown', (e) => { if (e.key in keys) keys[e.key] = true; });
-document.addEventListener('keyup', (e) => { if (e.key in keys) keys[e.key] = false; });
-function updatePosition() {
-  if (!landed) {
-    velY += gravity;
-    velY = clamp(velY, -maxVel, maxVel);
-    velX = clamp(velX, -maxVel, maxVel);
-    posX += velX;
-    posY += velY;
-    const bottom = window.innerHeight - dragonflyHeight;
-    if (posY >= bottom) { posY = bottom; velY = 0; landed = true; }
-    if (posX < 0) { posX = 0; velX = 0; }
-    if (posX > window.innerWidth - dragonflyWidth) { posX = window.innerWidth - dragonflyWidth; velX = 0; }
-  }
-  if (keys.w) velY -= thrustUp;
-  if (keys.a) velX -= thrust;
-  if (keys.d) velX += thrust;
-  if (keys.s) velY += thrust;
-  container.style.left = posX + 'px';
-  container.style.top = posY + 'px';
-  requestAnimationFrame(updatePosition);
-}
-window.addEventListener('resize', () => {
-  posX = clamp(posX, 0, window.innerWidth - dragonflyWidth);
-  posY = clamp(posY, 0, window.innerHeight - dragonflyHeight);
-});
-updatePosition();
-})();
+        (function () {
+            const container = document.getElementById('dragonfly-container');
+            const dragonflyHeight = 75;
+            const dragonflyWidth = 75;
+            let posX = window.innerWidth / 2 - dragonflyWidth / 2;
+            let posY = window.innerHeight * 0.4;
+            let velX = 0;
+            let velY = 0;
+            let gravity = 0.12;
+            let thrust = 0.7;
+            let thrustUp = 0.7;
+            let maxVel = 8;
+            let landed = false;
+            function clamp(val, min, max) { return Math.max(min, Math.min(max, val)); }
+            document.addEventListener('keydown', (e) => {
+                if (landed && (e.key === 'w' || e.key === 'a' || e.key === 's' || e.key === 'd')) { landed = false; }
+                if (e.repeat) return;
+                switch (e.key.toLowerCase()) {
+                    case 'w': velY -= thrustUp; break;
+                    case 'a': velX -= thrust; break;
+                    case 'd': velX += thrust; break;
+                    case 's': velY += thrust; break;
+                }
+            });
+            const keys = { w: false, a: false, s: false, d: false };
+            document.addEventListener('keydown', (e) => { if (e.key in keys) keys[e.key] = true; });
+            document.addEventListener('keyup', (e) => { if (e.key in keys) keys[e.key] = false; });
+            function updatePosition() {
+                if (!landed) {
+                    velY += gravity;
+                    velY = clamp(velY, -maxVel, maxVel);
+                    velX = clamp(velX, -maxVel, maxVel);
+                    posX += velX;
+                    posY += velY;
+                    const bottom = window.innerHeight - dragonflyHeight;
+                    if (posY >= bottom) { posY = bottom; velY = 0; landed = true; }
+                    if (posX < 0) { posX = 0; velX = 0; }
+                    if (posX > window.innerWidth - dragonflyWidth) { posX = window.innerWidth - dragonflyWidth; velX = 0; }
+                }
+                if (keys.w) velY -= thrustUp;
+                if (keys.a) velX -= thrust;
+                if (keys.d) velX += thrust;
+                if (keys.s) velY += thrust;
+                container.style.left = posX + 'px';
+                container.style.top = posY + 'px';
+                requestAnimationFrame(updatePosition);
+            }
+            window.addEventListener('resize', () => {
+                posX = clamp(posX, 0, window.innerWidth - dragonflyWidth);
+                posY = clamp(posY, 0, window.innerHeight - dragonflyHeight);
+            });
+            updatePosition();
+        })();
     </script>
 </body>
 <!-- 404museum: GitHub Pages 404 handler -->
 <script src="https://passghost.github.io/jodylabs/404museum/404museum.min.js"></script>
+
 </html>
