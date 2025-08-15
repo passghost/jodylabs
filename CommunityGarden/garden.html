@@ -1,0 +1,831 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Garden — 4-Frame Community Plants</title>
+    <style>
+        :root {
+            --bg: #0c0f14;
+            --panel: #121722;
+            --muted: #9aa4b2;
+            --accent: #6fe3b4;
+            --line: #233045;
+            --pin: #e23d3d;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: #e9eef5;
+            font: 14px/1.2 system-ui, Segoe UI, Roboto, Inter, sans-serif;
+        }
+
+        header {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--line);
+            position: sticky;
+            top: 0;
+            background: linear-gradient(180deg, rgba(12, 15, 20, .95), rgba(12, 15, 20, .85));
+            backdrop-filter: saturate(1.2) blur(6px);
+            z-index: 10;
+        }
+
+        header h1 {
+            font-size: 16px;
+            margin: 0;
+            letter-spacing: .4px;
+        }
+
+        header .caps {
+            margin-left: auto;
+            color: var(--muted);
+        }
+
+        main {
+            display: grid;
+            grid-template-columns: 320px 1fr 320px;
+            gap: 14px;
+            padding: 14px;
+        }
+
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 12px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, .25);
+        }
+
+        .card h2 {
+            margin: 0 0 8px;
+            font-size: 14px;
+            color: #d5e3f7;
+        }
+
+        .row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        button,
+        .btn {
+            cursor: pointer;
+            border: 1px solid var(--line);
+            background: #192233;
+            color: #dce6f5;
+            padding: 8px 10px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+
+        button[disabled] {
+            opacity: .45;
+            cursor: not-allowed;
+        }
+
+        .note {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        canvas.frame {
+            border: 1px dashed #3a4c6b;
+            background: #0a0f17;
+            border-radius: 8px;
+            width: 64px;
+            height: 64px;
+            image-rendering: pixelated;
+        }
+
+        .frames {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .picker {
+            max-height: 300px;
+            overflow: auto;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            padding: 4px;
+        }
+
+        .seed {
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            background: #0e1420;
+            padding: 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .seed img {
+            width: 48px;
+            height: 48px;
+            object-fit: contain;
+            border-radius: 6px;
+        }
+
+        .field-wrap {
+            position: relative;
+        }
+
+        #field {
+            width: 100%;
+            height: 70vh;
+            min-height: 420px;
+            background:
+                /* Sun */
+                radial-gradient(circle at 85% 15%, #ffd700 0%, #ffeb3b 8%, transparent 12%),
+                /* Clouds */
+                radial-gradient(ellipse at 20% 25%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 25%, transparent 35%),
+                radial-gradient(ellipse at 60% 20%, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.3) 20%, transparent 30%),
+                /* Sky gradient */
+                linear-gradient(180deg, #87CEEB 0%, #98D8E8 30%, #B8E6B8 70%, #90EE90 100%),
+                /* Ground texture */
+                radial-gradient(circle at 50% 100%, #8FBC8F 0%, #6B8E23 50%, #556B2F 100%);
+            border-radius: 16px;
+            border: 1px solid var(--line);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .plot {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            transform: translate(-50%, -50%);
+        }
+
+        .plant {
+            position: absolute;
+            transform: translate(-50%, -100%) scale(.9);
+            transition: all .2s ease;
+        }
+
+        .plant:hover {
+            transform: translate(-50%, -100%) scale(1.1);
+        }
+
+        .plant.selected {
+            transform: translate(-50%, -100%) scale(1.1);
+        }
+
+        .selected-tag {
+            position: absolute;
+            top: -45px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--accent);
+            color: #0c0f14;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+            white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            animation: fadeInTag 0.2s ease;
+        }
+
+        @keyframes fadeInTag {
+            from { opacity: 0; transform: translateX(-50%) translateY(-5px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+
+        .stage {
+            width: 18px;
+            height: 18px;
+            image-rendering: pixelated;
+            border: none;
+            background: transparent;
+            transition: all .2s ease;
+        }
+
+        .water {
+            position: absolute;
+            top: -28px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 11px;
+            background: #0b1522;
+            border: 1px solid var(--line);
+            padding: 3px 6px;
+            border-radius: 8px;
+        }
+
+        .pin {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: var(--pin);
+            border-radius: 50%;
+            box-shadow: 0 0 0 2px #530, 0 3px 0 #200;
+            top: -16px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .legend {
+            display: flex;
+            gap: 10px;
+            color: var(--muted);
+            font-size: 12px;
+            align-items: center;
+        }
+
+        .legend .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--accent);
+        }
+
+        .grid {
+            background-image:
+                /* Subtle soil rows */
+                linear-gradient(to right, rgba(139, 69, 19, .1) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(139, 69, 19, .1) 1px, transparent 1px);
+            background-size: 32px 32px, 32px 32px;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #0e1522;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 8px 12px;
+            color: #dfe9f7;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, .35);
+        }
+
+        .muted {
+            color: var(--muted);
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>🌱 Community Garden (4-Frame Plants)</h1>
+        <div class="legend"><span class="dot"></span> <span>Click the field to plant</span></div>
+        <div class="caps" id="caps"></div>
+    </header>
+
+    <main>
+        <!-- Left: Creator -->
+        <section class="card">
+            <h2>1) Draw 4 frames (seed → sprout → bud → bloom)</h2>
+            <div class="row">
+                <div class="frames" id="frames"></div>
+                <div class="row">
+                    <button id="toolPencil">✏️ Pencil</button>
+                    <button id="toolEraser">🩹 Eraser</button>
+                    <input type="color" id="color" value="#6fe3b4" />
+                </div>
+                <div class="row">
+                    <button id="clear">Clear frame</button>
+                    <button id="prev">◀ Prev</button>
+                    <div class="note" id="frameLabel">Frame 1/4</div>
+                    <button id="next">Next ▶</button>
+                </div>
+            </div>
+            <div class="row" style="margin-top:8px;">
+                <button id="submitSeed">Submit seed (Supabase)</button>
+                <span class="note">Upload to Supabase storage. You can make **one** seed today.</span>
+            </div>
+            <div class="note" style="margin-top:6px;">Tip: right-click + drag draws straight lines (desktop). Touch
+                supported.</div>
+        </section>
+
+        <!-- Center: Field -->
+        <section class="card field-wrap">
+            <h2>2) Field (click to plant your picked seed)</h2>
+            <div id="field" class="grid"></div>
+            <div class="row" style="margin-top:8px; justify-content:space-between;">
+                <div class="note">🌞 Community Garden - Growth = 40s total → 10s per stage. Water every 5s.</div>
+                <div class="row">
+                    <button id="refresh">Refresh</button>
+                    <span class="note">Live sync enabled! ✨</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right: Seed Picker & Actions -->
+        <section class="card">
+            <h2>3) Seed picker</h2>
+            <div class="picker" id="picker"></div>
+            <div class="row" style="margin-top:8px;">
+                <button id="pickRandom">Pick random</button>
+                <button id="unpick">Unpick</button>
+            </div>
+            <div class="note" id="pickedInfo">No seed picked.</div>
+            <hr style="border:none;border-top:1px solid var(--line);margin:10px 0;">
+            <h2>Actions</h2>
+            <div class="row">
+                <button id="waterSelected" disabled>💧 Water selected plant</button>
+                <span class="note">Select a plant on the field.</span>
+            </div>
+        </section>
+    </main>
+
+    <div id="toast" class="toast" style="display:none;"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        /* ----------------- Config ----------------- */
+        const SUPABASE_URL = "https://omcwjmvdjswkfjkahchm.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE";
+        const DAILY_CAPS = { make: 10, pick: 10, plant: 10 }; // 10 per 2 minutes for testing
+        const WATER_COOLDOWN_MS = 5 * 1000; // 5 seconds
+        const STAGE_MS = 10 * 1000; // 10 seconds per stage
+        const TOTAL_MS = 4 * STAGE_MS; // 40 seconds total
+        const AUTO_REFRESH_MS = 2_000; // Refresh every 2 seconds
+
+        /* ------------- Real-time database ------------- */
+        const db = {
+            seeds: [],
+            plants: [],
+            caps: {},
+
+            async load() {
+                try {
+                    // Load seeds
+                    const { data: seeds } = await supabase
+                        .from('seeds')
+                        .select('*')
+                        .order('created_at', { ascending: false });
+                    this.seeds = seeds || [];
+
+                    // Load plants
+                    const { data: plants } = await supabase
+                        .from('plants')
+                        .select('*');
+                    this.plants = plants || [];
+
+                    // Load caps from localStorage (keep local for demo)
+                    this.caps = JSON.parse(localStorage.getItem("caps") || "{}");
+                } catch (error) {
+                    console.error('Error loading data:', error);
+                    // Fallback to localStorage
+                    this.seeds = JSON.parse(localStorage.getItem("seeds") || "[]");
+                    this.plants = JSON.parse(localStorage.getItem("plants") || "[]");
+                    this.caps = JSON.parse(localStorage.getItem("caps") || "{}");
+                }
+            },
+
+            async addSeed(seed) {
+                try {
+                    const { data, error } = await supabase
+                        .from('seeds')
+                        .insert([seed])
+                        .select();
+                    if (error) throw error;
+                    this.seeds.unshift(data[0]);
+                } catch (error) {
+                    console.error('Error adding seed:', error);
+                    this.seeds.unshift(seed);
+                    localStorage.setItem("seeds", JSON.stringify(this.seeds));
+                }
+            },
+
+            async addPlant(plant) {
+                try {
+                    const { data, error } = await supabase
+                        .from('plants')
+                        .insert([plant])
+                        .select();
+                    if (error) throw error;
+                    this.plants.push(data[0]);
+                } catch (error) {
+                    console.error('Error adding plant:', error);
+                    this.plants.push(plant);
+                    localStorage.setItem("plants", JSON.stringify(this.plants));
+                }
+            },
+
+            async updatePlant(plantId, updates) {
+                try {
+                    const { data, error } = await supabase
+                        .from('plants')
+                        .update(updates)
+                        .eq('id', plantId)
+                        .select();
+                    if (error) throw error;
+                    const plantIndex = this.plants.findIndex(p => p.id === plantId);
+                    if (plantIndex >= 0) {
+                        this.plants[plantIndex] = { ...this.plants[plantIndex], ...updates };
+                    }
+                } catch (error) {
+                    console.error('Error updating plant:', error);
+                }
+            },
+
+            async updateSeedStatus(seedId, status) {
+                try {
+                    const { error } = await supabase
+                        .from('seeds')
+                        .update({ status })
+                        .eq('id', seedId);
+                    if (error) throw error;
+                    const seed = this.seeds.find(s => s.id === seedId);
+                    if (seed) seed.status = status;
+                } catch (error) {
+                    console.error('Error updating seed:', error);
+                }
+            },
+
+            todayKey() {
+                const d = new Date();
+                return d.toISOString().slice(0, 10);
+            },
+
+            can(action) {
+                const key = this.twoMinuteKey();
+                const caps = this.caps[key] || { make: 0, pick: 0, plant: 0 };
+                return (caps[action] || 0) < DAILY_CAPS[action];
+            },
+
+            bump(action) {
+                const key = this.twoMinuteKey();
+                const caps = this.caps[key] || { make: 0, pick: 0, plant: 0 };
+                caps[action] = (caps[action] || 0) + 1;
+                this.caps[key] = caps;
+                localStorage.setItem("caps", JSON.stringify(this.caps));
+            },
+
+            twoMinuteKey() {
+                // Reset every 2 minutes for testing
+                const d = new Date();
+                const twoMinuteBlock = Math.floor(d.getTime() / (2 * 60 * 1000));
+                return `${d.toISOString().slice(0, 10)}-${twoMinuteBlock}`;
+            }
+        };
+
+        /* ------------- Supabase setup ------------- */
+        let supabase;
+        function initSupabase() {
+            if (SUPABASE_URL === "YOUR_SUPABASE_URL" || SUPABASE_ANON_KEY === "YOUR_SUPABASE_ANON_KEY") {
+                return false;
+            }
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+            // Set up real-time subscriptions
+            supabase
+                .channel('garden-changes')
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'plants' }, (payload) => {
+                    db.plants.push(payload.new);
+                    renderField();
+                })
+                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'plants' }, (payload) => {
+                    const plantIndex = db.plants.findIndex(p => p.id === payload.new.id);
+                    if (plantIndex >= 0) {
+                        db.plants[plantIndex] = payload.new;
+                        renderField();
+                    }
+                })
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'seeds' }, (payload) => {
+                    db.seeds.unshift(payload.new);
+                    renderPicker();
+                })
+                .subscribe();
+
+            return true;
+        }
+
+        /* ------------- UI helpers ------------- */
+        const $ = sel => document.querySelector(sel);
+        const $$ = sel => Array.from(document.querySelectorAll(sel));
+        function toast(msg, ms = 1800) {
+            const t = $("#toast");
+            t.textContent = msg;
+            t.style.display = "block";
+            setTimeout(() => t.style.display = "none", ms);
+        }
+        function updateCapsUI() {
+            const key = db.twoMinuteKey();
+            const caps = db.caps[key] || { make: 0, pick: 0, plant: 0 };
+            $("#caps").textContent = `2min window — make: ${caps.make}/${DAILY_CAPS.make} • pick: ${caps.pick}/${DAILY_CAPS.pick} • plant: ${caps.plant}/${DAILY_CAPS.plant}`;
+        }
+
+        /* ------------- Drawing 4 frames ------------- */
+        const framesEl = $("#frames");
+        const frameLabel = $("#frameLabel");
+        let currentFrame = 0;
+        const N = 4;
+        const CANVAS_SIZE = 32;
+        const frames = [...Array(N)].map(() => {
+            const c = document.createElement("canvas");
+            c.width = CANVAS_SIZE;
+            c.height = CANVAS_SIZE;
+            c.className = "frame";
+            const ctx = c.getContext("2d");
+            ctx.imageSmoothingEnabled = false;
+            ctx.fillStyle = "#0d1726";
+            ctx.fillRect(15, 15, 2, 2);
+            framesEl.appendChild(c);
+            return c;
+        });
+
+        function label() {
+            frameLabel.textContent = `Frame ${currentFrame + 1}/${N}`;
+        }
+        label();
+
+        let tool = "pencil";
+        let color = $("#color").value;
+        $("#toolPencil").onclick = () => { tool = "pencil"; toast("Pencil"); };
+        $("#toolEraser").onclick = () => { tool = "eraser"; toast("Eraser"); };
+        $("#color").oninput = e => color = e.target.value;
+        $("#prev").onclick = () => { currentFrame = (currentFrame - 1 + N) % N; label(); };
+        $("#next").onclick = () => { currentFrame = (currentFrame + 1) % N; label(); };
+        $("#clear").onclick = () => {
+            const ctx = frames[currentFrame].getContext("2d");
+            ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+        };
+
+        function drawOnCanvas(c, e, drawing) {
+            const rect = c.getBoundingClientRect();
+            const scaleX = c.width / rect.width;
+            const scaleY = c.height / rect.height;
+            const x = Math.floor((e.clientX - rect.left) * scaleX);
+            const y = Math.floor((e.clientY - rect.top) * scaleY);
+            const ctx = c.getContext("2d");
+            ctx.imageSmoothingEnabled = false;
+            if (tool === "pencil") {
+                ctx.fillStyle = color;
+                ctx.fillRect(x, y, 1, 1);
+            } else {
+                ctx.clearRect(x, y, 1, 1);
+            }
+        }
+
+        frames.forEach(c => {
+            let drawing = false;
+            c.addEventListener("pointerdown", e => {
+                drawing = true;
+                c.setPointerCapture(e.pointerId);
+                drawOnCanvas(c, e, true);
+            });
+            c.addEventListener("pointermove", e => {
+                if (drawing) drawOnCanvas(c, e, true);
+            });
+            c.addEventListener("pointerup", e => {
+                drawing = false;
+            });
+        });
+
+        /* ------------- Supabase storage upload ------------- */
+        async function canvasToSupabaseLink(canvas, frameIndex) {
+            const blob = await new Promise(res => canvas.toBlob(res, "image/png"));
+            const fileName = `seed_${Date.now()}_frame_${frameIndex}.png`;
+
+            const { data, error } = await supabase.storage
+                .from('Garden')
+                .upload(fileName, blob, {
+                    contentType: 'image/png',
+                    upsert: false
+                });
+
+            if (error) {
+                throw new Error("Supabase upload failed: " + error.message);
+            }
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('Garden')
+                .getPublicUrl(fileName);
+
+            return publicUrl;
+        }
+
+        $("#submitSeed").onclick = async () => {
+            if (!db.can("make")) { toast("Daily seed limit reached"); return; }
+            if (!initSupabase()) { toast("Set SUPABASE_URL and SUPABASE_ANON_KEY first"); return; }
+            try {
+                $("#submitSeed").disabled = true;
+                const links = [];
+                for (let i = 0; i < N; i++) {
+                    const link = await canvasToSupabaseLink(frames[i], i);
+                    links.push(link);
+                }
+                const seed = {
+                    id: crypto.randomUUID(),
+                    thumbs: links,
+                    full_images: links,
+                    status: "waiting",
+                    created_at: new Date().toISOString()
+                };
+                await db.addSeed(seed);
+                db.bump("make");
+                updateCapsUI();
+                renderPicker();
+                toast("Seed submitted to the community garden!");
+            } catch (err) {
+                console.error(err);
+                toast(err.message.slice(0, 220));
+            } finally {
+                $("#submitSeed").disabled = false;
+            }
+        };
+
+        /* ------------- Seed picker ------------- */
+        let pickedSeedId = null;
+        function renderPicker() {
+            const el = $("#picker");
+            el.innerHTML = "";
+            db.seeds.filter(s => s.status === "waiting").slice(0, 80).forEach(s => {
+                const div = document.createElement("div");
+                div.className = "seed";
+                const img = document.createElement("img");
+                img.src = s.thumbs[0];
+                const btn = document.createElement("button");
+                btn.textContent = "Pick";
+                btn.onclick = () => {
+                    if (!db.can("pick")) { toast("Daily pick limit reached"); return; }
+                    pickedSeedId = s.id;
+                    db.bump("pick");
+                    db.save();
+                    updateCapsUI();
+                    $("#pickedInfo").textContent = `Picked seed ${s.id.slice(0, 6)}…`;
+                    toast("Seed picked. Click the field to plant.");
+                };
+                div.appendChild(img);
+                div.appendChild(btn);
+                el.appendChild(div);
+            });
+            if (db.seeds.filter(s => s.status === "waiting").length === 0) {
+                el.innerHTML = `<div class="note muted">No seeds yet. Make one!</div>`;
+            }
+        }
+
+        $("#pickRandom").onclick = () => {
+            const pool = db.seeds.filter(s => s.status === "waiting");
+            if (!pool.length) return toast("No seeds available");
+            if (!db.can("pick")) return toast("Daily pick limit reached");
+            pickedSeedId = pool[Math.floor(Math.random() * pool.length)].id;
+            db.bump("pick");
+            db.save();
+            updateCapsUI();
+            $("#pickedInfo").textContent = `Picked seed ${pickedSeedId.slice(0, 6)}…`;
+            toast("Random seed picked. Click the field to plant.");
+        };
+
+        $("#unpick").onclick = () => {
+            pickedSeedId = null;
+            $("#pickedInfo").textContent = "No seed picked.";
+        };
+
+        /* ------------- Field (planting + display) ------------- */
+        const field = $("#field");
+        field.addEventListener("click", async e => {
+            if (!pickedSeedId) return toast("Pick a seed first");
+            if (!db.can("plant")) return toast("Daily plant limit reached");
+            const rect = field.getBoundingClientRect();
+            const x = Math.round((e.clientX - rect.left));
+            const y = Math.round((e.clientY - rect.top));
+            const s = db.seeds.find(s => s.id === pickedSeedId);
+            if (!s) return toast("Picked seed missing");
+
+            try {
+                await db.updateSeedStatus(s.id, "picked");
+                const plant = {
+                    id: crypto.randomUUID(),
+                    seed_id: s.id,
+                    x,
+                    y,
+                    planted_at: new Date().toISOString(),
+                    waters: []
+                };
+                await db.addPlant(plant);
+                db.bump("plant");
+                updateCapsUI();
+                pickedSeedId = null;
+                $("#pickedInfo").textContent = "No seed picked.";
+                renderField();
+                toast("Planted in the community garden! 🌱");
+            } catch (error) {
+                console.error('Error planting:', error);
+                toast("Error planting seed");
+            }
+        });
+
+        let selectedPlantId = null;
+        function growthStage(p) {
+            const plantedAt = p.planted_at ? new Date(p.planted_at).getTime() : p.plantedAt;
+            const elapsed = Date.now() - plantedAt;
+            const wateredBonus = Math.min((p.waters || []).length, 8) * (20 * 60 * 1000);
+            const t = Math.min(TOTAL_MS, Math.max(0, elapsed + wateredBonus));
+            return Math.min(3, Math.floor(t / STAGE_MS));
+        }
+
+        function nextWaterAt(p) {
+            if (!p.waters.length) return 0;
+            return p.waters[p.waters.length - 1] + WATER_COOLDOWN_MS;
+        }
+
+        function renderField() {
+            field.innerHTML = "";
+            db.plants.forEach(p => {
+                const seed = db.seeds.find(s => s.id === (p.seed_id || p.seedId));
+                if (!seed) return;
+
+                const stage = growthStage(p);
+                const plant = document.createElement("div");
+                plant.className = "plant";
+                plant.style.left = p.x + "px";
+                plant.style.top = p.y + "px";
+                plant.title = `Community Plant ${p.id.slice(0, 6)} • stage ${stage + 1}/4 • waters ${(p.waters || []).length}`;
+
+                const pin = document.createElement("div");
+                pin.className = "pin";
+                plant.appendChild(pin);
+
+                const img = document.createElement("img");
+                img.className = "stage";
+                img.src = (seed.full_images || seed.full)[stage];
+                // Scale plant based on growth stage: seed=0.8x, sprout=1x, bud=1.2x, bloom=1.4x
+                const scaleFactors = [0.8, 1.0, 1.2, 1.4];
+                img.style.transform = `scale(${scaleFactors[stage]})`;
+                plant.appendChild(img);
+
+                // Water status removed for cleaner look
+
+                plant.onclick = (ev) => {
+                    ev.stopPropagation();
+                    selectedPlantId = p.id;
+                    updateWaterButton();
+                    renderField();
+                };
+                if (p.id === selectedPlantId) {
+                    plant.classList.add('selected');
+                    const selectedTag = document.createElement("div");
+                    selectedTag.className = "selected-tag";
+                    selectedTag.textContent = "💧 Selected for watering";
+                    plant.appendChild(selectedTag);
+                }
+
+                field.appendChild(plant);
+            });
+        }
+
+        function updateWaterButton() {
+            const btn = $("#waterSelected");
+            if (!selectedPlantId) { btn.disabled = true; return; }
+            const p = db.plants.find(x => x.id === selectedPlantId);
+            btn.disabled = (Date.now() < nextWaterAt(p));
+        }
+
+        $("#waterSelected").onclick = async () => {
+            if (!selectedPlantId) return;
+            const p = db.plants.find(x => x.id === selectedPlantId);
+            if (Date.now() < nextWaterAt(p)) return toast("Water cooldown");
+
+            const newWaters = [...(p.waters || []), Date.now()];
+            try {
+                await db.updatePlant(selectedPlantId, { waters: newWaters });
+                toast("Watered the community plant! 💧");
+                updateWaterButton();
+                renderField();
+            } catch (error) {
+                console.error('Error watering plant:', error);
+                toast("Error watering plant");
+            }
+        };
+
+        $("#refresh").onclick = () => renderField();
+
+        /* ------------- Seed grid click from thumbnails ------------- */
+        framesEl.addEventListener("click", e => {
+            const idx = frames.indexOf(e.target);
+            if (idx >= 0) { currentFrame = idx; label(); }
+        });
+
+        /* ------------- Boot ------------- */
+        async function initApp() {
+            if (initSupabase()) {
+                await db.load();
+            }
+            renderPicker();
+            renderField();
+            updateCapsUI();
+            setInterval(() => { renderField(); updateCapsUI(); }, AUTO_REFRESH_MS);
+        }
+
+        initApp();
+    </script>
+</body>
+
+</html>
