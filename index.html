@@ -508,16 +508,16 @@
             position: fixed;
             left: 50vw;
             top: 40vh;
-            width: 75px;
-            height: 75px;
+            width: 25px;
+            height: 25px;
             z-index: 2000;
             pointer-events: none;
         }
 
         .dragonfly {
             position: relative;
-            width: 75px;
-            height: 75px;
+            width: 25px;
+            height: 25px;
             animation: glow-red 2s infinite alternate;
             display: flex;
             justify-content: center;
@@ -530,28 +530,28 @@
 
         @keyframes glow-red {
             0% {
-                filter: drop-shadow(0 0 20px #ff003c);
+                filter: drop-shadow(0 0 6.67px #ff003c);
             }
 
             100% {
-                filter: drop-shadow(0 0 40px #ff003c);
+                filter: drop-shadow(0 0 13.33px #ff003c);
             }
         }
 
         @keyframes player-glow-red {
             0% {
-                filter: drop-shadow(0 0 20px #ff003c);
+                filter: drop-shadow(0 0 6.67px #ff003c);
             }
 
             100% {
-                filter: drop-shadow(0 0 40px #ff003c);
+                filter: drop-shadow(0 0 13.33px #ff003c);
             }
         }
 
         .wings {
             position: absolute;
-            width: 96px;
-            height: 32px;
+            width: 32px;
+            height: 10.67px;
             left: 50%;
             top: 50%;
             transform: translate(-50%, -50%);
@@ -560,18 +560,18 @@
 
         .wing {
             position: absolute;
-            width: 48px;
-            height: 5.5px;
+            width: 16px;
+            height: 1.83px;
             background: rgba(255, 0, 60, 0.18);
-            border-radius: 24px / 3.5px;
+            border-radius: 8px / 1.17px;
             border: 1px solid #ff003c;
-            box-shadow: 0 0 7.5px 1.25px #ff003c;
+            box-shadow: 0 0 2.5px 0.42px #ff003c;
             z-index: 2;
         }
 
         .wing.left-top {
             left: 0;
-            top: 2px;
+            top: 0.67px;
             transform-origin: 100% 50%;
             animation: flap-left-top 0.03s infinite alternate cubic-bezier(.4, 0, .6, 1);
             z-index: 2;
@@ -580,7 +580,7 @@
 
         .wing.left-bottom {
             left: 0;
-            top: 22px;
+            top: 7.33px;
             transform-origin: 100% 50%;
             animation: flap-left-bottom 0.03s infinite alternate cubic-bezier(.4, 0, .6, 1);
             z-index: 2;
@@ -588,8 +588,8 @@
         }
 
         .wing.right-top {
-            left: 48px;
-            top: 2px;
+            left: 16px;
+            top: 0.67px;
             transform-origin: 0 50%;
             animation: flap-right-top 0.03s infinite alternate cubic-bezier(.4, 0, .6, 1);
             z-index: 2;
@@ -597,8 +597,8 @@
         }
 
         .wing.right-bottom {
-            left: 48px;
-            top: 22px;
+            left: 16px;
+            top: 7.33px;
             transform-origin: 0 50%;
             animation: flap-right-bottom 0.03s infinite alternate cubic-bezier(.4, 0, .6, 1);
             z-index: 2;
@@ -649,12 +649,12 @@
             position: absolute;
             left: 50%;
             top: 50%;
-            width: 4px;
-            height: 30px;
+            width: 1.33px;
+            height: 10px;
             background: linear-gradient(to bottom, #ff003c 60%, #ff4d6d 100%);
-            border-radius: 2px 2px 5px 5px;
+            border-radius: 0.67px 0.67px 1.67px 1.67px;
             transform: translate(-50%, -50%) rotate(0deg);
-            box-shadow: 0 0 7.5px #ff003c, 0 0 2.5px #ff4d6d inset;
+            box-shadow: 0 0 2.5px #ff003c, 0 0 0.83px #ff4d6d inset;
             z-index: 3;
         }
 
@@ -662,12 +662,12 @@
             position: absolute;
             left: 50%;
             top: 92%;
-            width: 2px;
-            height: 17.5px;
+            width: 0.67px;
+            height: 5.83px;
             background: linear-gradient(to bottom, #ff003c 60%, #ff4d6d 100%);
-            border-radius: 2.5px 2.5px 7.5px 7.5px;
+            border-radius: 0.83px 0.83px 2.5px 2.5px;
             transform: translate(-50%, -90%) rotate(0deg);
-            box-shadow: 0 0 5px #ff003c, 0 0 2.5px #ff4d6d inset;
+            box-shadow: 0 0 1.67px #ff003c, 0 0 0.83px #ff4d6d inset;
             z-index: 2;
         }
 
@@ -675,21 +675,21 @@
             position: absolute;
             left: 50%;
             top: 20%;
-            width: 9.5px;
-            height: 9.5px;
+            width: 3.17px;
+            height: 3.17px;
             background: radial-gradient(circle, #ff003c 70%, #ff4d6d 100%);
             border-radius: 50%;
             transform: translate(-50%, -50%);
-            box-shadow: 0 0 5px #ff003c, 0 0 2.5px #ff4d6d inset;
+            box-shadow: 0 0 1.67px #ff003c, 0 0 0.83px #ff4d6d inset;
             z-index: 3;
         }
 
         .antenna {
             position: absolute;
-            width: 1px;
-            height: 10px;
+            width: 0.33px;
+            height: 3.33px;
             background: linear-gradient(to top, #ff003c 60%, #ff4d6d 100%);
-            border-radius: 1px 1px 2.5px 2.5px;
+            border-radius: 0.33px 0.33px 0.83px 0.83px;
             top: 28%;
             z-index: 4;
         }
@@ -738,7 +738,7 @@
                 projects.</p>
         </a>
 
-        <a href="VibeCode.html" class="card">
+    <a href="VibeCode2/VibeCode2.html" class="card">
             <h2><img src="Images/emrald.png" alt="Emerald" class="card-icon">The Vibe Code Registry</h2>
             <p>A curated registry of interactive games, creative tools, and digital experiences. Play, create, and vibe
                 with unique web projects from JodyLabs.</p>
@@ -1165,17 +1165,36 @@
     <script>
         (function () {
             const container = document.getElementById('dragonfly-container');
-            const dragonflyHeight = 75;
-            const dragonflyWidth = 75;
-            let posX = window.innerWidth / 2 - dragonflyWidth / 2;
-            let posY = window.innerHeight * 0.4;
+            const dragonflyHeight = 25;
+            const dragonflyWidth = 25;
+            // Compute starting position: just to the right of the "JODYLABS" title
+            function getDragonflyStart() {
+                const title = document.querySelector('.hero-title');
+                if (title) {
+                    const rect = title.getBoundingClientRect();
+                    const offsetX = 8; // small gap to the right of the S
+                    const moveLeft = 650; // move left by 800px, then shift right 50px (net 750)
+                    const startX = rect.right + offsetX - moveLeft;
+                    const startY = rect.top + (rect.height / 2) - (dragonflyHeight / 2);
+                    // Ensure values are within viewport
+                    return {
+                        x: Math.max(0, Math.min(startX, window.innerWidth - dragonflyWidth)),
+                        y: Math.max(0, Math.min(startY, window.innerHeight - dragonflyHeight))
+                    };
+                }
+                return { x: window.innerWidth / 2 - dragonflyWidth / 2, y: window.innerHeight * 0.4 };
+            }
+            const startPos = getDragonflyStart();
+            let posX = startPos.x;
+            let posY = startPos.y;
             let velX = 0;
             let velY = 0;
             let gravity = 0.12;
             let thrust = 0.7;
             let thrustUp = 0.7;
             let maxVel = 8;
-            let landed = false;
+            // Start 'landed' so the dragonfly stays in place until the user presses WASD
+            let landed = true;
             function clamp(val, min, max) { return Math.max(min, Math.min(max, val)); }
             document.addEventListener('keydown', (e) => {
                 if (landed && (e.key === 'w' || e.key === 'a' || e.key === 's' || e.key === 'd')) { landed = false; }
