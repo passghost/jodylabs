@@ -486,7 +486,7 @@
         /* ----------------- Config ----------------- */
         const SUPABASE_URL = "https://omcwjmvdjswkfjkahchm.supabase.co";
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE";
-        const DAILY_CAPS = { make: 10, pick: 10, plant: 10 }; // caps per 30-minute window
+        const ACTION_COOLDOWNS = { make: 2 * 60 * 60 * 1000, pick: 1 * 60 * 60 * 1000, plant: 2 * 60 * 1000 }; // cooldowns in ms after first use
         const WATER_COOLDOWN_MS = 2 * 60 * 1000; // 2 minutes
         const STAGE_MS = 6 * 60 * 60 * 1000; // 6 hours per stage
         const TOTAL_MS = 4 * STAGE_MS; // 24 hours total
@@ -621,26 +621,18 @@
             },
 
             can(action) {
-                const key = this.twoMinuteKey();
-                const caps = this.caps[key] || { make: 0, pick: 0, plant: 0 };
-                return (caps[action] || 0) < DAILY_CAPS[action];
+                const lastAction = this.caps[`last_${action}`] || 0;
+                const cooldown = ACTION_COOLDOWNS[action] || 0;
+                const canDo = Date.now() - lastAction >= cooldown;
+                console.log(`can(${action}): lastAction=${lastAction}, cooldown=${cooldown}, canDo=${canDo}`);
+                return canDo;
             },
 
             bump(action) {
-                const key = this.twoMinuteKey();
-                const caps = this.caps[key] || { make: 0, pick: 0, plant: 0 };
-                caps[action] = (caps[action] || 0) + 1;
-                this.caps[key] = caps;
+                this.caps[`last_${action}`] = Date.now();
                 localStorage.setItem("caps", JSON.stringify(this.caps));
             },
 
-            twoMinuteKey() {
-                // Reset every 30 minutes for caps
-                const d = new Date();
-                const block = Math.floor(d.getTime() / (30 * 60 * 1000));
-                return `${d.toISOString().slice(0, 10)}-${block}`;
-            }
-            ,
             // Persist to localStorage fallback for demo usage
             save() {
                 try {
@@ -810,7 +802,7 @@
         }
 
         $("#submitSeed").onclick = async () => {
-            if (!db.can("make")) { toast("Daily seed limit reached"); return; }
+            if (!db.can("make")) { toast("Make action on cooldown"); return; }
             if (!initSupabase()) { toast("Set SUPABASE_URL and SUPABASE_ANON_KEY first"); return; }
             try {
                 $("#submitSeed").disabled = true;
@@ -834,7 +826,7 @@
                 };
                 await db.addSeed(seed);
                 db.bump("make");
-                updateCapsUI();
+                updateTimers();
                 renderPicker();
                 toast("Seed submitted to the community garden!");
             } catch (err) {
@@ -962,12 +954,12 @@
                 const btn = document.createElement('button');
                 btn.textContent = 'Pick';
                 btn.onclick = () => {
-                    if (!db.can('pick')) { toast('Daily pick limit reached'); return; }
+                    if (!db.can('pick')) { toast('Pick action on cooldown'); return; }
                     pickedSeedId = s.id;
                     pickedThumbnail = img.src || null;
                     db.bump('pick');
                     db.save();
-                    updateCapsUI();
+                    updateTimers();
                     if (pickedThumbnail) {
                         $("#pickedInfo").innerHTML = `<img src="${pickedThumbnail}" style="width:40px;height:40px;vertical-align:middle;border-radius:6px;margin-right:8px"> Picked ${s.id.slice(0, 6)}…`;
                     } else {
@@ -975,7 +967,7 @@
                     }
                     toast('Seed picked. Click the field to plant.');
                 };
-                btn.disabled = !db.can('pick');
+                // Button state will be managed by updateTimers()
                 wrap.appendChild(img);
                 wrap.appendChild(btn);
                 el.appendChild(wrap);
@@ -1067,7 +1059,7 @@
         // Planting now uses world coordinates so plants remain at the correct world positions while panning/zooming
         async function plantAtClient(clientX, clientY) {
             if (!pickedSeedId) return toast("Pick a seed first");
-            if (!db.can("plant")) return toast("Daily plant limit reached");
+            if (!db.can("plant")) return toast("Plant action on cooldown");
             const { x, y } = clientToWorld(clientX, clientY);
             const s = db.seeds.find(s => s.id === pickedSeedId);
             if (!s) return toast("Picked seed missing");
@@ -1084,7 +1076,7 @@
                 };
                 await db.addPlant(plant);
                 db.bump("plant");
-                updateCapsUI();
+                updateTimers();
                 pickedSeedId = null;
                 $("#pickedInfo").textContent = "No seed picked.";
                 renderField();
@@ -1493,10 +1485,7 @@
                 }
             });
 
-            // caps reset countdown (two-minute block) - compute nextReset for pill cooldown display
-            const d = new Date();
-            const blockMs = 30 * 60 * 1000;
-            const nextReset = Math.ceil(d.getTime() / blockMs) * blockMs;
+            // Individual action cooldown system
 
             // selected plant water cooldown
             const btn = $("#waterSelected");
@@ -1516,70 +1505,72 @@
                 btn.textContent = '💧 Water selected plant';
             }
 
-            // --- make/pick/plant (water) caps display ---
-            const blockKey = db.twoMinuteKey();
-            const caps = db.caps[blockKey] || { make: 0, pick: 0, plant: 0 };
-            // time until next caps reset
-            const capsResetMs = nextReset - Date.now();
-
+            // --- Individual action cooldown timers ---
             const makePill = $('#makeTimer');
             const pickPill = $('#pickTimer');
             const waterPill = $('#waterTimer');
-            const makeCount = caps.make || 0;
-            const pickCount = caps.pick || 0;
-            const plantCount = caps.plant || 0;
 
+            // Make timer
             if (makePill) {
-                if (makeCount >= DAILY_CAPS.make) {
-                    makePill.querySelector('.count').textContent = formatMs(capsResetMs);
+                const lastMake = db.caps.last_make || 0;
+                const makeReady = Date.now() - lastMake >= ACTION_COOLDOWNS.make;
+                if (!makeReady && lastMake > 0) {
+                    const cooldownLeft = ACTION_COOLDOWNS.make - (Date.now() - lastMake);
+                    makePill.querySelector('.count').textContent = formatMs(cooldownLeft);
                     makePill.classList.add('gray');
-                    makePill.title = `Reset in ${formatMs(capsResetMs)}`;
-                    $('#submitSeed').disabled = true;
+                    makePill.title = `Cooldown: ${formatMs(cooldownLeft)}`;
+                    const submitBtn = $('#submitSeed');
+                    if (submitBtn) submitBtn.disabled = true;
                 } else {
                     makePill.querySelector('.count').textContent = 'ready';
                     makePill.classList.remove('gray');
                     makePill.title = '';
-                    $('#submitSeed').disabled = false;
+                    const submitBtn = $('#submitSeed');
+                    if (submitBtn) submitBtn.disabled = false;
                 }
             }
 
+            // Pick timer
             if (pickPill) {
-                if (pickCount >= DAILY_CAPS.pick) {
-                    pickPill.querySelector('.count').textContent = formatMs(capsResetMs);
+                const lastPick = db.caps.last_pick || 0;
+                const pickReady = Date.now() - lastPick >= ACTION_COOLDOWNS.pick;
+                if (!pickReady && lastPick > 0) {
+                    const cooldownLeft = ACTION_COOLDOWNS.pick - (Date.now() - lastPick);
+                    pickPill.querySelector('.count').textContent = formatMs(cooldownLeft);
                     pickPill.classList.add('gray');
-                    pickPill.title = `Reset in ${formatMs(capsResetMs)}`;
-                    $$('#picker .seed button').forEach(b => b.disabled = true);
-                    $$('#randomThree button').forEach(b => b.disabled = true);
+                    pickPill.title = `Cooldown: ${formatMs(cooldownLeft)}`;
+                    document.querySelectorAll('#randomThree button').forEach(b => b.disabled = true);
                 } else {
                     pickPill.querySelector('.count').textContent = 'ready';
                     pickPill.classList.remove('gray');
                     pickPill.title = '';
-                    $$('#picker .seed button').forEach(b => b.disabled = false);
-                    $$('#randomThree button').forEach(b => b.disabled = false);
+                    document.querySelectorAll('#randomThree button').forEach(b => b.disabled = false);
                 }
             }
 
+            // Plant timer (water pill shows plant cooldown)
             if (waterPill) {
-                if (plantCount >= DAILY_CAPS.plant) {
-                    waterPill.querySelector('.count').textContent = formatMs(capsResetMs);
+                const lastPlant = db.caps.last_plant || 0;
+                const plantReady = Date.now() - lastPlant >= ACTION_COOLDOWNS.plant;
+                if (!plantReady && lastPlant > 0) {
+                    const cooldownLeft = ACTION_COOLDOWNS.plant - (Date.now() - lastPlant);
+                    waterPill.querySelector('.count').textContent = formatMs(cooldownLeft);
                     waterPill.classList.add('gray');
-                    waterPill.title = `Reset in ${formatMs(capsResetMs)}`;
+                    waterPill.title = `Plant cooldown: ${formatMs(cooldownLeft)}`;
                 } else {
                     waterPill.querySelector('.count').textContent = 'ready';
                     waterPill.classList.remove('gray');
                     waterPill.title = '';
                 }
-                // Also disable the water button if cap reached or selected plant is cooling
+
+                // Water button logic (separate from plant cooldown)
                 const waterBtn = $('#waterSelected');
-                if (waterBtn) {
-                    let disableWater = (plantCount >= DAILY_CAPS.plant);
-                    if (!disableWater && selectedPlantId) {
-                        const sel = db.plants.find(x => x.id === selectedPlantId);
-                        if (sel) {
-                            disableWater = Date.now() < nextWaterAt(sel);
-                        }
+                if (waterBtn && selectedPlantId) {
+                    const sel = db.plants.find(x => x.id === selectedPlantId);
+                    if (sel) {
+                        const nextWater = nextWaterAt(sel);
+                        waterBtn.disabled = Date.now() < nextWater;
                     }
-                    waterBtn.disabled = !!disableWater;
                 }
             }
             // Refresh the stats bubble for selected plant so values/countdowns update live
@@ -1642,8 +1633,8 @@
             renderPicker();
             await renderRandomThree();
             renderField();
-            updateCapsUI();
-            setInterval(() => { renderField(); updateCapsUI(); }, AUTO_REFRESH_MS);
+            updateTimers();
+            setInterval(() => { renderField(); updateTimers(); }, AUTO_REFRESH_MS);
         }
 
         initApp();
