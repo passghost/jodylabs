@@ -1,12 +1,129 @@
-/* Minimal styling for VibeCode2 */
-:root{--bg:#0b0f1a;--fg:#e6f0ff}
-html,body,#app{height:100%;margin:0}
-body{background:var(--bg);color:var(--fg);font-family:system-ui,Segoe UI,Roboto,Arial}
+/* Modern vibrant theme for VibeCode2 */
+:root{
+  /* Vampire slate gray on dark gray palette */
+  --bg: linear-gradient(120deg, #0f0f11 0%, #131316 45%, #1b1b1d 100%);
+  --fg: #e6e6e8; /* pale slate text */
+  --accent: #7a1f27; /* vampiric wine red */
+  --accent2: #5e6b73; /* muted slate accent */
+  --card: #121214; /* deep dark card background */
+  --glass: rgba(255,255,255,0.03);
+  --shadow: 0 8px 32px rgba(94,107,115,0.06), 0 2px 8px rgba(122,31,39,0.06);
+}
+body {
+  background:var(--bg);
+  color:var(--fg);
+  font-family:'Inter',system-ui,Segoe UI,Roboto,Arial;
+  min-height:100vh;
+  margin:0;
+  padding-top:32px;
+}
+#hero-gradient{position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(600px 300px at 10% 20%, rgba(122,31,39,0.06), transparent), radial-gradient(500px 200px at 90% 80%, rgba(94,107,115,0.04), transparent);mix-blend-mode:screen;opacity:0.98}
 #header-placeholder{padding:12px 16px}
-header{display:flex;align-items:center;gap:12px}
-header h1{font-size:16px;margin:0}
-.stage{position:relative;height:calc(100% - 56px);overflow:hidden}
+.vc-header {
+  position:sticky;
+  top:0;
+  z-index:100;
+  padding:44px 32px 12px 32px;
+  max-width:1200px;
+  margin:0 auto;
+  background:linear-gradient(135deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border-radius:24px;
+  box-shadow:0 8px 48px rgba(10,14,30,0.6), 0 6px 18px rgba(69,173,255,0.04);
+  backdrop-filter:blur(8px);
+  border:1px solid rgba(255,255,255,0.03);
+  overflow:clip;
+}
+.vc-hero{display:flex;align-items:center;justify-content:space-between;gap:20px}
+.vc-title h1{
+  font-family:'Orbitron',sans-serif;
+  font-weight:900;
+  font-size:3.2rem;
+  margin:0;
+  color:var(--accent);
+  letter-spacing:1px;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow:0 6px 28px rgba(94,107,115,0.06);
+}
+.vc-sub{margin-top:8px;color:rgba(230,240,255,0.85);opacity:0.92;font-size:1.15rem;line-height:1.5}
+.vc-nav{display:flex;gap:16px;align-items:center}
+.vc-nav a{
+  color:var(--fg);
+  text-decoration:none;
+  padding:10px 18px;
+  border-radius:10px;
+  background:linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border:none;
+  font-weight:600;
+  font-size:1.08rem;
+  transition:all 180ms cubic-bezier(.2,.9,.2,1);
+  box-shadow:0 2px 8px rgba(122,31,39,0.08);
+}
+.vc-nav a.vc-quick{background:linear-gradient(90deg, rgba(94,107,115,0.12), rgba(122,31,39,0.06));color:var(--accent2)}
+.vc-nav a:hover{transform:translateY(-3px) scale(1.04);box-shadow:0 8px 24px var(--accent2)}
+.vc-nav .nav-item{position:relative;display:inline-block}
+.vc-nav .nav-badge{
+  position:absolute;
+  top:-10px;
+  right:8px;
+  background:var(--accent);
+  color:#111;
+  font-weight:800;
+  font-size:0.65rem;
+  padding:4px 8px;
+  border-radius:999px;
+  box-shadow:0 6px 18px rgba(122,31,39,0.12);
+  transform:translateY(-50%);
+}
+.vc-controls{display:flex;align-items:center;margin-top:22px}
+.vc-search{display:flex;align-items:center;gap:14px;flex:1;max-width:820px}
+.vc-search input{
+  flex:1;
+  padding:14px 18px;
+  border-radius:16px;
+  border:none;
+  background:linear-gradient(90deg, rgba(255,255,255,0.02), rgba(94,107,115,0.02));
+  color:var(--fg);
+  outline:none;
+  font-size:1.08rem;
+  box-shadow:0 6px 18px rgba(2,6,23,0.6);
+  transition:box-shadow 180ms;
+}
+.vc-search input:focus{box-shadow:0 8px 32px rgba(94,107,115,0.12)}
+.vc-count{
+  min-width:44px;
+  text-align:center;
+  padding:10px 12px;
+  border-radius:14px;
+  background:linear-gradient(90deg, rgba(122,31,39,0.08), rgba(94,107,115,0.08));
+  color:var(--fg);
+  font-weight:700;
+  font-size:1.08rem;
+  box-shadow:0 2px 8px rgba(255,107,107,0.08);
+}
+/* stage takes remaining vertical space with subtle padding */
+.stage{
+  position:relative;
+  min-height:40vh;
+  padding-bottom:1rem;
+  overflow:hidden;
+  background:linear-gradient(120deg, rgba(255,255,255,0.01) 0%, rgba(94,107,115,0.01) 100%);
+  border-radius:24px;
+  box-shadow:0 8px 32px rgba(94,107,115,0.04);
+}
+#stage {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-bottom: 1.5rem;
+  min-height: 60vh;
+}
 canvas.vibe-canvas{display:block;width:100%;height:100%}
+.vibe-canvas{position:absolute;inset:0;z-index:0;pointer-events:none;border-radius:24px}
+.project{position:relative;z-index:1}
+/* subtle floating grid overlay */
+.grid-overlay{position:absolute;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,0.01) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.01) 1px, transparent 1px);background-size:120px 120px,120px 120px;opacity:0.12;mix-blend-mode:overlay}
 /* small responsive tweaks */
 @media (max-width:420px){header h1{font-size:14px}}
 
@@ -16,3 +133,138 @@ canvas.vibe-canvas{display:block;width:100%;height:100%}
 .project-card .card-icon{font-size:20px}
 .project-card h3{font-size:13px;margin:0}
 .project-card p{font-size:11px;margin:0;opacity:0.85}
+
+/* Re-use simplified layout from original VibeCode for modular cards */
+.projects-grid{
+  max-width: 1200px;
+  margin: 0 auto 24px auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 28px;
+  padding: 32px 36px 24px 36px;
+  animation: fadeInGrid 0.7s cubic-bezier(.2,.9,.2,1);
+  margin-bottom: 48px;
+}
+@keyframes fadeInGrid{from{opacity:0;transform:translateY(40px);}to{opacity:1;transform:translateY(0);}}
+.project{
+  background:linear-gradient(120deg, rgba(255,255,255,0.04) 0%, rgba(94,107,115,0.04) 100%);
+  background-color:var(--card);
+  border-radius:18px;
+  padding:22px 18px 22px 18px;
+  position:relative;
+  min-height:220px;
+  box-shadow:var(--shadow);
+  transition:transform 260ms cubic-bezier(.2,.9,.2,1), box-shadow 260ms ease, filter 260ms ease;
+  backdrop-filter: blur(10px);
+  animation: fadeInCard 0.7s cubic-bezier(.2,.9,.2,1);
+}
+.project:hover{
+  transform:translateY(-10px) scale(1.03);
+  box-shadow:0 24px 64px rgba(94,107,115,0.12),0 8px 32px rgba(122,31,39,0.08);
+  filter:brightness(1.03);
+}
+.project:hover .project-link{
+  transform:translateY(-8px) scale(1.04);
+  box-shadow:0 16px 40px var(--accent);
+}
+.project::after{
+  content:'';
+  position:absolute;
+  inset:0;
+  border-radius:18px;
+  pointer-events:none;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.03);
+}
+.project .project-icon{
+  width:48px;
+  height:48px;
+  border-radius:12px;
+  overflow:hidden;
+  background:linear-gradient(120deg, #23243a 0%, #1a1f2b 100%);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow:0 2px 8px var(--accent2);
+}
+.project .project-icon img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  border-radius:12px;
+}
+.project .project-body{
+  padding:10px 10px 60px 10px;
+  text-align:center;
+}
+.project h2{
+  font-size:1.12rem;
+  margin:8px 0 4px 0;
+  color:var(--accent);
+  font-family:'Orbitron',sans-serif;
+  text-shadow:0 2px 8px var(--accent2);
+}
+.project p{
+  font-size:1.02rem;
+  opacity:0.97;
+  color:rgba(230,240,255,0.96);
+  line-height:1.5;
+}
+.project-screenshot{
+  width:100%;
+  height:150px;
+  object-fit:cover;
+  border-radius:14px;
+  margin-top:16px;
+  border:1px solid rgba(255,255,255,0.04);
+  box-shadow:0 2px 8px var(--accent2);
+}
+.project-link{
+  position:absolute;
+  right:20px;
+  bottom:20px;
+  padding:12px 22px;
+  background:linear-gradient(135deg,var(--accent),#7f2b33);
+  color:#fff;
+  border-radius:26px;
+  text-decoration:none;
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+  font-weight:900;
+  letter-spacing:0.7px;
+  font-size:1.08rem;
+  transition:transform 180ms cubic-bezier(.2,.9,.2,1),box-shadow 180ms ease;
+  box-shadow:0 8px 28px rgba(94,107,115,0.12),0 2px 8px rgba(122,31,39,0.08);
+}
+.project-link span{
+  display:inline-block;
+  transition:transform 180ms cubic-bezier(.2,.9,.2,1);
+}
+.project-link:hover span{transform:translateX(8px)}
+.project h2{color:var(--accent);text-shadow:0 4px 18px rgba(255,107,107,0.09)}
+@keyframes fadeInCard{from{opacity:0;transform:translateY(40px);}to{opacity:1;transform:translateY(0);}}
+
+/* subtle floating animation for decorative elements */
+@keyframes floaty{0%{transform:translateY(0)}50%{transform:translateY(-6px)}100%{transform:translateY(0)}}
+.vc-hero .vc-title{animation:floaty 6s ease-in-out infinite}
+
+/* Hit counter styling (themed copy of VibeCode) */
+.hit-counter{
+  position:fixed;
+  bottom:20px;
+  right:20px;
+  font-size:0.95rem;
+  font-weight:600;
+  color:var(--accent);
+  background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));
+  padding:10px 14px;
+  border-radius:12px;
+  border:1px solid rgba(94,107,115,0.06);
+  backdrop-filter:blur(6px);
+  z-index:1200;
+  min-width:120px;
+  text-align:center;
+}
+.hit-counter .counter-label{display:block;font-size:0.75rem;opacity:0.9}
+.hit-counter .counter-value{display:block;font-size:1.12rem;margin-top:4px;color:var(--fg)}
+.hit-counter .error{color:#7a1f27;font-size:0.75rem;margin-top:4px;display:none}

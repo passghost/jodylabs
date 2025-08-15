@@ -1,6 +1,22 @@
-<header>
-  <h1>VibeCode2</h1>
-  <nav>
-    <a href="../VibeCode.html">Original</a>
-  </nav>
+<header class="vc-header">
+  <div class="vc-hero">
+    <div class="vc-title">
+      <h1>The VibeCode Registry:</h1>
+      <p class="vc-sub">A curated registry of playful web projects, tools, and experiments — now fully modular.</p>
+    </div>
+    <nav class="vc-nav">
+      <a class="vc-home" href="../index.html">Home</a>
+      <div class="nav-item">
+        <a class="vc-quick" href="../CommunityGarden/garden.html">Community Garden</a>
+        <span class="nav-badge">new</span>
+      </div>
+    </nav>
+  </div>
+  <div class="vc-controls">
+    <div class="vc-search">
+      <input id="project-search" type="search" placeholder="Search projects (title, description)..." aria-label="Search projects" />
+      <div id="project-count" class="vc-count">0</div>
+    </div>
+  </div>
+  <div id="project-cards" style="display:inline-block;margin-left:12px"></div>
 </header>
