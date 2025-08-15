@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="en">
 
@@ -48,9 +47,25 @@
         }
 
         /* small action timer pills */
-        .action-timers { display: flex; gap: 8px; align-items: center; margin-left: auto; }
-        .action-pill { padding: 6px 8px; border-radius: 10px; background: #0f1620; border: 1px solid var(--line); color: var(--muted); font-size: 13px; }
-        .action-pill.gray { opacity: 0.45; }
+        .action-timers {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-left: auto;
+        }
+
+        .action-pill {
+            padding: 6px 8px;
+            border-radius: 10px;
+            background: #0f1620;
+            border: 1px solid var(--line);
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .action-pill.gray {
+            opacity: 0.45;
+        }
 
         main {
             display: grid;
@@ -156,7 +171,8 @@
             border: 1px solid var(--line);
             position: relative;
             overflow: hidden;
-            touch-action: none; /* we'll handle touch/pan/zoom manually */
+            touch-action: none;
+            /* we'll handle touch/pan/zoom manually */
             background: linear-gradient(180deg, #87CEEB 0%, #98D8E8 30%, #B8E6B8 70%, #90EE90 100%);
         }
 
@@ -171,12 +187,12 @@
             /* Large patchy background: alternating green tiles and subtle texture */
             background-color: #7ecf7a;
             background-image:
-                linear-gradient(180deg, rgba(0,0,0,0.03) 0 1px, transparent 1px),
-                repeating-linear-gradient(90deg, rgba(0,0,0,0.02) 0 32px, transparent 32px 64px),
-                linear-gradient(135deg, rgba(255,255,255,0.03), rgba(0,0,0,0.03));
+                linear-gradient(180deg, rgba(0, 0, 0, 0.03) 0 1px, transparent 1px),
+                repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.02) 0 32px, transparent 32px 64px),
+                linear-gradient(135deg, rgba(255, 255, 255, 0.03), rgba(0, 0, 0, 0.03));
             /* create visible larger color patches using background-size / position trick */
             background-blend-mode: multiply, overlay, normal;
-            box-shadow: inset 0 0 60px rgba(0,0,0,0.06);
+            box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.06);
         }
 
         .plot {
@@ -197,22 +213,25 @@
         .plant:hover {
             transform: translate(-50%, -100%) scale(1.08);
             cursor: pointer;
-            box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
         }
 
         .plant.selected {
             transform: translate(-50%, -100%) scale(1.1);
-            box-shadow: 0 8px 24px rgba(111,227,180,0.12), 0 0 0 3px rgba(111,227,180,0.08);
-            outline: 2px solid rgba(111,227,180,0.06);
+            box-shadow: 0 8px 24px rgba(111, 227, 180, 0.12), 0 0 0 3px rgba(111, 227, 180, 0.08);
+            outline: 2px solid rgba(111, 227, 180, 0.06);
         }
 
         /* When a plant is in the seed phase (stage 0) we still want the DOM node
            to exist for selection and highlighting, but hide the visible seed image.
            The element keeps pointer-events so users can select and hover it. */
         .plant.seed-hidden img.stage {
-            opacity: 0; /* invisible */
-            pointer-events: none; /* clicks should be handled by the .plant wrapper */
+            opacity: 0;
+            /* invisible */
+            pointer-events: none;
+            /* clicks should be handled by the .plant wrapper */
         }
+
         .plant.seed-hidden {
             /* keep selection visuals enabled */
             background: transparent;
@@ -229,13 +248,15 @@
             /* seed-like oval with slightly pointed ends */
             border-radius: 50% 40% 50% 40% / 60% 60% 40% 40%;
             background: linear-gradient(180deg, #45d67a 0%, #1fa65a 100%);
-            box-shadow: 0 1px 4px rgba(0,0,0,0.18);
-            border: 1px solid rgba(255,255,255,0.14);
-            pointer-events: none; /* let the wrapper handle clicks */
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            pointer-events: none;
+            /* let the wrapper handle clicks */
             transition: transform .18s ease, opacity .18s ease;
             opacity: 1;
             z-index: 2;
         }
+
         .plant:hover .seed-dot,
         .plant.selected .seed-dot {
             transform: translateX(-50%) scale(1.18);
@@ -250,12 +271,21 @@
             pointer-events: auto;
             opacity: 0;
             transform-origin: left center;
-            transition: transform 220ms cubic-bezier(.2,.9,.2,1), opacity 180ms ease;
+            transition: transform 220ms cubic-bezier(.2, .9, .2, 1), opacity 180ms ease;
             will-change: transform, opacity, left, top;
             transform: translateX(-8px) scale(.98);
         }
-        #plantStats.visible { opacity: 1; transform: translateX(0px) scale(1); }
-        #plantStats .card { background: linear-gradient(180deg,#0b1522,#071018); border:1px solid var(--line); }
+
+        #plantStats.visible {
+            opacity: 1;
+            transform: translateX(0px) scale(1);
+        }
+
+        #plantStats .card {
+            background: linear-gradient(180deg, #0b1522, #071018);
+            border: 1px solid var(--line);
+        }
+
         #plantStats .close {
             float: right;
             cursor: pointer;
@@ -282,8 +312,15 @@
         }
 
         @keyframes fadeInTag {
-            from { opacity: 0; transform: translateX(-50%) translateY(-5px); }
-            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
         }
 
         .stage {
@@ -419,14 +456,16 @@
             <div id="randomThree" class="row" style="gap:8px;margin-bottom:8px;"></div>
             <div class="row" style="gap:8px;margin-bottom:8px;">
                 <button id="refreshRandom">Refresh picks</button>
-                <div class="note">Showing 3 random first-frame seeds</div>
+                <div class="note">Pick from 3 random seeds above</div>
             </div>
+            <h2>Seed Gallery</h2>
             <div class="picker" id="picker"></div>
             <div class="row" style="margin-top:8px;">
                 <button id="pickRandom">Pick random</button>
                 <button id="unpick">Unpick</button>
             </div>
             <div class="row" style="margin-top:8px;gap:8px;align-items:center;">
+                <button id="debugSeedsBtn">Debug Seeds</button>
                 <div id="debugInfo" class="note muted">Debug info hidden</div>
             </div>
             <div class="note" id="pickedInfo">No seed picked.</div>
@@ -447,10 +486,10 @@
         /* ----------------- Config ----------------- */
         const SUPABASE_URL = "https://omcwjmvdjswkfjkahchm.supabase.co";
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE";
-    const DAILY_CAPS = { make: 10, pick: 10, plant: 10 }; // caps per 30-minute window
-    const WATER_COOLDOWN_MS = 2 * 60 * 1000; // 2 minutes
-    const STAGE_MS = 6 * 60 * 60 * 1000; // 6 hours per stage
-    const TOTAL_MS = 4 * STAGE_MS; // 24 hours total
+        const DAILY_CAPS = { make: 10, pick: 10, plant: 10 }; // caps per 30-minute window
+        const WATER_COOLDOWN_MS = 2 * 60 * 1000; // 2 minutes
+        const STAGE_MS = 6 * 60 * 60 * 1000; // 6 hours per stage
+        const TOTAL_MS = 4 * STAGE_MS; // 24 hours total
         const AUTO_REFRESH_MS = 2_000; // Refresh every 2 seconds
 
         /* ------------- Real-time database ------------- */
@@ -671,8 +710,8 @@
         }
 
         /* ------------- Drawing 4 frames ------------- */
-    const framesEl = $("#frames");
-    const frameLabel = $("#frameLabel");
+        const framesEl = $("#frames");
+        const frameLabel = $("#frameLabel");
         let currentFrame = 0;
         const N = 4;
         const CANVAS_SIZE = 32;
@@ -696,18 +735,18 @@
         label();
 
         let tool = "pencil";
-    let color = '#ffffff';
-    const colorEl = $("#color");
-    if (colorEl) color = colorEl.value;
-    const toolPencilEl = $("#toolPencil");
-    if (toolPencilEl) toolPencilEl.onclick = () => { tool = "pencil"; toast("Pencil"); };
-    const toolEraserEl = $("#toolEraser");
-    if (toolEraserEl) toolEraserEl.onclick = () => { tool = "eraser"; toast("Eraser"); };
-    if (colorEl) colorEl.oninput = e => color = e.target.value;
-    const prevEl = $("#prev");
-    if (prevEl) prevEl.onclick = () => { currentFrame = (currentFrame - 1 + N) % N; label(); };
-    const nextEl = $("#next");
-    if (nextEl) nextEl.onclick = () => { currentFrame = (currentFrame + 1) % N; label(); };
+        let color = '#ffffff';
+        const colorEl = $("#color");
+        if (colorEl) color = colorEl.value;
+        const toolPencilEl = $("#toolPencil");
+        if (toolPencilEl) toolPencilEl.onclick = () => { tool = "pencil"; toast("Pencil"); };
+        const toolEraserEl = $("#toolEraser");
+        if (toolEraserEl) toolEraserEl.onclick = () => { tool = "eraser"; toast("Eraser"); };
+        if (colorEl) colorEl.oninput = e => color = e.target.value;
+        const prevEl = $("#prev");
+        if (prevEl) prevEl.onclick = () => { currentFrame = (currentFrame - 1 + N) % N; label(); };
+        const nextEl = $("#next");
+        if (nextEl) nextEl.onclick = () => { currentFrame = (currentFrame + 1) % N; label(); };
         const clearEl = $("#clear");
         if (clearEl) clearEl.onclick = () => {
             if (!frames[currentFrame]) return;
@@ -807,46 +846,24 @@
         };
 
         /* ------------- Seed picker ------------- */
-    let pickedSeedId = null;
-    let pickedThumbnail = null;
-        // Keep track of ids currently shown in the Random Three area so they don't duplicate in the picker
-        let currentRandomIds = new Set();
+        let pickedSeedId = null;
+        let pickedThumbnail = null;
+
 
         function renderPicker() {
-                const el = $("#picker");
+            const el = $("#picker");
             if (!el) return;
             el.innerHTML = "";
-            db.seeds.filter(s => s.status === "waiting" && !currentRandomIds.has(s.id)).slice(0, 80).forEach(s => {
+            db.seeds.forEach(s => {
                 const div = document.createElement("div");
                 div.className = "seed";
                 const img = document.createElement("img");
                 img.src = s.thumbs[0];
-                const btn = document.createElement("button");
-                btn.textContent = "Pick";
-                btn.onclick = () => {
-                    if (!db.can("pick")) { toast("Daily pick limit reached"); return; }
-                    pickedSeedId = s.id;
-                    pickedThumbnail = (s.thumbs && s.thumbs[0]) || (s.full_images && s.full_images[0]) || null;
-                    db.bump("pick");
-                    db.save();
-                    updateCapsUI();
-                    const pickedInfoEl = $("#pickedInfo");
-                    if (pickedInfoEl) {
-                        if (pickedThumbnail) {
-                            pickedInfoEl.innerHTML = `<img src="${pickedThumbnail}" style="width:40px;height:40px;vertical-align:middle;border-radius:6px;margin-right:8px"> Picked ${s.id.slice(0,6)}…`;
-                        } else {
-                            pickedInfoEl.textContent = `Picked seed ${s.id.slice(0, 6)}…`;
-                        }
-                    }
-                    toast("Seed picked. Click the field to plant.");
-                };
-                // disable if pick cap reached now
-                btn.disabled = !db.can('pick');
+                // Just display the seed image, no pick button
                 div.appendChild(img);
-                div.appendChild(btn);
                 el.appendChild(div);
             });
-            if (db.seeds.filter(s => s.status === "waiting").length === 0) {
+            if (db.seeds.length === 0) {
                 el.innerHTML = `<div class="note muted">No seeds yet. Make one!</div>`;
             }
         }
@@ -856,11 +873,10 @@
             const el = $("#randomThree");
             if (!el) return;
             el.innerHTML = '';
-            currentRandomIds.clear();
             let pool = [];
             if (initSupabase()) {
                 try {
-                    const { data, error } = await supabase.from('seeds').select('id, thumbs, full_images, status').eq('status', 'waiting');
+                    const { data, error } = await supabase.from('seeds').select('id, thumbs, full_images, status');
                     if (!error && data) pool = data;
                 } catch (e) {
                     console.warn('Failed to fetch seeds for random picks, falling back:', e);
@@ -868,16 +884,20 @@
             }
             if (!pool.length) {
                 // fallback to local in-memory list
-                pool = db.seeds.filter(s => s.status === 'waiting');
+                pool = db.seeds;
             }
             if (!pool.length) {
                 el.innerHTML = '<div class="note muted">No seeds yet</div>';
                 return;
             }
-            // shuffle and take up to 3
-            // shuffle a copy to avoid mutating db.seeds order
-            const shuffled = pool.slice().sort(() => 0.5 - Math.random());
-            const picks = shuffled.slice(0, 3);
+            // Always show 3 picks, allowing duplicates if needed
+            const picks = [];
+            for (let i = 0; i < 3; i++) {
+                if (pool.length > 0) {
+                    const randomIndex = Math.floor(Math.random() * pool.length);
+                    picks.push(pool[randomIndex]);
+                }
+            }
             picks.forEach(s => {
                 const wrap = document.createElement('div');
                 wrap.style.display = 'flex';
@@ -885,7 +905,6 @@
                 wrap.style.alignItems = 'center';
                 wrap.style.gap = '6px';
                 wrap.dataset.seedId = s.id;
-                currentRandomIds.add(s.id);
                 const img = document.createElement('img');
                 // Resolve the thumbnail URL: thumbs may be public URLs or storage keys
                 let srcUrl = '';
@@ -950,7 +969,7 @@
                     db.save();
                     updateCapsUI();
                     if (pickedThumbnail) {
-                        $("#pickedInfo").innerHTML = `<img src="${pickedThumbnail}" style="width:40px;height:40px;vertical-align:middle;border-radius:6px;margin-right:8px"> Picked ${s.id.slice(0,6)}…`;
+                        $("#pickedInfo").innerHTML = `<img src="${pickedThumbnail}" style="width:40px;height:40px;vertical-align:middle;border-radius:6px;margin-right:8px"> Picked ${s.id.slice(0, 6)}…`;
                     } else {
                         $("#pickedInfo").textContent = `Picked seed ${s.id.slice(0, 6)}…`;
                     }
@@ -961,12 +980,10 @@
                 wrap.appendChild(btn);
                 el.appendChild(wrap);
             });
-            // After rendering random three, also re-render the picker to exclude them
-            renderPicker();
         }
 
-    const refreshRandomEl = $("#refreshRandom");
-    if (refreshRandomEl) refreshRandomEl.onclick = () => renderRandomThree();
+        const refreshRandomEl = $("#refreshRandom");
+        if (refreshRandomEl) refreshRandomEl.onclick = () => renderRandomThree();
 
         async function debugSeeds() {
             const infoEl = $("#debugInfo");
@@ -986,23 +1003,31 @@
             }
             const local = db.seeds || [];
             try {
-                infoEl.textContent = `local: ${local.length} seeds; remote: ${remote ? remote.length : 'n/a'} seeds`;
+                let statusInfo = '';
                 if (remote && remote.length) {
-                    const sample = remote.slice(0,3).map(r=> (r.id||'').slice(0,6)).join(', ');
-                    infoEl.textContent += ` • sample remote ids: ${sample}`;
+                    const statusCounts = {};
+                    remote.forEach(s => {
+                        statusCounts[s.status || 'unknown'] = (statusCounts[s.status || 'unknown'] || 0) + 1;
+                    });
+                    statusInfo = ` • status: ${Object.entries(statusCounts).map(([k, v]) => `${k}:${v}`).join(', ')}`;
+                }
+                infoEl.textContent = `local: ${local.length} seeds; remote: ${remote ? remote.length : 'n/a'} seeds${statusInfo}`;
+                if (remote && remote.length) {
+                    const sample = remote.slice(0, 3).map(r => (r.id || '').slice(0, 6)).join(', ');
+                    infoEl.textContent += ` • sample ids: ${sample}`;
                 }
             } catch (e) {
                 console.error('debugSeeds ui error', e);
             }
             console.log('debugSeeds remote', remote);
-            console.log('debugSeeds local', local.slice(0,20));
+            console.log('debugSeeds local', local.slice(0, 20));
         }
 
-    const debugSeedsBtn = $("#debugSeedsBtn");
-    if (debugSeedsBtn) debugSeedsBtn.onclick = () => debugSeeds();
+        const debugSeedsBtn = $("#debugSeedsBtn");
+        if (debugSeedsBtn) debugSeedsBtn.onclick = () => debugSeeds();
 
-    const pickRandomEl = $("#pickRandom");
-    if (pickRandomEl) pickRandomEl.onclick = () => {
+        const pickRandomEl = $("#pickRandom");
+        if (pickRandomEl) pickRandomEl.onclick = () => {
             pickedSeedId = null;
             pickedThumbnail = null;
             const pickedInfoEl2 = $("#pickedInfo");
@@ -1010,10 +1035,10 @@
         };
 
         /* ------------- Field (planting + display) ------------- */
-    const field = $("#field");
-    if (!field) throw new Error('Field element (#field) not found in DOM');
+        const field = $("#field");
+        if (!field) throw new Error('Field element (#field) not found in DOM');
 
-    // Create the large world surface inside the field. Plants will be positioned in world-space.
+        // Create the large world surface inside the field. Plants will be positioned in world-space.
         const world = document.createElement('div');
         world.className = 'world';
         field.appendChild(world);
@@ -1048,7 +1073,7 @@
             if (!s) return toast("Picked seed missing");
 
             try {
-                await db.updateSeedStatus(s.id, "picked");
+                // Don't mark seed as "picked" - keep it available for reuse
                 const plant = {
                     id: crypto.randomUUID(),
                     seed_id: s.id,
@@ -1072,14 +1097,14 @@
 
         // ===== Pan and zoom handling =====
         // Middle mouse drag to pan. Wheel to zoom (while holding ctrl or not). Touch pinch to zoom.
-    let isPanning = false;
-    let maybePan = false;
-    let panStart = { x: 0, y: 0 };
-    let startTx = 0, startTy = 0;
-    const DRAG_THRESHOLD = 6; // pixels before we consider the action a drag/pan
-    let lastPointer = { x: 0, y: 0, t: 0 };
-    let vel = { x: 0, y: 0 }; // pixels per ms
-    let inertiaId = null;
+        let isPanning = false;
+        let maybePan = false;
+        let panStart = { x: 0, y: 0 };
+        let startTx = 0, startTy = 0;
+        const DRAG_THRESHOLD = 6; // pixels before we consider the action a drag/pan
+        let lastPointer = { x: 0, y: 0, t: 0 };
+        let vel = { x: 0, y: 0 }; // pixels per ms
+        let inertiaId = null;
 
         field.addEventListener('pointerdown', (e) => {
             // If the pointerdown happened on a plant (or inside one), do NOT start panning so selection wins.
@@ -1308,7 +1333,7 @@
                 if (stage === 0) {
                     plant.classList.add('seed-hidden');
                     // adjust title so users know it's a seeded spot
-                    plant.title = `Seeded spot • ${p.id ? p.id.slice(0,6) + '…' : ''} • click to inspect`;
+                    plant.title = `Seeded spot • ${p.id ? p.id.slice(0, 6) + '…' : ''} • click to inspect`;
                 }
                 // add a small visible marker so users can find the seeded location
                 if (stage === 0) {
@@ -1367,11 +1392,11 @@
             statsEl.innerHTML = `
                 <div class="card" style="padding:10px;">
                     <button class="close">✕</button>
-                    <h3 style="margin:4px 0 6px;">Plant ${p.id.slice(0,6)}…</h3>
+                    <h3 style="margin:4px 0 6px;">Plant ${p.id.slice(0, 6)}…</h3>
                     <div style="font-size:13px;color:var(--muted);margin-bottom:8px">Planted: ${plantedAt}</div>
                     <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
                         <div style="font-weight:700">Stage</div>
-                        <div style="background:#0b1420;padding:6px 8px;border-radius:8px">${stage+1}/4</div>
+                        <div style="background:#0b1420;padding:6px 8px;border-radius:8px">${stage + 1}/4</div>
                     </div>
                     <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
                         <div style="font-weight:700">Waters</div>
@@ -1443,7 +1468,7 @@
             return `${m}m ${sec}s`;
         }
 
-    function updateTimers() {
+        function updateTimers() {
             // per-plant timers: next stage
             db.plants.forEach(p => {
                 const el = p._el && p._el.querySelector && p._el.querySelector('.water');
@@ -1614,8 +1639,8 @@
             if (initSupabase()) {
                 await db.load();
             }
-        renderPicker();
-        await renderRandomThree();
+            renderPicker();
+            await renderRandomThree();
             renderField();
             updateCapsUI();
             setInterval(() => { renderField(); updateCapsUI(); }, AUTO_REFRESH_MS);
