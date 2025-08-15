@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="en">
 
@@ -45,6 +46,11 @@
             margin-left: auto;
             color: var(--muted);
         }
+
+        /* small action timer pills */
+        .action-timers { display: flex; gap: 8px; align-items: center; margin-left: auto; }
+        .action-pill { padding: 6px 8px; border-radius: 10px; background: #0f1620; border: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+        .action-pill.gray { opacity: 0.45; }
 
         main {
             display: grid;
@@ -141,24 +147,36 @@
             position: relative;
         }
 
+        /* Field is the viewport. The large plantable area lives inside .world which is pannable/zoomable. */
         #field {
             width: 100%;
             height: 70vh;
             min-height: 420px;
-            background:
-                /* Sun */
-                radial-gradient(circle at 85% 15%, #ffd700 0%, #ffeb3b 8%, transparent 12%),
-                /* Clouds */
-                radial-gradient(ellipse at 20% 25%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.4) 25%, transparent 35%),
-                radial-gradient(ellipse at 60% 20%, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.3) 20%, transparent 30%),
-                /* Sky gradient */
-                linear-gradient(180deg, #87CEEB 0%, #98D8E8 30%, #B8E6B8 70%, #90EE90 100%),
-                /* Ground texture */
-                radial-gradient(circle at 50% 100%, #8FBC8F 0%, #6B8E23 50%, #556B2F 100%);
             border-radius: 16px;
             border: 1px solid var(--line);
             position: relative;
             overflow: hidden;
+            touch-action: none; /* we'll handle touch/pan/zoom manually */
+            background: linear-gradient(180deg, #87CEEB 0%, #98D8E8 30%, #B8E6B8 70%, #90EE90 100%);
+        }
+
+        /* The world is a very large surface that can be translated and scaled. Use repeating backgrounds to create large colored grassy patches so scrolling is visually obvious. */
+        .world {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 5000px;
+            height: 5000px;
+            transform-origin: 0 0;
+            /* Large patchy background: alternating green tiles and subtle texture */
+            background-color: #7ecf7a;
+            background-image:
+                linear-gradient(180deg, rgba(0,0,0,0.03) 0 1px, transparent 1px),
+                repeating-linear-gradient(90deg, rgba(0,0,0,0.02) 0 32px, transparent 32px 64px),
+                linear-gradient(135deg, rgba(255,255,255,0.03), rgba(0,0,0,0.03));
+            /* create visible larger color patches using background-size / position trick */
+            background-blend-mode: multiply, overlay, normal;
+            box-shadow: inset 0 0 60px rgba(0,0,0,0.06);
         }
 
         .plot {
@@ -170,16 +188,81 @@
 
         .plant {
             position: absolute;
-            transform: translate(-50%, -100%) scale(.9);
+            transform: translate(-50%, -100%);
             transition: all .2s ease;
+            pointer-events: auto;
+            will-change: transform;
         }
 
         .plant:hover {
-            transform: translate(-50%, -100%) scale(1.1);
+            transform: translate(-50%, -100%) scale(1.08);
+            cursor: pointer;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.25);
         }
 
         .plant.selected {
             transform: translate(-50%, -100%) scale(1.1);
+            box-shadow: 0 8px 24px rgba(111,227,180,0.12), 0 0 0 3px rgba(111,227,180,0.08);
+            outline: 2px solid rgba(111,227,180,0.06);
+        }
+
+        /* When a plant is in the seed phase (stage 0) we still want the DOM node
+           to exist for selection and highlighting, but hide the visible seed image.
+           The element keeps pointer-events so users can select and hover it. */
+        .plant.seed-hidden img.stage {
+            opacity: 0; /* invisible */
+            pointer-events: none; /* clicks should be handled by the .plant wrapper */
+        }
+        .plant.seed-hidden {
+            /* keep selection visuals enabled */
+            background: transparent;
+        }
+
+        /* Small visible marker for seeded spots so users can find where they clicked. */
+        .plant .seed-dot {
+            position: absolute;
+            left: 50%;
+            bottom: -7px;
+            transform: translateX(-50%) rotate(-20deg) scale(1);
+            width: 5px;
+            height: 8px;
+            /* seed-like oval with slightly pointed ends */
+            border-radius: 50% 40% 50% 40% / 60% 60% 40% 40%;
+            background: linear-gradient(180deg, #45d67a 0%, #1fa65a 100%);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+            border: 1px solid rgba(255,255,255,0.14);
+            pointer-events: none; /* let the wrapper handle clicks */
+            transition: transform .18s ease, opacity .18s ease;
+            opacity: 1;
+            z-index: 2;
+        }
+        .plant:hover .seed-dot,
+        .plant.selected .seed-dot {
+            transform: translateX(-50%) scale(1.18);
+        }
+
+        /* Plant stats bubble */
+        #plantStats {
+            position: absolute;
+            z-index: 50;
+            width: 220px;
+            max-width: 70%;
+            pointer-events: auto;
+            opacity: 0;
+            transform-origin: left center;
+            transition: transform 220ms cubic-bezier(.2,.9,.2,1), opacity 180ms ease;
+            will-change: transform, opacity, left, top;
+            transform: translateX(-8px) scale(.98);
+        }
+        #plantStats.visible { opacity: 1; transform: translateX(0px) scale(1); }
+        #plantStats .card { background: linear-gradient(180deg,#0b1522,#071018); border:1px solid var(--line); }
+        #plantStats .close {
+            float: right;
+            cursor: pointer;
+            background: transparent;
+            border: none;
+            color: var(--muted);
+            font-weight: 700;
         }
 
         .selected-tag {
@@ -210,6 +293,8 @@
             border: none;
             background: transparent;
             transition: all .2s ease;
+            transform-origin: center bottom;
+            display: block;
         }
 
         .water {
@@ -282,7 +367,11 @@
     <header>
         <h1>🌱 Community Garden (4-Frame Plants)</h1>
         <div class="legend"><span class="dot"></span> <span>Click the field to plant</span></div>
-        <div class="caps" id="caps"></div>
+        <div class="action-timers">
+            <div id="makeTimer" class="action-pill">Make: <span class="count">--</span></div>
+            <div id="pickTimer" class="action-pill">Pick: <span class="count">--</span></div>
+            <div id="waterTimer" class="action-pill">Water: <span class="count">--</span></div>
+        </div>
     </header>
 
     <main>
@@ -316,7 +405,7 @@
             <h2>2) Field (click to plant your picked seed)</h2>
             <div id="field" class="grid"></div>
             <div class="row" style="margin-top:8px; justify-content:space-between;">
-                <div class="note">🌞 Community Garden - Growth = 40s total → 10s per stage. Water every 5s.</div>
+                <div class="note">🌞 Community Garden - Growth = 24h total → 6h per stage. Water cooldown 2m.</div>
                 <div class="row">
                     <button id="refresh">Refresh</button>
                     <span class="note">Live sync enabled! ✨</span>
@@ -327,10 +416,19 @@
         <!-- Right: Seed Picker & Actions -->
         <section class="card">
             <h2>3) Seed picker</h2>
+            <div id="randomThree" class="row" style="gap:8px;margin-bottom:8px;"></div>
+            <div class="row" style="gap:8px;margin-bottom:8px;">
+                <button id="refreshRandom">Refresh picks</button>
+                <div class="note">Showing 3 random first-frame seeds</div>
+            </div>
             <div class="picker" id="picker"></div>
             <div class="row" style="margin-top:8px;">
                 <button id="pickRandom">Pick random</button>
                 <button id="unpick">Unpick</button>
+            </div>
+            <div class="row" style="margin-top:8px;gap:8px;align-items:center;">
+                <button id="debugSeedsBtn">Debug seeds</button>
+                <div id="debugInfo" class="note muted">Debug info hidden</div>
             </div>
             <div class="note" id="pickedInfo">No seed picked.</div>
             <hr style="border:none;border-top:1px solid var(--line);margin:10px 0;">
@@ -343,16 +441,17 @@
     </main>
 
     <div id="toast" class="toast" style="display:none;"></div>
+    <div id="plantStats" style="display:none;" aria-hidden="true"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         /* ----------------- Config ----------------- */
         const SUPABASE_URL = "https://omcwjmvdjswkfjkahchm.supabase.co";
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE";
-        const DAILY_CAPS = { make: 10, pick: 10, plant: 10 }; // 10 per 2 minutes for testing
-        const WATER_COOLDOWN_MS = 5 * 1000; // 5 seconds
-        const STAGE_MS = 10 * 1000; // 10 seconds per stage
-        const TOTAL_MS = 4 * STAGE_MS; // 40 seconds total
+    const DAILY_CAPS = { make: 10, pick: 10, plant: 10 }; // caps per 30-minute window
+    const WATER_COOLDOWN_MS = 2 * 60 * 1000; // 2 minutes
+    const STAGE_MS = 6 * 60 * 60 * 1000; // 6 hours per stage
+    const TOTAL_MS = 4 * STAGE_MS; // 24 hours total
         const AUTO_REFRESH_MS = 2_000; // Refresh every 2 seconds
 
         /* ------------- Real-time database ------------- */
@@ -385,6 +484,33 @@
                     this.plants = JSON.parse(localStorage.getItem("plants") || "[]");
                     this.caps = JSON.parse(localStorage.getItem("caps") || "{}");
                 }
+
+                // Startup consistency check: ensure every plant has a planted_at timestamp.
+                // Backfill from legacy keys (plantedAt or created_at) or set to now, and persist to localStorage
+                try {
+                    let fixed = 0;
+                    this.plants = (this.plants || []).map(p => {
+                        if (!p.planted_at) {
+                            if (p.plantedAt) {
+                                p.planted_at = p.plantedAt;
+                            } else if (p.created_at) {
+                                p.planted_at = p.created_at;
+                            } else {
+                                p.planted_at = new Date().toISOString();
+                            }
+                            fixed++;
+                            console.warn(`Plant ${p.id || '<unknown>'} missing planted_at; backfilled with ${p.planted_at}`);
+                        }
+                        return p;
+                    });
+                    if (fixed > 0) {
+                        // Persist fixes to localStorage fallback
+                        this.save();
+                        console.log(`db.load: backfilled planted_at for ${fixed} plants and saved to localStorage.`);
+                    }
+                } catch (e) {
+                    console.warn('db.load consistency check failed', e);
+                }
             },
 
             async addSeed(seed) {
@@ -413,7 +539,8 @@
                 } catch (error) {
                     console.error('Error adding plant:', error);
                     this.plants.push(plant);
-                    localStorage.setItem("plants", JSON.stringify(this.plants));
+                    // Persist local fallback immediately
+                    this.save();
                 }
             },
 
@@ -428,6 +555,8 @@
                     const plantIndex = this.plants.findIndex(p => p.id === plantId);
                     if (plantIndex >= 0) {
                         this.plants[plantIndex] = { ...this.plants[plantIndex], ...updates };
+                        // Keep local fallback in sync
+                        this.save();
                     }
                 } catch (error) {
                     console.error('Error updating plant:', error);
@@ -468,40 +597,58 @@
             },
 
             twoMinuteKey() {
-                // Reset every 2 minutes for testing
+                // Reset every 30 minutes for caps
                 const d = new Date();
-                const twoMinuteBlock = Math.floor(d.getTime() / (2 * 60 * 1000));
-                return `${d.toISOString().slice(0, 10)}-${twoMinuteBlock}`;
+                const block = Math.floor(d.getTime() / (30 * 60 * 1000));
+                return `${d.toISOString().slice(0, 10)}-${block}`;
+            }
+            ,
+            // Persist to localStorage fallback for demo usage
+            save() {
+                try {
+                    localStorage.setItem("seeds", JSON.stringify(this.seeds));
+                    localStorage.setItem("plants", JSON.stringify(this.plants));
+                    localStorage.setItem("caps", JSON.stringify(this.caps));
+                } catch (e) {
+                    console.warn('db.save failed', e);
+                }
             }
         };
 
         /* ------------- Supabase setup ------------- */
-        let supabase;
+        let supabase = null;
         function initSupabase() {
+            // Return early if client already initialized (prevents multiple GoTrueClient instances)
+            if (supabase) return true;
             if (SUPABASE_URL === "YOUR_SUPABASE_URL" || SUPABASE_ANON_KEY === "YOUR_SUPABASE_ANON_KEY") {
                 return false;
             }
             supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-            // Set up real-time subscriptions
-            supabase
-                .channel('garden-changes')
-                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'plants' }, (payload) => {
-                    db.plants.push(payload.new);
-                    renderField();
-                })
-                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'plants' }, (payload) => {
-                    const plantIndex = db.plants.findIndex(p => p.id === payload.new.id);
-                    if (plantIndex >= 0) {
-                        db.plants[plantIndex] = payload.new;
+            // Set up real-time subscriptions (only once)
+            try {
+                supabase
+                    .channel('garden-changes')
+                    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'plants' }, (payload) => {
+                        db.plants.push(payload.new);
                         renderField();
-                    }
-                })
-                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'seeds' }, (payload) => {
-                    db.seeds.unshift(payload.new);
-                    renderPicker();
-                })
-                .subscribe();
+                    })
+                    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'plants' }, (payload) => {
+                        const plantIndex = db.plants.findIndex(p => p.id === payload.new.id);
+                        if (plantIndex >= 0) {
+                            db.plants[plantIndex] = payload.new;
+                            renderField();
+                        }
+                    })
+                    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'seeds' }, (payload) => {
+                        db.seeds.unshift(payload.new);
+                        renderPicker();
+                        renderRandomThree();
+                    })
+                    .subscribe();
+            } catch (e) {
+                console.warn('Realtime subscription failed to initialize:', e);
+            }
 
             return true;
         }
@@ -511,23 +658,26 @@
         const $$ = sel => Array.from(document.querySelectorAll(sel));
         function toast(msg, ms = 1800) {
             const t = $("#toast");
+            if (!t) return console.warn('toast: #toast element not found');
             t.textContent = msg;
             t.style.display = "block";
             setTimeout(() => t.style.display = "none", ms);
         }
         function updateCapsUI() {
+            const el = $("#caps");
+            if (!el) return; // defensive: page may not include caps element in some contexts
             const key = db.twoMinuteKey();
             const caps = db.caps[key] || { make: 0, pick: 0, plant: 0 };
-            $("#caps").textContent = `2min window — make: ${caps.make}/${DAILY_CAPS.make} • pick: ${caps.pick}/${DAILY_CAPS.pick} • plant: ${caps.plant}/${DAILY_CAPS.plant}`;
+            el.textContent = `30min window — make: ${caps.make}/${DAILY_CAPS.make} • pick: ${caps.pick}/${DAILY_CAPS.pick} • plant: ${caps.plant}/${DAILY_CAPS.plant}`;
         }
 
         /* ------------- Drawing 4 frames ------------- */
-        const framesEl = $("#frames");
-        const frameLabel = $("#frameLabel");
+    const framesEl = $("#frames");
+    const frameLabel = $("#frameLabel");
         let currentFrame = 0;
         const N = 4;
         const CANVAS_SIZE = 32;
-        const frames = [...Array(N)].map(() => {
+        const frames = (framesEl ? [...Array(N)].map(() => {
             const c = document.createElement("canvas");
             c.width = CANVAS_SIZE;
             c.height = CANVAS_SIZE;
@@ -538,21 +688,30 @@
             ctx.fillRect(15, 15, 2, 2);
             framesEl.appendChild(c);
             return c;
-        });
+        }) : []);
 
         function label() {
+            if (!frameLabel) return;
             frameLabel.textContent = `Frame ${currentFrame + 1}/${N}`;
         }
         label();
 
         let tool = "pencil";
-        let color = $("#color").value;
-        $("#toolPencil").onclick = () => { tool = "pencil"; toast("Pencil"); };
-        $("#toolEraser").onclick = () => { tool = "eraser"; toast("Eraser"); };
-        $("#color").oninput = e => color = e.target.value;
-        $("#prev").onclick = () => { currentFrame = (currentFrame - 1 + N) % N; label(); };
-        $("#next").onclick = () => { currentFrame = (currentFrame + 1) % N; label(); };
-        $("#clear").onclick = () => {
+    let color = '#ffffff';
+    const colorEl = $("#color");
+    if (colorEl) color = colorEl.value;
+    const toolPencilEl = $("#toolPencil");
+    if (toolPencilEl) toolPencilEl.onclick = () => { tool = "pencil"; toast("Pencil"); };
+    const toolEraserEl = $("#toolEraser");
+    if (toolEraserEl) toolEraserEl.onclick = () => { tool = "eraser"; toast("Eraser"); };
+    if (colorEl) colorEl.oninput = e => color = e.target.value;
+    const prevEl = $("#prev");
+    if (prevEl) prevEl.onclick = () => { currentFrame = (currentFrame - 1 + N) % N; label(); };
+    const nextEl = $("#next");
+    if (nextEl) nextEl.onclick = () => { currentFrame = (currentFrame + 1) % N; label(); };
+        const clearEl = $("#clear");
+        if (clearEl) clearEl.onclick = () => {
+            if (!frames[currentFrame]) return;
             const ctx = frames[currentFrame].getContext("2d");
             ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
         };
@@ -589,12 +748,13 @@
         });
 
         /* ------------- Supabase storage upload ------------- */
-        async function canvasToSupabaseLink(canvas, frameIndex) {
+        // Upload a single canvas frame using a deterministic seedId so filenames are predictable.
+        async function uploadCanvasFrame(canvas, seedId, frameIndex) {
             const blob = await new Promise(res => canvas.toBlob(res, "image/png"));
-            const fileName = `seed_${Date.now()}_frame_${frameIndex}.png`;
+            const fileName = `${seedId}_frame_${frameIndex}.png`;
 
             const { data, error } = await supabase.storage
-                .from('Garden')
+                .from('garden')
                 .upload(fileName, blob, {
                     contentType: 'image/png',
                     upsert: false
@@ -605,10 +765,10 @@
             }
 
             const { data: { publicUrl } } = supabase.storage
-                .from('Garden')
+                .from('garden')
                 .getPublicUrl(fileName);
 
-            return publicUrl;
+            return { fileName, publicUrl };
         }
 
         $("#submitSeed").onclick = async () => {
@@ -616,15 +776,21 @@
             if (!initSupabase()) { toast("Set SUPABASE_URL and SUPABASE_ANON_KEY first"); return; }
             try {
                 $("#submitSeed").disabled = true;
+                // Use a deterministic seed id so uploaded file names are predictable.
+                const seedId = crypto.randomUUID();
                 const links = [];
+                const fileKeys = [];
                 for (let i = 0; i < N; i++) {
-                    const link = await canvasToSupabaseLink(frames[i], i);
-                    links.push(link);
+                    const { fileName, publicUrl } = await uploadCanvasFrame(frames[i], seedId, i);
+                    links.push(publicUrl);
+                    fileKeys.push(fileName);
                 }
                 const seed = {
-                    id: crypto.randomUUID(),
+                    id: seedId,
                     thumbs: links,
                     full_images: links,
+                    file_keys: fileKeys,
+                    seed_prefix: seedId,
                     status: "waiting",
                     created_at: new Date().toISOString()
                 };
@@ -642,11 +808,16 @@
         };
 
         /* ------------- Seed picker ------------- */
-        let pickedSeedId = null;
+    let pickedSeedId = null;
+    let pickedThumbnail = null;
+        // Keep track of ids currently shown in the Random Three area so they don't duplicate in the picker
+        let currentRandomIds = new Set();
+
         function renderPicker() {
-            const el = $("#picker");
+                const el = $("#picker");
+            if (!el) return;
             el.innerHTML = "";
-            db.seeds.filter(s => s.status === "waiting").slice(0, 80).forEach(s => {
+            db.seeds.filter(s => s.status === "waiting" && !currentRandomIds.has(s.id)).slice(0, 80).forEach(s => {
                 const div = document.createElement("div");
                 div.className = "seed";
                 const img = document.createElement("img");
@@ -656,12 +827,22 @@
                 btn.onclick = () => {
                     if (!db.can("pick")) { toast("Daily pick limit reached"); return; }
                     pickedSeedId = s.id;
+                    pickedThumbnail = (s.thumbs && s.thumbs[0]) || (s.full_images && s.full_images[0]) || null;
                     db.bump("pick");
                     db.save();
                     updateCapsUI();
-                    $("#pickedInfo").textContent = `Picked seed ${s.id.slice(0, 6)}…`;
+                    const pickedInfoEl = $("#pickedInfo");
+                    if (pickedInfoEl) {
+                        if (pickedThumbnail) {
+                            pickedInfoEl.innerHTML = `<img src="${pickedThumbnail}" style="width:40px;height:40px;vertical-align:middle;border-radius:6px;margin-right:8px"> Picked ${s.id.slice(0,6)}…`;
+                        } else {
+                            pickedInfoEl.textContent = `Picked seed ${s.id.slice(0, 6)}…`;
+                        }
+                    }
                     toast("Seed picked. Click the field to plant.");
                 };
+                // disable if pick cap reached now
+                btn.disabled = !db.can('pick');
                 div.appendChild(img);
                 div.appendChild(btn);
                 el.appendChild(div);
@@ -671,31 +852,199 @@
             }
         }
 
-        $("#pickRandom").onclick = () => {
-            const pool = db.seeds.filter(s => s.status === "waiting");
-            if (!pool.length) return toast("No seeds available");
-            if (!db.can("pick")) return toast("Daily pick limit reached");
-            pickedSeedId = pool[Math.floor(Math.random() * pool.length)].id;
-            db.bump("pick");
-            db.save();
-            updateCapsUI();
-            $("#pickedInfo").textContent = `Picked seed ${pickedSeedId.slice(0, 6)}…`;
-            toast("Random seed picked. Click the field to plant.");
-        };
+        // Show three random seeds (first-frame thumbnails)
+        async function renderRandomThree() {
+            const el = $("#randomThree");
+            if (!el) return;
+            el.innerHTML = '';
+            currentRandomIds.clear();
+            let pool = [];
+            if (initSupabase()) {
+                try {
+                    const { data, error } = await supabase.from('seeds').select('id, thumbs, full_images, status').eq('status', 'waiting');
+                    if (!error && data) pool = data;
+                } catch (e) {
+                    console.warn('Failed to fetch seeds for random picks, falling back:', e);
+                }
+            }
+            if (!pool.length) {
+                // fallback to local in-memory list
+                pool = db.seeds.filter(s => s.status === 'waiting');
+            }
+            if (!pool.length) {
+                el.innerHTML = '<div class="note muted">No seeds yet</div>';
+                return;
+            }
+            // shuffle and take up to 3
+            // shuffle a copy to avoid mutating db.seeds order
+            const shuffled = pool.slice().sort(() => 0.5 - Math.random());
+            const picks = shuffled.slice(0, 3);
+            picks.forEach(s => {
+                const wrap = document.createElement('div');
+                wrap.style.display = 'flex';
+                wrap.style.flexDirection = 'column';
+                wrap.style.alignItems = 'center';
+                wrap.style.gap = '6px';
+                wrap.dataset.seedId = s.id;
+                currentRandomIds.add(s.id);
+                const img = document.createElement('img');
+                // Resolve the thumbnail URL: thumbs may be public URLs or storage keys
+                let srcUrl = '';
+                try {
+                    const candidate = (s.thumbs && s.thumbs[0]) || (s.full_images && s.full_images[0]) || null;
+                    if (candidate && typeof candidate === 'string' && candidate.startsWith('http')) {
+                        srcUrl = candidate;
+                    } else if (candidate && typeof candidate === 'string') {
+                        // candidate looks like a file key, try to get public url
+                        if (initSupabase()) {
+                            try {
+                                const pub = supabase.storage.from('garden').getPublicUrl(candidate);
+                                srcUrl = (pub && pub.data && pub.data.publicUrl) || '';
+                                // If getPublicUrl didn't return a URL, construct the public URL directly
+                                if (!srcUrl && SUPABASE_URL) {
+                                    const host = SUPABASE_URL.replace(/^https?:\/\//, '').replace(/\/$/, '');
+                                    srcUrl = `https://${host}/storage/v1/object/public/garden/${encodeURIComponent(candidate)}`;
+                                    console.log('constructed public url fallback for candidate', candidate, srcUrl);
+                                }
+                            } catch (e) { console.warn('getPublicUrl failed for candidate', candidate, e); }
+                        }
+                    } else if (s.file_keys && s.file_keys[0]) {
+                        if (initSupabase()) {
+                            try {
+                                const pub = supabase.storage.from('garden').getPublicUrl(s.file_keys[0]);
+                                srcUrl = (pub && pub.data && pub.data.publicUrl) || '';
+                                if (!srcUrl && SUPABASE_URL) {
+                                    const host = SUPABASE_URL.replace(/^https?:\/\//, '').replace(/\/$/, '');
+                                    srcUrl = `https://${host}/storage/v1/object/public/garden/${encodeURIComponent(s.file_keys[0])}`;
+                                    console.log('constructed public url fallback for file_keys', s.file_keys[0], srcUrl);
+                                }
+                            } catch (e) { console.warn('getPublicUrl failed for file_keys', s.file_keys[0], e); }
+                        }
+                    } else if (s.seed_prefix) {
+                        const key = `${s.seed_prefix}_frame_0.png`;
+                        if (initSupabase()) {
+                            try {
+                                const pub = supabase.storage.from('garden').getPublicUrl(key);
+                                srcUrl = (pub && pub.data && pub.data.publicUrl) || '';
+                                if (!srcUrl && SUPABASE_URL) {
+                                    const host = SUPABASE_URL.replace(/^https?:\/\//, '').replace(/\/$/, '');
+                                    srcUrl = `https://${host}/storage/v1/object/public/garden/${encodeURIComponent(key)}`;
+                                    console.log('constructed public url fallback for seed_prefix', key, srcUrl);
+                                }
+                            } catch (e) { console.warn('getPublicUrl failed for seed_prefix', key, e); }
+                        }
+                    }
+                } catch (e) { console.warn('thumbnail resolution error', e); }
+                img.src = srcUrl || '';
+                console.log('random pick img src for', s.id, img.src);
+                img.style.width = '64px';
+                img.style.height = '64px';
+                img.style.objectFit = 'contain';
+                img.style.borderRadius = '6px';
+                const btn = document.createElement('button');
+                btn.textContent = 'Pick';
+                btn.onclick = () => {
+                    if (!db.can('pick')) { toast('Daily pick limit reached'); return; }
+                    pickedSeedId = s.id;
+                    pickedThumbnail = img.src || null;
+                    db.bump('pick');
+                    db.save();
+                    updateCapsUI();
+                    if (pickedThumbnail) {
+                        $("#pickedInfo").innerHTML = `<img src="${pickedThumbnail}" style="width:40px;height:40px;vertical-align:middle;border-radius:6px;margin-right:8px"> Picked ${s.id.slice(0,6)}…`;
+                    } else {
+                        $("#pickedInfo").textContent = `Picked seed ${s.id.slice(0, 6)}…`;
+                    }
+                    toast('Seed picked. Click the field to plant.');
+                };
+                btn.disabled = !db.can('pick');
+                wrap.appendChild(img);
+                wrap.appendChild(btn);
+                el.appendChild(wrap);
+            });
+            // After rendering random three, also re-render the picker to exclude them
+            renderPicker();
+        }
 
-        $("#unpick").onclick = () => {
+    const refreshRandomEl = $("#refreshRandom");
+    if (refreshRandomEl) refreshRandomEl.onclick = () => renderRandomThree();
+
+        async function debugSeeds() {
+            const infoEl = $("#debugInfo");
+            if (!infoEl) console.warn('debugInfo missing');
+            infoEl.textContent = 'Checking...';
+            console.log('debugSeeds called');
+            let remote = null;
+            try {
+                if (initSupabase()) {
+                    const { data, error } = await supabase.from('seeds').select('id,status,thumbs').order('created_at', { ascending: false }).limit(100);
+                    if (error) throw error;
+                    remote = data || [];
+                }
+            } catch (e) {
+                console.error('debugSeeds remote error', e);
+                infoEl.textContent = 'Error fetching remote seeds: ' + (e.message || String(e));
+            }
+            const local = db.seeds || [];
+            try {
+                infoEl.textContent = `local: ${local.length} seeds; remote: ${remote ? remote.length : 'n/a'} seeds`;
+                if (remote && remote.length) {
+                    const sample = remote.slice(0,3).map(r=> (r.id||'').slice(0,6)).join(', ');
+                    infoEl.textContent += ` • sample remote ids: ${sample}`;
+                }
+            } catch (e) {
+                console.error('debugSeeds ui error', e);
+            }
+            console.log('debugSeeds remote', remote);
+            console.log('debugSeeds local', local.slice(0,20));
+        }
+
+    const debugSeedsBtn = $("#debugSeedsBtn");
+    if (debugSeedsBtn) debugSeedsBtn.onclick = () => debugSeeds();
+
+    const pickRandomEl = $("#pickRandom");
+    if (pickRandomEl) pickRandomEl.onclick = () => {
             pickedSeedId = null;
-            $("#pickedInfo").textContent = "No seed picked.";
+            pickedThumbnail = null;
+            const pickedInfoEl2 = $("#pickedInfo");
+            if (pickedInfoEl2) pickedInfoEl2.textContent = "No seed picked.";
         };
 
         /* ------------- Field (planting + display) ------------- */
-        const field = $("#field");
-        field.addEventListener("click", async e => {
+    const field = $("#field");
+    if (!field) throw new Error('Field element (#field) not found in DOM');
+
+    // Create the large world surface inside the field. Plants will be positioned in world-space.
+        const world = document.createElement('div');
+        world.className = 'world';
+        field.appendChild(world);
+
+        // World transform state
+        let scale = 1;
+        let tx = 0; // translation x
+        let ty = 0; // translation y
+
+        // Helper: apply CSS transform to world
+        function applyWorldTransform() {
+            world.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+        }
+        applyWorldTransform();
+
+        // Convert viewport (client) coords -> world coords
+        function clientToWorld(clientX, clientY) {
+            const rect = field.getBoundingClientRect();
+            const vx = clientX - rect.left; // viewport-local
+            const vy = clientY - rect.top;
+            const wx = (vx - tx) / scale;
+            const wy = (vy - ty) / scale;
+            return { x: Math.round(wx), y: Math.round(wy) };
+        }
+
+        // Planting now uses world coordinates so plants remain at the correct world positions while panning/zooming
+        async function plantAtClient(clientX, clientY) {
             if (!pickedSeedId) return toast("Pick a seed first");
             if (!db.can("plant")) return toast("Daily plant limit reached");
-            const rect = field.getBoundingClientRect();
-            const x = Math.round((e.clientX - rect.left));
-            const y = Math.round((e.clientY - rect.top));
+            const { x, y } = clientToWorld(clientX, clientY);
             const s = db.seeds.find(s => s.id === pickedSeedId);
             if (!s) return toast("Picked seed missing");
 
@@ -720,14 +1069,204 @@
                 console.error('Error planting:', error);
                 toast("Error planting seed");
             }
+        }
+
+        // ===== Pan and zoom handling =====
+        // Middle mouse drag to pan. Wheel to zoom (while holding ctrl or not). Touch pinch to zoom.
+    let isPanning = false;
+    let maybePan = false;
+    let panStart = { x: 0, y: 0 };
+    let startTx = 0, startTy = 0;
+    const DRAG_THRESHOLD = 6; // pixels before we consider the action a drag/pan
+    let lastPointer = { x: 0, y: 0, t: 0 };
+    let vel = { x: 0, y: 0 }; // pixels per ms
+    let inertiaId = null;
+
+        field.addEventListener('pointerdown', (e) => {
+            // If the pointerdown happened on a plant (or inside one), do NOT start panning so selection wins.
+            if (e.target && e.target.closest && e.target.closest('.plant')) {
+                maybePan = false;
+                isPanning = false;
+                return; // allow the plant element to receive the event and handle selection
+            }
+            // Allow middle-button to immediately start panning. For left-button we wait until movement exceeds threshold.
+            if (e.button === 1) {
+                isPanning = true;
+                maybePan = false;
+            } else if (e.button === 0) {
+                maybePan = true;
+            } else {
+                maybePan = false;
+                isPanning = false;
+                return;
+            }
+            panStart = { x: e.clientX, y: e.clientY };
+            startTx = tx; startTy = ty;
+            lastPointer = { x: e.clientX, y: e.clientY, t: Date.now() };
+            vel = { x: 0, y: 0 };
+            field.setPointerCapture(e.pointerId);
+            field.style.cursor = 'grabbing';
+            inertiaId && cancelAnimationFrame(inertiaId);
         });
+
+        // To support space+drag we mark when space is pressed
+        window.addEventListener('keydown', (e) => { if (e.code === 'Space') field.spaceKey = true; });
+        window.addEventListener('keyup', (e) => { if (e.code === 'Space') field.spaceKey = false; });
+
+        field.addEventListener('pointermove', (e) => {
+            if (!maybePan && !isPanning) return;
+            const dx = e.clientX - panStart.x;
+            const dy = e.clientY - panStart.y;
+            if (!isPanning && maybePan) {
+                if (Math.hypot(dx, dy) > DRAG_THRESHOLD) {
+                    isPanning = true;
+                    maybePan = false;
+                } else {
+                    return; // not yet a pan
+                }
+            }
+            if (isPanning) {
+                const now = Date.now();
+                const dt = Math.max(1, now - lastPointer.t);
+                // update velocity (px per ms)
+                vel.x = (e.clientX - lastPointer.x) / dt;
+                vel.y = (e.clientY - lastPointer.y) / dt;
+                lastPointer = { x: e.clientX, y: e.clientY, t: now };
+                tx = startTx + dx;
+                ty = startTy + dy;
+                clampWorld();
+                applyWorldTransform();
+            }
+        });
+
+        field.addEventListener('pointerup', (e) => {
+            field.releasePointerCapture?.(e.pointerId);
+            field.style.cursor = 'default';
+            if (isPanning) {
+                // start inertia animation based on last velocity
+                isPanning = false;
+                const FRICTION = 0.92; // per frame multiplier
+                let last = Date.now();
+                function step() {
+                    const now = Date.now();
+                    const dt = Math.max(1, now - last);
+                    last = now;
+                    // apply velocity (convert px/ms to px)
+                    tx += vel.x * dt;
+                    ty += vel.y * dt;
+                    // decay velocity
+                    vel.x *= Math.pow(FRICTION, dt / 16);
+                    vel.y *= Math.pow(FRICTION, dt / 16);
+                    // stop when tiny
+                    if (Math.hypot(vel.x, vel.y) < 0.001) {
+                        clampWorld();
+                        applyWorldTransform();
+                        inertiaId = null;
+                        return;
+                    }
+                    clampWorld();
+                    applyWorldTransform();
+                    inertiaId = requestAnimationFrame(step);
+                }
+                inertiaId = requestAnimationFrame(step);
+            } else {
+                // Not a pan: treat as click for planting when left button
+                if (e.button === 0) {
+                    plantAtClient(e.clientX, e.clientY);
+                }
+            }
+            maybePan = false;
+        });
+
+        // Clicking on empty ground should deselect/hide stats
+        field.addEventListener('click', (e) => {
+            if (e.target && e.target.closest && !e.target.closest('.plant')) {
+                selectedPlantId = null;
+                hideStats();
+                renderField();
+            }
+        });
+
+        // Wheel zoom centered at mouse position
+        const ZOOM_SENS = 0.0006; // smaller = less sensitive
+        const MIN_SCALE = 0.2;
+        const MAX_SCALE = 4;
+        function clampWorld() {
+            const vw = field.clientWidth;
+            const vh = field.clientHeight;
+            const ww = world.offsetWidth * scale;
+            const wh = world.offsetHeight * scale;
+            if (ww <= vw) {
+                // center horizontally
+                tx = Math.round((vw - ww) / 2);
+            } else {
+                const minTx = vw - ww; // most negative
+                const maxTx = 0;
+                tx = Math.min(maxTx, Math.max(minTx, tx));
+            }
+            if (wh <= vh) {
+                ty = Math.round((vh - wh) / 2);
+            } else {
+                const minTy = vh - wh;
+                const maxTy = 0;
+                ty = Math.min(maxTy, Math.max(minTy, ty));
+            }
+        }
+
+        field.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const rect = field.getBoundingClientRect();
+            const before = clientToWorld(e.clientX, e.clientY);
+            const zoomFactor = Math.exp(-e.deltaY * ZOOM_SENS);
+            const newScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale * zoomFactor));
+            // Compute new tx/ty so the world point under cursor remains under the cursor
+            tx = (e.clientX - rect.left) - before.x * newScale;
+            ty = (e.clientY - rect.top) - before.y * newScale;
+            scale = newScale;
+            clampWorld();
+            applyWorldTransform();
+        }, { passive: false });
+
+        // Simple touch pinch support
+        let ongoingTouches = [];
+        field.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 2) {
+                ongoingTouches = [e.touches[0], e.touches[1]];
+            }
+        }, { passive: false });
+        field.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 2 && ongoingTouches.length === 2) {
+                e.preventDefault();
+                const t0 = e.touches[0];
+                const t1 = e.touches[1];
+                const prevDist = Math.hypot(ongoingTouches[0].clientX - ongoingTouches[1].clientX, ongoingTouches[0].clientY - ongoingTouches[1].clientY);
+                const newDist = Math.hypot(t0.clientX - t1.clientX, t0.clientY - t1.clientY);
+                const rect = field.getBoundingClientRect();
+                const midX = (t0.clientX + t1.clientX) / 2;
+                const midY = (t0.clientY + t1.clientY) / 2;
+                const before = clientToWorld(midX, midY);
+                const newScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale * (newDist / prevDist)));
+                tx = (midX - rect.left) - before.x * newScale;
+                ty = (midY - rect.top) - before.y * newScale;
+                scale = newScale;
+                clampWorld();
+                applyWorldTransform();
+                ongoingTouches = [t0, t1];
+            }
+        }, { passive: false });
+
 
         let selectedPlantId = null;
         function growthStage(p) {
             const plantedAt = p.planted_at ? new Date(p.planted_at).getTime() : p.plantedAt;
             const elapsed = Date.now() - plantedAt;
-            const wateredBonus = Math.min((p.waters || []).length, 8) * (20 * 60 * 1000);
-            const t = Math.min(TOTAL_MS, Math.max(0, elapsed + wateredBonus));
+            const waters = p.waters || [];
+            const lastWater = waters.length ? waters[waters.length - 1] : 0;
+            const WATER_MOD = 0.3; // 30%
+            const recentlyWatered = lastWater && (Date.now() - lastWater) <= STAGE_MS;
+            const modifier = recentlyWatered ? WATER_MOD : -WATER_MOD;
+            const effectiveElapsed = Math.max(0, elapsed * (1 + modifier));
+            const t = Math.min(TOTAL_MS, effectiveElapsed);
             return Math.min(3, Math.floor(t / STAGE_MS));
         }
 
@@ -737,7 +1276,11 @@
         }
 
         function renderField() {
-            field.innerHTML = "";
+            // Keep the viewport element but render plants inside the world element
+            // Clear world children (but keep the world element itself)
+            // clear _el refs
+            db.plants.forEach(p => { delete p._el; });
+            world.innerHTML = "";
             db.plants.forEach(p => {
                 const seed = db.seeds.find(s => s.id === (p.seed_id || p.seedId));
                 if (!seed) return;
@@ -745,13 +1288,12 @@
                 const stage = growthStage(p);
                 const plant = document.createElement("div");
                 plant.className = "plant";
+                // Position in world coords
                 plant.style.left = p.x + "px";
                 plant.style.top = p.y + "px";
                 plant.title = `Community Plant ${p.id.slice(0, 6)} • stage ${stage + 1}/4 • waters ${(p.waters || []).length}`;
 
-                const pin = document.createElement("div");
-                pin.className = "pin";
-                plant.appendChild(pin);
+                // pin (visual red dot) removed per request
 
                 const img = document.createElement("img");
                 img.className = "stage";
@@ -761,36 +1303,290 @@
                 img.style.transform = `scale(${scaleFactors[stage]})`;
                 plant.appendChild(img);
 
-                // Water status removed for cleaner look
+                // If this is the seed phase (stage 0), make the image invisible
+                // but keep the plant element present and interactive so it can be
+                // selected/highlighted. We add a class that hides only the image.
+                if (stage === 0) {
+                    plant.classList.add('seed-hidden');
+                    // adjust title so users know it's a seeded spot
+                    plant.title = `Seeded spot • ${p.id ? p.id.slice(0,6) + '…' : ''} • click to inspect`;
+                }
+                // add a small visible marker so users can find the seeded location
+                if (stage === 0) {
+                    const dot = document.createElement('div');
+                    dot.className = 'seed-dot';
+                    plant.appendChild(dot);
+                }
 
                 plant.onclick = (ev) => {
+                    // map click target: clicks on plants should select them. Stop propagation so field click doesn't plant.
                     ev.stopPropagation();
                     selectedPlantId = p.id;
                     updateWaterButton();
                     renderField();
+                    showStats(p);
                 };
+
                 if (p.id === selectedPlantId) {
                     plant.classList.add('selected');
-                    const selectedTag = document.createElement("div");
-                    selectedTag.className = "selected-tag";
-                    selectedTag.textContent = "💧 Selected for watering";
-                    plant.appendChild(selectedTag);
                 }
 
-                field.appendChild(plant);
+                // Attach the plant element node to the plant object for stats anchoring
+                p._el = plant;
+
+                world.appendChild(plant);
             });
         }
 
-        function updateWaterButton() {
-            const btn = $("#waterSelected");
-            if (!selectedPlantId) { btn.disabled = true; return; }
-            const p = db.plants.find(x => x.id === selectedPlantId);
-            btn.disabled = (Date.now() < nextWaterAt(p));
+        // --- Plant stats bubble ---
+        const statsEl = $('#plantStats');
+        function showStats(p) {
+            if (!p || !p._el) return;
+            statsEl.style.display = 'block';
+            statsEl.setAttribute('aria-hidden', 'false');
+            // compute values
+            const seed = db.seeds.find(s => s.id === (p.seed_id || p.seedId));
+            const stage = growthStage(p);
+            const waters = (p.waters || []).length;
+            const nextWater = nextWaterAt(p);
+            const nextWaterText = nextWater > Date.now() ? formatMs(nextWater - Date.now()) : 'ready';
+            // compute time until next growth stage for the phase countdown
+            const plantedAtMs = p.planted_at ? new Date(p.planted_at).getTime() : p.plantedAt;
+            const elapsed = Date.now() - plantedAtMs;
+            const lastWater = (p.waters && p.waters.length) ? p.waters[p.waters.length - 1] : 0;
+            const recentlyWatered = lastWater && (Date.now() - lastWater) <= STAGE_MS;
+            const modifier = recentlyWatered ? 0.3 : -0.3;
+            const effectiveElapsed = Math.max(0, elapsed * (1 + modifier));
+            const t = Math.min(TOTAL_MS, effectiveElapsed);
+            const currStage = Math.min(3, Math.floor(t / STAGE_MS));
+            const nextStageEffectiveAt = Math.min(TOTAL_MS, (currStage + 1) * STAGE_MS);
+            // convert effective next-stage time back to real wall-clock time
+            // wallClockNext = plantedAt + nextStageEffectiveAt / (1 + modifier)
+            const msToNextStage = Math.ceil((plantedAtMs + nextStageEffectiveAt / (1 + modifier)) - Date.now());
+            const nextStageText = (currStage >= 3) ? 'mature' : (msToNextStage > 0 ? formatMs(msToNextStage) : 'soon');
+            const plantedAt = p.planted_at ? new Date(p.planted_at).toLocaleString() : '';
+            statsEl.innerHTML = `
+                <div class="card" style="padding:10px;">
+                    <button class="close">✕</button>
+                    <h3 style="margin:4px 0 6px;">Plant ${p.id.slice(0,6)}…</h3>
+                    <div style="font-size:13px;color:var(--muted);margin-bottom:8px">Planted: ${plantedAt}</div>
+                    <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
+                        <div style="font-weight:700">Stage</div>
+                        <div style="background:#0b1420;padding:6px 8px;border-radius:8px">${stage+1}/4</div>
+                    </div>
+                    <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
+                        <div style="font-weight:700">Waters</div>
+                        <div style="background:#0b1420;padding:6px 8px;border-radius:8px">${waters}</div>
+                    </div>
+                    <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
+                        <div style="font-weight:700">Next water</div>
+                        <div style="background:#0b1420;padding:6px 8px;border-radius:8px">${nextWaterText}</div>
+                    </div>
+                    <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
+                        <div style="font-weight:700">Phase countdown</div>
+                        <div style="background:#0b1420;padding:6px 8px;border-radius:8px">${nextStageText}</div>
+                    </div>
+                </div>
+            `;
+
+            // position the statsEl to the right of the plant when possible
+            const rect = field.getBoundingClientRect();
+            const vw = window.innerWidth;
+            const vh = window.innerHeight;
+            const plantVx = tx + p.x * scale + rect.left;
+            const plantVy = ty + p.y * scale + rect.top;
+            const padding = 12;
+            statsEl.style.left = '0px'; statsEl.style.top = '0px'; statsEl.style.display = 'block';
+            const box = statsEl.getBoundingClientRect();
+            // prefer right of plant
+            let left = plantVx + 18;
+            let top = plantVy - box.height / 2;
+            // If right would clip, try left side
+            if (left + box.width + padding > vw) {
+                left = plantVx - box.width - 18;
+            }
+            // clamp vertically
+            top = Math.max(rect.top + padding, Math.min(rect.bottom - box.height - padding, top));
+            // set initial transform to slightly left for slide-in; use rAF to trigger transition
+            statsEl.style.left = `${left}px`;
+            statsEl.style.top = `${top}px`;
+            statsEl.style.transform = 'translateX(-8px) scale(.98)';
+            statsEl.classList.remove('visible');
+            requestAnimationFrame(() => requestAnimationFrame(() => statsEl.classList.add('visible')));
+
+            // wire close button to deselect
+            const closeBtn = statsEl.querySelector('.close');
+            if (closeBtn) closeBtn.onclick = () => { selectedPlantId = null; hideStats(); renderField(); };
         }
 
-        $("#waterSelected").onclick = async () => {
+        function hideStats() {
+            statsEl.classList.remove('visible');
+            statsEl.style.transform = 'translateY(0px) scale(.98)';
+            // wait for transition then hide
+            setTimeout(() => {
+                statsEl.style.display = 'none';
+                statsEl.setAttribute('aria-hidden', 'true');
+            }, 220);
+            selectedPlantId = null;
+            updateWaterButton();
+        }
+
+        // --- Timers and countdowns ---
+        const refreshIntervalMs = AUTO_REFRESH_MS;
+        let lastRefreshTick = Date.now();
+
+        function formatMs(ms) {
+            if (ms <= 0) return '0s';
+            const s = Math.floor(ms / 1000);
+            if (s < 60) return `${s}s`;
+            const m = Math.floor(s / 60);
+            const sec = s % 60;
+            return `${m}m ${sec}s`;
+        }
+
+    function updateTimers() {
+            // per-plant timers: next stage
+            db.plants.forEach(p => {
+                const el = p._el && p._el.querySelector && p._el.querySelector('.water');
+                if (!el) return;
+                const plantedAt = p.planted_at ? new Date(p.planted_at).getTime() : p.plantedAt;
+                const elapsed = Date.now() - plantedAt;
+                const waters = p.waters || [];
+                const lastWater = waters.length ? waters[waters.length - 1] : 0;
+                const WATER_MOD = 0.3;
+                const recentlyWatered = lastWater && (Date.now() - lastWater) <= STAGE_MS;
+                const modifier = recentlyWatered ? WATER_MOD : -WATER_MOD;
+                const effectiveElapsed = Math.max(0, elapsed * (1 + modifier));
+                const t = Math.min(TOTAL_MS, effectiveElapsed);
+                const stage = Math.min(3, Math.floor(t / STAGE_MS));
+                // estimate next stage time based on effectiveElapsed
+                const nextStageAt = plantedAt + ((stage + 1) * STAGE_MS) / (1 + modifier);
+                const msLeft = nextStageAt - Date.now();
+                if (stage >= 3) {
+                    el.textContent = 'mature';
+                } else {
+                    el.textContent = formatMs(msLeft);
+                }
+            });
+
+            // caps reset countdown (two-minute block) - compute nextReset for pill cooldown display
+            const d = new Date();
+            const blockMs = 30 * 60 * 1000;
+            const nextReset = Math.ceil(d.getTime() / blockMs) * blockMs;
+
+            // selected plant water cooldown
+            const btn = $("#waterSelected");
+            if (selectedPlantId && btn) {
+                const p = db.plants.find(x => x.id === selectedPlantId);
+                if (p) {
+                    const next = nextWaterAt(p);
+                    if (Date.now() < next) {
+                        btn.textContent = `💧 Water (${formatMs(next - Date.now())})`;
+                        btn.disabled = true;
+                    } else {
+                        btn.textContent = '💧 Water selected plant';
+                        btn.disabled = false;
+                    }
+                }
+            } else if (btn) {
+                btn.textContent = '💧 Water selected plant';
+            }
+
+            // --- make/pick/plant (water) caps display ---
+            const blockKey = db.twoMinuteKey();
+            const caps = db.caps[blockKey] || { make: 0, pick: 0, plant: 0 };
+            // time until next caps reset
+            const capsResetMs = nextReset - Date.now();
+
+            const makePill = $('#makeTimer');
+            const pickPill = $('#pickTimer');
+            const waterPill = $('#waterTimer');
+            const makeCount = caps.make || 0;
+            const pickCount = caps.pick || 0;
+            const plantCount = caps.plant || 0;
+
+            if (makePill) {
+                if (makeCount >= DAILY_CAPS.make) {
+                    makePill.querySelector('.count').textContent = formatMs(capsResetMs);
+                    makePill.classList.add('gray');
+                    makePill.title = `Reset in ${formatMs(capsResetMs)}`;
+                    $('#submitSeed').disabled = true;
+                } else {
+                    makePill.querySelector('.count').textContent = 'ready';
+                    makePill.classList.remove('gray');
+                    makePill.title = '';
+                    $('#submitSeed').disabled = false;
+                }
+            }
+
+            if (pickPill) {
+                if (pickCount >= DAILY_CAPS.pick) {
+                    pickPill.querySelector('.count').textContent = formatMs(capsResetMs);
+                    pickPill.classList.add('gray');
+                    pickPill.title = `Reset in ${formatMs(capsResetMs)}`;
+                    $$('#picker .seed button').forEach(b => b.disabled = true);
+                    $$('#randomThree button').forEach(b => b.disabled = true);
+                } else {
+                    pickPill.querySelector('.count').textContent = 'ready';
+                    pickPill.classList.remove('gray');
+                    pickPill.title = '';
+                    $$('#picker .seed button').forEach(b => b.disabled = false);
+                    $$('#randomThree button').forEach(b => b.disabled = false);
+                }
+            }
+
+            if (waterPill) {
+                if (plantCount >= DAILY_CAPS.plant) {
+                    waterPill.querySelector('.count').textContent = formatMs(capsResetMs);
+                    waterPill.classList.add('gray');
+                    waterPill.title = `Reset in ${formatMs(capsResetMs)}`;
+                } else {
+                    waterPill.querySelector('.count').textContent = 'ready';
+                    waterPill.classList.remove('gray');
+                    waterPill.title = '';
+                }
+                // Also disable the water button if cap reached or selected plant is cooling
+                const waterBtn = $('#waterSelected');
+                if (waterBtn) {
+                    let disableWater = (plantCount >= DAILY_CAPS.plant);
+                    if (!disableWater && selectedPlantId) {
+                        const sel = db.plants.find(x => x.id === selectedPlantId);
+                        if (sel) {
+                            disableWater = Date.now() < nextWaterAt(sel);
+                        }
+                    }
+                    waterBtn.disabled = !!disableWater;
+                }
+            }
+            // Refresh the stats bubble for selected plant so values/countdowns update live
+            if (selectedPlantId) {
+                const p = db.plants.find(x => x.id === selectedPlantId);
+                if (p) showStats(p);
+            }
+        }
+
+        // Hook into refresh timer
+        setInterval(() => {
+            lastRefreshTick = Date.now();
+            renderField();
+        }, refreshIntervalMs);
+
+        // Ticker every second to update countdowns
+        setInterval(updateTimers, 1000);
+
+        function updateWaterButton() {
+            const btn = $("#waterSelected");
+            if (!btn) return; // no water button present in this UI
+            if (!selectedPlantId) { btn.disabled = true; return; }
+            const p = db.plants.find(x => x.id === selectedPlantId);
+            if (!p) { btn.disabled = true; return; }
+            btn.disabled = (Date.now() < nextWaterAt(p));
+        }
+        const waterSelectedEl = $("#waterSelected");
+        if (waterSelectedEl) waterSelectedEl.onclick = async () => {
             if (!selectedPlantId) return;
             const p = db.plants.find(x => x.id === selectedPlantId);
+            if (!p) return;
             if (Date.now() < nextWaterAt(p)) return toast("Water cooldown");
 
             const newWaters = [...(p.waters || []), Date.now()];
@@ -805,10 +1601,11 @@
             }
         };
 
-        $("#refresh").onclick = () => renderField();
+        const refreshEl = $("#refresh");
+        if (refreshEl) refreshEl.onclick = () => renderField();
 
         /* ------------- Seed grid click from thumbnails ------------- */
-        framesEl.addEventListener("click", e => {
+        if (framesEl) framesEl.addEventListener("click", e => {
             const idx = frames.indexOf(e.target);
             if (idx >= 0) { currentFrame = idx; label(); }
         });
@@ -818,7 +1615,8 @@
             if (initSupabase()) {
                 await db.load();
             }
-            renderPicker();
+        renderPicker();
+        await renderRandomThree();
             renderField();
             updateCapsUI();
             setInterval(() => { renderField(); updateCapsUI(); }, AUTO_REFRESH_MS);

@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Dev — Plants Admin</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial;margin:20px;background:#0c0f14;color:#e9eef5}
+    h1{margin:0 0 12px}
+    .card{background:#11141a;border:1px solid #233045;padding:12px;border-radius:8px}
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    th,td{padding:8px;border-bottom:1px solid #233045;text-align:left;font-family:monospace;font-size:13px}
+    th{color:#9aa4b2}
+    button{background:#192233;color:#dce6f5;border:1px solid #233045;padding:6px 8px;border-radius:6px;cursor:pointer}
+    .muted{color:#9aa4b2;font-size:13px}
+    input[type=text]{width:180px;padding:6px;border-radius:6px;border:1px solid #233045;background:#0e1420;color:#e9eef5}
+    .row{display:flex;gap:8px;align-items:center}
+  </style>
+</head>
+<body>
+  <h1>Dev tools — Plants</h1>
+
+  <div id="authCard" class="card" style="margin-bottom:12px;">
+    <div class="row">
+      <label class="muted">Enter developer password to unlock admin tools:</label>
+      <input id="devPassword" type="text" placeholder="password" style="padding:6px;border-radius:6px;border:1px solid #233045;background:#0e1420;color:#e9eef5">
+      <button id="unlock">Unlock</button>
+      <span class="muted">Hint: it's flowerz</span>
+    </div>
+  </div>
+
+  <div id="mainCard" class="card" style="display:none;">
+    <div class="row">
+      <button id="refresh">Refresh</button>
+      <button id="clearAll">Clear all plants (DB)</button>
+      <button id="clearField">Clear field plants (localStorage + DB)</button>
+      <span class="muted">This page talks to Supabase using the same anon key as the garden; if not configured it falls back to localStorage.</span>
+    </div>
+
+    <table id="plantsTable">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Seed</th>
+          <th>Name</th>
+          <th>Pos</th>
+          <th>Planted</th>
+          <th>Waters</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div id="toast" style="display:none;position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#0e1522;border:1px solid #233045;padding:8px 12px;border-radius:8px;color:#dfe9f7"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = "https://omcwjmvdjswkfjkahchm.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE";
+
+    let supabase = null;
+    function initSupabase() {
+      // Avoid creating multiple clients in the same page/context.
+      if (supabase) return true;
+      if (SUPABASE_URL === "YOUR_SUPABASE_URL" || SUPABASE_ANON_KEY === "YOUR_SUPABASE_ANON_KEY") return false;
+      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      return true;
+    }
+
+    function toast(msg, ms = 1800) {
+      const t = document.getElementById('toast');
+      t.textContent = msg; t.style.display = 'block';
+      setTimeout(()=>t.style.display='none', ms);
+    }
+
+    // Local fallback storage helpers
+    const localStore = {
+      getPlants(){ return JSON.parse(localStorage.getItem('plants')||'[]'); },
+      setPlants(pl){ localStorage.setItem('plants', JSON.stringify(pl)); }
+    };
+
+    async function loadPlants() {
+      let plants = [];
+      if (initSupabase()) {
+        try {
+          const { data, error } = await supabase.from('plants').select('*').order('planted_at', { ascending: false });
+          if (error) throw error;
+          plants = data || [];
+        } catch (e) {
+          console.warn('Supabase load failed, falling back:', e);
+          plants = localStore.getPlants();
+        }
+      } else {
+        plants = localStore.getPlants();
+      }
+      renderPlants(plants);
+    }
+
+    function renderPlants(plants) {
+      const tbody = document.querySelector('#plantsTable tbody');
+      tbody.innerHTML = '';
+      if (!plants.length) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td colspan="7" class="muted">No plants found</td>`;
+        tbody.appendChild(tr);
+        return;
+      }
+      plants.forEach(p => {
+        const tr = document.createElement('tr');
+        const idShort = p.id ? p.id.slice(0,8) : '(no-id)';
+        const seed = p.seed_id || p.seedId || '';
+        const name = p.name || '';
+        const pos = (p.x!==undefined && p.y!==undefined) ? `${p.x},${p.y}` : '';
+        const planted = p.planted_at || p.plantedAt || '';
+        const waters = (p.waters || []).length || 0;
+
+        tr.innerHTML = `
+          <td><code>${idShort}</code></td>
+          <td><code>${seed}</code></td>
+          <td><input type="text" value="${escapeHtml(name)}" data-id="${p.id}" class="nameInput"></td>
+          <td>${pos}</td>
+          <td>${planted}</td>
+          <td>${waters}</td>
+          <td>
+            <button data-delete="${p.id}">Delete</button>
+            <button data-rename="${p.id}">Save name</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // wire actions
+      tbody.querySelectorAll('button[data-delete]').forEach(b=>b.onclick=ev=>{
+        const id = ev.target.getAttribute('data-delete');
+        if (!confirm('Delete plant '+id.slice(0,8)+'?')) return;
+        deletePlant(id);
+      });
+      tbody.querySelectorAll('button[data-rename]').forEach(b=>b.onclick=ev=>{
+        const id = ev.target.getAttribute('data-rename');
+        const input = document.querySelector(`input[data-id="${id}"]`);
+        const newName = input.value.trim();
+        renamePlant(id, newName);
+      });
+    }
+
+    async function deletePlant(id) {
+      if (initSupabase()) {
+        try {
+          const { error } = await supabase.from('plants').delete().eq('id', id);
+          if (error) throw error;
+          toast('Deleted '+id.slice(0,8));
+          loadPlants();
+          return;
+        } catch (e) {
+          console.warn('Delete failed, falling back:', e);
+        }
+      }
+      // local fallback
+      const pl = localStore.getPlants().filter(p=>p.id!==id);
+      localStore.setPlants(pl);
+      toast('Deleted (local) '+id.slice(0,8));
+      loadPlants();
+    }
+
+    async function renamePlant(id, newName) {
+      if (initSupabase()) {
+        try {
+          const { error } = await supabase.from('plants').update({ name: newName }).eq('id', id);
+          if (error) throw error;
+          toast('Renamed '+id.slice(0,8));
+          loadPlants();
+          return;
+        } catch (e) { console.warn('Rename failed, falling back:', e); }
+      }
+      // local fallback
+      const pl = localStore.getPlants().map(p=> p.id===id ? ({...p, name:newName}) : p);
+      localStore.setPlants(pl);
+      toast('Renamed (local) '+id.slice(0,8));
+      loadPlants();
+    }
+
+    async function clearAllPlants() {
+      if (!confirm('Delete ALL plants? This cannot be undone.')) return;
+      if (initSupabase()) {
+        try {
+          // fetch ids then delete by ids to avoid invalid uuid errors
+          const { data: idsData, error: selectErr } = await supabase.from('plants').select('id');
+          if (selectErr) throw selectErr;
+          const ids = (idsData || []).map(r => r.id).filter(Boolean);
+          if (ids.length) {
+            const { error } = await supabase.from('plants').delete().in('id', ids);
+            if (error) throw error;
+          }
+          toast('All plants deleted');
+          loadPlants();
+          return;
+        } catch (e) { console.warn('Clear failed, falling back:', e); }
+      }
+      // local fallback
+      localStore.setPlants([]);
+      toast('All plants cleared (local)');
+      loadPlants();
+    }
+
+    document.getElementById('refresh').onclick = () => loadPlants();
+    document.getElementById('clearAll').onclick = () => clearAllPlants();
+
+    // Password-protect the dev UI. Simple local check (flowerz).
+    const LOCK_PW = 'flowerz';
+    const unlocked = sessionStorage.getItem('dev_unlocked') === '1';
+    function setUnlocked(v) {
+      sessionStorage.setItem('dev_unlocked', v ? '1' : '0');
+      document.getElementById('mainCard').style.display = v ? 'block' : 'none';
+      document.getElementById('authCard').style.display = v ? 'none' : 'block';
+      if (v) loadPlants();
+    }
+    setUnlocked(unlocked);
+
+    document.getElementById('unlock').onclick = () => {
+      const val = document.getElementById('devPassword').value || '';
+      if (val === LOCK_PW) { setUnlocked(true); toast('Unlocked'); }
+      else toast('Wrong password');
+    };
+
+    // Clear field plants: delete from DB and clear localStorage 'plants'
+    document.getElementById('clearField').onclick = async () => {
+      if (!confirm('Clear all field plants (DB + localStorage)?')) return;
+      // Clear localStorage copy
+      localStorage.removeItem('plants');
+      toast('Local field plants cleared');
+      // Attempt DB clear
+      if (initSupabase()) {
+        try {
+          const { data: idsData, error: selectErr } = await supabase.from('plants').select('id');
+          if (selectErr) throw selectErr;
+          const ids = (idsData || []).map(r => r.id).filter(Boolean);
+          if (ids.length) {
+            const { error } = await supabase.from('plants').delete().in('id', ids);
+            if (error) throw error;
+          }
+          toast('DB field plants cleared');
+        } catch (e) { console.warn('DB clear failed', e); toast('DB clear failed'); }
+      }
+      loadPlants();
+    };
+
+    function escapeHtml(s){ return String(s||'').replace(/[&<>\"']/g, c=>({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+    // init
+    loadPlants();
+  </script>
+</body>
+</html>
