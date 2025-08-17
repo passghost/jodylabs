@@ -65,6 +65,19 @@ function renderProjectsFromArray(arr){
   }
 
   stage.appendChild(grid);
+  // Ensure all project bodies get the same height so screenshots line up
+  function equalizeProjectBodies(){
+    const bodies = Array.from(grid.querySelectorAll('.project .project-body'));
+    if(!bodies.length) return;
+    // reset any previously set inline minHeight so measurement is accurate
+    bodies.forEach(b=>{ b.style.minHeight = ''; });
+    const max = bodies.reduce((m, b) => Math.max(m, b.offsetHeight), 0);
+    if(max > 0){ bodies.forEach(b=>{ b.style.minHeight = max + 'px'; }); }
+  }
+  // run once after render
+  equalizeProjectBodies();
+  // recompute on resize (debounced)
+  window.addEventListener('resize', (function(){ let t; return ()=>{ clearTimeout(t); t = setTimeout(equalizeProjectBodies, 140); }; }()));
   // animated background (vibe) removed: no background canvas will be started here.
 
   // after rendering, wire up search/filter if the control exists
@@ -87,6 +100,8 @@ function renderProjectsFromArray(arr){
         card.style.display = show ? '' : 'none';
       });
       updateCount();
+  // after filtering some cards may be hidden; re-equalize visible bodies so screenshots remain aligned
+  setTimeout(equalizeProjectBodies, 40);
     }
 
   // attach listener only once

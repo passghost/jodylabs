@@ -127,11 +127,34 @@ body {
 @media (max-width:420px){header h1{font-size:14px}}
 
 /* project card */
-.project-card{display:inline-flex;align-items:center;background:rgba(255,255,255,0.03);border-radius:10px;padding:6px 10px;margin-left:12px}
-.project-card .card-link{display:flex;align-items:center;gap:10px;color:var(--fg);text-decoration:none}
-.project-card .card-icon{font-size:20px}
-.project-card h3{font-size:13px;margin:0}
-.project-card p{font-size:11px;margin:0;opacity:0.85}
+.project-card{
+  display:inline-flex;
+  align-items:center;
+  background:rgba(255,255,255,0.03);
+  border-radius:10px;
+  padding:8px 12px;
+  margin-left:12px;
+  vertical-align:middle;
+}
+.project-card .card-link{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  color:var(--fg);
+  text-decoration:none;
+}
+.project-card .card-icon{
+  font-size:20px;
+  min-width:36px;
+  min-height:36px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:8px;
+  background:rgba(255,255,255,0.02);
+}
+.project-card h3{font-size:13px;margin:0;text-align:left}
+.project-card p{font-size:11px;margin:0;opacity:0.85;text-align:left}
 
 /* Re-use simplified layout from original VibeCode for modular cards */
 .projects-grid{
@@ -149,22 +172,34 @@ body {
   background:linear-gradient(120deg, rgba(255,255,255,0.04) 0%, rgba(94,107,115,0.04) 100%);
   background-color:var(--card);
   border-radius:18px;
-  padding:22px 18px 22px 18px;
+  padding:18px;
   position:relative;
-  min-height:220px;
+  min-height:180px;
   box-shadow:var(--shadow);
-  transition:transform 260ms cubic-bezier(.2,.9,.2,1), box-shadow 260ms ease, filter 260ms ease;
+  transition: box-shadow 260ms ease, filter 260ms ease, background-color 260ms ease;
   backdrop-filter: blur(10px);
   animation: fadeInCard 0.7s cubic-bezier(.2,.9,.2,1);
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
 }
 .project:hover{
-  transform:translateY(-10px) scale(1.03);
+  /* remove whole-card scaling; instead brighten and deepen shadow slightly */
   box-shadow:0 24px 64px rgba(94,107,115,0.12),0 8px 32px rgba(122,31,39,0.08);
-  filter:brightness(1.03);
+  filter:brightness(1.04);
 }
 .project:hover .project-link{
-  transform:translateY(-8px) scale(1.04);
+  transform:translateY(-6px);
   box-shadow:0 16px 40px var(--accent);
+}
+
+/* gem (project-icon) hover animation: lift and scale */
+.project .project-icon{
+  transition: transform 220ms cubic-bezier(.2,.9,.2,1), box-shadow 220ms ease;
+}
+.project:hover .project-icon{
+  transform: translateY(-6px) scale(1.25);
+  box-shadow:0 8px 28px rgba(94,107,115,0.18);
 }
 .project::after{
   content:'';
@@ -175,15 +210,18 @@ body {
   box-shadow:inset 0 1px 0 rgba(255,255,255,0.03);
 }
 .project .project-icon{
-  width:48px;
-  height:48px;
-  border-radius:12px;
+  width:28px;
+  height:28px;
+  border-radius:8px;
   overflow:hidden;
   background:linear-gradient(120deg, #23243a 0%, #1a1f2b 100%);
   display:flex;
   align-items:center;
   justify-content:center;
-  box-shadow:0 2px 8px var(--accent2);
+  box-shadow:0 1px 6px rgba(94,107,115,0.12);
+  position:absolute;
+  top:14px;
+  left:14px;
 }
 .project .project-icon img{
   width:100%;
@@ -192,8 +230,13 @@ body {
   border-radius:12px;
 }
 .project .project-body{
-  padding:10px 10px 20px 10px;
-  text-align:center;
+  padding:10px 12px 12px 52px; /* leave space on the left for the small gem */
+  text-align:left;
+}
+
+@media (max-width:480px){
+  .project .project-icon{ width:22px; height:22px; top:12px; left:12px; }
+  .project .project-body{ padding-left:44px; }
 }
 .project h2{
   font-size:1.12rem;
@@ -212,27 +255,26 @@ body {
   width:100%;
   aspect-ratio: 16 / 9;
   object-fit:cover;
-  border-radius:14px;
-  margin-top:16px;
+  border-radius:12px;
+  margin-top:12px;
   border:1px solid rgba(255,255,255,0.04);
   box-shadow:0 2px 8px var(--accent2);
   display:block;
 }
 .project-link{
-  position:absolute;
-  right:20px;
-  bottom:20px;
-  padding:12px 22px;
+  align-self:flex-end;
+  margin-top:12px;
+  padding:10px 18px;
   background:linear-gradient(135deg,var(--accent),#7f2b33);
   color:#fff;
-  border-radius:26px;
+  border-radius:22px;
   text-decoration:none;
   display:inline-flex;
   align-items:center;
   gap:10px;
-  font-weight:900;
-  letter-spacing:0.7px;
-  font-size:1.08rem;
+  font-weight:800;
+  letter-spacing:0.6px;
+  font-size:1rem;
   transition:transform 180ms cubic-bezier(.2,.9,.2,1),box-shadow 180ms ease;
   box-shadow:0 8px 28px rgba(94,107,115,0.12),0 2px 8px rgba(122,31,39,0.08);
 }
