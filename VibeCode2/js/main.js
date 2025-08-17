@@ -34,7 +34,6 @@ async function fallbackBoot(){
 }
 
 // Render helper: accept an array of project objects and build the grid
-import { initVibe } from './eye.js';
 
 function renderProjectsFromArray(arr){
   const stage = document.getElementById('stage');
@@ -66,13 +65,7 @@ function renderProjectsFromArray(arr){
   }
 
   stage.appendChild(grid);
-  // initialize animated background canvas (vibe)
-  try{
-    // stop previous if any
-    if(stage.__vibe && typeof stage.__vibe.stop === 'function') stage.__vibe.stop();
-    const vibe = initVibe(stage);
-    if(vibe && typeof vibe.stop === 'function') stage.__vibe = vibe;
-  }catch(e){console.warn('initVibe failed', e)}
+  // animated background (vibe) removed: no background canvas will be started here.
 
   // after rendering, wire up search/filter if the control exists
   setTimeout(()=>{
@@ -82,7 +75,10 @@ function renderProjectsFromArray(arr){
     const cards = Array.from(grid.querySelectorAll('.project'));
     function updateCount(){ if(countEl) countEl.textContent = String(cards.filter(c=>c.offsetParent!==null).length); }
 
-    function doFilter(){
+  // debounce helper to avoid expensive filtering on every keystroke
+  function debounce(fn, wait){ let t = null; return (...args)=>{ clearTimeout(t); t = setTimeout(()=>fn(...args), wait); }; }
+
+  function doFilter(){
       const q = search.value.trim().toLowerCase();
       cards.forEach(card=>{
         const title = (card.querySelector('h2')?.textContent||'').toLowerCase();
@@ -93,7 +89,8 @@ function renderProjectsFromArray(arr){
       updateCount();
     }
 
-    search.addEventListener('input', doFilter);
+  // attach listener only once
+  if (!search.__vibe_bound) { search.addEventListener('input', debounce(doFilter, 120)); search.__vibe_bound = true; }
     // initial count
     updateCount();
   }, 50);

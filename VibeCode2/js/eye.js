@@ -7,8 +7,9 @@ export function initVibe(container){
     }
   }catch(e){}
 
-  // create a full-size canvas
-  const canvas = document.createElement('canvas');
+  // create or reuse a full-size canvas
+  let canvas = container.querySelector('canvas.vibe-canvas');
+  if (!canvas) canvas = document.createElement('canvas');
   canvas.className = 'vibe-canvas';
   // keep canvas visually behind content (CSS also handles this)
   canvas.style.position = 'absolute';
@@ -40,21 +41,29 @@ export function initVibe(container){
 
   let rafId = null;
   let running = true;
+  // throttle to ~30fps to reduce CPU on slower devices
+  const FPS = 30;
+  const FRAME_INTERVAL = 1000 / FPS;
+  let lastFrame = performance.now();
 
-  function step(){
+  function step(now){
     if(!running) return;
     if(!ctx) return;
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    // subtle background gradient
-    const g = ctx.createLinearGradient(0,0,canvas.width,canvas.height);
-    g.addColorStop(0,'rgba(6,10,20,0.6)');
-    g.addColorStop(1,'rgba(16,22,40,0.6)');
-    ctx.fillStyle = g;
-    ctx.fillRect(0,0,canvas.width,canvas.height);
-
+    if (!now) now = performance.now();
+    const dt = now - lastFrame;
+    if (dt >= FRAME_INTERVAL) {
+      lastFrame = now - (dt % FRAME_INTERVAL);
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      // subtle background gradient
+      const g = ctx.createLinearGradient(0,0,canvas.width,canvas.height);
+      g.addColorStop(0,'rgba(6,10,20,0.6)');
+      g.addColorStop(1,'rgba(16,22,40,0.6)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+    }
     rafId = requestAnimationFrame(step);
   }
-  step();
+  rafId = requestAnimationFrame(step);
 
   function stop(){
     running = false;
