@@ -503,6 +503,17 @@
             return 0;
         }
         const AUTO_REFRESH_MS = 2_000; // Refresh every 2 seconds
+    // Reconcile backoff and concurrency guards to avoid spamming network when Supabase/storage is flaky
+    let reconcilingSeeds = false;
+    let reconFailureCount = 0;
+    let lastReconFailureAt = 0;
+    let lastReconcileAt = 0;
+    const RECON_FAILURE_THRESHOLD = 3; // after this many consecutive failures, pause reconcile
+    const RECON_COOLDOWN_MS = 30_000; // wait this long after hitting threshold
+    const RECON_MIN_INTERVAL_MS = 5_000; // never run reconcile more often than this
+    // Throttle for random picker rendering to avoid frequent re-renders
+    let lastRandomRenderAt = 0;
+    const RANDOM_MIN_INTERVAL_MS = 3_000;
 
         /* ------------- Real-time database ------------- */
         const db = {
@@ -570,11 +581,25 @@
                         .insert([seed])
                         .select();
                     if (error) throw error;
-                    this.seeds.unshift(data[0]);
+                    // avoid duplicates
+                    if (!this.seeds.some(s => s && s.id === (data && data[0] && data[0].id))) {
+                        this.seeds.unshift(data[0]);
+                    }
                 } catch (error) {
                     console.error('Error adding seed:', error);
-                    this.seeds.unshift(seed);
-                    localStorage.setItem("seeds", JSON.stringify(this.seeds));
+                    try {
+                        const removedSet = getRemovedSeedSet();
+                        if (!removedSet.has(seed.id)) {
+                            if (!this.seeds.some(s => s && s.id === seed.id)) this.seeds.unshift(seed);
+                        } else {
+                            console.log('Not adding seed to local fallback because it is client-removed:', seed.id);
+                        }
+                        // Persist via save() which already respects removedSet
+                        this.save();
+                    } catch (e) {
+                        // best-effort fallback: use save() which respects removed set
+                        try { this.seeds.unshift(seed); this.save(); } catch (ee) { /* ignore */ }
+                    }
                 }
             },
 
@@ -648,7 +673,15 @@
             // Persist to localStorage fallback for demo usage
             save() {
                 try {
-                    localStorage.setItem("seeds", JSON.stringify(this.seeds));
+                    // Persist seeds but exclude any client-blacklisted/removed seeds so they don't keep repopulating
+                    try {
+                        const removedSet = getRemovedSeedSet();
+                        const seedsToPersist = (this.seeds || []).filter(s => s && !removedSet.has(s.id));
+                        localStorage.setItem("seeds", JSON.stringify(seedsToPersist));
+                    } catch (e) {
+                        // fallback to naive persist
+                        localStorage.setItem("seeds", JSON.stringify(this.seeds));
+                    }
                     localStorage.setItem("plants", JSON.stringify(this.plants));
                     localStorage.setItem("caps", JSON.stringify(this.caps));
                 } catch (e) {
@@ -660,102 +693,128 @@
         // Remove local seeds that no longer exist on the remote DB.
         // Runs at startup when Supabase is available to keep local memory consistent.
         async function reconcileSeedsWithRemote() {
+            // Avoid overlapping reconciles and throttle when remote/storage is flaky.
             if (!initSupabase()) return;
+            if (reconcilingSeeds) return;
+            const now = Date.now();
+            if (now - lastReconcileAt < RECON_MIN_INTERVAL_MS) return;
+            if (reconFailureCount >= RECON_FAILURE_THRESHOLD && (now - lastReconFailureAt) < RECON_COOLDOWN_MS) {
+                // Recently failed too many times; skip reconcile until cooldown
+                return;
+            }
+            reconcilingSeeds = true;
+            lastReconcileAt = now;
+            let success = false;
             try {
                 const { data, error } = await supabase.from('seeds').select('id');
                 if (error) throw error;
                 const remoteIds = new Set((data || []).map(s => s.id));
                 const before = db.seeds.length;
-                db.seeds = (db.seeds || []).filter(s => s && remoteIds.has(s.id));
+                // Keep only remote seeds, but also respect client-side removed blacklist so we don't re-add removed ones
+                const removedSet = getRemovedSeedSet();
+                db.seeds = (db.seeds || []).filter(s => s && remoteIds.has(s.id) && !removedSet.has(s.id));
                 const removed = before - db.seeds.length;
                 if (removed > 0) {
                     console.log(`Reconciled seeds: removed ${removed} local seed(s) not found remotely.`);
                     db.save();
                     try { renderPicker(); renderRandomThree(); } catch (e) { /* ignore UI race */ }
                 }
+
                 // Additionally, verify thumbnail URLs for remaining seeds and remove/blacklist unreachable ones
                 const remaining = db.seeds || [];
                 if (remaining.length) {
-                    const removedSet = getRemovedSeedSet();
-                    const checks = [];
                     const CONCURRENCY = 5;
                     let idx = 0;
-                    function next() {
-                        if (idx >= remaining.length) return Promise.resolve();
-                        const chunk = remaining.slice(idx, idx + CONCURRENCY);
-                        idx += CONCURRENCY;
-                        return Promise.all(chunk.map(async s => {
-                            try {
-                                // pick candidate URL if available
-                                const candidate = (s.thumbs && s.thumbs[0]) || (s.full_images && s.full_images[0]) || null;
-                                let url = '';
-                                if (candidate && typeof candidate === 'string' && candidate.startsWith('http')) {
-                                    url = candidate;
-                                } else if (candidate && typeof candidate === 'string') {
-                                    if (initSupabase()) {
-                                        try {
-                                            const pub = supabase.storage.from('garden').getPublicUrl(candidate);
-                                            url = (pub && pub.data && pub.data.publicUrl) || '';
-                                            if (!url && SUPABASE_URL) {
-                                                const host = SUPABASE_URL.replace(/^https?:\/\//, '').replace(/\/$/, '');
-                                                url = `https://${host}/storage/v1/object/public/garden/${encodeURIComponent(candidate)}`;
-                                            }
-                                        } catch (e) { url = ''; }
-                                    }
-                                } else if (s.file_keys && s.file_keys[0]) {
-                                    if (initSupabase()) {
-                                        try {
-                                            const pub = supabase.storage.from('garden').getPublicUrl(s.file_keys[0]);
-                                            url = (pub && pub.data && pub.data.publicUrl) || '';
-                                            if (!url && SUPABASE_URL) {
-                                                const host = SUPABASE_URL.replace(/^https?:\/\//, '').replace(/\/$/, '');
-                                                url = `https://${host}/storage/v1/object/public/garden/${encodeURIComponent(s.file_keys[0])}`;
-                                            }
-                                        } catch (e) { url = ''; }
-                                    }
-                                } else if (s.seed_prefix) {
-                                    const key = `${s.seed_prefix}_frame_0.png`;
-                                    if (initSupabase()) {
-                                        try {
-                                            const pub = supabase.storage.from('garden').getPublicUrl(key);
-                                            url = (pub && pub.data && pub.data.publicUrl) || '';
-                                            if (!url && SUPABASE_URL) {
-                                                const host = SUPABASE_URL.replace(/^https?:\/\//, '').replace(/\/$/, '');
-                                                url = `https://${host}/storage/v1/object/public/garden/${encodeURIComponent(key)}`;
-                                            }
-                                        } catch (e) { url = ''; }
-                                    }
-                                }
-                                if (!url) return { id: s.id, ok: false };
-                                // attempt a HEAD first, then GET if necessary
+                    async function checkSeed(s) {
+                        try {
+                            // Build candidate URLs to try. Prefer publicUrl from storage helper, but also try fallback paths
+                            const tryUrls = [];
+                            const candidate = (s.thumbs && s.thumbs[0]) || (s.full_images && s.full_images[0]) || null;
+                            if (candidate && typeof candidate === 'string' && candidate.startsWith('http')) {
+                                tryUrls.push(candidate);
+                            }
+                            // helper to push storage-derived url variants
+                            const pushStorageVariants = (key) => {
+                                if (!key) return;
                                 try {
-                                    const res = await fetch(url, { method: 'HEAD' });
-                                    if (res && res.ok) return { id: s.id, ok: true };
+                                    const pub = supabase.storage.from('garden').getPublicUrl(key);
+                                    const pubUrl = (pub && pub.data && pub.data.publicUrl) || '';
+                                    if (pubUrl) tryUrls.push(pubUrl);
+                                } catch (e) { /* ignore */ }
+                                if (SUPABASE_URL) {
+                                    const host = SUPABASE_URL.replace(/^https?:\/\//, '').replace(/\/$/, '');
+                                    // canonical lowercase path
+                                    tryUrls.push(`https://${host}/storage/v1/object/public/garden/${encodeURIComponent(key)}`);
+                                    // also try a variant with capitalized folder in case of inconsistent casing from older uploads
+                                    tryUrls.push(`https://${host}/storage/v1/object/public/Garden/${encodeURIComponent(key)}`);
+                                }
+                            };
+                            if (candidate && typeof candidate === 'string' && !candidate.startsWith('http')) {
+                                pushStorageVariants(candidate);
+                            } else if (s.file_keys && s.file_keys[0]) {
+                                pushStorageVariants(s.file_keys[0]);
+                            } else if (s.seed_prefix) {
+                                const key = `${s.seed_prefix}_frame_0.png`;
+                                pushStorageVariants(key);
+                            }
+
+                            if (!tryUrls.length) return { id: s.id, ok: false };
+
+                            // Try each candidate URL until one succeeds
+                            for (const url of tryUrls) {
+                                try {
+                                    const h = await fetch(url, { method: 'HEAD' });
+                                    if (h && h.ok) return { id: s.id, ok: true };
                                 } catch (e) { /* ignore */ }
                                 try {
-                                    const res2 = await fetch(url, { method: 'GET' });
-                                    return { id: s.id, ok: !!(res2 && res2.ok) };
-                                } catch (e) { return { id: s.id, ok: false }; }
-                            } catch (e) { return { id: s.id, ok: false }; }
-                        })).then(results => {
-                            results.forEach(r => {
-                                if (!r.ok) {
+                                    const g = await fetch(url, { method: 'GET' });
+                                    if (g && g.ok) return { id: s.id, ok: true };
+                                } catch (e) { /* ignore */ }
+                            }
+                            return { id: s.id, ok: false };
+                        } catch (e) { return { id: s.id, ok: false }; }
+                    }
+
+                    async function next() {
+                        if (idx >= remaining.length) return;
+                        const chunk = remaining.slice(idx, idx + CONCURRENCY);
+                        idx += CONCURRENCY;
+                        const results = await Promise.all(chunk.map(checkSeed));
+                        results.forEach(r => {
+                            if (!r.ok) {
+                                const fails = incSeedFailCount(r.id);
+                                if (fails >= SEED_FAIL_THRESHOLD) {
                                     // blacklist and remove locally
                                     addRemovedSeed(r.id);
                                     db.seeds = (db.seeds || []).filter(x => x && x.id !== r.id);
                                 }
-                            });
-                            return next();
+                            } else {
+                                try { resetSeedFailCount(r.id); } catch (e) { /* ignore */ }
+                            }
                         });
+                        return next();
                     }
+
                     try {
                         await next();
                         db.save();
                         try { renderPicker(); renderRandomThree(); } catch (e) { /* ignore */ }
                     } catch (e) { console.warn('thumbnail verification failed', e); }
                 }
+
+                // If we reached this point without throwing, mark success
+                success = true;
             } catch (e) {
                 console.warn('reconcileSeedsWithRemote failed', e);
+            } finally {
+                reconcilingSeeds = false;
+                lastReconcileAt = Date.now();
+                if (success) {
+                    reconFailureCount = 0;
+                } else {
+                    reconFailureCount = Math.min(Number.MAX_SAFE_INTEGER, reconFailureCount + 1);
+                    lastReconFailureAt = Date.now();
+                }
             }
         }
 
@@ -785,11 +844,22 @@
                         }
                     })
                     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'seeds' }, (payload) => {
-                        db.seeds.unshift(payload.new);
-                        // persist new seeds to local fallback so offline/refresh keeps them
-                        try { db.save(); } catch (e) { /* ignore */ }
-                        renderPicker();
-                        renderRandomThree();
+                        try {
+                            const removedSet = getRemovedSeedSet();
+                            const newId = payload.new && payload.new.id;
+                            if (!newId) return;
+                            if (removedSet.has(newId)) {
+                                console.log('Ignoring realtime INSERT for client-removed seed', newId);
+                                return;
+                            }
+                            // avoid duplicates
+                            if (db.seeds.some(s => s && s.id === newId)) return;
+                            db.seeds.unshift(payload.new);
+                            // persist new seeds to local fallback so offline/refresh keeps them
+                            try { db.save(); } catch (e) { /* ignore */ }
+                            renderPicker();
+                            renderRandomThree();
+                        } catch (e) { console.warn('Failed handling seed INSERT realtime', e); }
                     })
                     .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'seeds' }, (payload) => {
                         try {
@@ -970,6 +1040,25 @@
 
         // Persisted client-side list of seeds to hide (broken references).
         const REMOVED_SEEDS_KEY = 'removed_seeds';
+        const FAIL_COUNTS_KEY = 'seed_fail_counts';
+        function getSeedFailCounts() {
+            try { return JSON.parse(localStorage.getItem(FAIL_COUNTS_KEY) || '{}'); } catch (e) { return {}; }
+        }
+        function incSeedFailCount(id) {
+            try {
+                const m = getSeedFailCounts();
+                m[id] = (m[id] || 0) + 1;
+                localStorage.setItem(FAIL_COUNTS_KEY, JSON.stringify(m));
+                return m[id];
+            } catch (e) { return 1; }
+        }
+        function resetSeedFailCount(id) {
+            try {
+                const m = getSeedFailCounts();
+                if (m && m[id]) { delete m[id]; localStorage.setItem(FAIL_COUNTS_KEY, JSON.stringify(m)); }
+            } catch (e) { /* ignore */ }
+        }
+        const SEED_FAIL_THRESHOLD = 3; // require this many failures before blacklisting
         function getRemovedSeedSet() {
             try {
                 const arr = JSON.parse(localStorage.getItem(REMOVED_SEEDS_KEY) || '[]');
@@ -988,9 +1077,13 @@
         function renderPicker() {
             const el = $("#picker");
             if (!el) return;
-            // If we have a live DB, make sure local seeds match remote (fire-and-forget)
+            // If we have a live DB, request a reconcile but avoid spamming when already running or recently run
             if (initSupabase()) {
-                reconcileSeedsWithRemote().catch(e => console.warn('reconcileSeedsWithRemote failed in renderPicker', e));
+                try {
+                    if (!reconcilingSeeds && (Date.now() - lastReconcileAt) >= RECON_MIN_INTERVAL_MS) {
+                        reconcileSeedsWithRemote().catch(e => console.warn('reconcileSeedsWithRemote failed in renderPicker', e));
+                    }
+                } catch (e) { /* ignore */ }
             }
             el.innerHTML = "";
             // Only show seeds that are available: not marked deleted and have at least one usable image/key
@@ -1012,6 +1105,8 @@
                 const before = db.seeds.length;
                 db.seeds = (db.seeds || []).filter(x => x && x.id !== seedId);
                 if (db.seeds.length !== before) {
+                    // remember this removal to prevent re-adding from remote/realtime
+                    try { addRemovedSeed(seedId); } catch (e) { /* ignore */ }
                     try { db.save(); } catch (e) { console.warn('save failed', e); }
                     try { renderPicker(); renderRandomThree(); } catch (e) { /* ignore */ }
                 }
@@ -1024,10 +1119,17 @@
                 img.src = (s.thumbs && s.thumbs[0]) || (s.full_images && s.full_images[0]) || '';
                 // If the image fails to load, remove the seed from local memory so it's not shown again
                 img.onerror = () => {
-                    console.warn('Seed thumbnail failed to load, removing seed locally:', s.id);
-                    addRemovedSeed(s.id);
-                    removeSeedLocal(s.id);
+                    try {
+                        const fails = incSeedFailCount(s.id);
+                        console.warn('Seed thumbnail failed to load', s.id, 'fail count', fails);
+                        if (fails >= SEED_FAIL_THRESHOLD) {
+                            console.warn('Seed thumbnail failed repeatedly, removing seed locally:', s.id);
+                            addRemovedSeed(s.id);
+                            removeSeedLocal(s.id);
+                        }
+                    } catch (e) { console.warn('img.onerror handling failed', e); }
                 };
+                img.onload = () => { try { resetSeedFailCount(s.id); } catch (e) {} };
                 // Just display the seed image, no pick button
                 div.appendChild(img);
                 el.appendChild(div);
@@ -1041,9 +1143,16 @@
         async function renderRandomThree() {
             const el = $("#randomThree");
             if (!el) return;
-            // Ensure local seeds are reconciled with remote when rendering random picks
+            // debounce frequent calls
+            if (Date.now() - lastRandomRenderAt < RANDOM_MIN_INTERVAL_MS) return;
+            lastRandomRenderAt = Date.now();
+            // Ensure local seeds are reconciled with remote when rendering random picks, but throttle
             if (initSupabase()) {
-                reconcileSeedsWithRemote().catch(e => console.warn('reconcileSeedsWithRemote failed in renderRandomThree', e));
+                try {
+                    if (!reconcilingSeeds && (Date.now() - lastReconcileAt) >= RECON_MIN_INTERVAL_MS) {
+                        reconcileSeedsWithRemote().catch(e => console.warn('reconcileSeedsWithRemote failed in renderRandomThree', e));
+                    }
+                } catch (e) { /* ignore */ }
             }
             el.innerHTML = '';
             let pool = [];
@@ -1142,12 +1251,19 @@
                 img.src = srcUrl || '';
                 // If the remote thumbnail is broken/unavailable, remove the seed locally so it won't appear again
                 img.onerror = () => {
-                    console.warn('Random pick thumbnail failed to load, removing seed locally:', s.id);
-                    addRemovedSeed(s.id);
-                    try { db.seeds = (db.seeds || []).filter(x => x && x.id !== s.id); db.save(); } catch (e) { /* ignore */ }
-                    try { renderRandomThree(); renderPicker(); } catch (e) { /* ignore */ }
+                    try {
+                        const fails = incSeedFailCount(s.id);
+                        console.warn('Random pick thumbnail failed to load', s.id, 'fail count', fails);
+                        if (fails >= SEED_FAIL_THRESHOLD) {
+                            console.warn('Random pick thumbnail failed repeatedly, removing seed locally:', s.id);
+                            addRemovedSeed(s.id);
+                            try { db.seeds = (db.seeds || []).filter(x => x && x.id !== s.id); db.save(); } catch (e) { /* ignore */ }
+                            try { renderRandomThree(); renderPicker(); } catch (e) { /* ignore */ }
+                        }
+                    } catch (e) { console.warn('img.onerror failed', e); }
                 };
-                console.log('random pick img src for', s.id, img.src);
+                img.onload = () => { try { resetSeedFailCount(s.id); } catch (e) {} };
+                // suppressed verbose log to avoid console spam
                 img.style.width = '64px';
                 img.style.height = '64px';
                 img.style.objectFit = 'contain';
@@ -1494,14 +1610,17 @@
 
         let selectedPlantId = null;
         function growthStage(p) {
+            // Use an additive water bonus (bounded) instead of scaling the entire elapsed time.
+            // This prevents watering from retroactively inflating past elapsed time and skipping stages.
             const plantedAt = toTimestamp(p.planted_at ? p.planted_at : p.plantedAt);
             const elapsed = Date.now() - plantedAt;
             const waters = p.waters || [];
             const lastWater = waters.length ? toTimestamp(waters[waters.length - 1]) : 0;
-            const WATER_MOD = 0.3; // 30%
+            const WATER_BOOST_FRAC = 0.3; // 30% of one stage
+            const WATER_BOOST_MS = Math.round(STAGE_MS * WATER_BOOST_FRAC);
             const recentlyWatered = lastWater && (Date.now() - lastWater) <= STAGE_MS;
-            const modifier = recentlyWatered ? WATER_MOD : -WATER_MOD;
-            const effectiveElapsed = Math.max(0, elapsed * (1 + modifier));
+            const bonus = recentlyWatered ? WATER_BOOST_MS : -WATER_BOOST_MS;
+            const effectiveElapsed = Math.max(0, elapsed + bonus);
             const t = Math.min(TOTAL_MS, effectiveElapsed);
             return Math.min(3, Math.floor(t / STAGE_MS));
         }
@@ -1593,15 +1712,17 @@
             const plantedAtMs = toTimestamp(p.planted_at ? p.planted_at : p.plantedAt);
             const elapsed = Date.now() - plantedAtMs;
             const lastWater = (p.waters && p.waters.length) ? toTimestamp(p.waters[p.waters.length - 1]) : 0;
+            const WATER_BOOST_FRAC = 0.3;
+            const WATER_BOOST_MS = Math.round(STAGE_MS * WATER_BOOST_FRAC);
             const recentlyWatered = lastWater && (Date.now() - lastWater) <= STAGE_MS;
-            const modifier = recentlyWatered ? 0.3 : -0.3;
-            const effectiveElapsed = Math.max(0, elapsed * (1 + modifier));
+            const bonus = recentlyWatered ? WATER_BOOST_MS : -WATER_BOOST_MS;
+            const effectiveElapsed = Math.max(0, elapsed + bonus);
             const t = Math.min(TOTAL_MS, effectiveElapsed);
             const currStage = Math.min(3, Math.floor(t / STAGE_MS));
             const nextStageEffectiveAt = Math.min(TOTAL_MS, (currStage + 1) * STAGE_MS);
             // convert effective next-stage time back to real wall-clock time
-            // wallClockNext = plantedAt + nextStageEffectiveAt / (1 + modifier)
-            const msToNextStage = Math.ceil((plantedAtMs + nextStageEffectiveAt / (1 + modifier)) - Date.now());
+            // Since bonus is additive (ms), the wall-clock next-stage is simply plantedAt + nextStageEffectiveAt - bonus
+            const msToNextStage = Math.ceil((plantedAtMs + nextStageEffectiveAt - bonus) - Date.now());
             const nextStageText = (currStage >= 3) ? 'mature' : (msToNextStage > 0 ? formatMs(msToNextStage) : 'soon');
             const plantedAt = p.planted_at ? new Date(toTimestamp(p.planted_at)).toLocaleString() : '';
             statsEl.innerHTML = `
@@ -1692,14 +1813,16 @@
                 const elapsed = Date.now() - plantedAt;
                 const waters = p.waters || [];
                 const lastWater = waters.length ? toTimestamp(waters[waters.length - 1]) : 0;
-                const WATER_MOD = 0.3;
+                const WATER_BOOST_FRAC = 0.3;
+                const WATER_BOOST_MS = Math.round(STAGE_MS * WATER_BOOST_FRAC);
                 const recentlyWatered = lastWater && (Date.now() - lastWater) <= STAGE_MS;
-                const modifier = recentlyWatered ? WATER_MOD : -WATER_MOD;
-                const effectiveElapsed = Math.max(0, elapsed * (1 + modifier));
+                const bonus = recentlyWatered ? WATER_BOOST_MS : -WATER_BOOST_MS;
+                const effectiveElapsed = Math.max(0, elapsed + bonus);
                 const t = Math.min(TOTAL_MS, effectiveElapsed);
                 const stage = Math.min(3, Math.floor(t / STAGE_MS));
-                // estimate next stage time based on effectiveElapsed
-                const nextStageAt = plantedAt + ((stage + 1) * STAGE_MS) / (1 + modifier);
+                // next stage effective ms since planted is (stage+1)*STAGE_MS
+                // wall-clock next stage = plantedAt + ((stage+1)*STAGE_MS) - bonus
+                const nextStageAt = plantedAt + ((stage + 1) * STAGE_MS) - bonus;
                 const msLeft = nextStageAt - Date.now();
                 if (stage >= 3) {
                     el.textContent = 'mature';
