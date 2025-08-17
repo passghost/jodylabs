@@ -101,9 +101,10 @@
             border: 1px solid var(--line);
             background: #192233;
             color: #dce6f5;
-            padding: 8px 10px;
-            border-radius: 10px;
+            padding: 6px 8px;
+            border-radius: 8px;
             font-weight: 600;
+            font-size: 13px;
         }
 
         button[disabled] {
@@ -157,6 +158,26 @@
             background: #071018;
             /* custom pencil cursor (inline SVG) */
             cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="%23ffffff" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1.003 1.003 0 0 0 0-1.41l-2.34-2.34a1.003 1.003 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>') 12 12, auto;
+        }
+
+        /* overlay hint placed above the large canvas */
+        .canvas-hint {
+            position: relative;
+            width: 320px;
+            margin-top: 8px;
+            text-align: center;
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .canvas-hint .hint-badge {
+            display: inline-block;
+            background: rgba(11,21,34,0.9);
+            border: 1px solid var(--line);
+            padding: 6px 8px;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #cfeee0;
         }
 
         .seed {
@@ -445,7 +466,7 @@
                     <button id="toolSquare">🔲 Square</button>
                     <button id="toolTriangle">🔺 Triangle</button>
                     <button id="toolStar">⭐ Star</button>
-                    <button id="toolStepBack">↶ Step back</button>
+                    <button id="toolStepBack">↶ Undo</button>
                     <label style="display:inline-flex;align-items:center;gap:6px;margin-left:8px">Size
                         <input id="pencilSize" type="range" min="1" max="256" value="4" style="vertical-align:middle;margin-left:6px">
                     </label>
@@ -466,6 +487,7 @@
             <div class="note" style="margin-top:6px;">Tip: right-click + drag draws straight lines (desktop). Touch
                 supported.</div>
             <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px;align-items:center">
+                <div class="canvas-hint"><span class="hint-badge">use thicker lines for less pixelation</span></div>
                 <canvas id="largeCanvas" class="large-seed-canvas" width="320" height="320" title="Draw larger seed preview"></canvas>
                 <div class="note">Larger seed preview and editor (edits sync to selected small frame)</div>
             </div>
@@ -1186,10 +1208,12 @@
                     } else if (shape === 'square') {
                         ctx.fillRect(cx - half, cy - half, s, s);
                     } else if (shape === 'triangle') {
+                        // Draw triangle with apex at (cx, cy) so it can align to the pencil tip.
                         ctx.beginPath();
-                        ctx.moveTo(cx, cy - half);
-                        ctx.lineTo(cx - half, cy + half);
-                        ctx.lineTo(cx + half, cy + half);
+                        const baseY = cy + half;
+                        ctx.moveTo(cx, cy); // apex at provided coordinate
+                        ctx.lineTo(cx - half, baseY);
+                        ctx.lineTo(cx + half, baseY);
                         ctx.closePath();
                         ctx.fill();
                     } else if (shape === 'star') {
@@ -1240,7 +1264,27 @@
                         // eraser clears at the visible tip
                         largeCtx.clearRect(tipCx - halfS, tipCy - halfS, s, s);
                     } else if (tool === 'circle' || tool === 'square' || tool === 'triangle' || tool === 'star') {
-                        drawShapeCentered(largeCtx, tipCx, tipCy, s, tool, color);
+                        // Per-shape placement: square should draw at the butt (same end as pencil);
+                        // circle and triangle need to be swapped: circle -> butt, triangle -> tip.
+                        // star defaults to tip.
+                        let drawX = tipCx, drawY = tipCy;
+                        if (tool === 'square') {
+                            drawX = buttCx; drawY = buttCy;
+                        } else if (tool === 'circle') {
+                            // circle at butt
+                            drawX = buttCx; drawY = buttCy;
+                        } else if (tool === 'triangle') {
+                            // triangle at tip, shifted left and down for visual alignment
+                            drawX = tipCx; drawY = tipCy;
+                            // convert client/CSS pixel offsets into canvas pixels
+                            const triClientOffsetX = -16; // negative = left (moved 8px more)
+                            const triClientOffsetY = 8;   // positive = down
+                            drawX = Math.round(drawX + (triClientOffsetX * scaleX_local));
+                            drawY = Math.round(drawY + (triClientOffsetY * scaleY_local));
+                        } else if (tool === 'star') {
+                            drawX = tipCx; drawY = tipCy;
+                        }
+                        drawShapeCentered(largeCtx, drawX, drawY, s, tool, color);
                     }
                 };
 
