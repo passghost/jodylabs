@@ -7,43 +7,66 @@
     <title>Garden — 4-Frame Community Plants</title>
     <style>
         :root {
-            --bg: #0c0f14;
-            --panel: #121722;
-            --muted: #9aa4b2;
-            --accent: #6fe3b4;
-            --line: #233045;
-            --pin: #e23d3d;
+            --bg: #0d3520; /* deep forest green */
+            --panel: #133d27; /* panel green */
+            --muted: #eaf6eb; /* pale text */
+            --accent: #2ea058; /* vivid garden accent */
+            --line: rgba(10, 30, 18, 0.34); /* soft border */
+            --pin: #8b3b46; /* flower pin */
+            --card-shadow: 0 12px 36px rgba(6, 30, 18, 0.25);
         }
 
         body {
             margin: 0;
-            background: var(--bg);
-            color: #e9eef5;
-            font: 14px/1.2 system-ui, Segoe UI, Roboto, Inter, sans-serif;
+            background: linear-gradient(180deg, #0b2e1a 0%, #0d3520 40%, #133d27 100%);
+            color: var(--muted);
+            font: 14px/1.4 system-ui, "Segoe UI", Roboto, Inter, sans-serif;
         }
 
         header {
             display: flex;
             gap: 16px;
             align-items: center;
-            padding: 12px 16px;
+            padding: 14px 18px;
             border-bottom: 1px solid var(--line);
             position: sticky;
             top: 0;
-            background: linear-gradient(180deg, rgba(12, 15, 20, .95), rgba(12, 15, 20, .85));
-            backdrop-filter: saturate(1.2) blur(6px);
+            background: linear-gradient(180deg, rgba(8,34,22,0.98), rgba(12,46,30,0.98));
+            backdrop-filter: saturate(1.02) blur(2px);
             z-index: 10;
         }
 
         header h1 {
-            font-size: 16px;
+            font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-size: 20px;
             margin: 0;
-            letter-spacing: .4px;
+            letter-spacing: 0.4px;
+            color: #f3fff6; /* light title color */
+            font-weight: 700;
+            text-transform: none;
+            line-height: 1.05;
+            text-shadow: 0 3px 10px rgba(0,0,0,0.4);
+            display: inline-block;
+            position: relative;
+        }
+        /* decorative accent under the title */
+        header h1::after {
+            content: '';
+            display: block;
+            width: 72px;
+            height: 4px;
+            background: linear-gradient(90deg, rgba(255,255,255,0.9), rgba(46,160,88,0.95));
+            border-radius: 3px;
+            margin-top: 8px;
+            box-shadow: 0 6px 14px rgba(12,36,20,0.45);
+            opacity: 0.98;
         }
 
         header .caps {
             margin-left: auto;
-            color: var(--muted);
+            color: rgba(255,255,255,0.85);
+            font-weight: 600;
+            font-size: 13px;
         }
 
         /* small action timer pills */
@@ -75,17 +98,18 @@
         }
 
         .card {
-            background: var(--panel);
-            border: 1px solid var(--line);
+            background: linear-gradient(180deg, rgba(16,54,34,0.98), rgba(18,60,36,0.98));
+            border: 1px solid rgba(8,28,18,0.36);
             border-radius: 14px;
-            padding: 12px;
-            box-shadow: 0 6px 18px rgba(0, 0, 0, .25);
+            padding: 14px;
+            box-shadow: var(--card-shadow);
         }
 
         .card h2 {
             margin: 0 0 8px;
-            font-size: 14px;
-            color: #d5e3f7;
+            font-size: 15px;
+            color: var(--muted);
+            font-weight: 700;
         }
 
         .row {
@@ -98,13 +122,39 @@
         button,
         .btn {
             cursor: pointer;
-            border: 1px solid var(--line);
-            background: #192233;
-            color: #dce6f5;
+            border: 1px solid rgba(8,28,18,0.26);
+            /* glassy button: base gradient + translucent sheen */
+            background: linear-gradient(180deg, rgba(30,100,50,0.98), rgba(18,78,42,0.98));
+            color: var(--muted);
             padding: 6px 8px;
-            border-radius: 8px;
+            border-radius: 10px;
             font-weight: 600;
             font-size: 13px;
+            box-shadow: 0 4px 10px rgba(6,30,18,0.25), inset 0 1px 0 rgba(255,255,255,0.06);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* subtle top gloss */
+        button::before,
+        .btn::before {
+            content: '';
+            position: absolute;
+            left: 0; right: 0; top: 0;
+            height: 50%;
+            background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.02));
+            pointer-events: none;
+            mix-blend-mode: overlay;
+        }
+
+        button::after,
+        .btn::after {
+            content: '';
+            position: absolute;
+            left: 0; right: 0; bottom: 0;
+            height: 10%;
+            background: linear-gradient(180deg, rgba(0,0,0,0.06), rgba(0,0,0,0));
+            pointer-events: none;
         }
 
         button[disabled] {
@@ -113,13 +163,13 @@
         }
 
         .note {
-            color: var(--muted);
-            font-size: 12px;
+            color: #d9f2dd;
+            font-size: 13px;
         }
 
         canvas.frame {
-            border: 1px dashed #3a4c6b;
-            background: #0a0f17;
+            border: 1px dashed rgba(255,255,255,0.06);
+            background: linear-gradient(180deg, #f7fdf7, #eef9ef);
             border-radius: 8px;
             width: 64px;
             height: 64px;
@@ -153,9 +203,9 @@
             width: 320px;
             height: 320px;
             image-rendering: pixelated;
-            border-radius: 8px;
-            border: 1px solid var(--line);
-            background: #071018;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.06);
+            background: linear-gradient(180deg, #fbfff9, #f2fbf2);
             /* custom pencil cursor (inline SVG) */
             cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="%23ffffff" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1.003 1.003 0 0 0 0-1.41l-2.34-2.34a1.003 1.003 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>') 12 12, auto;
         }
@@ -172,18 +222,37 @@
 
         .canvas-hint .hint-badge {
             display: inline-block;
-            background: rgba(11,21,34,0.9);
-            border: 1px solid var(--line);
+            background: rgba(50,100,60,0.08);
+            border: 1px solid rgba(50,100,60,0.12);
             padding: 6px 8px;
             border-radius: 8px;
             font-size: 12px;
-            color: #cfeee0;
+            color: var(--muted);
+        }
+
+        /* centered transient overlay on the large canvas */
+        .large-canvas-container { position: relative; width: 320px; }
+        .large-canvas-overlay {
+            position: absolute;
+            left: 50%; top: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(12,40,22,0.6);
+            border: 1px solid rgba(46,160,88,0.16);
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--accent);
+            text-shadow: 0 1px 0 rgba(0,0,0,0.5);
+            pointer-events: none;
+            z-index: 6;
+            box-shadow: 0 6px 18px rgba(6,30,18,0.25);
         }
 
         .seed {
-            border: 1px solid var(--line);
+            border: 1px solid rgba(40,80,48,0.12);
             border-radius: 10px;
-            background: #0e1420;
+            background: linear-gradient(180deg, rgba(230,248,234,0.98), rgba(216,243,222,0.98));
             padding: 6px;
             display: flex;
             flex-direction: column;
@@ -442,7 +511,7 @@
 
 <body>
     <header>
-        <h1>🌱 Community Garden (4-Frame Plants)</h1>
+        <h1>Community Garden — 4-Frame Plants</h1>
         <div class="legend"><span class="dot"></span> <span>Click the field to plant</span></div>
         <div class="action-timers">
             <div id="makeTimer" class="action-pill">Make: <span class="count">--</span></div>
@@ -488,7 +557,10 @@
                 supported.</div>
             <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px;align-items:center">
                 <div class="canvas-hint"><span class="hint-badge">use thicker lines for less pixelation</span></div>
-                <canvas id="largeCanvas" class="large-seed-canvas" width="320" height="320" title="Draw larger seed preview"></canvas>
+                <div class="large-canvas-container">
+                    <div id="largeCanvasHintOverlay" class="large-canvas-overlay">draw here</div>
+                    <canvas id="largeCanvas" class="large-seed-canvas" width="320" height="320" title="Draw larger seed preview"></canvas>
+                </div>
                 <div class="note">Larger seed preview and editor (edits sync to selected small frame)</div>
             </div>
         </section>
@@ -967,8 +1039,6 @@
             c.className = "frame";
             const ctx = c.getContext("2d");
             ctx.imageSmoothingEnabled = false;
-            ctx.fillStyle = "#0d1726";
-            ctx.fillRect(15, 15, 2, 2);
             framesEl.appendChild(c);
             return c;
         }) : []);
@@ -1161,9 +1231,31 @@
             let ldrawing = false;
             // track last pointer position (in canvas pixels)
             let lastLargeX = null, lastLargeY = null;
+            // transient large-canvas overlay that hides on first draw
+            const largeCanvasHintOverlay = document.getElementById('largeCanvasHintOverlay');
+            let largeCanvasHintHidden = false;
+
+            function hideLargeCanvasHint() {
+                if (!largeCanvasHintHidden) {
+                    largeCanvasHintHidden = true;
+                    if (largeCanvasHintOverlay && largeCanvasHintOverlay.parentNode) {
+                        largeCanvasHintOverlay.parentNode.removeChild(largeCanvasHintOverlay);
+                    }
+                }
+            }
+
             largeCanvas.addEventListener('pointerdown', (e)=>{
+                // hide the overlay on the first user stroke
+                if (!largeCanvasHintHidden) {
+                    largeCanvasHintHidden = true;
+                    if (largeCanvasHintOverlay && largeCanvasHintOverlay.parentNode) {
+                        largeCanvasHintOverlay.parentNode.removeChild(largeCanvasHintOverlay);
+                    }
+                }
                 ldrawing = true;
                 largeCanvas.setPointerCapture(e.pointerId);
+                // hide overlay on first interaction
+                hideLargeCanvasHint();
                 // push undo snapshot for this frame: store both small (32x32) and large (high-res) image data
                 try {
                     const sctx = frames[currentFrame].getContext('2d');
@@ -1782,7 +1874,7 @@
                 pickedSeedId = null;
                 $("#pickedInfo").textContent = "No seed picked.";
                 renderField();
-                toast("Planted in the community garden! 🌱");
+                toast("Planted in the community garden!");
             } catch (error) {
                 console.error('Error planting:', error);
                 toast("Error planting seed");
