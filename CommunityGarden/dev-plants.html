@@ -23,9 +23,8 @@
   <div id="authCard" class="card" style="margin-bottom:12px;">
     <div class="row">
       <label class="muted">Enter developer password to unlock admin tools:</label>
-      <input id="devPassword" type="text" placeholder="password" style="padding:6px;border-radius:6px;border:1px solid #233045;background:#0e1420;color:#e9eef5">
+      <input id="devPassword" type="password" placeholder="developer password" style="padding:6px;border-radius:6px;border:1px solid #233045;background:#0e1420;color:#e9eef5">
       <button id="unlock">Unlock</button>
-      <span class="muted">Hint: it's flowerz</span>
     </div>
   </div>
 
@@ -36,6 +35,7 @@
       <button id="clearField">Clear field plants (localStorage + DB)</button>
       <span class="muted">This page talks to Supabase using the same anon key as the garden; if not configured it falls back to localStorage.</span>
     </div>
+    <div style="margin-top:8px;" class="muted">Cooldowns — Make: 2h • Pick: 1h • Plant: 2m • Water: 2m</div>
 
     <table id="plantsTable">
       <thead>
@@ -229,8 +229,12 @@
     document.getElementById('refresh').onclick = () => loadPlants();
     document.getElementById('clearAll').onclick = () => clearAllPlants();
 
-    // Password-protect the dev UI. Simple local check (flowerz).
-    const LOCK_PW = 'flowerz';
+  // Password-protect the dev UI. The dev password is 'flowerz' for local development.
+  // To avoid exposing this in production, the plaintext check is only enabled on localhost.
+  const LOCK_PW = 'flowerz';
+  const ALLOW_PLAIN_PW = (function(){
+    try { const h = location.hostname || ''; return h === 'localhost' || h === '127.0.0.1' || h === '::1'; } catch(e){ return false; }
+  })();
     const unlocked = sessionStorage.getItem('dev_unlocked') === '1';
     function setUnlocked(v) {
       sessionStorage.setItem('dev_unlocked', v ? '1' : '0');
@@ -242,8 +246,15 @@
 
     document.getElementById('unlock').onclick = () => {
       const val = document.getElementById('devPassword').value || '';
-      if (val === LOCK_PW) { setUnlocked(true); toast('Unlocked'); }
-      else toast('Wrong password');
+      if (ALLOW_PLAIN_PW) {
+        // Local development: allow the configured plaintext password
+        if (val === LOCK_PW) { setUnlocked(true); toast('Unlocked'); }
+        else toast('Wrong password');
+      } else {
+        // Non-local host: do not accept plaintext password from source. Require explicit confirmation.
+        if (val) { toast('Plaintext dev password disabled on non-local hosts'); return; }
+        if (confirm('Dev password verification is disabled on this host. Unlock dev tools?')) { setUnlocked(true); toast('Unlocked (confirmed)'); }
+      }
     };
 
     // Clear field plants: delete from DB and clear localStorage 'plants'

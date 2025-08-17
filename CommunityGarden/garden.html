@@ -140,6 +140,23 @@
             padding: 4px;
         }
 
+        /* highlight for selected small frame */
+        .frame.selected {
+            box-shadow: 0 6px 18px rgba(111, 227, 180, 0.12), 0 0 0 3px rgba(111, 227, 180, 0.08);
+            outline: 2px solid rgba(111, 227, 180, 0.14);
+            border-color: rgba(111, 227, 180, 0.12);
+        }
+
+        /* large seed editor canvas (in left panel) */
+        canvas.large-seed-canvas {
+            width: 320px;
+            height: 320px;
+            image-rendering: pixelated;
+            border-radius: 8px;
+            border: 1px solid var(--line);
+            background: #071018;
+        }
+
         .seed {
             border: 1px solid var(--line);
             border-radius: 10px;
@@ -420,7 +437,10 @@
                 <div class="row">
                     <button id="toolPencil">✏️ Pencil</button>
                     <button id="toolEraser">🩹 Eraser</button>
+                    <button id="toolFill">🪣 Fill</button>
+                    <button id="toolStepBack">↶ Step back</button>
                     <input type="color" id="color" value="#6fe3b4" />
+                    <div id="colorPreview" style="width:22px;height:22px;border-radius:6px;border:1px solid var(--line);margin-left:6px"></div>
                 </div>
                 <div class="row">
                     <button id="clear">Clear frame</button>
@@ -429,12 +449,16 @@
                     <button id="next">Next ▶</button>
                 </div>
             </div>
-            <div class="row" style="margin-top:8px;">
+                <div class="row" style="margin-top:8px;">
                 <button id="submitSeed">Submit seed (Supabase)</button>
-                <span class="note">Upload to Supabase storage. You can make **one** seed today.</span>
+                <span class="note">Upload to Supabase storage. Make cooldown: 2 hours — you can submit a seed every 2 hours.</span>
             </div>
             <div class="note" style="margin-top:6px;">Tip: right-click + drag draws straight lines (desktop). Touch
                 supported.</div>
+            <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px;align-items:center">
+                <canvas id="largeCanvas" class="large-seed-canvas" width="320" height="320" title="Draw larger seed preview"></canvas>
+                <div class="note">Larger seed preview and editor (edits sync to selected small frame)</div>
+            </div>
         </section>
 
         <!-- Center: Field -->
@@ -903,7 +927,7 @@
         const frameLabel = $("#frameLabel");
         let currentFrame = 0;
         const N = 4;
-        const CANVAS_SIZE = 32;
+    const CANVAS_SIZE = 32;
         const frames = (framesEl ? [...Array(N)].map(() => {
             const c = document.createElement("canvas");
             c.width = CANVAS_SIZE;
@@ -917,9 +941,48 @@
             return c;
         }) : []);
 
+        // Undo stack per frame (stores ImageData snapshots)
+        const undoStacks = frames.map(() => []);
+
+        // Large canvas for bigger drawing area and preview
+        const largeCanvas = document.getElementById('largeCanvas');
+        const largeCtx = largeCanvas ? largeCanvas.getContext('2d') : null;
+        if (largeCtx) largeCtx.imageSmoothingEnabled = false;
+
+        // helper to copy from small canvas to large and vice versa
+        function syncSmallToLarge(idx) {
+            if (!frames[idx] || !largeCtx) return;
+            // clear large
+            largeCtx.clearRect(0,0,largeCanvas.width, largeCanvas.height);
+            // draw upscaled small frame into large canvas
+            largeCtx.drawImage(frames[idx], 0, 0, largeCanvas.width, largeCanvas.height);
+        }
+
+        function syncLargeToSmall(idx) {
+            if (!frames[idx] || !largeCtx) return;
+            const sCtx = frames[idx].getContext('2d');
+            // get image data from large canvas downscaled to small
+            const tmp = document.createElement('canvas');
+            tmp.width = CANVAS_SIZE; tmp.height = CANVAS_SIZE;
+            const tctx = tmp.getContext('2d');
+            tctx.imageSmoothingEnabled = false;
+            tctx.drawImage(largeCanvas, 0, 0, tmp.width, tmp.height);
+            const data = tctx.getImageData(0,0,tmp.width,tmp.height);
+            sCtx.putImageData(data, 0, 0);
+        }
+
+        // highlight currently selected small frame
+        function highlightSelectedFrame() {
+            frames.forEach((c, i) => c.classList.toggle('selected', i === currentFrame));
+        }
+        highlightSelectedFrame();
+
         function label() {
             if (!frameLabel) return;
             frameLabel.textContent = `Frame ${currentFrame + 1}/${N}`;
+            highlightSelectedFrame();
+            // sync large canvas to newly selected small frame
+            syncSmallToLarge(currentFrame);
         }
         label();
 
@@ -932,6 +995,22 @@
         const toolEraserEl = $("#toolEraser");
         if (toolEraserEl) toolEraserEl.onclick = () => { tool = "eraser"; toast("Eraser"); };
         if (colorEl) colorEl.oninput = e => color = e.target.value;
+        // keep color preview in sync
+        const colorPreview = document.getElementById('colorPreview');
+        if (colorPreview && colorEl) { colorPreview.style.background = colorEl.value; colorEl.addEventListener('input', (e)=>{ colorPreview.style.background = e.target.value; }); }
+        // wire fill and step back tools
+        const toolFillEl = document.getElementById('toolFill');
+        const toolStepBackEl = document.getElementById('toolStepBack');
+        if (toolFillEl) toolFillEl.onclick = () => { tool = 'fill'; toast('Fill tool'); };
+        if (toolStepBackEl) toolStepBackEl.onclick = () => {
+            // pop undo for current frame and restore
+            const stack = undoStacks[currentFrame];
+            if (!stack || !stack.length) { toast('Nothing to undo'); return; }
+            const img = stack.pop();
+            const ctx = frames[currentFrame].getContext('2d');
+            ctx.putImageData(img, 0,0);
+            syncSmallToLarge(currentFrame);
+        };
         const prevEl = $("#prev");
         if (prevEl) prevEl.onclick = () => { currentFrame = (currentFrame - 1 + N) % N; label(); };
         const nextEl = $("#next");
@@ -959,20 +1038,113 @@
             }
         }
 
-        frames.forEach(c => {
-            let drawing = false;
-            c.addEventListener("pointerdown", e => {
-                drawing = true;
-                c.setPointerCapture(e.pointerId);
-                drawOnCanvas(c, e, true);
+        // Small frame canvases are now selection-only: clicking a small frame selects it
+        frames.forEach((c, idx) => {
+            // make sure small frames don't capture pointer events for drawing
+            c.style.touchAction = 'manipulation';
+            c.addEventListener('click', (e) => {
+                // Select this frame and sync the large canvas to show it for editing
+                currentFrame = idx;
+                label();
+                // Highlight selection handled by label()/highlightSelectedFrame
             });
-            c.addEventListener("pointermove", e => {
-                if (drawing) drawOnCanvas(c, e, true);
-            });
-            c.addEventListener("pointerup", e => {
-                drawing = false;
-            });
+            // Prevent accidental drawing via pointer events on small frames
+            c.addEventListener('pointerdown', (e) => { e.preventDefault(); });
+            c.addEventListener('pointermove', (e) => { /* noop */ });
+            c.addEventListener('pointerup', (e) => { /* noop */ });
         });
+
+        // flood fill for small canvas (works on 32x32). Uses ImageData and stack-based fill.
+        function floodFillSmall(canvas, sx, sy, targetRGBA) {
+            const w = canvas.width, h = canvas.height;
+            const ctx = canvas.getContext('2d');
+            const img = ctx.getImageData(0,0,w,h);
+            const data = img.data;
+            function idx(x,y){ return (y*w + x) * 4; }
+            const start = idx(sx, sy);
+            const sr = data[start], sg = data[start+1], sb = data[start+2], sa = data[start+3];
+            if (sr === targetRGBA[0] && sg === targetRGBA[1] && sb === targetRGBA[2] && sa === targetRGBA[3]) return;
+            const visited = new Uint8Array(w*h);
+            const stack = [[sx,sy]];
+            while (stack.length) {
+                const [x,y] = stack.pop();
+                if (x < 0 || x >= w || y < 0 || y >= h) continue;
+                const i = y*w + x;
+                if (visited[i]) continue;
+                visited[i] = 1;
+                const off = idx(x,y);
+                if (data[off] === sr && data[off+1] === sg && data[off+2] === sb && data[off+3] === sa) {
+                    data[off] = targetRGBA[0]; data[off+1] = targetRGBA[1]; data[off+2] = targetRGBA[2]; data[off+3] = targetRGBA[3];
+                    stack.push([x+1,y]); stack.push([x-1,y]); stack.push([x,y+1]); stack.push([x,y-1]);
+                }
+            }
+            ctx.putImageData(img,0,0);
+        }
+
+        // Large canvas drawing logic
+        if (largeCanvas) {
+            let ldrawing = false;
+            largeCanvas.addEventListener('pointerdown', (e)=>{
+                ldrawing = true;
+                largeCanvas.setPointerCapture(e.pointerId);
+                // push undo for small frame (store small canvas image)
+                try { const ctx = frames[currentFrame].getContext('2d'); undoStacks[currentFrame].push(ctx.getImageData(0,0,CANVAS_SIZE,CANVAS_SIZE)); } catch(e){}
+                largeDraw(e);
+            });
+            largeCanvas.addEventListener('pointermove', (e)=>{ if (ldrawing) largeDraw(e); });
+            largeCanvas.addEventListener('pointerup', (e)=>{ ldrawing = false; syncLargeToSmall(currentFrame); });
+            largeCanvas.addEventListener('pointerout', (e)=>{ /* keep drawing only while pointer captured */ });
+        }
+
+        function largeDraw(e) {
+            if (!largeCanvas) return;
+            const rect = largeCanvas.getBoundingClientRect();
+            const scaleX = largeCanvas.width / rect.width;
+            const scaleY = largeCanvas.height / rect.height;
+            const x = Math.floor((e.clientX - rect.left) * scaleX);
+            const y = Math.floor((e.clientY - rect.top) * scaleY);
+            if (tool === 'pencil') {
+                largeCtx.fillStyle = color;
+                largeCtx.fillRect(x, y, 4, 4);
+            } else if (tool === 'eraser') {
+                largeCtx.clearRect(x, y, 4, 4);
+            } else if (tool === 'fill') {
+                // perform a flood fill on large canvas using clicked pixel
+                try { floodFillLarge(x, y, hexToRgba(color)); } catch (err) { console.warn('fill failed', err); }
+            }
+        }
+
+        // Simple flood fill on large canvas (byte-level ImageData)
+        function floodFillLarge(sx, sy, targetRGBA) {
+            const w = largeCanvas.width, h = largeCanvas.height;
+            const img = largeCtx.getImageData(0,0,w,h);
+            const data = img.data;
+            function idx(x,y){ return (y*w + x) * 4; }
+            const start = idx(sx, sy);
+            const sr = data[start], sg = data[start+1], sb = data[start+2], sa = data[start+3];
+            // if color already matches, no-op
+            if (sr === targetRGBA[0] && sg === targetRGBA[1] && sb === targetRGBA[2] && sa === targetRGBA[3]) return;
+            const visited = new Uint8Array(w*h);
+            const stack = [[sx,sy]];
+            while (stack.length) {
+                const [x,y] = stack.pop();
+                if (x < 0 || x >= w || y < 0 || y >= h) continue;
+                const i = y*w + x;
+                if (visited[i]) continue;
+                visited[i] = 1;
+                const off = idx(x,y);
+                if (data[off] === sr && data[off+1] === sg && data[off+2] === sb && data[off+3] === sa) {
+                    data[off] = targetRGBA[0]; data[off+1] = targetRGBA[1]; data[off+2] = targetRGBA[2]; data[off+3] = targetRGBA[3];
+                    stack.push([x+1,y]); stack.push([x-1,y]); stack.push([x,y+1]); stack.push([x,y-1]);
+                }
+            }
+            largeCtx.putImageData(img,0,0);
+        }
+
+        function hexToRgba(hex) {
+            let h = hex.replace('#',''); if (h.length === 3) h = h.split('').map(c=>c+c).join('');
+            const n = parseInt(h,16); return [(n>>16)&255, (n>>8)&255, n&255, 255];
+        }
 
         /* ------------- Supabase storage upload ------------- */
         // Upload a single canvas frame using a deterministic seedId so filenames are predictable.
