@@ -182,6 +182,13 @@
     "screenshots":["../screenshots/SoundsofAppa.png"]
   },
   {
+    "title":"AI Synth Prompter",
+    "desc":"Make any sound effect using AI-assisted tools and prompts. Create, keep, and distribute sounds under your chosen license.",
+    "href":"../synthweb/SynthWeb.html",
+    "icon":"../Images/gem2.png",
+    "screenshots":["../screenshots/synth.png"]
+  },
+  {
     "title":"Spyropainter - Generative Art Tool",
     "desc":"Create mesmerizing generative art with Spyropainter! Experiment with colors, shapes, and patterns to produce unique digital artwork. Perfect for artists and anyone who loves creative coding.",
     "href":"../Spyropainter/SpyroPainter.html",

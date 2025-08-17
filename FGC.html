@@ -97,6 +97,15 @@
             box-shadow: 0 0 5px #fff, 0 0 10px #8B0000, 0 0 15px #8B0000, 0 0 20px #8B0000, 0 0 25px #8B0000, 0 0 30px #8B0000, 0 0 35px #8B0000;
             transition: transform 0.3s, box-shadow 0.3s;
         }
+        .card .card-screenshot{
+            width:100%;
+            height:auto;
+            max-height:140px;
+            object-fit:cover;
+            border-radius:8px;
+            margin-bottom:12px;
+            display:block;
+        }
         .card:hover {
             transform: scale(1.05);
             box-shadow: 0 0 5px #fff, 0 0 10px #FF4500, 0 0 15px #FF4500, 0 0 20px #FF4500, 0 0 25px #FF4500, 0 0 30px #FF4500, 0 0 35px #FF4500;
@@ -346,8 +355,9 @@
     
     <div class="container">
         <div class="card">
-            <h2>Sounds</h2>
-            <a href="sounds.html">Explore Sounds</a>
+            <img src="screenshots/synth.png" alt="Synth preview" class="card-screenshot" />
+            <h2>AI Syth Prompter</h2>
+            <a href="synthweb/SynthWeb.html" title="AI Syth Prompter - make any sound effect using these tools and prompt! Yours to keep, license, and distribute as you see fit!">AI Syth Prompter - make any sound effect using these tools and prompt! Yours to keep, license, and distribute as you see fit!</a>
         </div>
     </div>
 
