@@ -941,8 +941,8 @@
             return c;
         }) : []);
 
-        // Undo stack per frame (stores ImageData snapshots)
-        const undoStacks = frames.map(() => []);
+    // Undo stack per frame (stores snapshots). Each entry is { small: ImageData, large: ImageData|null }
+    const undoStacks = frames.map(() => []);
 
         // Large canvas for bigger drawing area and preview
         const largeCanvas = document.getElementById('largeCanvas');
@@ -1003,13 +1003,23 @@
         const toolStepBackEl = document.getElementById('toolStepBack');
         if (toolFillEl) toolFillEl.onclick = () => { tool = 'fill'; toast('Fill tool'); };
         if (toolStepBackEl) toolStepBackEl.onclick = () => {
-            // pop undo for current frame and restore
+            // pop undo for current frame and restore both small and large snapshots
             const stack = undoStacks[currentFrame];
             if (!stack || !stack.length) { toast('Nothing to undo'); return; }
-            const img = stack.pop();
-            const ctx = frames[currentFrame].getContext('2d');
-            ctx.putImageData(img, 0,0);
-            syncSmallToLarge(currentFrame);
+            const snap = stack.pop();
+            const sCtx = frames[currentFrame].getContext('2d');
+            try {
+                if (snap && snap.small) sCtx.putImageData(snap.small, 0, 0);
+            } catch (e) { console.warn('restore small snapshot failed', e); }
+            // If we have a high-res large snapshot, restore it too so we don't re-upscale the small canvas
+            try {
+                if (largeCtx && snap && snap.large) {
+                    largeCtx.putImageData(snap.large, 0, 0);
+                } else {
+                    // Fallback: sync small -> large if no large snapshot was saved
+                    syncSmallToLarge(currentFrame);
+                }
+            } catch (e) { console.warn('restore large snapshot failed', e); }
         };
         const prevEl = $("#prev");
         if (prevEl) prevEl.onclick = () => { currentFrame = (currentFrame - 1 + N) % N; label(); };
@@ -1087,8 +1097,14 @@
             largeCanvas.addEventListener('pointerdown', (e)=>{
                 ldrawing = true;
                 largeCanvas.setPointerCapture(e.pointerId);
-                // push undo for small frame (store small canvas image)
-                try { const ctx = frames[currentFrame].getContext('2d'); undoStacks[currentFrame].push(ctx.getImageData(0,0,CANVAS_SIZE,CANVAS_SIZE)); } catch(e){}
+                // push undo snapshot for this frame: store both small (32x32) and large (high-res) image data
+                try {
+                    const sctx = frames[currentFrame].getContext('2d');
+                    const smallSnap = sctx.getImageData(0,0,CANVAS_SIZE,CANVAS_SIZE);
+                    let largeSnap = null;
+                    try { largeSnap = largeCtx ? largeCtx.getImageData(0,0,largeCanvas.width, largeCanvas.height) : null; } catch(e){ largeSnap = null; }
+                    undoStacks[currentFrame].push({ small: smallSnap, large: largeSnap });
+                } catch(e){}
                 largeDraw(e);
             });
             largeCanvas.addEventListener('pointermove', (e)=>{ if (ldrawing) largeDraw(e); });
