@@ -155,6 +155,8 @@
             border-radius: 8px;
             border: 1px solid var(--line);
             background: #071018;
+            /* custom pencil cursor (inline SVG) */
+            cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="%23ffffff" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1.003 1.003 0 0 0 0-1.41l-2.34-2.34a1.003 1.003 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>') 12 12, auto;
         }
 
         .seed {
@@ -438,7 +440,15 @@
                     <button id="toolPencil">✏️ Pencil</button>
                     <button id="toolEraser">🩹 Eraser</button>
                     <button id="toolFill">🪣 Fill</button>
+                    <!-- Shape tools: circle, square, triangle, star -->
+                    <button id="toolCircle">⚪ Circle</button>
+                    <button id="toolSquare">🔲 Square</button>
+                    <button id="toolTriangle">🔺 Triangle</button>
+                    <button id="toolStar">⭐ Star</button>
                     <button id="toolStepBack">↶ Step back</button>
+                    <label style="display:inline-flex;align-items:center;gap:6px;margin-left:8px">Size
+                        <input id="pencilSize" type="range" min="1" max="256" value="4" style="vertical-align:middle;margin-left:6px">
+                    </label>
                     <input type="color" id="color" value="#6fe3b4" />
                     <div id="colorPreview" style="width:22px;height:22px;border-radius:6px;border:1px solid var(--line);margin-left:6px"></div>
                 </div>
@@ -988,12 +998,27 @@
 
         let tool = "pencil";
         let color = '#ffffff';
+        // pencil/eraser size (in pixels on large canvas)
+        let pencilSize = 4;
+        const pencilSizeEl = document.getElementById('pencilSize');
+        if (pencilSizeEl) {
+            pencilSize = parseInt(pencilSizeEl.value || '4', 10);
+            pencilSizeEl.addEventListener('input', (ev) => { pencilSize = parseInt(ev.target.value || '4', 10); });
+        }
         const colorEl = $("#color");
         if (colorEl) color = colorEl.value;
         const toolPencilEl = $("#toolPencil");
         if (toolPencilEl) toolPencilEl.onclick = () => { tool = "pencil"; toast("Pencil"); };
         const toolEraserEl = $("#toolEraser");
         if (toolEraserEl) toolEraserEl.onclick = () => { tool = "eraser"; toast("Eraser"); };
+    const toolCircleEl = $("#toolCircle");
+    const toolSquareEl = $("#toolSquare");
+    const toolTriangleEl = $("#toolTriangle");
+    const toolStarEl = $("#toolStar");
+    if (toolCircleEl) toolCircleEl.onclick = () => { tool = "circle"; toast("Circle"); };
+    if (toolSquareEl) toolSquareEl.onclick = () => { tool = "square"; toast("Square"); };
+    if (toolTriangleEl) toolTriangleEl.onclick = () => { tool = "triangle"; toast("Triangle"); };
+    if (toolStarEl) toolStarEl.onclick = () => { tool = "star"; toast("Star"); };
         if (colorEl) colorEl.oninput = e => color = e.target.value;
         // keep color preview in sync
         const colorPreview = document.getElementById('colorPreview');
@@ -1028,8 +1053,17 @@
         const clearEl = $("#clear");
         if (clearEl) clearEl.onclick = () => {
             if (!frames[currentFrame]) return;
+            try {
+                // push undo snapshot for this clear action
+                const sctx = frames[currentFrame].getContext('2d');
+                const smallSnap = sctx.getImageData(0,0,CANVAS_SIZE,CANVAS_SIZE);
+                let largeSnap = null;
+                try { largeSnap = largeCtx ? largeCtx.getImageData(0,0,largeCanvas.width, largeCanvas.height) : null; } catch(e){ largeSnap = null; }
+                undoStacks[currentFrame].push({ small: smallSnap, large: largeSnap });
+            } catch(e){}
             const ctx = frames[currentFrame].getContext("2d");
             ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+            try { if (largeCtx) largeCtx.clearRect(0,0,largeCanvas.width, largeCanvas.height); } catch(e) {}
         };
 
         function drawOnCanvas(c, e, drawing) {
@@ -1042,9 +1076,18 @@
             ctx.imageSmoothingEnabled = false;
             if (tool === "pencil") {
                 ctx.fillStyle = color;
-                ctx.fillRect(x, y, 1, 1);
+                // map large canvas pencil size to small canvas scale
+                const scale = (CANVAS_SIZE / (largeCanvas ? largeCanvas.width : 320));
+                const s = Math.max(1, Math.min(CANVAS_SIZE, Math.round(pencilSize * scale)));
+                // center scaled brush so clicks align visually
+                const ox = Math.max(0, Math.floor(s/2));
+                ctx.fillRect(x - ox, y - ox, s, s);
             } else {
-                ctx.clearRect(x, y, 1, 1);
+                // eraser on small canvas: clear a scaled area
+                const scale = (CANVAS_SIZE / (largeCanvas ? largeCanvas.width : 320));
+                const s = Math.max(1, Math.min(CANVAS_SIZE, Math.round(pencilSize * scale)));
+                const ox = Math.max(0, Math.floor(s/2));
+                ctx.clearRect(x - ox, y - ox, s, s);
             }
         }
 
@@ -1091,9 +1134,11 @@
             ctx.putImageData(img,0,0);
         }
 
-        // Large canvas drawing logic
+        // Large canvas drawing logic (interpolated to avoid gaps)
         if (largeCanvas) {
             let ldrawing = false;
+            // track last pointer position (in canvas pixels)
+            let lastLargeX = null, lastLargeY = null;
             largeCanvas.addEventListener('pointerdown', (e)=>{
                 ldrawing = true;
                 largeCanvas.setPointerCapture(e.pointerId);
@@ -1105,28 +1150,117 @@
                     try { largeSnap = largeCtx ? largeCtx.getImageData(0,0,largeCanvas.width, largeCanvas.height) : null; } catch(e){ largeSnap = null; }
                     undoStacks[currentFrame].push({ small: smallSnap, large: largeSnap });
                 } catch(e){}
+                // reset last pos so the first draw is single-point
+                lastLargeX = null; lastLargeY = null;
                 largeDraw(e);
             });
             largeCanvas.addEventListener('pointermove', (e)=>{ if (ldrawing) largeDraw(e); });
-            largeCanvas.addEventListener('pointerup', (e)=>{ ldrawing = false; syncLargeToSmall(currentFrame); });
+            largeCanvas.addEventListener('pointerup', (e)=>{ ldrawing = false; lastLargeX = null; lastLargeY = null; syncLargeToSmall(currentFrame); });
             largeCanvas.addEventListener('pointerout', (e)=>{ /* keep drawing only while pointer captured */ });
-        }
 
-        function largeDraw(e) {
-            if (!largeCanvas) return;
-            const rect = largeCanvas.getBoundingClientRect();
-            const scaleX = largeCanvas.width / rect.width;
-            const scaleY = largeCanvas.height / rect.height;
-            const x = Math.floor((e.clientX - rect.left) * scaleX);
-            const y = Math.floor((e.clientY - rect.top) * scaleY);
-            if (tool === 'pencil') {
-                largeCtx.fillStyle = color;
-                largeCtx.fillRect(x, y, 4, 4);
-            } else if (tool === 'eraser') {
-                largeCtx.clearRect(x, y, 4, 4);
-            } else if (tool === 'fill') {
-                // perform a flood fill on large canvas using clicked pixel
-                try { floodFillLarge(x, y, hexToRgba(color)); } catch (err) { console.warn('fill failed', err); }
+            function largeDraw(e) {
+                if (!largeCanvas) return;
+                const rect = largeCanvas.getBoundingClientRect();
+                const scaleX = largeCanvas.width / rect.width;
+                const scaleY = largeCanvas.height / rect.height;
+                const x = Math.floor((e.clientX - rect.left) * scaleX);
+                const y = Math.floor((e.clientY - rect.top) * scaleY);
+
+                if (tool === 'fill') {
+                    try { floodFillLarge(x, y, hexToRgba(color)); } catch (err) { console.warn('fill failed', err); }
+                    return;
+                }
+
+                // helper: draw a centered shape at (cx,cy) with diameter/size s
+                function drawShapeCentered(ctx, cx, cy, s, shape, col) {
+                    ctx.save();
+                    ctx.imageSmoothingEnabled = false;
+                    ctx.fillStyle = col;
+                    ctx.strokeStyle = col;
+                    ctx.lineWidth = Math.max(1, Math.round(s * 0.08));
+                    const half = Math.round(s/2);
+                    if (shape === 'circle') {
+                        ctx.beginPath();
+                        ctx.arc(cx, cy, half, 0, Math.PI * 2);
+                        ctx.fill();
+                    } else if (shape === 'square') {
+                        ctx.fillRect(cx - half, cy - half, s, s);
+                    } else if (shape === 'triangle') {
+                        ctx.beginPath();
+                        ctx.moveTo(cx, cy - half);
+                        ctx.lineTo(cx - half, cy + half);
+                        ctx.lineTo(cx + half, cy + half);
+                        ctx.closePath();
+                        ctx.fill();
+                    } else if (shape === 'star') {
+                        // simple 5-pointed star
+                        const spikes = 5;
+                        const outer = half;
+                        const inner = Math.max(1, Math.round(half * 0.45));
+                        let rot = Math.PI / 2 * 3;
+                        let xPos = cx;
+                        let yPos = cy;
+                        ctx.beginPath();
+                        for (let i = 0; i < spikes; i++) {
+                            ctx.lineTo(xPos + Math.cos(rot) * outer, yPos + Math.sin(rot) * outer);
+                            rot += Math.PI / spikes;
+                            ctx.lineTo(xPos + Math.cos(rot) * inner, yPos + Math.sin(rot) * inner);
+                            rot += Math.PI / spikes;
+                        }
+                        ctx.closePath();
+                        ctx.fill();
+                    }
+                    ctx.restore();
+                }
+
+                const s = Math.max(1, Math.round(pencilSize));
+
+                // Cursor SVG coordinates: viewBox 0..24; hotspot used in CSS is 12,12.
+                // Tip coordinates from the SVG path are approximately (20.71, 7.04).
+                const cursorTipDeltaClient = { x: 20.71 - 12, y: 7.04 - 12 }; // in CSS pixels relative to hotspot
+
+                const drawAt = (dx, dy) => {
+                    // convert cursor tip delta from client/CSS px into canvas pixels
+                    const rect = largeCanvas.getBoundingClientRect();
+                    const scaleX_local = largeCanvas.width / rect.width;
+                    const scaleY_local = largeCanvas.height / rect.height;
+                    const tipCx = Math.round(dx + (cursorTipDeltaClient.x * scaleX_local));
+                    const tipCy = Math.round(dy + (cursorTipDeltaClient.y * scaleY_local));
+                    const halfS = Math.round(s/2);
+
+                    // compute butt (mirrored) position as well
+                    const buttCx = Math.round(dx - (cursorTipDeltaClient.x * scaleX_local));
+                    const buttCy = Math.round(dy - (cursorTipDeltaClient.y * scaleY_local));
+
+                    if (tool === 'pencil') {
+                        // pencil now draws at the butt end (mirrored position)
+                        largeCtx.fillStyle = color;
+                        largeCtx.fillRect(buttCx - halfS, buttCy - halfS, s, s);
+                    } else if (tool === 'eraser') {
+                        // eraser clears at the visible tip
+                        largeCtx.clearRect(tipCx - halfS, tipCy - halfS, s, s);
+                    } else if (tool === 'circle' || tool === 'square' || tool === 'triangle' || tool === 'star') {
+                        drawShapeCentered(largeCtx, tipCx, tipCy, s, tool, color);
+                    }
+                };
+
+                if (lastLargeX === null || lastLargeY === null) {
+                    drawAt(x, y);
+                } else {
+                    const dx = x - lastLargeX;
+                    const dy = y - lastLargeY;
+                    const steps = Math.max(Math.abs(dx), Math.abs(dy));
+            if (steps === 0) drawAt(x, y);
+                    else {
+                        for (let i = 0; i <= steps; i++) {
+                            const ix = Math.round(lastLargeX + dx * (i / steps));
+                            const iy = Math.round(lastLargeY + dy * (i / steps));
+                drawAt(ix, iy);
+                        }
+                    }
+                }
+
+                lastLargeX = x; lastLargeY = y;
             }
         }
 
