@@ -184,12 +184,16 @@
         }
 
         canvas.frame {
-            border: 1px dashed rgba(255,255,255,0.06);
-            background: linear-gradient(180deg, #f7fdf7, #eef9ef);
+            border: 1px solid rgba(8,28,18,0.26);
+            /* glassy thumbnail to match buttons */
+            background: linear-gradient(180deg, rgba(30,100,50,0.98), rgba(18,78,42,0.98));
             border-radius: 8px;
             width: 64px;
             height: 64px;
             image-rendering: pixelated;
+            box-shadow: 0 6px 14px rgba(6,30,18,0.14), inset 0 1px 0 rgba(255,255,255,0.06);
+            position: relative;
+            overflow: hidden;
         }
 
         .frames {
@@ -220,8 +224,15 @@
             height: 320px;
             image-rendering: pixelated;
             border-radius: 12px;
-            border: 1px solid rgba(255,255,255,0.06);
-            background: linear-gradient(180deg, #fbfff9, #f2fbf2);
+            border: 1px solid rgba(10,18,12,0.08);
+            /* use field's grassy patch texture so canvases match the garden field */
+            background-color: #7ecf7a;
+            background-image:
+                linear-gradient(180deg, rgba(0, 0, 0, 0.03) 0 1px, transparent 1px),
+                repeating-linear-gradient(90deg, rgba(0,0,0,0.02) 0 32px, transparent 32px 64px),
+                linear-gradient(135deg, rgba(255,255,255,0.03), rgba(0,0,0,0.03));
+            background-blend-mode: multiply, overlay, normal;
+            box-shadow: inset 0 2px 8px rgba(255,255,255,0.45), inset 0 -10px 26px rgba(0,0,0,0.06), 0 8px 26px rgba(6,30,18,0.18);
             /* custom pencil cursor (inline SVG) */
             cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="%23ffffff" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1.003 1.003 0 0 0 0-1.41l-2.34-2.34a1.003 1.003 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>') 12 12, auto;
         }
@@ -266,14 +277,19 @@
         }
 
         .seed {
-            border: 1px solid rgba(40,80,48,0.12);
+            border: 1px solid rgba(8,28,18,0.26);
             border-radius: 10px;
-            background: linear-gradient(180deg, rgba(230,248,234,0.98), rgba(216,243,222,0.98));
+            /* glassy card like buttons */
+            background: linear-gradient(180deg, rgba(30,100,50,0.98), rgba(18,78,42,0.98));
+            color: var(--muted);
             padding: 6px;
             display: flex;
             flex-direction: column;
             gap: 6px;
             align-items: center;
+            box-shadow: 0 6px 18px rgba(6,30,18,0.18), inset 0 1px 0 rgba(255,255,255,0.06);
+            position: relative;
+            overflow: hidden;
         }
 
         .seed img {
