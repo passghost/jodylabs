@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Pixel Spec — Spider Robot w/ Rotating Turret (64×64)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<!--
+Subject: Spider robot with rotating tank turret
+View: top-down
+Canvas: 64×64
+Palette: 
+  BG (transparent)
+  #11141a  (Hull Deep)
+  #1e2430  (Hull Dark)
+  #2b3445  (Hull Mid)
+  #5e7389  (Hull Light / Rim)
+  #8fb4cf  (Steel Accent)
+  #c9d1d9  (Steel Bright)
+  rgba(0,0,0,0.18) (Shadow)
+Style notes: chunky shading, crisp rim light NE, strong silhouette, 1–2px hard lines, no AA
+Motion: 12 frames @ 100ms — 8 legs cycle a 4-phase gait, subtle chassis bob; turret is separate and aims at mouse cursor
+Hitbox/anchor: pivot center (32,32) — logical hitbox ~ 24×24 centered
+Format: .html
+Export: single-file HTML only
+Constraints: no external libs, cohesive single element, no floating parts
+-->
+<style>
+  html, body { height: 100%; }
+  body {
+    margin: 0; display: grid; place-items: center;
+    background: #0f1115; color: #c9d1d9; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  .wrap { display: grid; gap: 10px; place-items: center; }
+  canvas#view {
+    width: 256px; height: 256px; /* upscale for preview */
+    image-rendering: pixelated;
+    image-rendering: crisp-edges; /* fallback */
+    border: 1px solid #262a33; border-radius: 8px; background: transparent;
+  }
+  .meta { font-size: 12px; opacity: 0.75; text-align: center; }
+  button {
+    background:#1b2130; color:#c9d1d9; border:1px solid #2a3244; border-radius:8px;
+    padding:6px 10px; cursor:pointer;
+  }
+  button:active { transform: translateY(1px); }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <canvas id="view" width="64" height="64" aria-label="Spider robot sprite"></canvas>
+    <div>
+      <button id="toggle">Pause</button>
+    </div>
+    <div class="meta">64×64 top-down sprite • single element • mouse-aim turret + 8-leg gait • 12f @ 100ms</div>
+  </div>
+
+<script>
+(() => {
+  // ---- CONFIG ----
+  const W = 64, H = 64, CX = 32, CY = 32;
+  const FRAMES = 12;
+  const FRAME_MS = 100;
+
+  // Palette
+  const P = {
+    hullDeep:  "#11141a",
+    hullDark:  "#1e2430",
+    hullMid:   "#2b3445",
+    hullLight: "#5e7389",
+    accent:    "#8fb4cf",
+    steel:     "#c9d1d9",
+    shadow:    "rgba(0,0,0,0.18)"
+  };
+
+  // Canvas setup
+  const view = document.getElementById('view');
+  const vctx = view.getContext('2d', { alpha: true });
+  vctx.imageSmoothingEnabled = false;
+
+  // Mouse-aim state
+  let aimAngle = 0; // radians
+  function clientToCanvas(x, y){
+    const r = view.getBoundingClientRect();
+    const sx = view.width  / r.width;
+    const sy = view.height / r.height;
+    return { x: (x - r.left) * sx, y: (y - r.top) * sy };
+  }
+  view.addEventListener('mousemove', (e) => {
+    const pt = clientToCanvas(e.clientX, e.clientY);
+    aimAngle = Math.atan2(pt.y - CY, pt.x - CX);
+  });
+
+  // Offscreen for frame building
+  function makeLayer(w=W, h=H){ const c=document.createElement('canvas'); c.width=w; c.height=h; return c; }
+
+  // ---- Pixel helpers (hard-edged, integer-aligned) ----
+  function px(ctx, x, y, color, t=1){
+    x = Math.round(x); y = Math.round(y);
+    ctx.fillStyle = color;
+    ctx.fillRect(x, y, t, t);
+  }
+  function line(ctx, x0, y0, x1, y1, color, t=1){
+    x0 = Math.round(x0); y0 = Math.round(y0);
+    x1 = Math.round(x1); y1 = Math.round(y1);
+    const dx = Math.abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
+    const dy = -Math.abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
+    let err = dx + dy, e2;
+    while (true) {
+      px(ctx, x0, y0, color, t);
+      if (x0 === x1 && y0 === y1) break;
+      e2 = 2 * err;
+      if (e2 >= dy) { err += dy; x0 += sx; }
+      if (e2 <= dx) { err += dx; y0 += sy; }
+    }
+  }
+  function circleFill(ctx, cx, cy, r, color){
+    ctx.fillStyle = color;
+    for (let y=-r; y<=r; y++){
+      const w = Math.floor(Math.sqrt(r*r - y*y));
+      ctx.fillRect(Math.round(cx - w), Math.round(cy + y), 2*w+1, 1);
+    }
+  }
+  function rimLightArc(ctx, cx, cy, r, color){
+    ctx.fillStyle = color;
+    for (let a=-0.2; a<=0.9; a+=0.05){
+      const x = Math.round(cx + Math.cos(a)*r);
+      const y = Math.round(cy + Math.sin(a)*r);
+      ctx.fillRect(x, y, 1, 1);
+      if (Math.random()<0.3) ctx.fillRect(x, y-1, 1, 1);
+    }
+  }
+  function dottedBarrel(ctx, x0, y0, angle, length, color, t=2){
+    const dx = Math.cos(angle), dy = Math.sin(angle);
+    for (let s=2; s<=length; s++){
+      const x = Math.round(x0 + dx*s);
+      const y = Math.round(y0 + dy*s);
+      px(ctx, x, y, color, t);
+      if (s%3===0) px(ctx, x, y, color, t);
+    }
+    const mx = Math.round(x0 + dx*(length+1));
+    const my = Math.round(y0 + dy*(length+1));
+    px(ctx, mx-1, my-1, P.steel, t);
+  }
+  function leg(ctx, cx, cy, baseAngle, phase, colors){
+    const L1 = 7, L2 = 6;
+    const swing = Math.sin(phase) * 2.0;
+    const lift  = Math.cos(phase*0.5) * 1.0;
+    const bodyR = 12;
+    const bx = cx + Math.cos(baseAngle) * (bodyR - 1);
+    const by = cy + Math.sin(baseAngle) * (bodyR - 1);
+    const kx = bx + Math.cos(baseAngle) * (L1 + swing*0.4);
+    const ky = by + Math.sin(baseAngle) * (L1 + swing*0.4) - lift;
+    const fx = kx + Math.cos(baseAngle) * (L2 + swing);
+    const fy = ky + Math.sin(baseAngle) * (L2 + swing) + lift*0.25;
+    line(ctx, bx, by, kx, ky, colors.dark, 2);
+    line(ctx, kx, ky, fx, fy, colors.light, 1);
+    px(ctx, Math.round(fx), Math.round(fy), colors.light, 2);
+  }
+  function shadow(ctx){
+    ctx.save();
+    ctx.fillStyle = P.shadow;
+    const rx = 16, ry = 6, cy = CY + 10;
+    for (let y=-ry; y<=ry; y++){
+      const w = Math.floor(Math.sqrt(1 - (y*y)/(ry*ry)) * rx);
+      ctx.fillRect(CX - w, cy + y, 2*w+1, 1);
+    }
+    ctx.restore();
+  }
+
+  // ---- Build BODY frames only (no turret drawn here) ----
+  const bodyFrames = []; // canvases
+  const bodyBob = [];    // per-frame bob offset so turret follows
+  function buildBodyFrame(fi){
+    const c = makeLayer(), ctx = c.getContext('2d', { alpha: true });
+    ctx.imageSmoothingEnabled = false;
+
+    const t = fi / FRAMES;
+    const bob = Math.round(Math.sin(t * Math.PI*2) * 1); // subtle chassis bob
+
+    // 1) Shadow
+    shadow(ctx);
+
+    // 2) Legs
+    const legColors = { dark: P.hullDark, light: P.hullLight };
+    for (let i=0; i<8; i++){
+      const a = (i/8) * Math.PI*2;
+      const phase = (t * Math.PI*2) + (i%2 ? Math.PI : 0);
+      leg(ctx, CX, CY + bob, a, phase, legColors);
+    }
+
+    // 3) Chassis discs
+    circleFill(ctx, CX, CY + bob, 12, P.hullDeep);
+    circleFill(ctx, CX, CY + bob, 11, P.hullDark);
+    circleFill(ctx, CX, CY + bob, 9,  P.hullMid);
+    rimLightArc(ctx, CX-2, CY-2 + bob, 10, P.hullLight);
+
+    bodyBob[fi] = bob;
+    return c;
+  }
+  for (let i=0; i<FRAMES; i++) bodyFrames[i] = buildBodyFrame(i);
+
+  // ---- Turret drawing (separate, aims at mouse) ----
+  function drawTurret(ctx, angle, bob){
+    // Base cap (non-rotating visually, but redrawn each frame)
+    circleFill(ctx, CX, CY - 1 + bob, 6, P.hullDark);
+    circleFill(ctx, CX, CY - 1 + bob, 5, P.hullMid);
+    px(ctx, CX-1, CY-3 + bob, P.hullLight, 2);
+
+    // Decorative bolts along ring that rotate with barrel
+    for (let k=0; k<6; k++){
+      const aa = angle + (k/6)*Math.PI*2;
+      const bx = Math.round(CX + Math.cos(aa)*4);
+      const by = Math.round(CY - 1 + bob + Math.sin(aa)*4);
+      px(ctx, bx, by, P.accent, 1);
+    }
+
+    // Barrel aiming at cursor
+    dottedBarrel(ctx, CX, CY - 1 + bob, angle, 14, P.hullLight, 2);
+
+    // Tiny sight
+    const sx = Math.round(CX + Math.cos(angle)*8 - Math.sin(angle)*2);
+    const sy = Math.round(CY - 1 + bob + Math.sin(angle)*8 + Math.cos(angle)*2);
+    px(ctx, sx, sy, P.steel, 1);
+  }
+
+  // Animation loop
+  let idx = 0, playing = true, last = 0, acc = 0;
+  function draw(ts){
+    if (!last) last = ts;
+    const dt = ts - last; last = ts;
+    if (playing){
+      acc += dt;
+      while (acc >= FRAME_MS){
+        acc -= FRAME_MS;
+        idx = (idx + 1) % FRAMES;
+      }
+    }
+    vctx.clearRect(0,0,W,H);
+    vctx.drawImage(bodyFrames[idx], 0, 0);
+    drawTurret(vctx, aimAngle, bodyBob[idx]||0);
+    requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+
+  // Toggle play/pause
+  document.getElementById('toggle').addEventListener('click', () => {
+    playing = !playing;
+    document.getElementById('toggle').textContent = playing ? 'Pause' : 'Play';
+  });
+})();
+</script>
+</body>
+</html>

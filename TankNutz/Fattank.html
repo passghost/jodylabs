@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Evil Kitten Tank Robot — Single-File Pixel Sprite (64×64)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<!--
+SPEC
+Subject: evil kitten tank robot
+View: top-down
+Canvas: 64×64
+Palette (10): 
+  t #1d222c (tread rubber)
+  h #2c3544 (tread highlight)
+  d #232a36 (dark metal)
+  k #3b485a (metal base)
+  K #5a6a80 (metal light)
+  b #9ecaff (rim light)
+  r #e63946 (evil red glow)
+  y #ffd166 (muzzle flash light)
+  o #f7b267 (muzzle flash mid)
+  s #141820 (deep shadow)
+Style: chunky shading, light rim, strong silhouette
+Motion: 8 frames @ ~120ms (treads scroll, tail flick, idle bob, eye blink, periodic muzzle flash + recoil)
+Hitbox/anchor: pivot center (32,32) — hidden; toggle SHOW_HITBOX=true to display
+Export: single-file HTML only
+Constraints: no external libs; cohesive single element; no floating parts
+-->
+
+<style>
+  :root { color-scheme: dark; }
+  html, body {
+    height: 100%;
+    margin: 0;
+    background: #0f0f12;
+    display: grid;
+    place-items: center;
+  }
+  canvas {
+    width: min(90vmin, 512px);
+    height: min(90vmin, 512px);
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    outline: 1px solid #1a1d24;
+    border-radius: 8px;
+    box-shadow: 0 12px 40px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.03);
+    background: radial-gradient(120px 120px at 50% 55%, rgba(255,255,255,.04), rgba(0,0,0,0));
+  }
+</style>
+</head>
+<body>
+<canvas id="px" width="64" height="64" aria-label="evil kitten tank robot sprite"></canvas>
+
+<script>
+(function(){
+  // ---------- config ----------
+  const W = 64, H = 64;
+  const FRAME_MS = 120;      // ~8.3 FPS
+  const SHOW_HITBOX = false; // set true to show pivot/hitbox
+
+  // Palette
+  const C = {
+    t: "#1d222c", // tread rubber
+    h: "#2c3544", // tread highlight
+    d: "#232a36", // dark metal
+    k: "#3b485a", // metal base
+    K: "#5a6a80", // metal light
+    b: "#9ecaff", // rim light
+    r: "#e63946", // evil red
+    y: "#ffd166", // muzzle flash light
+    o: "#f7b267", // muzzle flash mid
+    s: "#141820"  // deep shadow
+  };
+
+  const canvas = document.getElementById('px');
+  const ctx = canvas.getContext('2d');
+
+  // helpers
+  function clear() { ctx.clearRect(0,0,W,H); }
+  function px(x,y,color){ ctx.fillStyle = color; ctx.fillRect(x|0,y|0,1,1); }
+  function rect(x,y,w,h,color){ ctx.fillStyle=color; ctx.fillRect(x|0,y|0,w|0,h|0); }
+  function circleFill(cx, cy, r, color){
+    const r2 = r*r;
+    for(let y = (cy - r)|0; y <= (cy + r)|0; y++){
+      for(let x = (cx - r)|0; x <= (cx + r)|0; x++){
+        const dx = x - cx, dy = y - cy;
+        if(dx*dx + dy*dy <= r2) px(x,y,color);
+      }
+    }
+  }
+  function triFill(x1,y1,x2,y2,x3,y3,color){
+    // integer scanline fill
+    ctx.fillStyle=color;
+    ctx.beginPath();
+    ctx.moveTo(x1+0.5,y1+0.5); ctx.lineTo(x2+0.5,y2+0.5); ctx.lineTo(x3+0.5,y3+0.5);
+    ctx.closePath(); ctx.fill();
+  }
+  function outlineRect(x,y,w,h,color){
+    for(let i=x;i<x+w;i++){ px(i,y,color); px(i,y+h-1,color); }
+    for(let j=y;j<y+h;j++){ px(x,j,color); px(x+w-1,j,color); }
+  }
+
+  // pseudo-random but stable-ish
+  let seed = 1337;
+  function rand(){
+    seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5;
+    return (seed >>> 0) / 0xFFFFFFFF;
+  }
+
+  // ---------- sprite parts ----------
+  function drawTreads(frame){
+    // Left/right treads with scrolling chevron nubs
+    const offset = frame % 4;
+    // left tread body
+    rect(6,16,8,32,C.t);
+    outlineRect(6,16,8,32,C.s);
+    // right tread body
+    rect(50,16,8,32,C.t);
+    outlineRect(50,16,8,32,C.s);
+
+    // nubs pattern (scroll vertically)
+    for(let y=16; y<48; y++){
+      const on = ((y + offset) % 4) === 0;
+      if(on){
+        // left
+        px(7,y,C.h); px(9,y,C.h); px(11,y,C.h);
+        // right
+        px(51,y,C.h); px(53,y,C.h); px(55,y,C.h);
+      }
+    }
+    // subtle rim light on outer edges
+    for(let y=17;y<47;y+=2){ px(6,y,C.b); px(57,y,C.b); }
+  }
+
+  function drawHull(frame){
+    // central hull
+    rect(14,18,36,28,C.k);
+    // bevel edges
+    rect(14,18,36,2,C.K);        // top bevel
+    rect(14,44,36,2,C.d);        // bottom shadow
+    rect(14,20,2,24,C.d);        // left shadow
+    rect(48,20,2,24,C.K);        // right light
+
+    // rounded-ish nose
+    triFill(18,18,32,14,46,18,C.k);
+    rect(18,18,28,2,C.K); // nose light
+    // engine deck
+    rect(18,36,28,6,C.d);
+    for(let x=20; x<46; x+=3) px(x,38,C.K);
+
+    // anchor turret ring
+    circleFill(32,30,8,C.k);
+    circleFill(32,30,7,C.d);
+    for(let a=0;a<360;a+=30){
+      const rad=a*Math.PI/180;
+      const x=32+Math.cos(rad)*6, y=30+Math.sin(rad)*6;
+      px(x|0,y|0,C.K);
+    }
+  }
+
+  function drawCatTurret(frame, recoil){
+    // idle bob
+    const bob = (frame%8<4)?0:1;
+
+    // metallic "cat head" dome
+    circleFill(32, 28+bob, 7, C.K);
+    circleFill(32, 28+bob, 6, C.k);
+    // ear triangles
+    triFill(26,21+bob, 29,19+bob, 29,24+bob, C.k); // left ear base
+    triFill(35,19+bob, 38,21+bob, 35,24+bob, C.k); // right ear base
+    // ear rim lights
+    px(29,20+bob,C.b); px(35,20+bob,C.b);
+
+    // angry brow ridge
+    rect(27,26+bob,10,1,C.d);
+
+    // eyes / blink
+    const blink = ((frame % 40)===0 || (frame % 40)===1);
+    if(blink){
+      rect(28,28+bob,3,1,C.r);
+      rect(33,28+bob,3,1,C.r);
+    }else{
+      rect(28,28+bob,3,2,C.r);
+      rect(33,28+bob,3,2,C.r);
+    }
+    // tiny nose/vents
+    px(31,31+bob,C.d); px(33,31+bob,C.d);
+
+    // gun barrel (recoils back on fire)
+    const gunY = 16 + bob + (recoil?1:0);
+    rect(31, gunY, 2, 8, C.K);
+    rect(31, gunY, 2, 2, C.b); // tip light
+
+    // tail/antenna flick (attached rear)
+    const flick = (frame%8<4)?-1:1;
+    let tx = 32, ty = 36+bob;
+    px(tx-1,ty,C.k);
+    px(tx-2,ty+flick,C.K);
+    px(tx-3,ty+flick*2,C.k);
+    px(tx-4,ty+flick*3,C.K);
+  }
+
+  function drawMuzzleFlash(frame){
+    // brief flash every 24 frames (2 frame duration)
+    const fire = (frame % 24) < 2;
+    if(!fire) return false;
+    // tip of barrel around (32,16)
+    const cx = 32, cy = 16;
+    // star burst
+    circleFill(cx, cy-1, 2, C.y);
+    circleFill(cx, cy-1, 1, C.o);
+    // sparks
+    px(cx-3,cy-2,C.y); px(cx+3,cy-2,C.y);
+    px(cx-2,cy-3,C.o); px(cx+2,cy-3,C.o);
+    return true;
+  }
+
+  function drawRimAndDetails(){
+    // subtle rim lights on hull nose and shoulders
+    for(let x=18;x<46;x+=2) px(x,18,C.b);
+    for(let y=20;y<44;y+=3){ px(48,y,C.b); }
+    // screws/bolts
+    [[18,22],[46,22],[18,42],[46,42]].forEach(([x,y])=>{
+      px(x,y,C.d); px(x+1,y,C.K);
+    });
+  }
+
+  function drawHitbox(){
+    // pivot center cross
+    rect(31,31,2,2,"#00ff88");
+    outlineRect(16,16,32,32,"#00ff88"); // nominal hitbox
+  }
+
+  // ---------- main loop ----------
+  let acc = 0, last = performance.now(), frame = 0;
+
+  function step(now){
+    const dt = now - last; last = now; acc += dt;
+
+    let advanced = false;
+    while(acc >= FRAME_MS){
+      acc -= FRAME_MS;
+      frame = (frame + 1) & 0xff; // wrap
+      advanced = true;
+    }
+
+    if(advanced){
+      clear();
+
+      // base layers
+      drawTreads(frame);
+      drawHull(frame);
+
+      // muzzle flash + recoil
+      const firing = drawMuzzleFlash(frame);
+      drawCatTurret(frame, firing);
+
+      drawRimAndDetails();
+
+      if(SHOW_HITBOX) drawHitbox();
+    }
+
+    requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+})();
+</script>
+</body>
+</html>

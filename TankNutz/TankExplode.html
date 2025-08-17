@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pixel Tank — Gibbing Into Logical Pieces (HTML only)</title>
+<style>
+  html, body { height:100%; }
+  body {
+    margin:0; display:grid; place-items:center;
+    background:#0f0f12; color:#d7d7db; font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+  }
+  canvas{
+    image-rendering:pixelated; image-rendering:crisp-edges;
+    width:min(90vmin, 640px); height:min(90vmin, 640px);
+    background:#0b0d10; border-radius:12px; box-shadow: inset 0 0 0 1px #26262e;
+    display:block;
+  }
+  .hint{
+    position:fixed; bottom:10px; left:50%; transform:translateX(-50%);
+    font-size:12px; opacity:.7; user-select:none; letter-spacing:.2px;
+  }
+</style>
+</head>
+<body>
+<canvas id="game" width="512" height="512" aria-label="Pixel tank gibbing demo"></canvas>
+<div class="hint">WASD: move • Aim turret with mouse • Click or G: gib • R: reset • P: recolor</div>
+
+<script>
+/* =========================
+   Base setup
+========================= */
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d', { alpha: true });
+ctx.imageSmoothingEnabled = false;
+const W = canvas.width, H = canvas.height;
+
+function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+function rand(a,b){ return a + Math.random()*(b-a); }
+function rint(a,b){ return (a + Math.floor(Math.random()*(b-a+1))); }
+
+/* =========================
+   Palette (same feel)
+========================= */
+function randPalette() {
+  const h = 90 + Math.floor(Math.random()*40) - 20;
+  const s = 35 + Math.floor(Math.random()*25);
+  const l1 = 28 + Math.floor(Math.random()*8);
+  const l2 = l1 + 10;
+  const l3 = l2 + 8;
+  return {
+    hull: `hsl(${h} ${s}% ${l2}%)`,
+    hullLight: `hsl(${h} ${s+10}% ${l3}%)`,
+    turret: `hsl(${h} ${s+10}% ${l1}%)`
+  };
+}
+let PAL = randPalette();
+const COLORS = {
+  tread:'#222', treadLight:'#3a3a3a',
+  barrel:'#161616', bolt:'#1a1a1a',
+  shadow:'rgba(0,0,0,0.25)'
+};
+
+/* =========================
+   Sprite construction (16×16), matching your tank
+========================= */
+const SPR_W=16, SPR_H=16, SCALE=2;
+const bodyCanvas = document.createElement('canvas'); bodyCanvas.width=SPR_W; bodyCanvas.height=SPR_H;
+const bctx = bodyCanvas.getContext('2d');
+const turretCanvas = document.createElement('canvas'); turretCanvas.width=SPR_W; turretCanvas.height=SPR_H;
+const tctx = turretCanvas.getContext('2d');
+
+function drawBodyUp(){
+  bctx.clearRect(0,0,SPR_W,SPR_H);
+  // treads
+  for (let y=1;y<=14;y++){
+    for (let x=1;x<=3;x++){ bctx.fillStyle=COLORS.tread; bctx.fillRect(x,y,1,1); }
+    for (let x=12;x<=14;x++){ bctx.fillStyle=COLORS.tread; bctx.fillRect(x,y,1,1); }
+  }
+  for (let y=2;y<=14;y+=2){
+    bctx.fillStyle=COLORS.treadLight; bctx.fillRect(2,y,1,1); bctx.fillRect(13,y,1,1);
+  }
+  // hull block
+  for (let y=3;y<=12;y++){
+    for (let x=4;x<=11;x++){ bctx.fillStyle=PAL.hull; bctx.fillRect(x,y,1,1); }
+  }
+  // highlight
+  for (let y=3;y<=6;y++){
+    for (let x=4;x<=7;x++){ bctx.fillStyle=PAL.hullLight; bctx.fillRect(x,y,1,1); }
+  }
+  // bolts
+  bctx.fillStyle=COLORS.bolt;
+  bctx.fillRect(4,3,1,1); bctx.fillRect(11,3,1,1);
+  bctx.fillRect(4,12,1,1); bctx.fillRect(11,12,1,1);
+}
+function drawTurretUp(){
+  tctx.clearRect(0,0,SPR_W,SPR_H);
+  const cx=8, cy=8, r=3;
+  for (let y=cy-r;y<=cy+r;y++){
+    for (let x=cx-r;x<=cx+r;x++){
+      const dx=x-cx, dy=y-cy;
+      if (dx*dx+dy*dy<=r*r){ tctx.fillStyle=PAL.turret; tctx.fillRect(x,y,1,1); }
+    }
+  }
+  tctx.fillStyle=PAL.hullLight; tctx.fillRect(cx-1, cy-1, 2, 2);
+  // barrel
+  for (let y=0;y<=3;y++){ tctx.fillStyle=COLORS.barrel; tctx.fillRect(cx-1, y, 2, 1); }
+  tctx.fillStyle=COLORS.treadLight; tctx.fillRect(cx-1, 0, 2, 1);
+}
+function redraw(){ drawBodyUp(); drawTurretUp(); }
+redraw();
+
+/* =========================
+   Tank state + controls
+========================= */
+const tank = {
+  x: W/2, y: H/2,
+  bodyAng: -Math.PI/2,    // faces up by default
+  turretAng: 0,
+  speed: 90, rotSpeed: Math.PI,
+  alive: true
+};
+const keys = new Set();
+let mouse = { x: W/2, y: H/2 };
+canvas.tabIndex = 0;
+canvas.addEventListener('mousemove', e=>{
+  const r = canvas.getBoundingClientRect();
+  mouse.x = (e.clientX - r.left) * (canvas.width / r.width);
+  mouse.y = (e.clientY - r.top)  * (canvas.height / r.height);
+});
+canvas.addEventListener('keydown', e=>{
+  const k = e.key.toLowerCase();
+  keys.add(k);
+  if (k==='g') explode();
+  else if (k==='r') reset();
+  else if (k==='p'){ PAL = randPalette(); redraw(); }
+});
+canvas.addEventListener('keyup', e=> keys.delete(e.key.toLowerCase()));
+canvas.addEventListener('click', explode);
+
+function updateTank(dt){
+  if (!tank.alive) return;
+  const turn = (keys.has('a')?-1:0) + (keys.has('d')?1:0);
+  tank.bodyAng += turn*tank.rotSpeed*dt;
+  const forward = (keys.has('w')?1:0) + (keys.has('s')?-1:0);
+  if (forward){
+    tank.x += Math.cos(tank.bodyAng)*tank.speed*forward*dt;
+    tank.y += Math.sin(tank.bodyAng)*tank.speed*forward*dt;
+  }
+  const r = (SPR_W*SCALE)*0.5;
+  tank.x = clamp(tank.x, r, W-r);
+  tank.y = clamp(tank.y, r, H-r);
+
+  const dx = mouse.x - tank.x, dy = mouse.y - tank.y;
+  tank.turretAng = Math.atan2(dy, dx);
+}
+
+/* =========================
+   Gib system
+========================= */
+const gibs = [];
+const sparks = [];
+const smoke = [];
+
+function addSpark(x,y,vx,vy){
+  sparks.push({
+    x,y,vx: vx*1.1, vy: vy*1.1, life: rand(0.12,0.25)
+  });
+}
+function addSmoke(x,y){
+  smoke.push({
+    x, y, r: rand(3,7), a: 0.9, vr: rand(6,14), va: -0.6, vy: -rand(12,24)
+  });
+}
+
+function localToWorld(lx, ly, baseAng){
+  const s = SCALE;
+  const rx =  Math.cos(baseAng)*lx - Math.sin(baseAng)*ly;
+  const ry =  Math.sin(baseAng)*lx + Math.cos(baseAng)*ly;
+  return { x: tank.x + rx*s, y: tank.y + ry*s };
+}
+
+function spawnPiece(def, baseAng, impulseBias=0){
+  // Center of the sub-rect in sprite space
+  const cx = def.sx + def.sw/2, cy = def.sy + def.sh/2;
+  // local offset from sprite center
+  const lx = cx - SPR_W/2, ly = cy - SPR_H/2;
+  const start = localToWorld(lx, ly, baseAng);
+  const dir = Math.atan2(start.y - tank.y, start.x - tank.x);
+  const speed = rand(80, 200) + impulseBias;
+  const vx = Math.cos(dir)*speed + rand(-30,30);
+  const vy = Math.sin(dir)*speed + rand(-30,30);
+
+  gibs.push({
+    src: def.src, sx: def.sx, sy: def.sy, sw: def.sw, sh: def.sh,
+    x: start.x, y: start.y,
+    vx, vy,
+    rot: baseAng + rand(-0.25, 0.25),
+    vr: rand(-4, 4),
+    life: rand(1.8, 2.6),
+    gravity: 90
+  });
+
+  addSpark(start.x, start.y, vx, vy);
+  if (Math.random()<0.6) addSmoke(start.x, start.y);
+}
+
+// Define logical pieces (source rectangles) from the two 16×16 sprites
+function pieceDefs(){
+  // BODY pieces
+  const defs = [
+    // treads
+    { src:bctx.canvas, sx:1,  sy:1,  sw:3, sh:14, base:'body' }, // left tread
+    { src:bctx.canvas, sx:12, sy:1,  sw:3, sh:14, base:'body' }, // right tread
+    // hull plates (split into 3 bands)
+    { src:bctx.canvas, sx:4,  sy:3,  sw:8, sh:3, base:'body' },  // top plate (highlight)
+    { src:bctx.canvas, sx:4,  sy:6,  sw:8, sh:4, base:'body' },  // mid plate
+    { src:bctx.canvas, sx:4,  sy:10, sw:8, sh:3, base:'body' },  // bottom plate
+    // bolts (corners)
+    { src:bctx.canvas, sx:4,  sy:3,  sw:1, sh:1, base:'body' },
+    { src:bctx.canvas, sx:11, sy:3,  sw:1, sh:1, base:'body' },
+    { src:bctx.canvas, sx:4,  sy:12, sw:1, sh:1, base:'body' },
+    { src:bctx.canvas, sx:11, sy:12, sw:1, sh:1, base:'body' },
+    // TURRET pieces
+    { src:tctx.canvas, sx:5,  sy:5,  sw:6, sh:6, base:'turret' }, // turret disc
+    { src:tctx.canvas, sx:7,  sy:0,  sw:2, sh:4, base:'turret', barrel:true } // barrel
+  ];
+  return defs;
+}
+
+function explode(){
+  if (!tank.alive) return;
+  tank.alive = false;
+  const defs = pieceDefs();
+  defs.forEach(d=>{
+    const baseAng = (d.base==='body') ? (tank.bodyAng + Math.PI/2)
+                                      : (tank.turretAng + Math.PI/2);
+    const impulse = d.barrel ? 180 : 0; // kick the barrel forward
+    spawnPiece(d, baseAng, impulse);
+  });
+  // extra micro shrapnel
+  for (let i=0;i<12;i++){
+    const ang = rand(0, Math.PI*2);
+    const spd = rand(120, 220);
+    spawnTiny(tank.x, tank.y, Math.cos(ang)*spd, Math.sin(ang)*spd);
+  }
+}
+function spawnTiny(x,y,vx,vy){
+  // Pull a 1×1 pixel from hull color as a shard
+  gibs.push({
+    src:bctx.canvas, sx:4, sy:6, sw:1, sh:1,
+    x,y,vx,vy, rot:0, vr:0, life: rand(0.4,0.9), gravity: 120
+  });
+  addSpark(x,y,vx,vy);
+}
+
+function reset(){
+  tank.x=W/2; tank.y=H/2; tank.bodyAng=-Math.PI/2; tank.turretAng=0; tank.alive=true;
+  gibs.length = 0; sparks.length = 0; smoke.length = 0;
+  redraw();
+}
+
+/* =========================
+   Update/draw gibs & fx
+========================= */
+function updateGibs(dt){
+  for (let i=gibs.length-1;i>=0;i--){
+    const g = gibs[i];
+    g.vy += g.gravity*dt;
+    g.x += g.vx*dt;
+    g.y += g.vy*dt;
+    g.rot += g.vr*dt;
+    g.life -= dt;
+    // soft bounds
+    if (g.x<4 || g.x>W-4) g.vx *= -0.6;
+    if (g.y>H-6){ g.y=H-6; g.vy *= -0.35; g.vx *= 0.8; }
+    if (g.life<=0) gibs.splice(i,1);
+  }
+}
+function updateSparks(dt){
+  for (let i=sparks.length-1;i>=0;i--){
+    const s = sparks[i];
+    s.x += s.vx*dt; s.y += s.vy*dt; s.life -= dt;
+    s.vx *= 0.96; s.vy *= 0.96;
+    if (s.life<=0) sparks.splice(i,1);
+  }
+}
+function updateSmoke(dt){
+  for (let i=smoke.length-1;i>=0;i--){
+    const p = smoke[i];
+    p.y += p.vy*dt; p.r += p.vr*dt; p.a += p.va*dt;
+    if (p.a<=0 || p.r>28) smoke.splice(i,1);
+  }
+}
+
+function drawShadow(x,y){
+  ctx.save();
+  ctx.translate(x, y+6);
+  ctx.scale(1.4, 0.6);
+  ctx.beginPath();
+  ctx.arc(0,0,(SPR_W*SCALE*0.45), 0, Math.PI*2);
+  ctx.fillStyle = COLORS.shadow;
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawSpriteRot(src, sx,sy,sw,sh, x,y, angle, scale){
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.rotate(angle);
+  ctx.scale(scale, scale);
+  ctx.translate(-sw/2, -sh/2);
+  ctx.drawImage(src, sx,sy,sw,sh, 0,0,sw,sh);
+  ctx.restore();
+}
+
+function drawTank(){
+  drawShadow(tank.x, tank.y);
+  // body (sprite "up" so add +PI/2 to match facing)
+  drawSpriteRot(bodyCanvas, 0,0,SPR_W,SPR_H, tank.x, tank.y, tank.bodyAng+Math.PI/2, SCALE);
+  // turret
+  drawSpriteRot(turretCanvas,0,0,SPR_W,SPR_H, tank.x, tank.y, tank.turretAng+Math.PI/2, SCALE);
+}
+
+function drawGibs(){
+  for (const g of gibs){
+    const alpha = clamp(g.life/2.0, 0, 1);
+    ctx.globalAlpha = alpha;
+    drawSpriteRot(g.src, g.sx,g.sy,g.sw,g.sh, g.x, g.y, g.rot, SCALE);
+    ctx.globalAlpha = 1;
+  }
+}
+function drawSparks(){
+  ctx.save();
+  ctx.globalAlpha = 0.9;
+  for (const s of sparks){
+    ctx.fillStyle = '#fbbf24'; // golden spark (no style/theme changes beyond color)
+    ctx.fillRect(s.x|0, s.y|0, 2, 2);
+  }
+  ctx.restore();
+}
+function drawSmoke(){
+  ctx.save();
+  for (const p of smoke){
+    const grd = ctx.createRadialGradient(p.x,p.y,1, p.x,p.y,p.r);
+    grd.addColorStop(0, `rgba(40,40,40,${p.a})`);
+    grd.addColorStop(1, `rgba(40,40,40,0)`);
+    ctx.fillStyle = grd;
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
+  }
+  ctx.restore();
+}
+
+/* =========================
+   Main loop
+========================= */
+function drawBackdrop(){
+  ctx.globalAlpha = 0.08;
+  ctx.fillStyle = '#000';
+  for (let i=0;i<=W;i+=32) ctx.fillRect(i, 0, 1, H);
+  for (let j=0;j<=H;j+=32) ctx.fillRect(0, j, W, 1);
+  ctx.globalAlpha = 1;
+}
+
+let last = performance.now();
+function loop(now){
+  const dt = Math.min(0.033, (now-last)/1000); last = now;
+
+  updateTank(dt);
+  updateGibs(dt); updateSparks(dt); updateSmoke(dt);
+
+  ctx.clearRect(0,0,W,H);
+  drawBackdrop();
+
+  if (tank.alive) { drawTank(); }
+  else { drawShadow(tank.x, tank.y); } // keep a shadow for grounding
+  drawGibs(); drawSparks(); drawSmoke();
+
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

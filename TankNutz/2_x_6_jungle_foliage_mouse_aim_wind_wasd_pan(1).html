@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>4×2 Jungle People — Running Animations (Mouse-Aim + WASD Pan)</title>
+<style>
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    display: grid;
+    place-items: center;
+    background: #0f0f12;
+    color: #d7d7db;
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  }
+  canvas {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    width: min(96vmin, 960px);
+    height: min(70vmin, 540px);
+    background: #0b0d0e radial-gradient(80% 140% at 50% 0%, rgba(50,120,90,.16), rgba(0,0,0,0));
+    display: block;
+    border-radius: 12px;
+    box-shadow: inset 0 0 0 1px #26262e;
+  }
+  .hint {
+    position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%);
+    font-size: 12px; opacity: .6; letter-spacing: .2px; user-select: none;
+  }
+</style>
+</head>
+<body>
+<canvas id="game" width="1200" height="675" aria-label="4x2 jungle people grid — running"></canvas>
+<div class="hint">WASD: pan • Move mouse: everyone looks/aims that way • P: recolor • Same 8 characters, now running in place</div>
+<script>
+/* ================================
+   Setup
+================================ */
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+const W = canvas.width, H = canvas.height;
+
+// World camera (WASD) and shared look direction (mouse angle)
+const cam = { x: 0, y: 0, speed: 160 };
+const keys = new Set();
+let mouse = { x: W/2, y: H/2 };
+
+canvas.tabIndex = 0;
+canvas.addEventListener('mousemove', e => {
+  const r = canvas.getBoundingClientRect();
+  mouse.x = (e.clientX - r.left) * (canvas.width / r.width);
+  mouse.y = (e.clientY - r.top)  * (canvas.height / r.height);
+});
+canvas.addEventListener('keydown', e => { keys.add(e.key.toLowerCase()); });
+canvas.addEventListener('keyup',   e => { keys.delete(e.key.toLowerCase()); });
+
+/* ================================
+   Palette
+================================ */
+function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+function rint(a,b){ return a + Math.floor(Math.random()*(b-a+1)); }
+function junglePalette(){
+  const g = 110 + rint(-10,25);
+  const s = 45 + rint(-10,10);
+  const l = 24 + rint(-6,8);
+  return {
+    leaf:      `hsl(${g} ${s+8}% ${l}%)`,
+    leafDark:  `hsl(${g} ${s}% ${clamp(l-8,6,60)}%)`,
+    cloth1:    `hsl(${(g+40)%360} 60% 42%)`,
+    cloth2:    `hsl(${(g+180)%360} 55% 52%)`,
+    skinLt:    '#f2c6a5',
+    skinMd:    '#c78e64',
+    skinDk:    '#8a5b39',
+    hair:      '#2b221a',
+    bandana:   '#d33',
+    metal:     '#9ea4aa',
+    shadow:    'rgba(0,0,0,.28)',
+    grid:      '#000',
+    dust:      'rgba(200,200,200,.12)'
+  };
+}
+let PAL = junglePalette();
+
+/* ================================
+   Grid + Tiles
+================================ */
+const COLS = 4, ROWS = 2;
+const TILE_PX = 72;        // internal pixel art size
+const SCALE = 2;           // onscreen scale inside tile
+const GAP = 10;
+const totalW = COLS * (TILE_PX*SCALE) + (COLS+1)*GAP;
+const totalH = ROWS * (TILE_PX*SCALE) + (ROWS+1)*GAP;
+const startX = (W - totalW)/2;
+const startY = (H - totalH)/2;
+
+function makeTileCanvas(){
+  const c = document.createElement('canvas');
+  c.width = TILE_PX; c.height = TILE_PX;
+  const g = c.getContext('2d'); g.imageSmoothingEnabled = false;
+  return { c, g };
+}
+
+/* ================================
+   Pixel helpers
+================================ */
+function px(g,x,y,w=1,h=1,color='#fff'){ g.fillStyle = color; g.fillRect(x|0,y|0,w|0,h|0); }
+function ellipseShadow(g, cx, cy, rx, ry, col){
+  g.save(); g.translate(cx, cy); g.scale(rx, ry); g.beginPath(); g.arc(0,0,1,0,Math.PI*2); g.fillStyle = col; g.fill(); g.restore();
+}
+
+/* ================================
+   Running helpers
+================================ */
+function drawBoots(g, x, y){ px(g,x-2,y,5,2,'#1a1a1a'); }
+function drawPants(g, x, y){ px(g,x-3,y-7,8,3,PAL.cloth1); }
+function drawLegsRun(g, x, y, tone, phase){
+  // phase in radians; left/right out of phase by PI
+  const liftL = Math.sin(phase)*1.5;     // vertical lift
+  const liftR = Math.sin(phase+Math.PI)*1.5;
+  const foreL = Math.cos(phase)*1.2;     // forward/back
+  const foreR = Math.cos(phase+Math.PI)*1.2;
+  // left leg
+  px(g, x-1+foreL, y-6-liftL, 2, 6, tone);
+  // right leg
+  px(g, x+2+foreR, y-6-liftR, 2, 6, tone);
+  // boots
+  drawBoots(g, x+foreL*0.7, y-0.5-liftL*0.4);
+  drawBoots(g, x+foreR*0.7+2, y-0.5-liftR*0.4);
+}
+
+function drawTorso(g, x, y, color, bob){ px(g,x-4,y-14-bob,9,7,color); }
+function drawHead(g, x, y, skin, bob){ px(g,x-3,y-21-bob,7,7,skin); }
+function drawHair(g, x, y, bob){ px(g,x-3,y-21-bob,7,2,PAL.hair); }
+function drawBandana(g, x, y, bob){ px(g,x-3,y-22-bob,7,2,PAL.bandana); }
+function drawVest(g, x, y, bob){ px(g,x-4,y-14-bob,9,7, PAL.cloth2); px(g,x-1,y-14-bob,3,7, PAL.cloth1); }
+function drawSatchel(g, x, y, bob){ px(g,x+4,y-13-bob,3,5, '#4a3b28'); }
+function drawShoulderStrap(g, x, y, bob){ for(let i=0;i<7;i++) px(g,x-5+i,y-14-bob+i,1,1,'#4a3b28'); }
+
+function drawRifle(g, cx, cy, ang){
+  const len = 18; const vx=Math.cos(ang), vy=Math.sin(ang);
+  for(let i=0;i<len;i++){
+    const x = cx + vx*i, y = cy + vy*i;
+    px(g,x,y,1,1, i<3 ? '#3b2a1a' : (i>len-3?PAL.metal:'#221a14'));
+  }
+}
+function drawPistol(g, cx, cy, ang){ const len=8, vx=Math.cos(ang), vy=Math.sin(ang);
+  for(let i=0;i<len;i++){ const x=cx+vx*i, y=cy+vy*i; px(g,x,y,1,1, i>len-2?PAL.metal:'#222'); }
+}
+function drawArmsRunAim(g, x, y, ang, skin, swing){
+  // swing in [-1,1]
+  const ax = x+1, ay = y-11 - Math.abs(swing)*0.8; // slight counter-bob
+  const len = 6, vx=Math.cos(ang), vy=Math.sin(ang);
+  // front arm (aim)
+  for(let i=0;i<len;i++) px(g, ax+vx*i, ay+vy*i, 1,1, skin);
+  // rear arm (counter-swing visual hint)
+  for(let i=0;i<len-1;i++) px(g, ax-1+vx*i*0.9 - swing*0.6, ay+1+vy*i*0.9, 1,1, skin);
+}
+
+/* ================================
+   Dust puffs (tiny)
+================================ */
+function drawDust(g, x, y, phase){
+  const n = 3; const p = (Math.sin(phase)+1)/2;
+  for(let i=0;i<n;i++){
+    const a = i*2*Math.PI/n + phase*0.5;
+    const r = 2 + p*3;
+    px(g, x + Math.cos(a)*r, y + 1 + Math.sin(a)*r*0.3, 1,1, PAL.dust);
+  }
+}
+
+/* ================================
+   NPC factories (same 8, now running)
+================================ */
+function makeCommando(tile){
+  const {g} = tile; const cx=TILE_PX/2, baseY=TILE_PX*0.78; const spd=5.5;
+  return (t, lookA)=>{
+    g.clearRect(0,0,TILE_PX,TILE_PX);
+    const ph = t*0.01*spd;
+    const bob = Math.abs(Math.sin(ph))*1.5;
+    ellipseShadow(g, cx, baseY-1, 12, 3, PAL.shadow);
+    drawDust(g,cx-6,baseY+1,ph);
+    drawLegsRun(g,cx,baseY, PAL.skinDk, ph);
+    drawPants(g,cx,baseY);
+    drawTorso(g,cx,baseY, PAL.cloth1, bob); drawVest(g,cx,baseY, bob); drawHead(g,cx,baseY, PAL.skinDk, bob); drawHair(g,cx,baseY, bob); drawBandana(g,cx,baseY, bob);
+    drawArmsRunAim(g,cx,baseY+bob,lookA, PAL.skinDk, Math.sin(ph)); drawRifle(g,cx+2,baseY-11+bob,lookA);
+  };
+}
+function makeScout(tile){
+  const {g} = tile; const cx=TILE_PX/2, baseY=TILE_PX*0.78; const spd=6.0;
+  return (t, lookA)=>{
+    g.clearRect(0,0,TILE_PX,TILE_PX);
+    const ph=t*0.01*spd, bob=Math.abs(Math.sin(ph))*1.2;
+    ellipseShadow(g, cx, baseY, 11, 3, PAL.shadow);
+    drawDust(g,cx-6,baseY+1,ph+1);
+    drawLegsRun(g,cx,baseY, PAL.skinMd, ph);
+    drawPants(g,cx,baseY);
+    drawTorso(g,cx,baseY, PAL.cloth2, bob); drawHead(g,cx,baseY, PAL.skinMd, bob); drawHair(g,cx,baseY, bob); drawShoulderStrap(g,cx,baseY, bob);
+    drawArmsRunAim(g,cx,baseY+bob,lookA, PAL.skinMd, Math.sin(ph)); drawPistol(g,cx+2,baseY-11+bob,lookA);
+  };
+}
+function makeHeavy(tile){
+  const {g} = tile; const cx=TILE_PX/2, baseY=TILE_PX*0.8; const spd=5.0;
+  return (t, lookA)=>{
+    g.clearRect(0,0,TILE_PX,TILE_PX);
+    const ph=t*0.01*spd, bob=Math.abs(Math.sin(ph))*1.0;
+    ellipseShadow(g, cx, baseY, 13, 3.4, PAL.shadow);
+    drawDust(g,cx-7,baseY+1,ph+0.5);
+    drawLegsRun(g,cx,baseY, PAL.skinDk, ph);
+    px(g,cx-4,baseY-7,10,4,'#3a3a3a');
+    drawTorso(g,cx,baseY, '#2d3b33', bob); drawSatchel(g,cx,baseY, bob); drawHead(g,cx,baseY, PAL.skinDk, bob); drawHair(g,cx,baseY, bob);
+    drawArmsRunAim(g,cx,baseY+bob,lookA, PAL.skinDk, Math.sin(ph)); drawRifle(g,cx+1,baseY-11+bob,lookA);
+  };
+}
+function makeMedic(tile){
+  const {g} = tile; const cx=TILE_PX/2, baseY=TILE_PX*0.78; const spd=5.6;
+  return (t, lookA)=>{
+    g.clearRect(0,0,TILE_PX,TILE_PX);
+    const ph=t*0.01*spd, bob=Math.abs(Math.sin(ph))*1.2;
+    ellipseShadow(g, cx, baseY, 11, 3, PAL.shadow);
+    drawDust(g,cx-5,baseY+1,ph+2.1);
+    drawLegsRun(g,cx,baseY, PAL.skinLt, ph);
+    drawPants(g,cx,baseY);
+    drawTorso(g,cx,baseY, '#3f5148', bob); px(g,cx-1,baseY-12-bob,3,3,'#d33');
+    drawHead(g,cx,baseY, PAL.skinLt, bob); drawHair(g,cx,baseY, bob);
+    drawArmsRunAim(g,cx,baseY+bob,lookA, PAL.skinLt, Math.sin(ph)); drawPistol(g,cx+2,baseY-11+bob,lookA);
+  };
+}
+function makeVillager1(tile){
+  const {g} = tile; const cx=TILE_PX/2, baseY=TILE_PX*0.78; const spd=5.2;
+  return (t, lookA)=>{
+    g.clearRect(0,0,TILE_PX,TILE_PX);
+    const ph=t*0.01*spd, bob=Math.abs(Math.sin(ph))*1.0;
+    ellipseShadow(g, cx, baseY, 10.5, 3, PAL.shadow);
+    drawDust(g,cx-5,baseY+1,ph+0.7);
+    drawLegsRun(g,cx,baseY, PAL.skinMd, ph);
+    px(g,cx-3,baseY-7,8,3,'#6b5b3a');
+    drawTorso(g,cx,baseY, '#5b7d64', bob); drawHead(g,cx,baseY, PAL.skinMd, bob);
+    // straw hat
+    px(g,cx-4,baseY-22-bob,9,2,'#caa84a'); px(g,cx-5,baseY-21-bob,11,1,'#caa84a');
+    drawArmsRunAim(g,cx,baseY+bob,lookA, PAL.skinMd, Math.sin(ph));
+  };
+}
+function makeVillager2(tile){
+  const {g} = tile; const cx=TILE_PX/2, baseY=TILE_PX*0.78; const spd=5.0;
+  return (t, lookA)=>{
+    g.clearRect(0,0,TILE_PX,TILE_PX);
+    const ph=t*0.01*spd, bob=Math.abs(Math.sin(ph))*1.0;
+    ellipseShadow(g, cx, baseY, 10.5, 3, PAL.shadow);
+    drawDust(g,cx-4,baseY+1,ph+1.4);
+    drawLegsRun(g,cx,baseY, PAL.skinLt, ph);
+    px(g,cx-3,baseY-7,8,3,'#335c4a');
+    drawTorso(g,cx,baseY, '#496b55', bob); drawHead(g,cx,baseY, PAL.skinLt, bob);
+    for(let i=0;i<7;i++) px(g,cx-5+i,baseY-14-bob+i,1,1,'#2a2a2a'); px(g,cx+4,baseY-10-bob,3,4,'#2a2a2a');
+    drawArmsRunAim(g,cx,baseY+bob,lookA, PAL.skinLt, Math.sin(ph));
+  };
+}
+function makeGuide(tile){
+  const {g} = tile; const cx=TILE_PX/2, baseY=TILE_PX*0.78; const spd=5.4;
+  return (t, lookA)=>{
+    g.clearRect(0,0,TILE_PX,TILE_PX);
+    const ph=t*0.01*spd, bob=Math.abs(Math.sin(ph))*1.1;
+    ellipseShadow(g, cx, baseY, 11, 3, PAL.shadow);
+    drawDust(g,cx-6,baseY+1,ph+2.8);
+    drawLegsRun(g,cx,baseY, PAL.skinDk, ph);
+    drawPants(g,cx,baseY);
+    drawTorso(g,cx,baseY, '#355546', bob); drawHead(g,cx,baseY, PAL.skinDk, bob);
+    px(g,cx+4,baseY-10-bob,4,1,PAL.metal); px(g,cx+7,baseY-11-bob,1,3,'#3b2a1a');
+    drawArmsRunAim(g,cx,baseY+bob,lookA, PAL.skinDk, Math.sin(ph));
+  };
+}
+function makeRadioOp(tile){
+  const {g} = tile; const cx=TILE_PX/2, baseY=TILE_PX*0.78; const spd=5.3;
+  return (t, lookA)=>{
+    g.clearRect(0,0,TILE_PX,TILE_PX);
+    const ph=t*0.01*spd, bob=Math.abs(Math.sin(ph))*1.1;
+    ellipseShadow(g, cx, baseY, 11, 3, PAL.shadow);
+    drawDust(g,cx-6,baseY+1,ph+3.5);
+    drawLegsRun(g,cx,baseY, PAL.skinMd, ph);
+    drawPants(g,cx,baseY);
+    drawTorso(g,cx,baseY, '#3b4e44', bob); drawHead(g,cx,baseY, PAL.skinMd, bob); drawHair(g,cx,baseY, bob);
+    px(g,cx-7,baseY-13-bob,4,6,'#2a2f34'); for(let i=0;i<7;i++) px(g,cx-8,baseY-14-bob-i,1,1,'#aab');
+    drawArmsRunAim(g,cx,baseY+bob,lookA, PAL.skinMd, Math.sin(ph)); drawPistol(g,cx+2,baseY-11+bob,lookA);
+  };
+}
+
+/* ================================
+   Build 8 characters (4x2)
+================================ */
+const makers = [
+  makeCommando,
+  makeScout,
+  makeHeavy,
+  makeMedic,
+  makeVillager1,
+  makeVillager2,
+  makeGuide,
+  makeRadioOp,
+];
+
+const tiles = [];
+let idx=0;
+for(let r=0;r<ROWS;r++){
+  for(let c=0;c<COLS;c++){
+    const tile = makeTileCanvas();
+    tile.update = makers[idx % makers.length](tile);
+    tiles.push(tile); idx++;
+  }
+}
+
+/* ================================
+   Drawing helpers
+================================ */
+function drawTile(t, x, y, scale){
+  ctx.save(); ctx.translate(x,y); ctx.scale(scale,scale); ctx.drawImage(t.c,0,0); ctx.restore();
+}
+function drawBackdrop(){
+  ctx.save(); ctx.globalAlpha=.08; ctx.fillStyle=PAL.grid; for(let i=0;i<=W;i+=32) ctx.fillRect(i,0,1,H); for(let j=0;j<=H;j+=32) ctx.fillRect(0,j,W,1); ctx.restore();
+  const vg = ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*.2, W/2,H/2, Math.max(W,H)*.72);
+  vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,.6)'); ctx.fillStyle=vg; ctx.fillRect(0,0,W,H);
+}
+
+/* ================================
+   Main loop
+================================ */
+let last = performance.now();
+function loop(now){
+  const dt = Math.min(0.033, (now-last)/1000); last = now;
+
+  // WASD pan (vector)
+  const fx = (keys.has('d')?1:0) + (keys.has('a')?-1:0);
+  const fy = (keys.has('s')?1:0) + (keys.has('w')?-1:0);
+  if (fx || fy){ const ang=Math.atan2(fy,fx); cam.x += Math.cos(ang)*cam.speed*dt; cam.y += Math.sin(ang)*cam.speed*dt; }
+
+  // Everyone looks toward mouse
+  const dx = mouse.x - W/2, dy = mouse.y - H/2;
+  const lookA = Math.atan2(dy, dx);
+  const lookM = clamp(Math.hypot(dx,dy)/(Math.max(W,H)*0.5), 0, 1);
+
+  ctx.clearRect(0,0,W,H); drawBackdrop();
+
+  // draw grid with mild parallax
+  let index=0; for(let r=0;r<ROWS;r++){
+    for(let c=0;c<COLS;c++){
+      const tile = tiles[index++];
+      tile.update(now, lookA, lookM);
+      const layer = (r*COLS+c)%3; const par=[0.2,0.35,0.5][layer];
+      const pxOff = -cam.x*par, pyOff = -cam.y*par;
+      const x = startX + GAP + c*(TILE_PX*SCALE + GAP) + pxOff;
+      const y = startY + GAP + r*(TILE_PX*SCALE + GAP) + pyOff;
+      // card
+      ctx.save(); ctx.translate(x-4,y-4); ctx.fillStyle='rgba(255,255,255,0.03)'; ctx.fillRect(0,0,TILE_PX*SCALE+8, TILE_PX*SCALE+8); ctx.strokeStyle='rgba(255,255,255,0.06)'; ctx.strokeRect(0.5,0.5,TILE_PX*SCALE+7, TILE_PX*SCALE+7); ctx.restore();
+      drawTile(tile, x, y, SCALE);
+    }
+  }
+
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+/* ================================
+   Interactions
+================================ */
+window.addEventListener('keydown', (e)=>{ if (e.key.toLowerCase()==='p'){ PAL = junglePalette(); } });
+</script>
+</body>
+</html>

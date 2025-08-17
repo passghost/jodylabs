@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Tiny Top-Down Pixel Tank — Mouse-Aim Turret + WASD Body</title>
+<style>
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    display: grid;
+    place-items: center;
+    background: #0f0f12;
+    color: #d7d7db;
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  }
+  canvas {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    width: min(90vmin, 640px);
+    height: min(90vmin, 640px);
+    background: #0c0c10;
+    display: block;
+    border-radius: 12px;
+    box-shadow: inset 0 0 0 1px #26262e;
+  }
+</style>
+</head>
+<body>
+<canvas id="game" width="512" height="512"></canvas>
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+const W = canvas.width, H = canvas.height;
+
+function randPalette() {
+  const h = 90 + Math.floor(Math.random()*40) - 20;
+  const s = 35 + Math.floor(Math.random()*25);
+  const l1 = 28 + Math.floor(Math.random()*8);
+  const l2 = l1 + 10;
+  const l3 = l2 + 8;
+  return {
+    hull: `hsl(${h} ${s}% ${l2}%)`,
+    hullLight: `hsl(${h} ${s}% ${l3}%)`,
+    turret: `hsl(${h} ${s+10}% ${l1}%)`
+  };
+}
+let palette = randPalette();
+
+const COLORS = {
+  tread: '#222',
+  treadLight: '#3a3a3a',
+  barrel: '#161616',
+  bolt: '#1a1a1a',
+  shadow: 'rgba(0,0,0,0.25)'
+};
+
+const SPR_W = 16, SPR_H = 16;
+const bodyCanvas = document.createElement('canvas');
+bodyCanvas.width = SPR_W; bodyCanvas.height = SPR_H;
+const bctx = bodyCanvas.getContext('2d');
+
+const turretCanvas = document.createElement('canvas');
+turretCanvas.width = SPR_W; turretCanvas.height = SPR_H;
+const tctx = turretCanvas.getContext('2d');
+
+function drawBodyUp() {
+  bctx.clearRect(0,0,SPR_W,SPR_H);
+  for (let y = 1; y <= 14; y++) {
+    for (let x = 1; x <= 3; x++) bctx.fillStyle = COLORS.tread, bctx.fillRect(x, y, 1, 1);
+    for (let x = 12; x <= 14; x++) bctx.fillStyle = COLORS.tread, bctx.fillRect(x, y, 1, 1);
+  }
+  for (let y = 2; y <= 14; y += 2) {
+    bctx.fillStyle = COLORS.treadLight;
+    bctx.fillRect(2, y, 1, 1);
+    bctx.fillRect(13, y, 1, 1);
+  }
+  for (let y = 3; y <= 12; y++) {
+    for (let x = 4; x <= 11; x++) {
+      bctx.fillStyle = palette.hull; bctx.fillRect(x, y, 1, 1);
+    }
+  }
+  for (let y = 3; y <= 6; y++) {
+    for (let x = 4; x <= 7; x++) {
+      bctx.fillStyle = palette.hullLight; bctx.fillRect(x, y, 1, 1);
+    }
+  }
+  bctx.fillStyle = COLORS.bolt;
+  bctx.fillRect(4,3,1,1); bctx.fillRect(11,3,1,1);
+  bctx.fillRect(4,12,1,1); bctx.fillRect(11,12,1,1);
+}
+
+function drawTurretUp() {
+  tctx.clearRect(0,0,SPR_W,SPR_H);
+  const cx = 8, cy = 8, r = 3;
+  for (let y = cy - r; y <= cy + r; y++) {
+    for (let x = cx - r; x <= cx + r; x++) {
+      const dx = x - cx, dy = y - cy;
+      if (dx*dx + dy*dy <= r*r) { tctx.fillStyle = palette.turret; tctx.fillRect(x, y, 1, 1); }
+    }
+  }
+  tctx.fillStyle = palette.hullLight; tctx.fillRect(cx-1, cy-1, 2, 2);
+  for (let y = 0; y <= 3; y++) { tctx.fillStyle = COLORS.barrel; tctx.fillRect(cx-1, y, 2, 1); }
+  tctx.fillStyle = COLORS.treadLight; tctx.fillRect(cx-1, 0, 2, 1);
+}
+
+function redrawSprites() { drawBodyUp(); drawTurretUp(); }
+redrawSprites();
+
+const tank = { x: W/2, y: H/2, bodyAngle: -Math.PI/2, turretAngle: 0, speed: 90, rotSpeed: Math.PI };
+const SPRITE_SCALE = 2;
+const keys = new Set();
+let mouse = { x: W/2, y: H/2 };
+
+canvas.tabIndex = 0;
+canvas.addEventListener('mousemove', e => {
+  const rect = canvas.getBoundingClientRect();
+  mouse.x = (e.clientX - rect.left) * (canvas.width / rect.width);
+  mouse.y = (e.clientY - rect.top) * (canvas.height / rect.height);
+});
+canvas.addEventListener('keydown', e => { keys.add(e.key.toLowerCase()); });
+canvas.addEventListener('keyup', e => { keys.delete(e.key.toLowerCase()); });
+
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+function drawSprite(ctx, spriteCanvas, x, y, angleRad, scale) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angleRad);
+  ctx.scale(scale, scale);
+  ctx.translate(-SPR_W/2, -SPR_H/2);
+  ctx.drawImage(spriteCanvas, 0, 0);
+  ctx.restore();
+}
+function drawShadow(x, y) {
+  ctx.save();
+  ctx.translate(x, y + 6);
+  ctx.scale(1.4, 0.6);
+  ctx.beginPath();
+  ctx.arc(0, 0, (SPR_W*SPRITE_SCALE*0.45), 0, Math.PI*2);
+  ctx.fillStyle = COLORS.shadow;
+  ctx.fill();
+  ctx.restore();
+}
+
+let last = performance.now();
+function loop(now) {
+  const dt = Math.min(0.033, (now - last) / 1000);
+  last = now;
+
+  const turn = (keys.has('a') ? -1 : 0) + (keys.has('d') ? 1 : 0);
+  tank.bodyAngle += turn * tank.rotSpeed * dt;
+
+  const forward = (keys.has('w') ? 1 : 0) + (keys.has('s') ? -1 : 0);
+  if (forward !== 0) {
+    tank.x += Math.cos(tank.bodyAngle) * tank.speed * forward * dt;
+    tank.y += Math.sin(tank.bodyAngle) * tank.speed * forward * dt;
+  }
+
+  const r = (SPR_W * SPRITE_SCALE) * 0.5;
+  tank.x = clamp(tank.x, r, W - r);
+  tank.y = clamp(tank.y, r, H - r);
+
+  const dx = mouse.x - tank.x;
+  const dy = mouse.y - tank.y;
+  tank.turretAngle = Math.atan2(dy, dx);
+
+  ctx.clearRect(0, 0, W, H);
+  ctx.globalAlpha = 0.08;
+  for (let i = 0; i <= W; i += 32) ctx.fillRect(i, 0, 1, H);
+  for (let j = 0; j <= H; j += 32) ctx.fillRect(0, j, W, 1);
+  ctx.globalAlpha = 1;
+
+  drawShadow(tank.x, tank.y);
+  drawSprite(ctx, bodyCanvas,  tank.x, tank.y, tank.bodyAngle + Math.PI/2, SPRITE_SCALE);
+  drawSprite(ctx, turretCanvas, tank.x, tank.y, tank.turretAngle + Math.PI/2, SPRITE_SCALE);
+
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
+
+
+Buildings -- 
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Top-Down Pixel Buildings — 2×3 Grid (HTML-only)</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+  :root { --unit: 128px; }
+  * { box-sizing: border-box; }
+  body{
+    margin:0; min-height:100vh; display:grid; place-items:center;
+    background:#0f0f12; color:#cfd3da; font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial;
+  }
+  .grid{
+    display:grid; grid-template-columns: repeat(3, var(--unit));
+    grid-template-rows: repeat(2, var(--unit));
+    gap: 14px; padding: 14px;
+    background: #171920; border-radius:12px; box-shadow: 0 6px 30px rgba(0,0,0,.45), inset 0 0 0 1px #282b35;
+  }
+  .cell{
+    width:var(--unit); height:var(--unit);
+    border-radius:10px; overflow:hidden;
+    box-shadow: inset 0 0 0 1px #2b2f3b, 0 2px 10px rgba(0,0,0,.35);
+    background:#1a1d25;
+  }
+  svg{ width:100%; height:100%; display:block; image-rendering:pixelated; shape-rendering:crispEdges; }
+  figcaption{ display:none; }
+</style>
+</head>
+<body>
+  <div class="grid">
+
+    <!-- 1) Red shingled house with path and water barrel -->
+    <figure class="cell">
+      <svg viewBox="0 0 64 64" aria-label="Red shingled house">
+        <!-- grass -->
+        <rect width="64" height="64" fill="#7fb36a"/>
+        <!-- mottled grass -->
+        <rect x="3" y="5" width="2" height="2" fill="#73a860"/>
+        <rect x="10" y="18" width="2" height="2" fill="#6da35b"/>
+        <rect x="22" y="10" width="2" height="2" fill="#6fa55d"/>
+        <rect x="40" y="22" width="2" height="2" fill="#6aa159"/>
+        <rect x="52" y="8" width="2" height="2" fill="#6aa159"/>
+        <!-- shadow -->
+        <rect x="10" y="28" width="44" height="28" fill="#00000022"/>
+        <!-- base/walls -->
+        <rect x="12" y="18" width="40" height="34" fill="#d4c7a1"/>
+        <rect x="12" y="18" width="40" height="2" fill="#c3b591"/>
+        <rect x="12" y="50" width="40" height="2" fill="#b7aa8a"/>
+        <!-- roof (red shingles) -->
+        <rect x="8" y="10" width="48" height="12" fill="#b8443f"/>
+        <!-- shingle rows -->
+        <g fill="#a83e3a">
+          <rect x="8" y="13" width="48" height="1"/>
+          <rect x="8" y="16" width="48" height="1"/>
+          <rect x="8" y="19" width="48" height="1"/>
+        </g>
+        <!-- ridge highlight -->
+        <rect x="8" y="11" width="48" height="1" fill="#cc544e"/>
+        <!-- chimney -->
+        <rect x="44" y="6" width="6" height="6" fill="#8c6b53"/>
+        <rect x="44" y="6" width="6" height="1" fill="#9e7a60"/>
+        <!-- windows -->
+        <g>
+          <rect x="16" y="26" width="8" height="8" fill="#6fb2e5"/>
+          <rect x="40" y="26" width="8" height="8" fill="#6fb2e5"/>
+          <rect x="16" y="26" width="8" height="1" fill="#a6d3f3"/>
+          <rect x="40" y="26" width="8" height="1" fill="#a6d3f3"/>
+          <rect x="20" y="26" width="1" height="8" fill="#4d88ab"/>
+          <rect x="44" y="26" width="1" height="8" fill="#4d88ab"/>
+        </g>
+        <!-- door -->
+        <rect x="30" y="34" width="8" height="18" fill="#7a4d2f"/>
+        <rect x="30" y="34" width="8" height="1" fill="#8a5a3a"/>
+        <rect x="36" y="43" width="1" height="2" fill="#d1b06f"/>
+        <!-- stone path -->
+        <g fill="#bdb9ae">
+          <rect x="31" y="54" width="6" height="2"/>
+          <rect x="31" y="58" width="6" height="2"/>
+        </g>
+        <!-- water barrel -->
+        <rect x="54" y="38" width="6" height="8" fill="#6d513e"/>
+        <rect x="54" y="38" width="6" height="1" fill="#7b5d48"/>
+        <rect x="55" y="39" width="4" height="2" fill="#4689b9"/>
+      </svg>
+    </figure>
+
+    <!-- 2) Blue slate cottage with porch -->
+    <figure class="cell">
+      <svg viewBox="0 0 64 64" aria-label="Blue slate cottage">
+        <rect width="64" height="64" fill="#79b060"/>
+        <rect x="6" y="8" width="2" height="2" fill="#6aa159"/>
+        <rect x="22" y="16" width="2" height="2" fill="#6aa159"/>
+        <rect x="50" y="20" width="2" height="2" fill="#6aa159"/>
+        <rect x="8" y="30" width="44" height="26" fill="#00000022"/>
+        <!-- porch -->
+        <rect x="10" y="42" width="44" height="10" fill="#926a42"/>
+        <rect x="10" y="42" width="44" height="1" fill="#a97a4d"/>
+        <!-- walls -->
+        <rect x="12" y="20" width="40" height="26" fill="#e0d9c4"/>
+        <!-- roof (blue slate) -->
+        <rect x="9" y="10" width="46" height="12" fill="#3f5876"/>
+        <g fill="#374d69">
+          <rect x="9" y="13" width="46" height="1"/>
+          <rect x="9" y="16" width="46" height="1"/>
+          <rect x="9" y="19" width="46" height="1"/>
+        </g>
+        <!-- windows -->
+        <g>
+          <rect x="16" y="24" width="8" height="8" fill="#a2d5ff"/>
+          <rect x="40" y="24" width="8" height="8" fill="#a2d5ff"/>
+          <rect x="20" y="24" width="1" height="8" fill="#78a6c7"/>
+          <rect x="44" y="24" width="1" height="8" fill="#78a6c7"/>
+        </g>
+        <!-- door with steps -->
+        <rect x="30" y="28" width="8" height="18" fill="#6e3e2b"/>
+        <rect x="30" y="44" width="8" height="2" fill="#5f3726"/>
+        <rect x="29" y="46" width="10" height="2" fill="#b7a88e"/>
+        <rect x="28" y="48" width="12" height="2" fill="#a4967c"/>
+        <rect x="35" y="37" width="1" height="2" fill="#d9c07c"/>
+        <!-- porch posts -->
+        <rect x="12" y="42" width="2" height="10" fill="#7f5a39"/>
+        <rect x="50" y="42" width="2" height="10" fill="#7f5a39"/>
+      </svg>
+    </figure>
+
+    <!-- 3) Brown thatch hut with circular skylight -->
+    <figure class="cell">
+      <svg viewBox="0 0 64 64" aria-label="Brown thatch hut">
+        <rect width="64" height="64" fill="#78ad5e"/>
+        <rect x="4" y="6" width="2" height="2" fill="#6aa159"/>
+        <rect x="42" y="10" width="2" height="2" fill="#6aa159"/>
+        <rect x="12" y="32" width="46" height="24" fill="#00000022"/>
+        <!-- circular base suggestion (ring of stones) -->
+        <g fill="#bcb7aa">
+          <rect x="14" y="18" width="4" height="2"/>
+          <rect x="46" y="18" width="4" height="2"/>
+          <rect x="12" y="22" width="2" height="2"/>
+          <rect x="52" y="22" width="2" height="2"/>
+        </g>
+        <!-- walls -->
+        <rect x="14" y="22" width="36" height="26" fill="#cbb089"/>
+        <!-- door -->
+        <rect x="28" y="30" width="8" height="18" fill="#724a2e"/>
+        <rect x="34" y="38" width="1" height="2" fill="#e3c586"/>
+        <!-- thatch roof -->
+        <rect x="10" y="14" width="44" height="10" fill="#a98547"/>
+        <g fill="#997a40">
+          <rect x="10" y="16" width="44" height="1"/>
+          <rect x="10" y="18" width="44" height="1"/>
+          <rect x="10" y="20" width="44" height="1"/>
+        </g>
+        <!-- skylight -->
+        <rect x="30" y="16" width="4" height="4" fill="#7fb7e6"/>
+        <rect x="30" y="16" width="4" height="1" fill="#9ed0f5"/>
+        <!-- wood struts -->
+        <rect x="14" y="22" width="1" height="26" fill="#a17a58"/>
+        <rect x="49" y="22" width="1" height="26" fill="#a17a58"/>
+      </svg>
+    </figure>
+
+    <!-- 4) Stone house with green copper roof -->
+    <figure class="cell">
+      <svg viewBox="0 0 64 64" aria-label="Stone house with green roof">
+        <rect width="64" height="64" fill="#80b467"/>
+        <!-- shadow -->
+        <rect x="16" y="30" width="40" height="26" fill="#00000022"/>
+        <!-- walls (stone) -->
+        <rect x="14" y="18" width="36" height="28" fill="#c9c9c9"/>
+        <!-- stone pattern -->
+        <g fill="#b6b6b6">
+          <rect x="16" y="20" width="6" height="3"/>
+          <rect x="24" y="21" width="8" height="3"/>
+          <rect x="34" y="20" width="6" height="3"/>
+          <rect x="42" y="22" width="6" height="3"/>
+          <rect x="18" y="26" width="8" height="3"/>
+          <rect x="30" y="26" width="6" height="3"/>
+          <rect x="40" y="26" width="8" height="3"/>
+          <rect x="16" y="32" width="6" height="3"/>
+          <rect x="26" y="32" width="10" height="3"/>
+          <rect x="40" y="32" width="8" height="3"/>
+        </g>
+        <!-- copper roof -->
+        <rect x="12" y="10" width="40" height="10" fill="#2f7d69"/>
+        <g fill="#2a6f5e">
+          <rect x="12" y="12" width="40" height="1"/>
+          <rect x="12" y="14" width="40" height="1"/>
+          <rect x="12" y="16" width="40" height="1"/>
+          <rect x="12" y="18" width="40" height="1"/>
+        </g>
+        <rect x="12" y="10" width="40" height="1" fill="#3a8f7a"/>
+        <!-- windows -->
+        <rect x="18" y="24" width="8" height="8" fill="#a9dcff"/>
+        <rect x="38" y="24" width="8" height="8" fill="#a9dcff"/>
+        <rect x="22" y="24" width="1" height="8" fill="#7cb0cc"/>
+        <rect x="42" y="24" width="1" height="8" fill="#7cb0cc"/>
+        <!-- door -->
+        <rect x="28" y="30" width="8" height="16" fill="#6a4631"/>
+        <rect x="33" y="38" width="1" height="2" fill="#d6c48a"/>
+        <!-- flower box -->
+        <rect x="18" y="33" width="8" height="2" fill="#7b5a3d"/>
+        <rect x="18" y="31" width="8" height="2" fill="#9bd27d"/>
+        <rect x="38" y="33" width="8" height="2" fill="#7b5a3d"/>
+        <rect x="38" y="31" width="8" height="2" fill="#9bd27d"/>
+      </svg>
+    </figure>
+
+    <!-- 5) Long barn with orange tiles -->
+    <figure class="cell">
+      <svg viewBox="0 0 64 64" aria-label="Long barn with orange tiles">
+        <rect width="64" height="64" fill="#76aa5d"/>
+        <rect x="8" y="34" width="48" height="22" fill="#00000022"/>
+        <!-- walls -->
+        <rect x="8" y="22" width="48" height="24" fill="#caa071"/>
+        <!-- doors -->
+        <rect x="12" y="28" width="10" height="14" fill="#7d4f34"/>
+        <rect x="42" y="28" width="10" height="14" fill="#7d4f34"/>
+        <rect x="21" y="35" width="1" height="2" fill="#d8c28b"/>
+        <rect x="51" y="35" width="1" height="2" fill="#d8c28b"/>
+        <!-- roof (orange tiles) -->
+        <rect x="6" y="12" width="52" height="10" fill="#c76a27"/>
+        <g fill="#b85f22">
+          <rect x="6" y="14" width="52" height="1"/>
+          <rect x="6" y="16" width="52" height="1"/>
+          <rect x="6" y="18" width="52" height="1"/>
+        </g>
+        <!-- side windows -->
+        <rect x="26" y="28" width="12" height="6" fill="#89c7f4"/>
+        <rect x="26" y="28" width="12" height="1" fill="#a9dafb"/>
+        <!-- hay bales -->
+        <rect x="30" y="40" width="6" height="4" fill="#e9d27a"/>
+        <rect x="32" y="39" width="2" height="1" fill="#fff2a0"/>
+      </svg>
+    </figure>
+
+    <!-- 6) Small teal cabin with deck and logs -->
+    <figure class="cell">
+      <svg viewBox="0 0 64 64" aria-label="Teal cabin with deck">
+        <rect width="64" height="64" fill="#77ac60"/>
+        <rect x="14" y="34" width="40" height="22" fill="#00000022"/>
+        <!-- deck -->
+        <rect x="12" y="42" width="40" height="10" fill="#7b5a3c"/>
+        <rect x="12" y="42" width="40" height="1" fill="#8c6847"/>
+        <!-- walls -->
+        <rect x="16" y="22" width="32" height="20" fill="#3d8b8b"/>
+        <!-- trim -->
+        <rect x="16" y="22" width="32" height="2" fill="#479898"/>
+        <rect x="16" y="40" width="32" height="2" fill="#347c7c"/>
+        <!-- roof -->
+        <rect x="14" y="14" width="36" height="8" fill="#30515f"/>
+        <g fill="#2a4753">
+          <rect x="14" y="16" width="36" height="1"/>
+          <rect x="14" y="18" width="36" height="1"/>
+        </g>
+        <!-- door & window -->
+        <rect x="28" y="28" width="8" height="14" fill="#6a4833"/>
+        <rect x="20" y="28" width="6" height="6" fill="#a6ddff"/>
+        <rect x="20" y="28" width="6" height="1" fill="#c0e9ff"/>
+        <rect x="35" y="35" width="1" height="2" fill="#d8c07c"/>
+        <!-- deck posts -->
+        <rect x="14" y="42" width="2" height="10" fill="#6f5137"/>
+        <rect x="50" y="42" width="2" height="10" fill="#6f5137"/>
+        <!-- stacked logs -->
+        <rect x="46" y="46" width="4" height="2" fill="#8a673f"/>
+        <rect x="50" y="46" width="4" height="2" fill="#8a673f"/>
+        <rect x="48" y="44" width="4" height="2" fill="#8a673f"/>
+      </svg>
+    </figure>
+
+  </div>
+</body>
+</html>
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>2×6 Jungle Foliage — Mouse-Aim Wind + WASD Pan</title>
+<style>
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    display: grid;
+    place-items: center;
+    background: #0f0f12;
+    color: #d7d7db;
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  }
+  canvas {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    width: min(95vmin, 980px);
+    height: min(95vmin, 520px);
+    background: #0b0d0e radial-gradient(80% 140% at 50% 0%, rgba(50,120,90,.15), rgba(0,0,0,0));
+    display: block;
+    border-radius: 12px;
+    box-shadow: inset 0 0 0 1px #26262e;
+  }
+  .hint {
+    position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%);
+    font-size: 12px; opacity: .6; letter-spacing: .2px;
+    user-select: none;
+  }
+</style>
+</head>
+<body>
+<canvas id="game" width="1200" height="640" aria-label="2x6 jungle foliage grid"></canvas>
+<div class="hint">WASD: pan • Move mouse: wind direction • P: recolor</div>
+<script>
+/* ================================
+   Setup
+================================ */
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+const W = canvas.width, H = canvas.height;
+
+// World camera (WASD) and wind (mouse angle) — “same control mechanism”
+const cam = { x: 0, y: 0, angle: 0, speed: 160, rotSpeed: Math.PI }; // angle unused for camera, kept for parity
+const keys = new Set();
+let mouse = { x: W/2, y: H/2 };
+
+canvas.tabIndex = 0;
+canvas.addEventListener('mousemove', e => {
+  const r = canvas.getBoundingClientRect();
+  mouse.x = (e.clientX - r.left) * (canvas.width / r.width);
+  mouse.y = (e.clientY - r.top)  * (canvas.height / r.height);
+});
+canvas.addEventListener('keydown', e => { keys.add(e.key.toLowerCase()); });
+canvas.addEventListener('keyup', e => { keys.delete(e.key.toLowerCase()); });
+
+/* ================================
+   Palette
+================================ */
+function randInt(a,b){ return (a + Math.floor(Math.random()*(b-a+1))); }
+function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+
+function randJunglePalette() {
+  const h = 110 + randInt(-15, 25);   // greenish hue
+  const s = 45 + randInt(-10, 15);
+  const l = 22 + randInt(-6, 10);
+  return {
+    leafDark:  `hsl(${h} ${s+5}% ${clamp(l-6, 8, 60)}%)`,
+    leaf:      `hsl(${h} ${s+8}% ${l}%)`,
+    leafLight: `hsl(${h} ${s+15}% ${clamp(l+10, 10, 70)}%)`,
+    stem:      `hsl(${h-25} ${clamp(s-10,10,70)}% ${clamp(l-10,5,50)}%)`,
+    bloom:     `hsl(${(h+260)%360} 60% 65%)`,
+    fruit:     `hsl(${(h+90)%360} 70% 55%)`
+  };
+}
+let PAL = randJunglePalette();
+
+/* ================================
+   Grid + Tiles
+================================ */
+const COLS = 6, ROWS = 2;
+const TILE_PX = 96;       // internal pixel canvas (square)
+const SCALE = 3/2;        // onscreen up-scale inside tile
+const GAP = 8;
+const totalW = COLS * (TILE_PX*SCALE) + (COLS+1)*GAP;
+const totalH = ROWS * (TILE_PX*SCALE) + (ROWS+1)*GAP;
+const startX = (W - totalW)/2;
+const startY = (H - totalH)/2;
+
+// Each tile uses its own offscreen canvas
+function makeTileCanvas() {
+  const c = document.createElement('canvas');
+  c.width = TILE_PX; c.height = TILE_PX;
+  const tctx = c.getContext('2d');
+  tctx.imageSmoothingEnabled = false;
+  return { c, tctx };
+}
+
+/* ================================
+   Pixel helpers
+================================ */
+function px(g,x,y,w=1,h=1,color='#fff'){ g.fillStyle = color; g.fillRect(x|0,y|0,w|0,h|0); }
+function line(g,x1,y1,x2,y2,color){
+  g.strokeStyle = color; g.lineWidth = 1;
+  g.beginPath(); g.moveTo(x1+.5,y1+.5); g.lineTo(x2+.5,y2+.5); g.stroke();
+}
+
+/* ================================
+   Procedural foliage primitives
+================================ */
+function drawLeaf(g, cx, cy, len, width, angle, colMid, colEdge) {
+  // Simple mirrored bezier-ish poly using pixels
+  const steps = Math.max(6, Math.floor(len/3));
+  for (let i=0;i<=steps;i++){
+    const t = i/steps;
+    const w = width*(1 - Math.pow(t,1.5));
+    const dx = Math.cos(angle)*len*t;
+    const dy = Math.sin(angle)*len*t;
+    const x = cx + dx, y = cy + dy;
+    px(g, x-w, y, w, 1, colEdge);
+    px(g, x, y, 1, 1, colMid);
+    px(g, x+1, y, w, 1, colEdge);
+  }
+}
+function drawStem(g, x1,y1,x2,y2, col) {
+  g.fillStyle = col;
+  const steps = Math.hypot(x2-x1,y2-y1)|0;
+  for (let i=0;i<=steps;i++){
+    const t = i/steps;
+    const x = Math.round(x1 + (x2-x1)*t);
+    const y = Math.round(y1 + (y2-y1)*t);
+    g.fillRect(x, y, 1, 1);
+  }
+}
+
+/* ================================
+   12 Foliage Types (functions)
+   Each returns an update(state) to animate sway
+================================ */
+function makePalmFronds(tile, seed=0){
+  const { tctx:g } = tile;
+  const cx=TILE_PX/2, cy=TILE_PX*0.58;
+  const blades = 7;
+  return (time, windA, windMag)=>{
+    g.clearRect(0,0,TILE_PX,TILE_PX);
+    // trunk
+    drawStem(g, cx, cy, cx, cy-18, PAL.stem);
+    for(let i=0;i<blades;i++){
+      const a = -Math.PI/2 + (i-(blades-1)/2)*(Math.PI/10);
+      const sway = Math.sin(time*0.004 + i*0.7) * 0.25 + Math.cos(windA - a)*0.2*windMag;
+      const ang = a + sway;
+      drawLeaf(g, cx, cy-18, 28, 4, ang, PAL.leaf, PAL.leafLight);
+    }
+  };
+}
+function makeBroadleafCluster(tile){
+  const { tctx:g } = tile;
+  const cx=TILE_PX/2, cy=TILE_PX*0.62;
+  const rings = 4;
+  return (time, windA, windMag)=>{
+    g.clearRect(0,0,TILE_PX,TILE_PX);
+    for(let r=0;r<rings;r++){
+      const count = 10 + r*3;
+      const rad = 8 + r*5;
+      for(let i=0;i<count;i++){
+        const a = (i/count)*Math.PI*2;
+        const sway = (Math.sin(time*0.003 + r*0.9 + i*0.5)+1)*0.5 * 0.35*windMag;
+        const ang = a + sway + (windA - Math.PI/2)*0.05;
+        const x = cx + Math.cos(a)*rad;
+        const y = cy + Math.sin(a)*rad*0.7 - r;
+        drawLeaf(g, x, y, 10+r*2, 2, ang, PAL.leaf, PAL.leafLight);
+      }
+    }
+  };
+}
+function makeFern(tile){
+  const { tctx:g } = tile;
+  const baseX=TILE_PX*0.52, baseY=TILE_PX*0.68;
+  return (time, windA, windMag)=>{
+    g.clearRect(0,0,TILE_PX,TILE_PX);
+    for(let b=0;b<3;b++){
+      const stemLen = 34 - b*6;
+      const stemA = -Math.PI/2 + (b-1)*0.25 + Math.sin(time*0.004+b)*0.08 + Math.cos(windA)*0.1*windMag;
+      // stem
+      let x=baseX+b*2, y=baseY;
+      for(let i=0;i<stemLen;i++){
+        x += Math.cos(stemA)/1.6; y += Math.sin(stemA)/1.6;
+        px(g,x,y,1,1,PAL.stem);
+        if (i>6 && i%2===0){
+          const leafA = stemA - Math.PI/2 + (Math.random()*0.1-0.05);
+          const leafB = stemA + Math.PI/2 + (Math.random()*0.1-0.05);
+          drawLeaf(g, x, y, 6, 1, leafA, PAL.leafDark, PAL.leaf);
+          drawLeaf(g, x, y, 6, 1, leafB, PAL.leafDark, PAL.leaf);
+        }
+      }
+    }
+  };
+}
+function makeBamboo(tile){
+  const { tctx:g } = tile;
+  const stalks = [TILE_PX*0.42, TILE_PX*0.55, TILE_PX*0.68];
+  return (time, windA, windMag)=>{
+    g.clearRect(0,0,TILE_PX,TILE_PX);
+    stalks.forEach((sx,i)=>{
+      const lean = Math.cos(time*0.003 + i)*0.1 + Math.cos(windA)*0.15*windMag;
+      for(let y=TILE_PX*0.75; y>20; y--){
+        const xx = sx + (TILE_PX*0.75 - y)*lean*0.03;
+        px(g,xx,y,1,1,PAL.stem);
+        if (y%10===0){ // node
+          px(g,xx-1,y,3,1,PAL.leafLight);
+        }
+        if (y%7===0){ // small leaf spur
+          const dir = (i%2?1:-1);
+          drawLeaf(g, xx, y, 7, 1, (-Math.PI/2)+dir*0.9, PAL.leaf, PAL.leafLight);
+        }
+      }
+    });
+  };
+}
+function makeVines(tile){
+  const { tctx:g } = tile;
+  const anchors = [20, 40, 60, 78];
+  return (time, windA, windMag)=>{
+    g.clearRect(0,0,TILE_PX,TILE_PX);
+    anchors.forEach((ax,i)=>{
+      let x=ax, y=8;
+      const length = 70;
+      for(let k=0;k<length;k++){
+        const sway = Math.sin((k*0.15) + time*0.004 + i)*1.1 + Math.cos(windA)*1.5*windMag;
+        x = ax + sway* (k/length);
+        y = 8 + k*0.9;
+        px(g, x, y, 1, 1, PAL.stem);
+        if (k%8===0){
+          drawLeaf(g, x, y, 8, 1, Math.PI, PAL.leaf, PAL.leafLight);
+          drawLeaf(g, x, y, 8, 1, 0,      PAL.leaf, PAL.leafLight);
+        }
+      }
+    });
+  };
+}
+function makeBanana(tile){
+  const { tctx:g } = tile;
+  const cx=TILE_PX*0.5, cy=TILE_PX*0.7;
+  return (time, windA, windMag)=>{
+    g.clearRect(0,0,TILE_PX,TILE_PX);
+    drawStem(g, cx, cy, cx, cy-16, PAL.stem);
+    for(let i=0;i<5;i++){
+      const a = -Math.PI/2 + (i-2)*0.22;
+      const bend = Math.sin(time*0.003 + i)*0.15 + Math.sin(windA - a)*0.25*windMag;
+      drawLeaf(g, cx, cy-16, 36, 5, a + bend, PAL.leafDark, PAL.leafLight);
+    }
+  };
+}
+function makeBush(tile){
+  const { tctx:g } = tile;
+  const cx=TILE_PX/2, cy=TILE_PX*0.72;
+  return (time, windA, windMag)=>{
+    g.clearRect(0,0,TILE_PX,TILE_PX);
+    // puff balls of leaves
+    for(let r=0;r<5;r++){
+      const rad=10+r*3;
+      for(let i=0;i<20;i++){
+        const a = (i/20)*Math.PI*2;
+        const sway = Math.cos(time*0.002 + i*0.3)*0.2 + Math.cos(windA-a)*0.2*windMag;
+        const x=cx+Math.cos(a+ sway)*rad;
+        const y=cy+Math.sin(a+ sway)*rad*0.7;
+        px(g, x, y, 2, 2, r<2?PAL.leaf:PAL.leafLight);
+      }
+    }
+  };
+}
+function makePhilodendron(tile){
+  const { tctx:g } = tile;
+  const centers = [ [46,64],[54,72],[60,60],[38,70] ];
+  return (time, windA, windMag)=>{
+    g.clearRect(0,0,TILE_PX,TILE_PX);
+    centers.forEach((c,i)=>{
+      const [cx,cy]=c;
+      const a = -Math.PI/2 + i*0.9;
+      const t = time*0.004 + i;
+      const bend = Math.sin(t)*0.18 + Math.cos(windA)*0.22*windMag;
+      drawLeaf(g, cx, cy, 24, 5, a+bend, PAL.leaf, PAL.leafLight);
+      px(g, cx, cy, 1,1, PAL.stem);
+    });
+  };
+}
+function makeReeds(tile){
+  const { tctx:g } = tile;
+  const bases = Array.from({length:9}, (_,i)=>20+i*7);
+  return (time, windA, windMag)=>{
+    g.clearRect(0,0,TILE_PX,TILE_PX);
+    bases.forEach((bx,i)=>{
+      const lean = Math.sin(time*0.003 + i)*0.2 + Math.cos(windA)*0.25*windMag;
+      for(let y=TILE_PX*0.78; y>18; y--){
+        const xx = bx + (TILE_PX*0.78 - y)*lean*0.06;
+        px(g,xx,y,1,1,PAL.stem);
+        if (y%11===0) drawLeaf(g, xx, y, 7, 1, -Math.PI/2 + (i%2?0.8:-0.8), PAL.leaf, PAL.leafLight);
+      }
+    });
+  };
+}
+function makeFiddleLeaf(tile){
+  const { tctx:g } = tile;
+  const trunks = [ [TILE_PX*0.5, TILE_PX*0.78] ];
+  return (time, windA, windMag)=>{
+    g.clearRect(0,0,TILE_PX,TILE_PX);
+    trunks.forEach(([bx,by])=>{
+      drawStem(g,bx,by,bx,by-26,PAL.stem);
+      for(let i=0;i<6;i++){
+        const y=by-6-i*4, dir=i%2?-1:1;
+        const a = dir*0.9 + Math.sin(time*0.003+i)*0.15 + Math.sin(windA)*0.2*windMag;
+        drawLeaf(g, bx, y, 12, 4, a, PAL.leafDark, PAL.leafLight);
+      }
+    });
+  };
+}
+function makeMonstera(tile){
+  const { tctx:g } = tile;
+  const cx=TILE_PX*0.5, cy=TILE_PX*0.68;
+  return (time, windA, windMag)=>{
+    g.clearRect(0,0,TILE_PX,TILE_PX);
+    for(let i=0;i<4;i++){
+      const a = -Math.PI/2 + (i-1.5)*0.5;
+      const cut = 3 + i;
+      const bend = Math.sin(time*0.002+i)*0.2 + Math.cos(windA-a)*0.2*windMag;
+      // draw "split" by skipping pixels in mid
+      const steps = 24, len=28, width=6, ang=a+bend;
+      for(let s=0;s<=steps;s++){
+        const t=s/steps;
+        const dx = Math.cos(ang)*len*t, dy=Math.sin(ang)*len*t;
+        const w = width*(1 - Math.pow(t,1.4));
+        for(let k=-w;k<=w;k++){
+          if (Math.abs(k)<1 && t>0.3 && (s%cut===0)) continue; // holes
+          px(g, cx+dx+k, cy+dy, 1,1, k===0?PAL.leaf:PAL.leafLight);
+        }
+      }
+      drawStem(g, cx, cy, cx+Math.cos(a)*14, cy+Math.sin(a)*14, PAL.stem);
+    }
+  };
+}
+function makeBougainvillea(tile){
+  const { tctx:g } = tile;
+  const cx=TILE_PX*0.48, cy=TILE_PX*0.72;
+  return (time, windA, windMag)=>{
+    g.clearRect(0,0,TILE_PX,TILE_PX);
+    for(let b=0;b<3;b++){
+      const a = -Math.PI/2 + (b-1)*0.4 + Math.sin(time*0.003+b)*0.12 + Math.cos(windA)*0.15*windMag;
+      drawStem(g,cx,cy,cx+Math.cos(a)*18, cy+Math.sin(a)*18, PAL.stem);
+      for(let i=0;i<7;i++){
+        const t=i/7, x=cx+Math.cos(a)*18*t, y=cy+Math.sin(a)*18*t;
+        drawLeaf(g,x,y,9,2,a+Math.PI/2, PAL.leafDark, PAL.leafLight);
+        if (i%3===1) px(g, x+1, y-1, 2,2, PAL.bloom);
+      }
+    }
+  };
+}
+function makePeperomia(tile){
+  const { tctx:g } = tile;
+  const cx=TILE_PX/2, cy=TILE_PX*0.75;
+  return (time, windA, windMag)=>{
+    g.clearRect(0,0,TILE_PX,TILE_PX);
+    for(let r=0;r<3;r++){
+      for(let i=0;i<10;i++){
+        const a = (i/10)*Math.PI*2;
+        const sway = Math.cos(time*0.003 + r + i)*0.15 + Math.cos(windA-a)*0.2*windMag;
+        const x=cx+Math.cos(a)*(6+r*5);
+        const y=cy+Math.sin(a)*(4+r*3);
+        drawLeaf(g,x,y,8,3,a+sway, PAL.leaf, PAL.leafLight);
+      }
+    }
+  };
+}
+function makeBerryBush(tile){
+  const { tctx:g } = tile;
+  const cx=TILE_PX/2, cy=TILE_PX*0.72;
+  return (time, windA, windMag)=>{
+    g.clearRect(0,0,TILE_PX,TILE_PX);
+    for(let i=0;i<36;i++){
+      const a = (i/36)*Math.PI*2;
+      const r = 16 + (i%3);
+      const sway = Math.sin(time*0.002 + i)*0.12 + Math.cos(windA-a)*0.18*windMag;
+      const x=cx+Math.cos(a+sway)*r;
+      const y=cy+Math.sin(a+sway)*r*0.7;
+      px(g, x, y, 2, 2, (i%7===0)?PAL.fruit:PAL.leaf);
+    }
+  };
+}
+
+/* ================================
+   Build the 12 tiles
+================================ */
+const foliageMakers = [
+  makePalmFronds,
+  makeBroadleafCluster,
+  makeFern,
+  makeBamboo,
+  makeVines,
+  makeBanana,
+  makeBush,
+  makePhilodendron,
+  makeReeds,
+  makeFiddleLeaf,
+  makeMonstera,
+  makeBougainvillea,
+  // (Peperomia and BerryBush available if you want to swap)
+];
+
+const tiles = [];
+for (let r=0;r<ROWS;r++){
+  for (let c=0;c<COLS;c++){
+    const tile = makeTileCanvas();
+    const idx = r*COLS + c;
+    const maker = foliageMakers[idx % foliageMakers.length];
+    tile.update = maker(tile, idx);
+    tiles.push(tile);
+  }
+}
+
+/* ================================
+   Draw helpers
+================================ */
+function drawTile(t, x, y, scale){
+  const w = t.c.width, h = t.c.height;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(scale, scale);
+  ctx.drawImage(t.c, 0, 0);
+  ctx.restore();
+}
+function drawGridBackdrop() {
+  ctx.save();
+  ctx.globalAlpha = 0.08;
+  ctx.fillStyle = '#000';
+  for (let i = 0; i <= W; i += 32) ctx.fillRect(i, 0, 1, H);
+  for (let j = 0; j <= H; j += 32) ctx.fillRect(0, j, W, 1);
+  ctx.restore();
+  // subtle vignette
+  const grd = ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*0.2, W/2,H/2, Math.max(W,H)*0.7);
+  grd.addColorStop(0,'rgba(0,0,0,0)');
+  grd.addColorStop(1,'rgba(0,0,0,0.6)');
+  ctx.fillStyle = grd; ctx.fillRect(0,0,W,H);
+}
+
+/* ================================
+   Main loop
+   - WASD pans the whole garden (cam.x, cam.y)
+   - Mouse angle controls wind direction; speed of motion adds wind magnitude
+================================ */
+let last = performance.now();
+function loop(now){
+  const dt = Math.min(0.033, (now-last)/1000); last = now;
+
+  // WASD pan (like body movement)
+  const fx = (keys.has('d')?1:0) + (keys.has('a')?-1:0);
+  const fy = (keys.has('s')?1:0) + (keys.has('w')?-1:0);
+  if (fx || fy){
+    const ang = Math.atan2(fy, fx);
+    cam.x += Math.cos(ang)*cam.speed*dt;
+    cam.y += Math.sin(ang)*cam.speed*dt;
+  }
+
+  // “Turret” = wind angle (toward mouse)
+  const dx = mouse.x - (W/2), dy = mouse.y - (H/2);
+  const windAngle = Math.atan2(dy, dx);
+  const windMag = clamp(Math.hypot(dx,dy) / (Math.max(W,H)*0.5), 0, 1);
+
+  // Clear + backdrop
+  ctx.clearRect(0,0,W,H);
+  drawGridBackdrop();
+
+  // Draw 2x6 tiles with slight parallax based on cam
+  let index=0;
+  for (let r=0;r<ROWS;r++){
+    for (let c=0;c<COLS;c++){
+      const tile = tiles[index++];
+      // Update tile animation
+      tile.update(now, windAngle, windMag);
+
+      // Parallax offsets (layered jungle feel)
+      const layer = (r*COLS + c) % 3; // 0..2
+      const par = [0.15, 0.3, 0.5][layer];
+      const pxOff = -cam.x*par, pyOff = -cam.y*par;
+
+      const x = startX + GAP + c*(TILE_PX*SCALE + GAP) + pxOff;
+      const y = startY + GAP + r*(TILE_PX*SCALE + GAP) + pyOff;
+
+      // tile card
+      ctx.save();
+      ctx.translate(x-4, y-4);
+      ctx.fillStyle = 'rgba(255,255,255,0.03)';
+      ctx.fillRect(0,0,TILE_PX*SCALE+8, TILE_PX*SCALE+8);
+      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+      ctx.strokeRect(0.5,0.5,TILE_PX*SCALE+7, TILE_PX*SCALE+7);
+      ctx.restore();
+
+      drawTile(tile, x, y, SCALE);
+    }
+  }
+
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+/* ================================
+   Interactions
+================================ */
+window.addEventListener('keydown', (e)=>{
+  if (e.key.toLowerCase() === 'p'){ PAL = randJunglePalette(); } // recolor globally
+});
+</script>
+</body>
+</html>
+

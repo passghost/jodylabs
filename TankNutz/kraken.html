@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Kraken Tank Robot — 64×64 Top-Down Pixel Sprite</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  html, body { height: 100%; }
+  body{
+    margin:0;
+    display:grid;
+    place-items:center;
+    background:#0f0f12; /* just a stage; sprite stays a single connected element */
+    color:#d7d7db;
+    font:14px ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial;
+  }
+  .wrap{
+    display:grid; gap:.5rem; place-items:center;
+  }
+  canvas{
+    width:512px; height:512px; /* 8× upscale */
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    box-shadow: 0 10px 40px rgba(0,0,0,.35);
+    border-radius: 12px;
+    background: transparent; /* sprite has transparent BG */
+  }
+  .meta{opacity:.7}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <canvas id="c" width="64" height="64" aria-label="Kraken tank robot sprite"></canvas>
+  <div class="meta">64×64 · 6 frames @ 120ms · pivot center</div>
+</div>
+
+<script>
+/* ---------- palette ---------- */
+const P = {
+  ink:      "#0b0d0e",
+  abyss:    "#0a2a2f",
+  steel:    "#2f4f4f",
+  slate:    "#4f6a6d",
+  hi:       "#b0c7c9",
+  rim:      "#8fe3f7",
+  red:      "#ff1e2d",
+  ember:    "#ff7a00"
+};
+
+/* ---------- canvas setup ---------- */
+const c = document.getElementById("c");
+const ctx = c.getContext("2d", { alpha: true, desynchronized: false });
+
+/* mouse-driven aim angle (radians) */
+let aimAngle = 0; // default points right
+function updateAimFromEvent(e){
+  const rect = c.getBoundingClientRect();
+  const mx = (e.clientX - rect.left) * (c.width / rect.width);
+  const my = (e.clientY - rect.top)  * (c.height / rect.height);
+  const cx = c.width/2, cy = c.height/2;
+  aimAngle = Math.atan2(my - cy, mx - cx);
+}
+
+c.addEventListener('mousemove', updateAimFromEvent);
+c.addEventListener('mouseenter', updateAimFromEvent);
+
+/* pixel helper */
+function px(x,y, color){
+  // clamp to canvas and draw a 1×1 pixel at integer coords
+  if(x<0||y<0||x>=64||y>=64) return;
+  ctx.fillStyle = color;
+  ctx.fillRect(x|0, y|0, 1, 1);
+}
+
+/* filled disc in pixel space */
+function disc(cx, cy, r, color){
+  for(let y = -r; y <= r; y++){
+    const span = Math.floor(Math.sqrt(r*r - y*y));
+    for(let x = -span; x <= span; x++){
+      px(cx + x, cy + y, color);
+    }
+  }
+}
+
+/* draw a tapered "tentacle" made of touching blocks so it stays a single element */
+function tentacle(cx, cy, baseAngle, tPhase, bodyRadius, frame){
+  // 8–9 touching segments, tapering; sway by sinusoid so it coils a bit
+  const segs = 9;
+  for(let s=0; s<segs; s++){
+    const progress = s / (segs-1);
+    const throb = Math.sin((frame + s*0.6 + tPhase) * 0.9);
+    const bend  = 0.35 * throb * (0.3 + 0.7*progress); // more bend at the tip
+    const a = baseAngle + bend;
+
+    // distance from center grows per segment; first segment touches the hull edge
+    const dist = bodyRadius + 1 + s*3;
+
+    const x = Math.round(cx + Math.cos(a) * dist);
+    const y = Math.round(cy + Math.sin(a) * dist);
+
+    // size tapers from 3×3 down to 1×1; keep overlap (touching) to avoid floating pixels
+    const size = (s < 2) ? 3 : (s < 5 ? 2 : 1);
+
+    // armor color ramp
+    const col = (s < 2) ? P.slate : (s < 5 ? P.steel : P.abyss);
+
+    for(let dy=0; dy<size; dy++){
+      for(let dx=0; dx<size; dx++){
+        px(x + dx - (size>>1), y + dy - (size>>1), col);
+      }
+    }
+
+    // knuckle highlight on outer curve for chunky look (sparse to avoid noise)
+    if(size >= 2 && (s % 2 === 0)){
+      const hx = Math.round(x + Math.cos(a + Math.PI/2));
+      const hy = Math.round(y + Math.sin(a + Math.PI/2));
+      px(hx, hy, P.hi);
+    }
+  }
+}
+
+/* thin barrel drawn as a connected line of pixels */
+function barrel(cx, cy, angle, len, color){
+  for(let i=0; i<len; i++){
+    const x = Math.round(cx + Math.cos(angle) * (6 + i));
+    const y = Math.round(cy + Math.sin(angle) * (6 + i));
+    px(x, y, color);
+    // thicken slightly near base so it reads as connected
+    if(i < 2) { px(x+1, y, color); px(x, y+1, color); }
+  }
+}
+
+/* subtle dither dot (NW light) */
+function ditherDot(x,y){
+  // checker pattern: only draw on (x+y) even
+  return ((x + y) & 1) === 0;
+}
+
+/* main draw for a single frame (0..5) */
+function drawFrame(frameIdx){
+  ctx.clearRect(0,0,64,64);
+
+  const cx=32, cy=32;
+
+  // ----- armored hull: layered discs for chunky shading -----
+  disc(cx, cy, 14, P.steel);     // outer plate
+  disc(cx+1, cy+2, 13, P.slate); // general body shade (light from NW)
+  disc(cx, cy, 11, P.abyss);     // inner core
+  disc(cx-1, cy-2, 9,  P.slate); // raised dome hint
+  disc(cx-2, cy-3, 7,  P.hi);    // bright crown
+
+  // rim light along NW edge
+  for(let y=-14; y<=14; y++){
+    const span = Math.floor(Math.sqrt(14*14 - y*y));
+    for(let x=-span; x<=span; x++){
+      const rr = x*x + y*y;
+      if(rr <= 14*14 && rr >= (14*14 - 18) && (x + y) < -4){
+        px(cx + x, cy + y, P.rim);
+      }
+    }
+  }
+
+  // subtle surface dither (cold highlight) — only inside mid ring and NW side
+  for(let y=-12; y<=12; y++){
+    const span = Math.floor(Math.sqrt(12*12 - y*y));
+    for(let x=-span; x<=span; x++){
+      const xx=cx+x, yy=cy+y;
+      if((x + y) < -3 && ditherDot(xx,yy) && (x*x+y*y) > 6*6){
+        px(xx, yy, P.hi);
+      }
+    }
+  }
+
+  // ----- turret dome + scan -----
+  const angle = aimAngle;
+  disc(cx, cy, 6, P.ink);
+  disc(cx, cy, 4, P.abyss);
+  // hatch highlight
+  for(let a=0; a<6; a++){
+    px(cx - 2 + a%3, cy - 3 + (a/3|0), P.hi);
+  }
+  barrel(cx, cy, angle, 7, P.ink);
+
+  // ----- evil eyes (pulse) -----
+  const forward = angle;
+  const perp = forward + Math.PI/2;
+  const eyeDist = 10;
+  const eyeSpread = 3;
+  const pulse = (frameIdx % 6) < 3 ? P.red : P.ember;
+  const ex1 = Math.round(cx + Math.cos(forward)*eyeDist + Math.cos(perp)*eyeSpread);
+  const ey1 = Math.round(cy + Math.sin(forward)*eyeDist + Math.sin(perp)*eyeSpread);
+  const ex2 = Math.round(cx + Math.cos(forward)*eyeDist - Math.cos(perp)*eyeSpread);
+  const ey2 = Math.round(cy + Math.sin(forward)*eyeDist - Math.sin(perp)*eyeSpread);
+  // 2×2 blocks embedded in hull — stays connected
+  [ [ex1,ey1], [ex2,ey2] ].forEach(([x,y])=>{
+    px(x, y, pulse); px(x+1,y, pulse); px(x,y+1, pulse); px(x+1,y+1, pulse);
+    // tiny brow
+    px(x, y-1, P.ink); px(x+1, y-1, P.ink);
+  });
+
+  // ----- kraken tentacles (8) — always touching the hull edge -----
+  const baseR = 14; // start at hull edge so it's continuous
+  for(let k=0; k<8; k++){
+    const baseAngle = k * (Math.PI/4);
+    tentacle(cx, cy, baseAngle, k*0.7, baseR, frameIdx);
+  }
+
+  // ----- front glacis plate (tank vibe) -----
+  // simple wedge attached to hull on the facing direction (scan)
+  for(let i=0;i<6;i++){
+    const a = angle;
+    const r = baseR - 2 + i;
+    const x = Math.round(cx + Math.cos(a) * r);
+    const y = Math.round(cy + Math.sin(a) * r);
+    px(x, y, P.slate);
+    if(i<4){ px(x + Math.round(Math.cos(a+Math.PI/2)), y + Math.round(Math.sin(a+Math.PI/2)), P.slate); }
+  }
+}
+
+/* ---------- animation loop (6 frames @ 120ms) ---------- */
+let frame = 0;
+drawFrame(frame);
+setInterval(() => {
+  frame = (frame + 1) % 6;
+  drawFrame(frame);
+}, 120);
+</script>
+</body>
+</html>

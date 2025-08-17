@@ -1,0 +1,10 @@
+{
+  "name": "pixelarts",
+  "version": "1.0.0",
+  "description": "PixelArts static site with pixel_tank_game",
+  "scripts": {
+    "start": "http-server . -p 8080"
+  },
+  "author": "",
+  "license": "MIT"
+}

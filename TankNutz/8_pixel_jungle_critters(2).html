@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>8 Larger Jungle Animals — HTML only</title>
+<style>
+  :root {
+    --cell: 112px;   /* larger tile for bigger animals */
+    --bg: #0f1115;
+  }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    display: grid;
+    place-items: center;
+    background: var(--bg);
+  }
+  .board {
+    display: grid;
+    grid-template-columns: repeat(4, var(--cell));
+    grid-template-rows: repeat(2, var(--cell));
+    gap: 14px;
+  }
+  .sprite { display: grid; place-items: center; }
+  svg { width: var(--cell); height: var(--cell); shape-rendering: crispEdges; image-rendering: pixelated; }
+
+  /* --- individualized big-animal motion profiles --- */
+  /* Elephant: slow footfall sway + trunk nod */
+  .elephant { animation: ele-step 2.8s ease-in-out infinite; }
+  @keyframes ele-step {
+    0%   { transform: translateX(0) translateY(0) rotate(0deg); }
+    20%  { transform: translateX(2px) translateY(-2px) rotate(-1deg); }
+    40%  { transform: translateX(4px) translateY(0) rotate(0.6deg); }
+    60%  { transform: translateX(2px) translateY(-2px) rotate(-0.6deg); }
+    80%  { transform: translateX(0) translateY(0) rotate(0deg); }
+    100% { transform: translateX(0) translateY(0) rotate(0deg); }
+  }
+
+  /* Tiger: low prowl with tail flick */
+  .tiger { animation: tiger-prowl 2.2s ease-in-out infinite; }
+  @keyframes tiger-prowl {
+    0%   { transform: translateX(0) }
+    25%  { transform: translateX(6px) }
+    50%  { transform: translateX(10px) }
+    75%  { transform: translateX(6px) }
+    100% { transform: translateX(0) }
+  }
+  .t-tail { animation: tail-flick .8s ease-in-out infinite; transform-origin: 10px 10px; }
+  @keyframes tail-flick { 0%,100% { transform: rotate(0deg) } 50% { transform: rotate(10deg) } }
+
+  /* Gorilla: chest beat and mini hop */
+  .gorilla { animation: gorilla-beat 1.9s cubic-bezier(.34,1.56,.64,1) infinite; }
+  @keyframes gorilla-beat {
+    0%   { transform: translateY(0) }
+    12%  { transform: translateY(-8px) }
+    18%  { transform: translateY(0) }
+    24%  { transform: translateY(-5px) }
+    32%  { transform: translateY(0) }
+    60%  { transform: translateY(0) }
+    100% { transform: translateY(0) }
+  }
+
+  /* Crocodile: lateral slither + snap */
+  .croc { animation: croc-slither 2.4s linear infinite; }
+  @keyframes croc-slither {
+    0%   { transform: translateX(0) skewX(0deg) }
+    20%  { transform: translateX(4px) skewX(6deg) }
+    40%  { transform: translateX(8px) skewX(-6deg) }
+    60%  { transform: translateX(4px) skewX(6deg) }
+    80%  { transform: translateX(0) skewX(0deg) }
+    100% { transform: translateX(0) skewX(0deg) }
+  }
+
+  /* Hippo: heavy bob + yawn */
+  .hippo { animation: hippo-bob 2.6s ease-in-out infinite; }
+  @keyframes hippo-bob {
+    0%   { transform: translateY(0) }
+    25%  { transform: translateY(-6px) }
+    50%  { transform: translateY(0) }
+    75%  { transform: translateY(-4px) }
+    100% { transform: translateY(0) }
+  }
+
+  /* Rhino: stomp then small charge and settle */
+  .rhino { animation: rhino-charge 2.1s ease-in-out infinite; }
+  @keyframes rhino-charge {
+    0%   { transform: translateX(0) }
+    12%  { transform: translateX(2px) }
+    24%  { transform: translateX(6px) }
+    36%  { transform: translateX(10px) }
+    48%  { transform: translateX(6px) }
+    60%  { transform: translateX(2px) }
+    100% { transform: translateX(0) }
+  }
+
+  /* Orangutan: sway side to side */
+  .orang { animation: orang-sway 2.3s ease-in-out infinite; transform-origin: 50% 80%; }
+  @keyframes orang-sway { 0%,100% { transform: rotate(0deg) } 50% { transform: rotate(4deg) translateY(-2px) } }
+
+  /* Panther: stealthy prowl + quick head dart */
+  .panther { animation: panther-prowl 2.0s ease-in-out infinite; }
+  @keyframes panther-prowl {
+    0%   { transform: translateX(0) }
+    25%  { transform: translateX(5px) }
+    50%  { transform: translateX(9px) }
+    75%  { transform: translateX(5px) }
+    100% { transform: translateX(0) }
+  }
+
+  /* Desync start times */
+  .elephant{animation-delay:.1s}
+  .tiger{animation-delay:.2s}
+  .gorilla{animation-delay:.15s}
+  .croc{animation-delay:.3s}
+  .hippo{animation-delay:.25s}
+  .rhino{animation-delay:.35s}
+  .orang{animation-delay:.4s}
+  .panther{animation-delay:.45s}
+</style>
+</head>
+<body>
+  <div class="board">
+    <!-- Elephant -->
+    <div class="sprite elephant">
+      <svg viewBox="0 0 12 12" aria-label="Elephant">
+        <!-- body -->
+        <rect x="2" y="5" width="7" height="4" fill="#8f9da6"/>
+        <!-- head + trunk -->
+        <rect x="8" y="4" width="2" height="2" fill="#8f9da6"/>
+        <rect x="10" y="5" width="1" height="2" fill="#8f9da6"/>
+        <rect x="11" y="6" width="1" height="1" fill="#8f9da6"/>
+        <!-- ear -->
+        <rect x="7" y="3" width="2" height="2" fill="#aab6be"/>
+        <!-- legs -->
+        <rect x="3" y="9" width="1" height="2" fill="#6f7a83"/>
+        <rect x="6" y="9" width="1" height="2" fill="#6f7a83"/>
+        <!-- eye -->
+        <rect x="9" y="4" width="1" height="1" fill="#111"/>
+      </svg>
+    </div>
+
+    <!-- Tiger -->
+    <div class="sprite tiger">
+      <svg viewBox="0 0 12 12" aria-label="Tiger">
+        <!-- body -->
+        <rect x="2" y="6" width="7" height="3" fill="#f59e0b"/>
+        <!-- head -->
+        <rect x="8" y="5" width="2" height="2" fill="#f59e0b"/>
+        <!-- stripes -->
+        <rect x="3" y="6" width="1" height="1" fill="#221"/>
+        <rect x="5" y="7" width="1" height="1" fill="#221"/>
+        <rect x="7" y="6" width="1" height="1" fill="#221"/>
+        <!-- tail (animated group) -->
+        <g class="t-tail">
+          <rect x="1" y="6" width="1" height="1" fill="#f59e0b"/>
+          <rect x="0" y="6" width="1" height="1" fill="#f59e0b"/>
+          <rect x="0" y="5" width="1" height="1" fill="#221"/>
+        </g>
+        <!-- eye -->
+        <rect x="9" y="5" width="1" height="1" fill="#111"/>
+      </svg>
+    </div>
+
+    <!-- Gorilla -->
+    <div class="sprite gorilla">
+      <svg viewBox="0 0 12 12" aria-label="Gorilla">
+        <rect x="3" y="6" width="6" height="3" fill="#3a3a3a"/>
+        <rect x="2" y="7" width="1" height="2" fill="#2a2a2a"/>
+        <rect x="9" y="7" width="1" height="2" fill="#2a2a2a"/>
+        <rect x="5" y="4" width="3" height="2" fill="#3a3a3a"/>
+        <rect x="6" y="5" width="2" height="1" fill="#9e9e9e"/>
+        <rect x="7" y="4" width="1" height="1" fill="#111"/>
+      </svg>
+    </div>
+
+    <!-- Crocodile -->
+    <div class="sprite croc">
+      <svg viewBox="0 0 12 12" aria-label="Crocodile">
+        <rect x="2" y="7" width="7" height="2" fill="#3b9d5a"/>
+        <rect x="9" y="6" width="2" height="2" fill="#3b9d5a"/>
+        <!-- jaw -->
+        <rect x="10" y="7" width="2" height="1" fill="#2a7a44"/>
+        <!-- back ridges -->
+        <rect x="3" y="6" width="1" height="1" fill="#2a7a44"/>
+        <rect x="5" y="6" width="1" height="1" fill="#2a7a44"/>
+        <rect x="7" y="6" width="1" height="1" fill="#2a7a44"/>
+        <rect x="10" y="6" width="1" height="1" fill="#fff"/>
+      </svg>
+    </div>
+
+    <!-- Hippo -->
+    <div class="sprite hippo">
+      <svg viewBox="0 0 12 12" aria-label="Hippo">
+        <rect x="3" y="6" width="6" height="3" fill="#8b7aa8"/>
+        <rect x="8" y="5" width="2" height="2" fill="#8b7aa8"/>
+        <rect x="9" y="5" width="1" height="1" fill="#111"/>
+        <rect x="4" y="9" width="1" height="2" fill="#6e5f87"/>
+        <rect x="6" y="9" width="1" height="2" fill="#6e5f87"/>
+        <!-- nostrils -->
+        <rect x="9" y="6" width="1" height="1" fill="#333"/>
+      </svg>
+    </div>
+
+    <!-- Rhino -->
+    <div class="sprite rhino">
+      <svg viewBox="0 0 12 12" aria-label="Rhino">
+        <rect x="3" y="6" width="6" height="3" fill="#9aa2a7"/>
+        <rect x="8" y="5" width="2" height="2" fill="#9aa2a7"/>
+        <rect x="10" y="5" width="1" height="1" fill="#cfd6da"/> <!-- horn -->
+        <rect x="4" y="9" width="1" height="2" fill="#7f8a90"/>
+        <rect x="6" y="9" width="1" height="2" fill="#7f8a90"/>
+        <rect x="9" y="5" width="1" height="1" fill="#111"/>
+      </svg>
+    </div>
+
+    <!-- Orangutan -->
+    <div class="sprite orang">
+      <svg viewBox="0 0 12 12" aria-label="Orangutan">
+        <rect x="3" y="6" width="5" height="3" fill="#b45309"/>
+        <rect x="2" y="7" width="1" height="2" fill="#8a3f06"/>
+        <rect x="8" y="7" width="1" height="2" fill="#8a3f06"/>
+        <rect x="6" y="4" width="2" height="2" fill="#b45309"/>
+        <rect x="7" y="4" width="1" height="1" fill="#111"/>
+      </svg>
+    </div>
+
+    <!-- Panther -->
+    <div class="sprite panther">
+      <svg viewBox="0 0 12 12" aria-label="Panther">
+        <rect x="2" y="6" width="7" height="3" fill="#0a0a0a"/>
+        <rect x="8" y="5" width="2" height="2" fill="#0a0a0a"/>
+        <rect x="3" y="7" width="1" height="1" fill="#1a1a1a"/>
+        <rect x="6" y="7" width="1" height="1" fill="#1a1a1a"/>
+        <rect x="9" y="5" width="1" height="1" fill="#fff"/>
+      </svg>
+    </div>
+  </div>
+</body>
+</html>

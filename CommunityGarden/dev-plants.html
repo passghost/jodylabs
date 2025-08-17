@@ -51,6 +51,26 @@
       </thead>
       <tbody></tbody>
     </table>
+    
+      <h2 style="margin-top:18px;">Seed Gallery (client-side)</h2>
+      <div class="card" style="margin-top:8px;">
+        <div class="row" style="margin-bottom:8px;gap:8px;align-items:center;">
+          <button id="refreshSeeds">Refresh seeds</button>
+          <span class="muted">This list shows seeds the client knows about. You can delete them locally here (won't affect the DB).</span>
+        </div>
+        <table id="seedsTable">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Status</th>
+              <th>Thumb</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
   </div>
 
   <div id="toast" style="display:none;position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#0e1522;border:1px solid #233045;padding:8px 12px;border-radius:8px;color:#dfe9f7"></div>
@@ -75,10 +95,12 @@
       setTimeout(()=>t.style.display='none', ms);
     }
 
-    // Local fallback storage helpers
+    // Local fallback storage helpers (plants + client-side seeds)
     const localStore = {
       getPlants(){ return JSON.parse(localStorage.getItem('plants')||'[]'); },
-      setPlants(pl){ localStorage.setItem('plants', JSON.stringify(pl)); }
+      setPlants(pl){ localStorage.setItem('plants', JSON.stringify(pl)); },
+      getSeeds(){ return JSON.parse(localStorage.getItem('seeds')||'[]'); },
+      setSeeds(se){ localStorage.setItem('seeds', JSON.stringify(se)); }
     };
 
     async function loadPlants() {
@@ -251,6 +273,48 @@
 
     // init
     loadPlants();
+    // ----- Client-side seed management -----
+    function renderSeeds() {
+      const tbody = document.querySelector('#seedsTable tbody');
+      tbody.innerHTML = '';
+      const seeds = localStore.getSeeds();
+      if (!seeds || !seeds.length) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td colspan="5" class="muted">No client seeds</td>';
+        tbody.appendChild(tr); return;
+      }
+      seeds.forEach(s => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><code>${(s.id||'').slice(0,10)}</code></td>
+          <td class="muted">${s.status||''}</td>
+          <td>${s.thumbs && s.thumbs[0] ? `<img src="${s.thumbs[0]}" style="width:48px;height:48px;object-fit:contain">` : ''}</td>
+          <td class="muted">${s.created_at||''}</td>
+          <td><button data-del="${s.id}">Delete locally</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+      tbody.querySelectorAll('button[data-del]').forEach(b=>b.onclick = ev => {
+        const id = ev.target.getAttribute('data-del');
+        if (!confirm('Delete seed locally? '+id)) return;
+        deleteSeedLocal(id);
+        renderSeeds();
+      });
+    }
+
+    function deleteSeedLocal(id) {
+      const seeds = localStore.getSeeds().filter(s=>s && s.id !== id);
+      localStore.setSeeds(seeds);
+      // also remove from local plants if any
+      const plants = JSON.parse(localStorage.getItem('plants')||'[]').filter(p => p && p.seed_id !== id && p.seedId !== id);
+      localStorage.setItem('plants', JSON.stringify(plants));
+      // attempt to notify open garden tab via localStorage event
+      try { localStorage.setItem('last_local_seed_delete', JSON.stringify({ id, t: Date.now() })); } catch(e){}
+    }
+
+    document.getElementById('refreshSeeds').onclick = () => renderSeeds();
+    // initial render
+    renderSeeds();
   </script>
 </body>
 </html>

@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pixel Spec — Corporate Buildings (2×2, HTML-only)</title>
+<style>
+  :root { --scale: 4; --bg: #0e1013; }
+  html,body{height:100%;margin:0}
+  body{
+    display:grid; place-items:center; background:var(--bg);
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    color:#cfd6df;
+  }
+  .wrap{display:grid; gap:16px;}
+  .grid{
+    display:grid; grid-template-columns: repeat(2, 1fr); gap:16px;
+    background:#141820; padding:16px; border-radius:12px; box-shadow: 0 10px 30px rgba(0,0,0,.45);
+  }
+  figure{margin:0; text-align:center}
+  canvas{
+    width: calc(64px * var(--scale));
+    height: calc(64px * var(--scale));
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    display:block; background:#0b0e12; border-radius:8px; box-shadow: inset 0 0 0 1px #1b2230;
+  }
+  h1{font-size:14px; font-weight:600; letter-spacing:.02em; margin:0 0 10px; opacity:.9}
+  .meta{
+    font-size:12px; opacity:.7; line-height:1.2; margin-top:8px
+  }
+  /* small legend strip */
+  .palette{display:flex; gap:6px; margin-top:8px; justify-content:center}
+  .sw{width:14px; height:14px; border-radius:3px; box-shadow: 0 0 0 1px rgba(255,255,255,.06) inset}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Corporate Buildings — 2×2 Grid (Top-Down, 64×64 each)</h1>
+  <div class="grid">
+    <figure>
+      <canvas id="c0" width="64" height="64" aria-label="Glass HQ with skylights"></canvas>
+      <div class="meta">A — Glass HQ (skylight flicker + beacon)</div>
+    </figure>
+    <figure>
+      <canvas id="c1" width="64" height="64" aria-label="Helipad tower with rooftop fans"></canvas>
+      <div class="meta">B — Helipad Tower (rotor fans + beacon)</div>
+    </figure>
+    <figure>
+      <canvas id="c2" width="64" height="64" aria-label="Billboard office block"></canvas>
+      <div class="meta">C — Billboard Block (scrolling sign + window pulse)</div>
+    </figure>
+    <figure>
+      <canvas id="c3" width="64" height="64" aria-label="Executive terrace with garden"></canvas>
+      <div class="meta">D — Executive Terrace (garden shimmer + tank blink)</div>
+    </figure>
+  </div>
+
+  <div class="palette" title="Palette">
+    <!-- Palette swatches (for reference) -->
+    <div class="sw" style="background:#10161d"></div>
+    <div class="sw" style="background:#1b2531"></div>
+    <div class="sw" style="background:#2b3a48"></div>
+    <div class="sw" style="background:#3b4d60"></div>
+    <div class="sw" style="background:#536b80"></div>
+    <div class="sw" style="background:#8fb8ff"></div>
+    <div class="sw" style="background:#ffd166"></div>
+    <div class="sw" style="background:#ff5c5c"></div>
+    <div class="sw" style="background:#0fd2c9"></div>
+    <div class="sw" style="background:#b8c4d1"></div>
+  </div>
+
+  <div class="meta">
+    <strong>Spec:</strong> View=Top-Down • Canvas=64×64 • Palette(10 hex)=#10161d,#1b2531,#2b3a48,#3b4d60,#536b80,#8fb8ff,#ffd166,#ff5c5c,#0fd2c9,#b8c4d1 •
+    Style=chunky shading, rim light edges, strong silhouette • Motion≈8fps (skylights, fans, beacon, sign, shimmer) • Hitbox/anchor=pivot center • Export=single-file HTML • Constraints=no external libs, cohesive single element, no floating parts • Variety=4 iterations (2×2).
+  </div>
+</div>
+
+<script>
+/*
+  Implementation notes:
+  - Each tile is a cohesive single object (no floating parts), drawn as one connected roof/building mass.
+  - Simple pixel helpers keep everything crisp; no allocations per frame to avoid leaks.
+  - Animations are subtle and loop-friendly (≈8 fps) and independent per building.
+*/
+
+// ---- Palette ---------------------------------------------------------------
+const P = {
+  bgDeep:  "#10161d",
+  out:     "#1b2531",
+  bodyD:   "#2b3a48",
+  body:    "#3b4d60",
+  bodyL:   "#536b80",
+  glass:   "#8fb8ff",
+  accentY: "#ffd166",
+  accentR: "#ff5c5c",
+  accentC: "#0fd2c9",
+  line:    "#b8c4d1"
+};
+
+// ---- Canvas setup ----------------------------------------------------------
+const cans = ["c0","c1","c2","c3"].map(id=>{
+  const c = document.getElementById(id);
+  const ctx = c.getContext("2d");
+  ctx.imageSmoothingEnabled = false;
+  return ctx;
+});
+
+// helpers
+function clr(ctx){ ctx.clearRect(0,0,64,64); }
+function px(ctx,x,y,col){ ctx.fillStyle = col; ctx.fillRect(x|0,y|0,1,1); }
+function rect(ctx,x,y,w,h,col){ ctx.fillStyle = col; ctx.fillRect(x|0,y|0,w|0,h|0); }
+function outline(ctx,x,y,w,h,col){
+  // 1px rectangle outline
+  rect(ctx,x,y,w,1,col);
+  rect(ctx,x,y,1,h,col);
+  rect(ctx,x+w-1,y,1,h,col);
+  rect(ctx,x,y+h-1,w,1,col);
+}
+function shadedRoof(ctx,x,y,w,h){
+  // core body + subtle rim light top/left and shadow bottom/right
+  rect(ctx,x,y,w,h,P.body);
+  // top rim
+  rect(ctx,x,y,w,1,P.bodyL);
+  // left rim
+  rect(ctx,x,y,1,h,P.bodyL);
+  // bottom shadow
+  rect(ctx,x,y+h-1,w,1,P.bodyD);
+  // right shadow
+  rect(ctx,x+w-1,y,1,h,P.bodyD);
+  outline(ctx,x,y,w,h,P.out);
+}
+
+// common antenna beacon
+function beacon(ctx, x, y, frame){
+  // mast + head; blink 3/24 frames
+  rect(ctx,x, y-4, 1,4, P.out);
+  const on = (frame % 24) < 3;
+  px(ctx, x, y-5, on ? P.accentR : P.out);
+}
+
+// small 3x3 fan with simple 4-phase blades
+function fan3(ctx, x, y, phase){
+  rect(ctx,x-2,y-2,5,5,P.bodyD); outline(ctx,x-2,y-2,5,5,P.out);
+  const p = phase % 4;
+  // clear hub
+  px(ctx,x,y,P.bodyL);
+  if (p===0){ px(ctx,x-1,y, P.line); px(ctx,x+1,y, P.line); }
+  if (p===1){ px(ctx,x,y-1, P.line); px(ctx,x,y+1, P.line); }
+  if (p===2){ px(ctx,x-1,y-1, P.line); px(ctx,x+1,y+1, P.line); }
+  if (p===3){ px(ctx,x+1,y-1, P.line); px(ctx,x-1,y+1, P.line); }
+}
+
+// skylight tile (2x2) that can "glow"
+function skylight2(ctx, x, y, on){
+  rect(ctx,x,y,2,2, on ? P.glass : "#6b86a0");
+  outline(ctx,x,y,2,2,P.out);
+}
+
+// dotted garden tile (2x2) with shimmer
+function garden2(ctx,x,y, twinkle){
+  rect(ctx,x,y,2,2, "#2d4a3a");
+  if (twinkle) px(ctx,x+1,y, "#3e8c6c");
+}
+
+// scrolling billboard stripe
+function billboardStripe(ctx, x, y, w, t){
+  rect(ctx,x,y,w,6,P.bodyD); outline(ctx,x,y,w,6,P.out);
+  // moving 1-px highlights
+  const off = t % w;
+  for (let i=0;i<w;i++){
+    const bright = ((i + off) % 6)===0;
+    px(ctx, x+i, y+2, bright ? P.accentY : "#6c7f93");
+  }
+}
+
+// generic window strip pulse
+function windowStrip(ctx,x,y,w, t, step=3){
+  for (let i=0;i<w;i+=step){
+    const on = ((i + (t%step)) % (step*2))===0;
+    px(ctx, x+i, y, on ? P.glass : "#6b86a0");
+  }
+}
+
+// ---- Buildings -------------------------------------------------------------
+
+// A — Glass HQ (skylights + beacon)
+function drawA(ctx, frame){
+  clr(ctx);
+  // footprint
+  shadedRoof(ctx, 6,8, 52,48);
+  // rooftop parapet inset
+  outline(ctx, 8,10, 48,44, P.out);
+
+  // skylight grid 4×3 of 2x2
+  let k=0;
+  for (let gy=0; gy<3; gy++){
+    for (let gx=0; gx<4; gx++){
+      const sx = 12 + gx*10;
+      const sy = 16 + gy*12;
+      const on = ((frame>>1) + k) % 6 < 2; // stagger flicker
+      skylight2(ctx, sx, sy, on);
+      k++;
+    }
+  }
+
+  // elevator box
+  shadedRoof(ctx, 40, 36, 12, 16);
+  // antenna on it
+  beacon(ctx, 46, 36, frame);
+
+  // subtle facade window strips near bottom edge (illusion)
+  for (let i=0;i<4;i++){
+    windowStrip(ctx, 10, 52+i, 44, frame+i, 4);
+  }
+}
+
+// B — Helipad Tower (fans + beacon)
+function drawB(ctx, frame){
+  clr(ctx);
+  shadedRoof(ctx, 5,7, 54,50);
+  // helipad ring
+  rect(ctx, 12,14, 40,36, P.bodyD);
+  outline(ctx,12,14,40,36,P.out);
+  // H
+  rect(ctx, 22,22, 4,20, P.accentY);
+  rect(ctx, 38,22, 4,20, P.accentY);
+  rect(ctx, 22,30, 20,4, P.accentY);
+
+  // four fans
+  const ph = Math.floor(frame/2);
+  fan3(ctx, 16, 18, ph);
+  fan3(ctx, 48, 18, ph+1);
+  fan3(ctx, 16, 44, ph+2);
+  fan3(ctx, 48, 44, ph+3);
+
+  // small beacon near corner
+  beacon(ctx, 54, 14, frame);
+}
+
+// C — Billboard Block (scrolling sign + pulse)
+function drawC(ctx, frame){
+  clr(ctx);
+  shadedRoof(ctx, 7,9, 50,48);
+
+  // big billboard at north edge
+  billboardStripe(ctx, 9, 11, 46, frame);
+
+  // HVAC row
+  for (let i=0;i<3;i++){
+    shadedRoof(ctx, 12 + i*12, 24, 8, 6);
+    const ph = (frame + i) % 8;
+    // tiny 2-phase vent shimmer
+    px(ctx, 14+i*12, 26, ph<4 ? P.line : "#7c92a6");
+  }
+
+  // pulse window strips at south edge
+  for (let r=0;r<3;r++){
+    windowStrip(ctx, 12, 52+r, 40, frame + r*2, 3);
+  }
+}
+
+// D — Executive Terrace (garden + water tank)
+function drawD(ctx, frame){
+  clr(ctx);
+  // lower deck
+  shadedRoof(ctx, 6, 28, 52, 28);
+  // upper terrace
+  shadedRoof(ctx, 12, 12, 40, 20);
+  outline(ctx, 14,14,36,16,P.out);
+
+  // garden tiles on terrace
+  let k=0;
+  for (let gy=0; gy<2; gy++){
+    for (let gx=0; gx<4; gx++){
+      const x = 16 + gx*8;
+      const y = 16 + gy*8;
+      const tw = ((frame>>1)+k) % 5 === 0;
+      garden2(ctx, x, y, tw);
+      k++;
+    }
+  }
+
+  // water tank on lower deck
+  shadedRoof(ctx, 44, 34, 10, 10);
+  // blinking indicator
+  const blink = (frame % 20) < 4;
+  px(ctx, 48, 33, blink ? P.accentC : P.out);
+}
+
+// ---- Main loop -------------------------------------------------------------
+let frame = 0;
+function tick(){
+  // ~8 fps: step every ~125ms but render at display refresh
+  const f = Math.floor(performance.now() / 125);
+  if (f !== frame){
+    frame = f;
+    drawA(cans[0], frame);
+    drawB(cans[1], frame);
+    drawC(cans[2], frame);
+    drawD(cans[3], frame);
+  }
+  requestAnimationFrame(tick);
+}
+tick();
+</script>
+
+<!--
+SPEC (filled):
+Subject: Corporate buildings
+View: Top-down
+Canvas: 64×64 per tile
+Palette (10): #10161d, #1b2531, #2b3a48, #3b4d60, #536b80, #8fb8ff, #ffd166, #ff5c5c, #0fd2c9, #b8c4d1
+Style notes: chunky shading, rim light, strong silhouette
+Motion: ~8 fps — A skylights+beacon, B fans+beacon, C scrolling billboard+window pulse, D garden shimmer+tank blink
+Hitbox/anchor: pivot center
+Export: single-file HTML only
+Constraints: no external libs, cohesive single element, no floating parts
+Variety: 4 iterations in a 2×2 grid
+-->
+</body>
+</html>

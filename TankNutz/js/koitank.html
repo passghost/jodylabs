@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Koi Fish Robot Tank — 48×48, Top-Down, 6f@120ms</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+  :root { --scale: 8; }
+  html,body { height:100%; margin:0; background:#0f0f12; color:#cfd3da; font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial; }
+  .wrap { height:100%; display:grid; place-items:center; gap:12px; }
+  canvas {
+    width: calc(48px * var(--scale));
+    height: calc(48px * var(--scale));
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    background: transparent;
+    outline: 1px solid #181a20;
+    box-shadow: 0 0 0 6px #0a0b0f, 0 6px 24px rgba(0,0,0,.5);
+    border-radius: 8px;
+  }
+  .spec {
+    font-size:12px; opacity:.7; text-align:center; line-height:1.35;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <canvas id="c" width="48" height="48" aria-label="Koi Fish Robot Tank"></canvas>
+  <div class="spec">Top-down • 48×48 • 6 frames @ 120ms • pivot (24,24)</div>
+</div>
+
+<script>
+/* ========= PIXEL SPEC =========
+Subject: "Koi Fish Robot Tank"
+View: top-down
+Canvas: 48×48
+Palette (10 colors):
+  0 OUTLINE #0b0e1a
+  1 SHADOW  #1b1e29
+  2 TRACK   #2a2a2a
+  3 METAL   #4a5164
+  4 TRACK+  #6b6b6b
+  5 RIM     #9db7ff
+  6 KOI-BODY#fff4d6
+  7 KOI-ORNG#f26b1d
+  8 EYE-LED #ff3b30
+  9 WHITE   #ffffff
+Style notes: chunky shading, rim light, strong silhouette
+Motion: tail & fins sway, tread cycle, subtle turret recoil (6 frames, 120ms)
+Hitbox/anchor: pivot center (24,24)
+Constraints: single element (no particles/floating parts), HTML only, no libs
+================================= */
+
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d', { alpha: true });
+ctx.imageSmoothingEnabled = false;
+
+const W = 48, H = 48, CX = 24, CY = 24;
+
+// Palette
+const P = [
+  "#0b0e1a","#1b1e29","#2a2a2a","#4a5164","#6b6b6b",
+  "#9db7ff","#fff4d6","#f26b1d","#ff3b30","#ffffff"
+];
+
+// Convenience
+function px(x,y,col){ ctx.fillStyle=P[col]; ctx.fillRect(x|0,y|0,1,1); }
+function row(x,y,w,col){ ctx.fillStyle=P[col]; ctx.fillRect(x|0,y|0,w|0,1); }
+function rect(x,y,w,h,col){ ctx.fillStyle=P[col]; ctx.fillRect(x|0,y|0,w|0,h|0); }
+
+// Hull width profile for koi-like silhouette (bulbous mid, tapered head/tail)
+function halfWidthAt(dy){ // dy = y - CY
+  const ay = Math.abs(dy);
+  // Max half width ~ 15px at mid, taper toward 0 near |dy| ~ 16
+  let half = Math.max(0, 15 - Math.round(ay * 0.9));
+  // Slight head bulge (top) and tail pinch (bottom)
+  if(dy < -6) half -= 1;
+  if(dy > 7) half -= 2;
+  return Math.max(0, half);
+}
+
+// Draw hull with outline + fill + simple shading + rim light
+function drawHull() {
+  for(let y = CY - 16; y <= CY + 16; y++){
+    const dy = y - CY;
+    const half = halfWidthAt(dy);
+    if(half <= 0) continue;
+    // Outline row (1px larger)
+    row(CX - (half+1), y, (half+1)*2+1, 0); // OUTLINE
+    // Fill row
+    row(CX - half, y, half*2+1, 6); // KOI BODY (cream)
+    // Bottom-right shadow accent
+    if(dy > 0) {
+      px(CX + half, y, 1);
+      if(half > 2) px(CX + half - 1, y, 1);
+    }
+    // Top-left rim light
+    if(dy < 0) {
+      px(CX - half, y, 5);
+      if(half > 8 && (y % 2 === 0)) px(CX - half + 1, y, 5);
+    }
+  }
+}
+
+// Koi orange patches (irregular blocks anchored to hull)
+function drawKoiPatches() {
+  // Shoulder patch (left)
+  for(let y = CY - 6; y <= CY - 1; y++){
+    for(let x = CX - 9; x <= CX - 5; x++){
+      if((x+y) % 3 !== 0) px(x, y, 7);
+    }
+  }
+  // Dorsal patch (center)
+  for(let y = CY - 1; y <= CY + 3; y++){
+    for(let x = CX - 3; x <= CX + 4; x++){
+      if(((x+2*y) % 4) !== 1) px(x, y, 7);
+    }
+  }
+  // Tail root patch (bottom)
+  for(let y = CY + 7; y <= CY + 11; y++){
+    for(let x = CX - 4; x <= CX + 4; x++){
+      if((x^y) & 1) px(x, y, 7);
+    }
+  }
+}
+
+// Tracks (robot tank) along sides, connected to hull
+function drawTracks(phase=0){
+  // Track bounds
+  const top = CY - 10, bottom = CY + 12, w = 4;
+  // Left track
+  rect(CX - 19, top - 1, w+2, bottom - top + 2, 0); // outline
+  rect(CX - 18, top,   w,   bottom - top, 2);       // rubber
+  // Right track
+  rect(CX + 14, top - 1, w+2, bottom - top + 2, 0); // outline
+  rect(CX + 15, top,   w,   bottom - top, 2);
+
+  // Tread pattern (scrolls by phase)
+  for(let y = 0; y <= (bottom - top); y++){
+    const on = ((y + phase) % 3) === 0;
+    if(on){
+      // left teeth
+      row(CX - 18, top + y, w, 4);
+      // right teeth
+      row(CX + 15, top + y, w, 4);
+    }
+  }
+
+  // Sponson armor plates to visually fuse tracks to hull
+  rect(CX - 15, CY - 8, 2, 16, 3);
+  rect(CX + 13, CY - 8, 2, 16, 3);
+}
+
+// Turret (small coax barrel as a "snout"); slight recoil on some frames
+function drawTurret(recoil=0){
+  // Turret base
+  rect(CX - 4, CY - 9, 8, 6, 0);        // outline
+  rect(CX - 3, CY - 8, 6, 4, 3);        // metal
+  // LED eye
+  px(CX, CY - 7, 9);
+  px(CX, CY - 6, 8);
+
+  // Barrel (points upward), recoil shifts it down by 1px temporarily
+  const bx = CX - 1, by = CY - 14 + (recoil|0);
+  // outline
+  rect(bx - 1, by - 1, 4, 8, 0);
+  // barrel fill
+  rect(bx, by, 2, 6, 3);
+  // muzzle bright
+  row(bx, by, 2, 9);
+}
+
+// Pectoral fins (robotic), slight sinusoidal flap; remain attached
+function drawFins(t){
+  // t ∈ [-1,1], map to small horizontal offsets
+  const offL = Math.round(-2 + t*1.5);
+  const offR = Math.round( 2 - t*1.5);
+  const y = CY; // near mid-body
+
+  // Left fin
+  rect(CX - 12 + offL - 1, y - 1, 5, 3, 0); // outline
+  rect(CX - 12 + offL,     y,     3, 1, 6); // cream
+  px(CX - 10 + offL, y - 1, 7); // orange tip
+  px(CX - 10 + offL, y + 1, 5); // rim glint
+
+  // Right fin
+  rect(CX + 8 + offR - 1, y - 1, 5, 3, 0);
+  rect(CX + 8 + offR,     y,     3, 1, 6);
+  px(CX + 10 + offR, y - 1, 7);
+  px(CX + 10 + offR, y + 1, 5);
+}
+
+// Caudal (tail) — triangular, sways; attached to hull
+function drawTail(t){
+  // t ∈ [-1,1] sway — we convert to horizontal skew across tail length
+  const len = 10;
+  for(let i=0;i<len;i++){
+    const y = CY + 8 + i;
+    const half = Math.max(1, 6 - Math.floor(i * 0.6)); // taper
+    const skew = Math.round(t * (i * 0.3)); // larger skew near tip
+    // outline
+    row(CX - half + skew - 1, y, (half*2)+3, 0);
+    // fill (cream)
+    row(CX - half + skew, y, (half*2)+1, 6);
+    // orange beam accents
+    if(i % 3 === 1) {
+      row(CX - Math.floor(half*0.7) + skew, y, Math.floor(half*1.2), 7);
+    }
+    // rim light on leftmost pixel if swaying left
+    if(skew < 0) px(CX - half + skew, y, 5);
+  }
+}
+
+// Subtle panel lines / vents for "robot" read
+function drawPanelLines(){
+  // Dorsal vents
+  row(CX - 5, CY - 2, 10, 3);
+  row(CX - 5, CY,     10, 1);
+  // Lateral panel seams
+  row(CX - 10, CY + 4, 20, 1);
+}
+
+// One animation frame
+function drawFrame(f){
+  ctx.clearRect(0,0,W,H);
+
+  // Phase values
+  const tailT = Math.sin((f/6)*Math.PI*2);     // [-1,1]
+  const finT  = Math.sin((f/6)*Math.PI*2 + Math.PI/3);
+  const treadPhase = f % 3;
+  const recoil = (f === 0) ? 1 : 0;
+
+  // Draw order ensures single cohesive silhouette (no floating parts)
+  drawTracks(treadPhase);  // side tracks under hull lip
+  drawHull();              // main body
+  drawKoiPatches();        // color spots on hull
+  drawTail(tailT);         // attached tail
+  drawFins(finT);          // attached fins
+  drawTurret(recoil);      // snout/barrel + LED eye
+  drawPanelLines();        // subtle robot seams
+}
+
+// Animation loop
+let frame = 0;
+const FRAMES = 6;
+function tick(){
+  drawFrame(frame);
+  frame = (frame + 1) % FRAMES;
+}
+setInterval(tick, 120);
+
+// (Optional) expose pivot & hitbox for engines that consume this sprite
+window.KOI_ROBOT_TANK_META = {
+  pivot: { x: 24, y: 24 },
+  hitbox: { x: 24-18, y: 24-14, w: 36, h: 28 }, // coarse AABB
+  frames: FRAMES, frame_ms: 120, canvas: { w:48, h:48 }
+};
+</script>
+</body>
+</html>

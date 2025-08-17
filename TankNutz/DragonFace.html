@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>64×64 Pixel — Traditional Chinese Dragon Face (3/4)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root {
+    /* Export scale 8× with nearest-neighbor */
+    --scale: 8;
+  }
+  html, body {
+    height: 100%;
+    margin: 0;
+    background: #0B0F14; /* near-black to match palette */
+    display: grid;
+    place-items: center;
+  }
+  canvas.pixel {
+    width: calc(64px * var(--scale));
+    height: calc(64px * var(--scale));
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    outline: 1px solid #0B0F14;
+  }
+</style>
+</head>
+<body>
+<canvas class="pixel" id="c" width="64" height="64" aria-label="Traditional Chinese Dragon Face"></canvas>
+
+<script>
+/* ===== Strict 10-color palette ===== */
+const PAL = {
+  nearblack: "#0B0F14",
+  maroon:    "#6E1011",
+  red:       "#C52526",
+  gold:      "#F3C63A",
+  brass:     "#B7881D",
+  jade:      "#1C8C64",
+  azure:     "#2E6BD9",
+  ivory:     "#F2EDE2",
+  brown:     "#7E3A16",
+  spec:      "#FFF6C9",
+};
+
+/* ===== Canvas setup ===== */
+const c = document.getElementById("c");
+const ctx = c.getContext("2d", { alpha: true, desynchronized: true });
+ctx.imageSmoothingEnabled = false;
+
+/* ===== tiny helpers (1px grid) ===== */
+const set = (col) => ctx.fillStyle = col;
+function px(x, y, col) { set(PAL[col]); ctx.fillRect(x|0, y|0, 1, 1); }
+function rect(x, y, w, h, col) { set(PAL[col]); ctx.fillRect(x|0, y|0, w|0, h|0); }
+function hline(x, y, w, col) { set(PAL[col]); ctx.fillRect(x|0, y|0, w|0, 1); }
+function vline(x, y, h, col) { set(PAL[col]); ctx.fillRect(x|0, y|0, 1, h|0); }
+
+/* ===== Frame plan (6 frames, ping-pong, 120ms) =====
+F0: neutral
+F1: eyelids 1px down; nostrils +1px wide; whiskers drift -1px (left)
+F2: pupils +1px toward camera; beard 1px down; horns -1px up
+F3: blink closed (2px lid); cheeks +1px out; whiskers centered
+F4: half reopen; nostrils relax; whiskers +1px (right)
+F5: subtle rim highlight swap (gold ↔ brass)
+*/
+const FRAMES = [
+  { lid:0, nostW:0, whiskDX: 0, pupilDX:0, hornDY: 0, beardDY:0, cheeksOut:0, swap:false },
+  { lid:1, nostW:1, whiskDX:-1, pupilDX:0, hornDY: 0, beardDY:0, cheeksOut:0, swap:false },
+  { lid:1, nostW:1, whiskDX:-1, pupilDX:1, hornDY:-1, beardDY:1, cheeksOut:0, swap:false },
+  { lid:2, nostW:0, whiskDX: 0, pupilDX:0, hornDY: 0, beardDY:0, cheeksOut:1, swap:false },
+  { lid:1, nostW:0, whiskDX: 1, pupilDX:0, hornDY: 0, beardDY:0, cheeksOut:0, swap:false },
+  { lid:0, nostW:0, whiskDX: 0, pupilDX:0, hornDY: 0, beardDY:0, cheeksOut:0, swap:true  },
+];
+const ORDER = [0,1,2,3,4,5,4,3,2,1]; // ping-pong
+
+/* ===== Core drawing ===== */
+function drawFrame(tick) {
+  const f = FRAMES[ORDER[tick % ORDER.length]];
+  ctx.clearRect(0,0,64,64);
+
+  /* BACKDROP TRANSPARENCY (do nothing; keep canvas alpha) */
+
+  /* HEAD MASS — base red with maroon shadows */
+  // Skull / forehead
+  rect(16, 20, 32, 24, 'red');                 // central cranial mass
+  rect(18, 22, 28,  4, 'red');                  // brow plateau
+  rect(20, 44, 24,  4, 'red');                  // upper jaw/chin base
+
+  // Cheeks (3/4 view: right cheek a bit larger). F3 cheeksOut pushes 1px outward.
+  const cheekPush = f.cheeksOut ? 1 : 0;
+  rect(12 - cheekPush, 30,  8 + cheekPush, 10, 'red');   // left cheek
+  rect(46,             30,  8 + cheekPush, 10, 'red');   // right cheek
+
+  // Snout block (toward camera/right)
+  rect(42, 28, 12, 6, 'red');                   // snout top
+  rect(50, 32,  6, 6, 'red');                   // snout front
+
+  // Chin thickness
+  rect(24, 48, 16,  4, 'red');
+
+  // Maroon shadow passes
+  rect(16, 38, 12, 6, 'maroon');                // lower-left cheek shadow
+  rect(44, 36,  8, 2, 'maroon');                // under-snout shadow
+  rect(20, 26,  8, 2, 'maroon');                // brow underside
+  rect(24, 48, 16, 1, 'maroon');                // chin underside
+
+  /* HORNS (brown with gold/brass rim) — small vertical nudge on F2 */
+  const hUp = f.hornDY; // -1 or 0
+  // Left horn (farther; slightly smaller)
+  rect(20, 14 + hUp, 6, 8, 'brown');
+  rect(18, 10 + hUp, 5, 6, 'brown');
+  rect(17,  8 + hUp, 3, 4, 'brown');
+  // Outer rim highlight (swap gold/brass on F5)
+  const rim1 = f.swap ? 'brass' : 'gold';
+  vline(17,  8 + hUp, 4, rim1);
+  vline(18, 10 + hUp, 6, rim1);
+
+  // Right horn (nearer; slightly larger)
+  rect(36, 14 + hUp, 7, 8, 'brown');
+  rect(34, 10 + hUp, 7, 6, 'brown');
+  rect(34,  8 + hUp, 4, 4, 'brown');
+  // Outer rim highlight
+  const rim2 = f.swap ? 'gold' : 'brass';
+  vline(40,  8 + hUp, 4, rim2);
+  vline(41, 10 + hUp, 6, rim2);
+
+  /* BROWS / RIDGES — near-black ink + red ramp */
+  hline(20, 22, 24, 'nearblack');               // brow top line
+  hline(20, 23, 22, 'nearblack');               // slight asymmetry
+  hline(36, 23,  8, 'nearblack');
+
+  /* EYES — ivory beds, pupils, eyelids */
+  // Left eye (farther; slightly smaller)
+  // Base ivory
+  rect(24, 30 + Math.min(f.lid,1), 6, 3 - Math.min(f.lid,1), 'ivory');
+  // Pupils (move toward camera on F2 => to the right by 1px)
+  px(27 + f.pupilDX, 31, 'nearblack');
+
+  // Right eye (nearer; a touch lower/bigger)
+  rect(36, 31 + Math.min(f.lid,1), 7, 3 - Math.min(f.lid,1), 'ivory');
+  px(39 + f.pupilDX, 32, 'nearblack');
+
+  // Eyelids overlay (red) — lid 1px or 2px
+  if (f.lid >= 1) {
+    hline(24, 30, 6, 'red');  // left upper lid
+    hline(36, 31, 7, 'red');  // right upper lid
+  }
+  if (f.lid >= 2) {
+    hline(24, 31, 6, 'red');  // left closed
+    hline(36, 32, 7, 'red');  // right closed
+  }
+
+  /* NOSE / NOSTRILS — 1px widen on F1/F2, relax on F4 */
+  const nw = Math.max(0, f.nostW)|0;           // 0 or 1
+  // Right (near) nostril
+  rect(49, 34, 1 + nw, 1, 'nearblack');
+  // Left (far) nostril
+  rect(46 - nw, 35, 1 + nw, 1, 'nearblack');
+
+  /* WHISKERS (jade) — attached at muzzle; slight drift */
+  // Right whiskers (longer; anchored at 52,x)
+  const wd = f.whiskDX;
+  hline(52, 34, Math.max(1, 8 + wd), 'jade');
+  hline(52, 36, Math.max(1, 7 + wd), 'jade');
+  hline(52, 38, Math.max(1, 6 + wd), 'jade');
+
+  // Left whiskers (shorter; anchored at 16,x)
+  // Draw leftwards: ensure attachment at 16 and extend to the left.
+  const lw = Math.max(1, 6 + (wd<0?0:wd)); // keep subtle symmetry
+  for (let i = 0; i < lw; i++) px(16 - i, 35, 'jade');
+  for (let i = 0; i < lw-1; i++) px(16 - i, 37, 'jade');
+
+  /* BEARD TUFT (azure) — 1px down on F2 */
+  const by = 48 + (f.beardDY|0);
+  rect(30, by, 10, 2, 'azure');
+  rect(29, by+2, 12, 2, 'azure');
+  rect(28, by+4, 14, 2, 'azure');
+
+  /* TEETH / TUSKS (ivory) — small hints at the jaw */
+  rect(33, 46, 2, 2, 'ivory'); // center teeth
+  rect(38, 46, 2, 2, 'ivory');
+
+  /* RIM LIGHT (gold/brass/spec) on top-left forehead & snout */
+  const hi1 = f.swap ? 'brass' : 'gold';
+  const hi2 = f.swap ? 'gold'  : 'spec';
+  // Forehead rim
+  hline(22, 20, 10, hi1);
+  // Snout top sparkle
+  px(45, 28, hi2);
+  px(46, 28, hi1);
+
+  /* INK OUTER SILHOUETTE (selective outline) */
+  // Top skull line
+  hline(20, 19, 24, 'nearblack');
+  // Left outer cheek
+  vline(12 - cheekPush, 31, 8, 'nearblack');
+  // Right outer cheek / jowl
+  vline(54 + cheekPush, 31, 8, 'nearblack');
+  // Snout edge
+  hline(42, 27, 12, 'nearblack');
+  vline(56, 32, 6, 'nearblack');
+  // Chin line
+  hline(24, 52, 16, 'nearblack');
+  // Horn outer inking
+  vline(16,  8 + hUp, 6, 'nearblack');
+  vline(41,  8 + hUp, 8, 'nearblack');
+}
+
+/* ===== Animation loop @ ~120ms/frame ===== */
+let last = 0, tick = 0;
+const FRAME_MS = 120;
+function loop(ts) {
+  if (ts - last >= FRAME_MS) {
+    drawFrame(tick++);
+    last = ts;
+  }
+  requestAnimationFrame(loop);
+}
+drawFrame(0);
+requestAnimationFrame(loop);
+
+/* ===== Interaction hitbox (40×40 around center @ (32,32)) for pointer focus (optional) ===== */
+c.addEventListener('pointermove', (e) => {
+  const r = c.getBoundingClientRect();
+  const x = ((e.clientX - r.left) / r.width) * 64;
+  const y = ((e.clientY - r.top)  / r.height) * 64;
+  // Simple hover glint when inside hitbox—swap a spec pixel briefly (keeps palette)
+  if (x >= 12 && x <= 52 && y >= 12 && y <= 52) {
+    px(32, 19, 'spec');
+  }
+});
+</script>
+</body>
+</html>

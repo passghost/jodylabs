@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>2×6 Jungle Foliage — Mouse-Aim Wind + WASD Pan</title>
+<style>
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    display: grid;
+    place-items: center;
+    background: #0f0f12;
+    color: #d7d7db;
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  }
+  canvas {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    width: min(95vmin, 980px);
+    height: min(95vmin, 520px);
+    background: #0b0d0e radial-gradient(80% 140% at 50% 0%, rgba(50,120,90,.15), rgba(0,0,0,0));
+    display: block;
+    border-radius: 12px;
+    box-shadow: inset 0 0 0 1px #26262e;
+  }
+  .hint {
+    position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%);
+    font-size: 12px; opacity: .6; letter-spacing: .2px;
+    user-select: none;
+  }
+</style>
+</head>
+<body>
+<canvas id="game" width="1200" height="640" aria-label="2x6 jungle foliage grid"></canvas>
+<div class="hint">WASD: pan • Move mouse: wind direction • P: recolor</div>
+<script>
+/* ================================
+   Setup
+================================ */
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+const W = canvas.width, H = canvas.height;
+
+// World camera (WASD) and wind (mouse angle) — “same control mechanism”
+const cam = { x: 0, y: 0, angle: 0, speed: 160, rotSpeed: Math.PI }; // angle unused for camera, kept for parity
+const keys = new Set();
+let mouse = { x: W/2, y: H/2 };
+
+canvas.tabIndex = 0;
+canvas.addEventListener('mousemove', e => {
+  const r = canvas.getBoundingClientRect();
+  mouse.x = (e.clientX - r.left) * (canvas.width / r.width);
+  mouse.y = (e.clientY - r.top)  * (canvas.height / r.height);
+});
+canvas.addEventListener('keydown', e => { keys.add(e.key.toLowerCase()); });
+canvas.addEventListener('keyup', e => { keys.delete(e.key.toLowerCase()); });
+
+/* ================================
+   Palette
+================================ */
+function randInt(a,b){ return (a + Math.floor(Math.random()*(b-a+1))); }
+function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+
+function randJunglePalette() {
+  const h = 110 + randInt(-15, 25);   // greenish hue
+  const s = 45 + randInt(-10, 15);
+  const l = 22 + randInt(-6, 10);
+  return {
+    leafDark:  `hsl(${h} ${s+5}% ${clamp(l-6, 8, 60)}%)`,
+    leaf:      `hsl(${h} ${s+8}% ${l}%)`,
+    leafLight: `hsl(${h} ${s+15}% ${clamp(l+10, 10, 70)}%)`,
+    stem:      `hsl(${h-25} ${clamp(s-10,10,70)}% ${clamp(l-10,5,50)}%)`,
+    bloom:     `hsl(${(h+260)%360} 60% 65%)`,
+    fruit:     `hsl(${(h+90)%360} 70% 55%)`
+  };
+}
+let PAL = randJunglePalette();
+
+/* ================================
+   Grid + Tiles
+================================ */
+const COLS = 6, ROWS = 2;
+const TILE_PX = 96;       // internal pixel canvas (square)
+const SCALE = 3/2;        // onscreen up-scale inside tile
+const GAP = 8;
+const totalW = COLS * (TILE_PX*SCALE) + (COLS+1)*GAP;
+const totalH = ROWS * (TILE_PX*SCALE) + (ROWS+1)*GAP;
+const startX = (W - totalW)/2;
+const startY = (H - totalH)/2;
+
+// Each tile uses its own offscreen canvas
+function makeTileCanvas() {
+  const c = document.createElement('canvas');
+  c.width = TILE_PX; c.height = TILE_PX;
+  const tctx = c.getContext('2d');
+  tctx.imageSmoothingEnabled = false;
+  return { c, tctx };
+}
+
+/* ================================
+   Pixel helpers
+================================ */
+function px(g,x,y,w=1,h=1,color='#fff'){ g.fillStyle = color; g.fillRect(x|0,y|0,w|0,h|0); }
+function line(g,x1,y1,x2,y2,color){
+  g.strokeStyle = color; g.lineWidth = 1;
+  g.beginPath(); g.moveTo(x1+.5,y1+.5); g.lineTo(x2+.5,y2+.5); g.stroke();
+}
+
+/* ================================
+   Procedural foliage primitives
+================================ */
+function drawLeaf(g, cx, cy, len, width, angle, colMid, colEdge) {
+  // Simple mirrored bezier-ish poly using pixels
+  const steps = Math.max(6, Math.floor(len/3));
+  for (let i=0;i<=steps;i++){
+    const t = i/steps;
+    const w = width*(1 - Math.pow(t,1.5));
+    const dx = Math.cos(angle)*len*t;
+    const dy = Math.sin(angle)*len*t;
+    const x = cx + dx, y = cy + dy;
+    px(g, x-w, y, w, 1, colEdge);
+    px(g, x, y, 1, 1, colMid);
+    px(g, x+1, y, w, 1, colEdge);
+  }
+}
+function drawStem(g, x1,y1,x2,y2, col) {
+  g.fillStyle = col;
+  const steps = Math.hypot(x2-x1,y2-y1)|0;
+  for (let i=0;i<=steps;i++){
+    const t = i/steps;
+    const x = Math.round(x1 + (x2-x1)*t);
+    const y = Math.round(y1 + (y2-y1)*t);
+    g.fillRect(x, y, 1, 1);
+  }
+}
+
+/* ================================
+   12 Foliage Types (functions)
+   Each returns an update(state) to animate sway
+================================ */
+function makePalmFronds(tile, seed=0){
+  const { tctx:g } = tile;
+  const cx=TILE_PX/2, cy=TILE_PX*0.58;
+  const blades = 7;
+  return (time, windA, windMag)=>{
+    g.clearRect(0,0,TILE_PX,TILE_PX);
+    // trunk
+    drawStem(g, cx, cy, cx, cy-18, PAL.stem);
+    for(let i=0;i<blades;i++){
+      const a = -Math.PI/2 + (i-(blades-1)/2)*(Math.PI/10);
+      const sway = Math.sin(time*0.004 + i*0.7) * 0.25 + Math.cos(windA - a)*0.2*windMag;
+      const ang = a + sway;
+      drawLeaf(g, cx, cy-18, 28, 4, ang, PAL.leaf, PAL.leafLight);
+    }
+  };
+}
+function makeBroadleafCluster(tile){
+  const { tctx:g } = tile;
+  const cx=TILE_PX/2, cy=TILE_PX*0.62;
+  const rings = 4;
+  return (time, windA, windMag)=>{
+    g.clearRect(0,0,TILE_PX,TILE_PX);
+    for(let r=0;r<rings;r++){
+      const count = 10 + r*3;
+      const rad = 8 + r*5;
+      for(let i=0;i<count;i++){
+        const a = (i/count)*Math.PI*2;
+        const sway = (Math.sin(time*0.003 + r*0.9 + i*0.5)+1)*0.5 * 0.35*windMag;
+        const ang = a + sway + (windA - Math.PI/2)*0.05;
+        const x = cx + Math.cos(a)*rad;
+        const y = cy + Math.sin(a)*rad*0.7 - r;
+        drawLeaf(g, x, y, 10+r*2, 2, ang, PAL.leaf, PAL.leafLight);
+      }
+    }
+  };
+}
+function makeFern(tile){
+  const { tctx:g } = tile;
+  const baseX=TILE_PX*0.52, baseY=TILE_PX*0.68;
+  return (time, windA, windMag)=>{
+    g.clearRect(0,0,TILE_PX,TILE_PX);
+    for(let b=0;b<3;b++){
+      const stemLen = 34 - b*6;
+      const stemA = -Math.PI/2 + (b-1)*0.25 + Math.sin(time*0.004+b)*0.08 + Math.cos(windA)*0.1*windMag;
+      // stem
+      let x=baseX+b*2, y=baseY;
+      for(let i=0;i<stemLen;i++){
+        x += Math.cos(stemA)/1.6; y += Math.sin(stemA)/1.6;
+        px(g,x,y,1,1,PAL.stem);
+        if (i>6 && i%2===0){
+          const leafA = stemA - Math.PI/2 + (Math.random()*0.1-0.05);
+          const leafB = stemA + Math.PI/2 + (Math.random()*0.1-0.05);
+          drawLeaf(g, x, y, 6, 1, leafA, PAL.leafDark, PAL.leaf);
+          drawLeaf(g, x, y, 6, 1, leafB, PAL.leafDark, PAL.leaf);
+        }
+      }
+    }
+  };
+}
+function makeBamboo(tile){
+  const { tctx:g } = tile;
+  const stalks = [TILE_PX*0.42, TILE_PX*0.55, TILE_PX*0.68];
+  return (time, windA, windMag)=>{
+    g.clearRect(0,0,TILE_PX,TILE_PX);
+    stalks.forEach((sx,i)=>{
+      const lean = Math.cos(time*0.003 + i)*0.1 + Math.cos(windA)*0.15*windMag;
+      for(let y=TILE_PX*0.75; y>20; y--){
+        const xx = sx + (TILE_PX*0.75 - y)*lean*0.03;
+        px(g,xx,y,1,1,PAL.stem);
+        if (y%10===0){ // node
+          px(g,xx-1,y,3,1,PAL.leafLight);
+        }
+        if (y%7===0){ // small leaf spur
+          const dir = (i%2?1:-1);
+          drawLeaf(g, xx, y, 7, 1, (-Math.PI/2)+dir*0.9, PAL.leaf, PAL.leafLight);
+        }
+      }
+    });
+  };
+}
+function makeVines(tile){
+  const { tctx:g } = tile;
+  const anchors = [20, 40, 60, 78];
+  return (time, windA, windMag)=>{
+    g.clearRect(0,0,TILE_PX,TILE_PX);
+    anchors.forEach((ax,i)=>{
+      let x=ax, y=8;
+      const length = 70;
+      for(let k=0;k<length;k++){
+        const sway = Math.sin((k*0.15) + time*0.004 + i)*1.1 + Math.cos(windA)*1.5*windMag;
+        x = ax + sway* (k/length);
+        y = 8 + k*0.9;
+        px(g, x, y, 1, 1, PAL.stem);
+        if (k%8===0){
+          drawLeaf(g, x, y, 8, 1, Math.PI, PAL.leaf, PAL.leafLight);
+          drawLeaf(g, x, y, 8, 1, 0,      PAL.leaf, PAL.leafLight);
+        }
+      }
+    });
+  };
+}
+function makeBanana(tile){
+  const { tctx:g } = tile;
+  const cx=TILE_PX*0.5, cy=TILE_PX*0.7;
+  return (time, windA, windMag)=>{
+    g.clearRect(0,0,TILE_PX,TILE_PX);
+    drawStem(g, cx, cy, cx, cy-16, PAL.stem);
+    for(let i=0;i<5;i++){
+      const a = -Math.PI/2 + (i-2)*0.22;
+      const bend = Math.sin(time*0.003 + i)*0.15 + Math.sin(windA - a)*0.25*windMag;
+      drawLeaf(g, cx, cy-16, 36, 5, a + bend, PAL.leafDark, PAL.leafLight);
+    }
+  };
+}
+function makeBush(tile){
+  const { tctx:g } = tile;
+  const cx=TILE_PX/2, cy=TILE_PX*0.72;
+  return (time, windA, windMag)=>{
+    g.clearRect(0,0,TILE_PX,TILE_PX);
+    // puff balls of leaves
+    for(let r=0;r<5;r++){
+      const rad=10+r*3;
+      for(let i=0;i<20;i++){
+        const a = (i/20)*Math.PI*2;
+        const sway = Math.cos(time*0.002 + i*0.3)*0.2 + Math.cos(windA-a)*0.2*windMag;
+        const x=cx+Math.cos(a+ sway)*rad;
+        const y=cy+Math.sin(a+ sway)*rad*0.7;
+        px(g, x, y, 2, 2, r<2?PAL.leaf:PAL.leafLight);
+      }
+    }
+  };
+}
+function makePhilodendron(tile){
+  const { tctx:g } = tile;
+  const centers = [ [46,64],[54,72],[60,60],[38,70] ];
+  return (time, windA, windMag)=>{
+    g.clearRect(0,0,TILE_PX,TILE_PX);
+    centers.forEach((c,i)=>{
+      const [cx,cy]=c;
+      const a = -Math.PI/2 + i*0.9;
+      const t = time*0.004 + i;
+      const bend = Math.sin(t)*0.18 + Math.cos(windA)*0.22*windMag;
+      drawLeaf(g, cx, cy, 24, 5, a+bend, PAL.leaf, PAL.leafLight);
+      px(g, cx, cy, 1,1, PAL.stem);
+    });
+  };
+}
+function makeReeds(tile){
+  const { tctx:g } = tile;
+  const bases = Array.from({length:9}, (_,i)=>20+i*7);
+  return (time, windA, windMag)=>{
+    g.clearRect(0,0,TILE_PX,TILE_PX);
+    bases.forEach((bx,i)=>{
+      const lean = Math.sin(time*0.003 + i)*0.2 + Math.cos(windA)*0.25*windMag;
+      for(let y=TILE_PX*0.78; y>18; y--){
+        const xx = bx + (TILE_PX*0.78 - y)*lean*0.06;
+        px(g,xx,y,1,1,PAL.stem);
+        if (y%11===0) drawLeaf(g, xx, y, 7, 1, -Math.PI/2 + (i%2?0.8:-0.8), PAL.leaf, PAL.leafLight);
+      }
+    });
+  };
+}
+function makeFiddleLeaf(tile){
+  const { tctx:g } = tile;
+  const trunks = [ [TILE_PX*0.5, TILE_PX*0.78] ];
+  return (time, windA, windMag)=>{
+    g.clearRect(0,0,TILE_PX,TILE_PX);
+    trunks.forEach(([bx,by])=>{
+      drawStem(g,bx,by,bx,by-26,PAL.stem);
+      for(let i=0;i<6;i++){
+        const y=by-6-i*4, dir=i%2?-1:1;
+        const a = dir*0.9 + Math.sin(time*0.003+i)*0.15 + Math.sin(windA)*0.2*windMag;
+        drawLeaf(g, bx, y, 12, 4, a, PAL.leafDark, PAL.leafLight);
+      }
+    });
+  };
+}
+function makeMonstera(tile){
+  const { tctx:g } = tile;
+  const cx=TILE_PX*0.5, cy=TILE_PX*0.68;
+  return (time, windA, windMag)=>{
+    g.clearRect(0,0,TILE_PX,TILE_PX);
+    for(let i=0;i<4;i++){
+      const a = -Math.PI/2 + (i-1.5)*0.5;
+      const cut = 3 + i;
+      const bend = Math.sin(time*0.002+i)*0.2 + Math.cos(windA-a)*0.2*windMag;
+      // draw "split" by skipping pixels in mid
+      const steps = 24, len=28, width=6, ang=a+bend;
+      for(let s=0;s<=steps;s++){
+        const t=s/steps;
+        const dx = Math.cos(ang)*len*t, dy=Math.sin(ang)*len*t;
+        const w = width*(1 - Math.pow(t,1.4));
+        for(let k=-w;k<=w;k++){
+          if (Math.abs(k)<1 && t>0.3 && (s%cut===0)) continue; // holes
+          px(g, cx+dx+k, cy+dy, 1,1, k===0?PAL.leaf:PAL.leafLight);
+        }
+      }
+      drawStem(g, cx, cy, cx+Math.cos(a)*14, cy+Math.sin(a)*14, PAL.stem);
+    }
+  };
+}
+function makeBougainvillea(tile){
+  const { tctx:g } = tile;
+  const cx=TILE_PX*0.48, cy=TILE_PX*0.72;
+  return (time, windA, windMag)=>{
+    g.clearRect(0,0,TILE_PX,TILE_PX);
+    for(let b=0;b<3;b++){
+      const a = -Math.PI/2 + (b-1)*0.4 + Math.sin(time*0.003+b)*0.12 + Math.cos(windA)*0.15*windMag;
+      drawStem(g,cx,cy,cx+Math.cos(a)*18, cy+Math.sin(a)*18, PAL.stem);
+      for(let i=0;i<7;i++){
+        const t=i/7, x=cx+Math.cos(a)*18*t, y=cy+Math.sin(a)*18*t;
+        drawLeaf(g,x,y,9,2,a+Math.PI/2, PAL.leafDark, PAL.leafLight);
+        if (i%3===1) px(g, x+1, y-1, 2,2, PAL.bloom);
+      }
+    }
+  };
+}
+function makePeperomia(tile){
+  const { tctx:g } = tile;
+  const cx=TILE_PX/2, cy=TILE_PX*0.75;
+  return (time, windA, windMag)=>{
+    g.clearRect(0,0,TILE_PX,TILE_PX);
+    for(let r=0;r<3;r++){
+      for(let i=0;i<10;i++){
+        const a = (i/10)*Math.PI*2;
+        const sway = Math.cos(time*0.003 + r + i)*0.15 + Math.cos(windA-a)*0.2*windMag;
+        const x=cx+Math.cos(a)*(6+r*5);
+        const y=cy+Math.sin(a)*(4+r*3);
+        drawLeaf(g,x,y,8,3,a+sway, PAL.leaf, PAL.leafLight);
+      }
+    }
+  };
+}
+function makeBerryBush(tile){
+  const { tctx:g } = tile;
+  const cx=TILE_PX/2, cy=TILE_PX*0.72;
+  return (time, windA, windMag)=>{
+    g.clearRect(0,0,TILE_PX,TILE_PX);
+    for(let i=0;i<36;i++){
+      const a = (i/36)*Math.PI*2;
+      const r = 16 + (i%3);
+      const sway = Math.sin(time*0.002 + i)*0.12 + Math.cos(windA-a)*0.18*windMag;
+      const x=cx+Math.cos(a+sway)*r;
+      const y=cy+Math.sin(a+sway)*r*0.7;
+      px(g, x, y, 2, 2, (i%7===0)?PAL.fruit:PAL.leaf);
+    }
+  };
+}
+
+/* ================================
+   Build the 12 tiles
+================================ */
+const foliageMakers = [
+  makePalmFronds,
+  makeBroadleafCluster,
+  makeFern,
+  makeBamboo,
+  makeVines,
+  makeBanana,
+  makeBush,
+  makePhilodendron,
+  makeReeds,
+  makeFiddleLeaf,
+  makeMonstera,
+  makeBougainvillea,
+  // (Peperomia and BerryBush available if you want to swap)
+];
+
+const tiles = [];
+for (let r=0;r<ROWS;r++){
+  for (let c=0;c<COLS;c++){
+    const tile = makeTileCanvas();
+    const idx = r*COLS + c;
+    const maker = foliageMakers[idx % foliageMakers.length];
+    tile.update = maker(tile, idx);
+    tiles.push(tile);
+  }
+}
+
+/* ================================
+   Draw helpers
+================================ */
+function drawTile(t, x, y, scale){
+  const w = t.c.width, h = t.c.height;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(scale, scale);
+  ctx.drawImage(t.c, 0, 0);
+  ctx.restore();
+}
+function drawGridBackdrop() {
+  ctx.save();
+  ctx.globalAlpha = 0.08;
+  ctx.fillStyle = '#000';
+  for (let i = 0; i <= W; i += 32) ctx.fillRect(i, 0, 1, H);
+  for (let j = 0; j <= H; j += 32) ctx.fillRect(0, j, W, 1);
+  ctx.restore();
+  // subtle vignette
+  const grd = ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*0.2, W/2,H/2, Math.max(W,H)*0.7);
+  grd.addColorStop(0,'rgba(0,0,0,0)');
+  grd.addColorStop(1,'rgba(0,0,0,0.6)');
+  ctx.fillStyle = grd; ctx.fillRect(0,0,W,H);
+}
+
+/* ================================
+   Main loop
+   - WASD pans the whole garden (cam.x, cam.y)
+   - Mouse angle controls wind direction; speed of motion adds wind magnitude
+================================ */
+let last = performance.now();
+function loop(now){
+  const dt = Math.min(0.033, (now-last)/1000); last = now;
+
+  // WASD pan (like body movement)
+  const fx = (keys.has('d')?1:0) + (keys.has('a')?-1:0);
+  const fy = (keys.has('s')?1:0) + (keys.has('w')?-1:0);
+  if (fx || fy){
+    const ang = Math.atan2(fy, fx);
+    cam.x += Math.cos(ang)*cam.speed*dt;
+    cam.y += Math.sin(ang)*cam.speed*dt;
+  }
+
+  // “Turret” = wind angle (toward mouse)
+  const dx = mouse.x - (W/2), dy = mouse.y - (H/2);
+  const windAngle = Math.atan2(dy, dx);
+  const windMag = clamp(Math.hypot(dx,dy) / (Math.max(W,H)*0.5), 0, 1);
+
+  // Clear + backdrop
+  ctx.clearRect(0,0,W,H);
+  drawGridBackdrop();
+
+  // Draw 2x6 tiles with slight parallax based on cam
+  let index=0;
+  for (let r=0;r<ROWS;r++){
+    for (let c=0;c<COLS;c++){
+      const tile = tiles[index++];
+      // Update tile animation
+      tile.update(now, windAngle, windMag);
+
+      // Parallax offsets (layered jungle feel)
+      const layer = (r*COLS + c) % 3; // 0..2
+      const par = [0.15, 0.3, 0.5][layer];
+      const pxOff = -cam.x*par, pyOff = -cam.y*par;
+
+      const x = startX + GAP + c*(TILE_PX*SCALE + GAP) + pxOff;
+      const y = startY + GAP + r*(TILE_PX*SCALE + GAP) + pyOff;
+
+      // tile card
+      ctx.save();
+      ctx.translate(x-4, y-4);
+      ctx.fillStyle = 'rgba(255,255,255,0.03)';
+      ctx.fillRect(0,0,TILE_PX*SCALE+8, TILE_PX*SCALE+8);
+      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+      ctx.strokeRect(0.5,0.5,TILE_PX*SCALE+7, TILE_PX*SCALE+7);
+      ctx.restore();
+
+      drawTile(tile, x, y, SCALE);
+    }
+  }
+
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+/* ================================
+   Interactions
+================================ */
+window.addEventListener('keydown', (e)=>{
+  if (e.key.toLowerCase() === 'p'){ PAL = randJunglePalette(); } // recolor globally
+});
+</script>
+</body>
+</html>

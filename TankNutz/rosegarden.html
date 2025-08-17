@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Pixel Rose Garden — single-file HTML (64×64, 8 frames)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root { color-scheme: dark; }
+  html, body { height:100%; }
+  body{
+    margin:0; display:grid; place-items:center; background:#0f0f12; font-family:ui-sans-serif, system-ui, -apple-system;
+  }
+  .wrap{
+    display:grid; gap:.5rem; place-items:center;
+  }
+  canvas{
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    width: 320px; /* upscale x5 */
+    height: 320px;
+    border: 2px solid #22252a;
+    box-shadow: 0 10px 30px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.05);
+    background:#1a1412;
+    border-radius: 12px;
+  }
+  .label { color:#cfd3da; opacity:.75; font-size:.9rem; letter-spacing:.02em }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <canvas id="c" width="64" height="64" aria-label="Pixel Rose Garden animation"></canvas>
+    <div class="label">Pixel Rose Garden — 8 frames @ 100ms • top-down • cohesive sprite</div>
+  </div>
+
+<script>
+(() => {
+  'use strict';
+
+  // === Palette: “Briar Bloom” ===
+  const P = {
+    soil:      "#2A1E1A",
+    bark:      "#5B3A29",
+    leafDeep:  "#0C3B26",
+    leafMid:   "#1E6A3E",
+    leafHi:    "#4FBF68",
+    roseDeep:  "#6A0D1B",
+    roseMid:   "#B0172F",
+    roseHi:    "#FF5177",
+    stone:     "#A8B1B8",
+    glint:     "#F5F6F7"
+  };
+
+  // === Canvas setup ===
+  const SIZE = 64, FRAMES = 8, FRAME_MS = 100;
+  const view = document.getElementById('c');
+  const vctx = view.getContext('2d', { alpha: false });
+  vctx.imageSmoothingEnabled = false;
+
+  // === One spritesheet with all frames, baked once in memory ===
+  const sheet = document.createElement('canvas');
+  sheet.width = SIZE * FRAMES;
+  sheet.height = SIZE;
+  const sctx = sheet.getContext('2d', { alpha: false });
+  sctx.imageSmoothingEnabled = false;
+
+  // Reusable offscreen frame buffer (to avoid per-frame allocations)
+  const frame = document.createElement('canvas');
+  frame.width = SIZE; frame.height = SIZE;
+  const fctx = frame.getContext('2d', { alpha: false });
+  fctx.imageSmoothingEnabled = false;
+
+  // === Deterministic tiny RNG for consistent dew/glint positions ===
+  let seed = 1337;
+  function rand(){ seed ^= seed<<13; seed ^= seed>>>17; seed ^= seed<<5; return (seed>>>0)/4294967295; }
+  function randi(a,b){ return (a + Math.floor(rand()*(b-a+1))); }
+
+  // === Low-level pixel helpers (pixel-perfect) ===
+  function px(ctx, x, y, color){
+    if(x<0||y<0||x>=SIZE||y>=SIZE) return;
+    ctx.fillStyle = color; ctx.fillRect(x, y, 1, 1);
+  }
+  function disk(ctx, cx, cy, r, color){
+    ctx.fillStyle = color;
+    const r2 = r*r;
+    for(let y=-r; y<=r; y++){
+      for(let x=-r; x<=r; x++){
+        if(x*x + y*y <= r2){
+          const X = cx + x, Y = cy + y;
+          if(X>=0 && Y>=0 && X<SIZE && Y<SIZE) ctx.fillRect(X, Y, 1, 1);
+        }
+      }
+    }
+  }
+
+  // === Background: soil with subtle speckle; stone edging (uneven oval) ===
+  function drawSoil(ctx){
+    ctx.fillStyle = P.soil;
+    ctx.fillRect(0,0,SIZE,SIZE);
+    // Sparse speckle with bark tone for texture (safe density)
+    ctx.fillStyle = P.bark;
+    for(let y=0; y<SIZE; y+=2){
+      for(let x=(y&2); x<SIZE; x+=4){
+        if(((x*13 + y*7 + 5) % 23) === 0) ctx.fillRect(x, y, 1, 1);
+      }
+    }
+  }
+
+  function drawStoneEdge(ctx){
+    // Base oval params
+    const cx = 32, cy = 34, rx = 28, ry = 22;
+    // Draw a 2–3px thick irregular oval of stones
+    for(let t=0; t<360; t++){
+      const rad = t * Math.PI/180;
+      const jitter = (Math.sin(t*3.7)+Math.cos(t*1.9))*0.7;
+      const R1 = 1.5 + ((t%17)===0?1:0) + 0.2*jitter;
+      for(let k=-2; k<=2; k++){
+        const rr = 1 + k*0.5 + R1;
+        const x = Math.round(cx + Math.cos(rad)*(rx + rr*0.6));
+        const y = Math.round(cy + Math.sin(rad)*(ry + rr*0.6));
+        px(ctx, x, y, P.stone);
+      }
+      // occasional micro-chips
+      if(t%29===0){
+        const x = Math.round(cx + Math.cos(rad)*(rx+2));
+        const y = Math.round(cy + Math.sin(rad)*(ry+2));
+        px(ctx, x, y, P.glint);
+      }
+    }
+  }
+
+  // === Bush rendering ===
+  // Each bush is a cluster of leaf blobs with highlights, roses, and tiny thorns.
+  function drawBush(ctx, bx, by, swayX, petalOpen, dewOn, dewSeed){
+    // Base deep leaf mass
+    disk(ctx, bx, by, 7, P.leafDeep);
+    // Layered mid-leaf with slight sway (parallax 1px)
+    disk(ctx, bx + swayX, by, 6, P.leafMid);
+
+    // Leaf highlights with 25% checker dithering toward top-left quadrant
+    for(let y=-6; y<=6; y++){
+      for(let x=-6; x<=6; x++){
+        if(x*x+y*y<=36 && ( ( (bx+x) + (by+y) ) & 3) === 0 && x<=0 && y<=0){
+          px(ctx, bx+x + swayX, by+y, P.leafHi);
+        }
+      }
+    }
+
+    // Thorns (1px spikes) around the rim using bark color
+    for(let t=0; t<360; t+=45){
+      const rad = t*Math.PI/180;
+      const x = Math.round(bx + Math.cos(rad)*8);
+      const y = Math.round(by + Math.sin(rad)*8);
+      // thorn points outward 1px
+      px(ctx, x, y, P.bark);
+    }
+
+    // Roses: 4 buds per bush at fixed offsets
+    const roseOffsets = [
+      [-2, -1],
+      [ 2,  0],
+      [ 0,  3],
+      [ -1, 2],
+    ];
+    for(let i=0;i<roseOffsets.length;i++){
+      drawRose(ctx, bx + roseOffsets[i][0] + swayX, by + roseOffsets[i][1], petalOpen);
+    }
+
+    // Dew sparkle: fixed pseudo-random leaf pixels, blink for 2 frames
+    if(dewOn){
+      // deterministic from dewSeed
+      const r = (n) => {
+        let s = dewSeed*73856093 + n*19349663; s ^= s<<13; s ^= s>>>17; s ^= s<<5; return (s>>>0)%7 - 3;
+      };
+      const dx1 = r(1), dy1 = r(2);
+      const dx2 = r(3), dy2 = r(4);
+      px(ctx, bx + Math.max(-5, Math.min(5, dx1)), by + Math.max(-5, Math.min(5, dy1)), P.glint);
+      px(ctx, bx + Math.max(-4, Math.min(4, dx2)), by + Math.max(-4, Math.min(4, dy2)), P.glint);
+    }
+  }
+
+  function drawRose(ctx, cx, cy, open){
+    // Tiny pixel rose with 3 tones; "open" expands 1px radially
+    // Core
+    px(ctx, cx, cy, P.roseDeep);
+    // Petals (cross)
+    px(ctx, cx-1-open, cy, P.roseMid);
+    px(ctx, cx+1+open, cy, P.roseMid);
+    px(ctx, cx, cy-1-open, P.roseMid);
+    px(ctx, cx, cy+1+open, P.roseMid);
+    // Highlights on two tips
+    px(ctx, cx-1-open, cy, P.roseHi);
+    px(ctx, cx, cy-1-open, P.roseHi);
+  }
+
+  // === Compose one full frame (wind sway on 1–4, petal “breath” on 5–8) ===
+  function drawFrameTo(ctx, fIndex){
+    ctx.clearRect(0,0,SIZE,SIZE);
+    drawSoil(ctx);
+    drawStoneEdge(ctx);
+
+    // Sway pattern (sine-ish): frames 0–3 only
+    const swayTable = [0, 1, 0, -1, 0, 0, 0, 0];
+    const swayX = swayTable[fIndex] | 0;
+
+    // Petal open/close on frames 4–7 (open on 4–5, close on 6–7)
+    const petalOpen = (fIndex>=4 && fIndex<=5) ? 1 : 0;
+
+    // Dew sparkle only on two frames (blink)
+    const dewOn = (fIndex===5 || fIndex===6);
+
+    // Five clustered bushes inside the stone oval
+      for(const b of bushesList){
+        drawBush(ctx, b.x, b.y, swayX, petalOpen, dewOn && b.alive, b.seed, b.alive);
+      }
+  }
+
+  // === Bake spritesheet once ===
+  (function bake(){
+    for(let f=0; f<FRAMES; f++){
+      drawFrameTo(fctx, f);
+      sctx.drawImage(frame, f*SIZE, 0);
+    }
+  })();
+
+    // === Persistent bushes and interactive projectiles ===
+    const bushesList = [
+      {x: 22, y: 24, seed: 101, alive: true},
+      {x: 40, y: 22, seed: 202, alive: true},
+      {x: 19, y: 40, seed: 303, alive: true},
+      {x: 45, y: 39, seed: 404, alive: true},
+      {x: 32, y: 30, seed: 505, alive: true}
+    ];
+
+    const projectiles = []; // {x,y,vx,vy,life}
+    const particles = [];
+
+    // spawn a projectile from center towards left-click only
+    view.addEventListener('pointerdown', (ev)=>{
+      // only respond to primary (left) button
+      if (ev.button !== 0) return;
+      const r = view.getBoundingClientRect();
+      const mx = Math.round((ev.clientX - r.left) * (view.width / r.width));
+      const my = Math.round((ev.clientY - r.top) * (view.height / r.height));
+      // fire from canvas center (32,32)
+      const sx = SIZE/2, sy = SIZE/2;
+      const dx = mx - sx, dy = my - sy; const mag = Math.hypot(dx,dy) || 1;
+      const speed = 220; // pixels per second in sheet-space
+      projectiles.push({ x: sx, y: sy, vx: dx/mag*speed, vy: dy/mag*speed, life: 1.6 });
+    });
+    // prevent right-click context menu on canvas
+    view.addEventListener('contextmenu', (ev)=>{ ev.preventDefault(); });
+
+    function spawnHitParticles(x,y,color){
+      for(let i=0;i<12;i++){
+        const a = Math.random()*Math.PI*2; const s = 40 + Math.random()*80;
+        particles.push({ x, y, vx: Math.cos(a)*s, vy: Math.sin(a)*s, life: 0.6 + Math.random()*0.6, color });
+      }
+    }
+
+  // === Animation loop (requestAnimationFrame, memory-safe) ===
+  let frameIndex = 0;
+  let acc = 0;
+  let last = performance.now();
+  // vertical auto-scroll settings (pixels per second)
+  const SCROLL_SPEED = 8; // slow crawl
+  let scrollY = 0;
+
+  function loop(now){
+    const dt = now - last; last = now; acc += dt;
+    while(acc >= FRAME_MS){
+      acc -= FRAME_MS;
+      frameIndex = (frameIndex + 1) % FRAMES;
+    }
+  // advance scrolling (dt in ms -> seconds)
+  scrollY = (scrollY + SCROLL_SPEED * (dt / 1000)) % SIZE;
+  const destY = Math.round(scrollY);
+  // Blit current frame from spritesheet twice (tiled vertically) to create an endless vertical scroll
+  const sx = frameIndex * SIZE;
+  vctx.clearRect(0,0,SIZE,SIZE);
+  // primary copy (may be partially off-canvas)
+  vctx.drawImage(sheet, sx, 0, SIZE, SIZE, 0, destY, SIZE, SIZE);
+  // secondary copy to fill the remaining area
+  vctx.drawImage(sheet, sx, 0, SIZE, SIZE, 0, destY - SIZE, SIZE, SIZE);
+  // update projectiles and particles (dt in seconds)
+  const dtS = dt/1000;
+  // update projectiles
+  for (let i = projectiles.length-1; i >= 0; i--){
+    const p = projectiles[i];
+    p.x += p.vx * dtS; p.y += p.vy * dtS; p.life -= dtS;
+    // check collision with bushes
+    let hit = false;
+    for (const b of bushesList){
+      if (!b.alive) continue;
+      const dx = p.x - b.x, dy = p.y - b.y; const dist = Math.hypot(dx, dy);
+      if (dist < 10){ // hit radius
+        b.alive = false;
+        spawnHitParticles(b.x, b.y, '#ff85c0');
+        hit = true; break;
+      }
+    }
+    if (hit || p.life <= 0 || p.x < -20 || p.x > SIZE+20 || p.y < -20 || p.y > SIZE+20) projectiles.splice(i,1);
+  }
+
+  // update particles
+  for (let i = particles.length-1; i >= 0; i--){
+    const q = particles[i]; q.x += q.vx * dtS; q.y += q.vy * dtS; q.life -= dtS; q.vx *= 0.92; q.vy *= 0.92; if (q.life <= 0) particles.splice(i,1);
+  }
+
+  // draw projectiles (glowing beam)
+  for (const p of projectiles){
+    vctx.save();
+    vctx.fillStyle = '#ff2d9c'; vctx.shadowColor = 'rgba(255,45,156,0.9)'; vctx.shadowBlur = 10; vctx.beginPath(); vctx.arc(p.x, p.y, 3, 0, Math.PI*2); vctx.fill();
+    vctx.fillStyle = '#fff3'; vctx.beginPath(); vctx.arc(p.x, p.y, 1.25, 0, Math.PI*2); vctx.fill();
+    vctx.restore();
+  }
+
+  // draw particles
+  for (const q of particles){
+    const alpha = Math.max(0, Math.min(1, q.life / 0.8));
+    vctx.fillStyle = q.color || '#ffd1e8'; vctx.globalAlpha = alpha; vctx.fillRect(Math.round(q.x), Math.round(q.y), 1, 1); vctx.globalAlpha = 1;
+  }
+    requestAnimationFrame(loop);
+  }
+
+  // Start animation
+  requestAnimationFrame(loop);
+
+  // Prevent leaks on hot-reload/navigation (no timers created besides RAF)
+  window.addEventListener('pagehide', () => { /* nothing to clean; all singletons */ });
+
+})();
+</script>
+</body>
+</html>

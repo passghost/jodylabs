@@ -1,0 +1,2008 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI-Prompt SFX Synth - Generate Commands for AI Audio</title>
+  <style>
+    :root {
+      --bg: #0c0e12;
+      --fg: #e8ecf1;
+      --mut: #9aa3ad;
+      --panel: #151826;
+      --line: #262b3a;
+      --acc: #7dd3fc;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+      --bad: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font: 14px/1.45 ui-sans-serif, system-ui, -apple-system, Segoe UI, Inter, Arial
+    }
+
+    header {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line)
+    }
+
+    header h1 {
+      font-size: 16px;
+      margin: 0;
+      font-weight: 700;
+      letter-spacing: .2px
+    }
+
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 16px;
+      display: grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 16px
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px
+    }
+
+    .card h2 {
+      margin: 0 0 10px 0;
+      font-size: 12px;
+      color: var(--mut);
+      text-transform: uppercase;
+      letter-spacing: .25px
+    }
+
+    textarea,
+    input[type="text"] {
+      width: 100%;
+      background: #0f1220;
+      border: 1px solid #2a3147;
+      color: var(--fg);
+      border-radius: 12px;
+      padding: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace
+    }
+
+    textarea {
+      min-height: 120px;
+      resize: vertical
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center
+    }
+
+    button {
+      background: #1b2033;
+      border: 1px solid #323a57;
+      color: var(--fg);
+      border-radius: 12px;
+      padding: 10px 12px;
+      cursor: pointer
+    }
+
+    button[disabled] {
+      opacity: .6;
+      cursor: not-allowed
+    }
+
+    button:hover {
+      border-color: #4b5788
+    }
+
+    .accent {
+      border-color: #3b82f6
+    }
+
+    .ok {
+      border-color: var(--ok)
+    }
+
+    .warn {
+      border-color: var(--warn)
+    }
+
+    .small {
+      color: var(--mut);
+      font-size: 12px
+    }
+
+    .pill {
+      display: inline-block;
+      background: #0f1220;
+      border: 1px dashed #2a3147;
+      border-radius: 999px;
+      padding: 6px 8px;
+      color: var(--mut);
+      font-family: ui-monospace, monospace
+    }
+
+    .out {
+      background: #0f1220;
+      border: 1px solid #2a3147;
+      border-radius: 12px;
+      padding: 10px;
+      min-height: 44px;
+      white-space: pre-wrap
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px
+    }
+
+    audio {
+      width: 100%;
+      margin-top: 8px
+    }
+
+    .svgwrap {
+      aspect-ratio: 16/14;
+      background: #0f1220;
+      border: 1px solid #2a3147;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      overflow: hidden
+    }
+
+    .svgwrap svg {
+      width: 100%;
+      height: 100%;
+      max-width: 100%;
+      max-height: 100%
+    }
+
+    .err {
+      color: var(--bad)
+    }
+
+    .examples code {
+      display: block;
+      background: #0f1220;
+      border: 1px solid #2a3147;
+      border-radius: 10px;
+      padding: 8px
+    }
+
+    pre {
+      background: #0f1220;
+      border: 1px solid #2a3147;
+      border-radius: 10px;
+      padding: 10px;
+      white-space: pre-wrap
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>AI-Prompt SFX Synth</h1>
+    <span class="pill">Generate prompts for AI → Test sounds → Copy commands</span>
+  </header>
+  <main>
+    <!-- Left: prompt + audio -->
+    <section class="card">
+      <h2>Command</h2>
+      <textarea id="cmd" spellcheck="false"
+        placeholder="Example: wave=saw note=A4 dur=0.35 attack=2ms decay=120ms sustain=0.4 release=80ms cutoff=1200Hz q=0.8 lfo=6Hz->cutoff:2400 drive=0.2 pitch_sweep=+7st/70ms volume=-4dB"></textarea>
+      <div class="row" style="margin-top:10px">
+        <button id="btnRender" class="accent">Render (≤5s)</button>
+        <button id="btnStop">Stop</button>
+        <button id="btnRandomize" class="warn">Randomize</button>
+        <button id="btnCopy" class="ok">Copy Command</button>
+        <span id="status" class="small">Ready.</span>
+      </div>
+      <div style="margin-top:10px">
+        <audio id="player" controls preload="auto"></audio>
+        <div class="row" style="margin-top:8px">
+          <input id="filename" type="text" placeholder="filename.wav" value="sfx.wav"
+            style="width:120px;font-size:12px;padding:6px 8px">
+          <a id="dl" download="sfx.wav"><button class="ok">Download WAV</button></a>
+          <button id="btnRelease" title="Free audio memory without reloading">Release</button>
+          <label class="small" style="display:flex;align-items:center;gap:6px"><input id="autoRelease" type="checkbox"
+              checked /> auto-release on end</label>
+          <span id="info" class="small"></span>
+        </div>
+        <div id="err" class="err small" style="margin-top:6px"></div>
+      </div>
+    </section>
+
+    <!-- Right: interactive visual panel -->
+    <aside class="card">
+      <h2>Interactive Panel — Live Parameter Visualization</h2>
+      <div class="svgwrap">
+        <svg id="panel" viewBox="0 0 800 700" width="100%" height="100%">
+          <defs>
+            <linearGradient id="panelBg" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#1c2133" />
+              <stop offset="100%" stop-color="#0e1322" />
+            </linearGradient>
+            <linearGradient id="dialBg" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#2a3147" />
+              <stop offset="100%" stop-color="#1a1f2e" />
+            </linearGradient>
+            <radialGradient id="ledGlow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#7dd3fc" stop-opacity="0.8" />
+              <stop offset="100%" stop-color="#7dd3fc" stop-opacity="0" />
+            </radialGradient>
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="2" result="coloredBlur" />
+              <feMerge>
+                <feMergeNode in="coloredBlur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+
+          <!-- Main panel background -->
+          <rect x="10" y="10" width="780" height="680" rx="20" fill="url(#panelBg)" stroke="#2a3147" stroke-width="2" />
+
+          <!-- Oscillator Section -->
+          <g id="osc-section">
+            <text x="40" y="50" fill="#7dd3fc" font-size="18" font-weight="bold">OSCILLATOR</text>
+            <!-- Wave type LEDs -->
+            <g id="wave-leds" transform="translate(40,70)">
+              <circle id="led-sine" cx="20" cy="0" r="6" fill="#333" stroke="#555" />
+              <text x="35" y="5" fill="#9aa3ad" font-size="12">SINE</text>
+              <circle id="led-square" cx="90" cy="0" r="6" fill="#333" stroke="#555" />
+              <text x="105" y="5" fill="#9aa3ad" font-size="12">SQR</text>
+              <circle id="led-saw" cx="150" cy="0" r="6" fill="#333" stroke="#555" />
+              <text x="165" y="5" fill="#9aa3ad" font-size="12">SAW</text>
+              <circle id="led-triangle" cx="210" cy="0" r="6" fill="#333" stroke="#555" />
+              <text x="225" y="5" fill="#9aa3ad" font-size="12">TRI</text>
+              <circle id="led-noise" cx="270" cy="0" r="6" fill="#333" stroke="#555" />
+              <text x="285" y="5" fill="#9aa3ad" font-size="12">NOISE</text>
+            </g>
+            <!-- Frequency dial -->
+            <g id="freq-dial" transform="translate(400,60)">
+              <circle cx="0" cy="0" r="35" fill="url(#dialBg)" stroke="#4a5568" stroke-width="2" />
+              <circle cx="0" cy="0" r="25" fill="#0f1220" stroke="#2a3147" />
+              <line id="freq-needle" x1="0" y1="-20" x2="0" y2="-5" stroke="#7dd3fc" stroke-width="3"
+                stroke-linecap="round" transform="rotate(0)" />
+              <text x="0" y="50" text-anchor="middle" fill="#9aa3ad" font-size="12">FREQ</text>
+              <text id="freq-value" x="0" y="65" text-anchor="middle" fill="#e8ecf1" font-size="11">440Hz</text>
+            </g>
+            <!-- Duration bar -->
+            <g id="dur-bar" transform="translate(500,60)">
+              <rect x="0" y="-15" width="120" height="8" fill="#1a1f2e" stroke="#2a3147" rx="4" />
+              <rect id="dur-fill" x="2" y="-13" width="0" height="4" fill="#22c55e" rx="2" />
+              <text x="60" y="20" text-anchor="middle" fill="#9aa3ad" font-size="12">DURATION</text>
+              <text id="dur-value" x="60" y="35" text-anchor="middle" fill="#e8ecf1" font-size="11">0.5s</text>
+            </g>
+          </g>
+
+          <!-- ADSR Envelope Section -->
+          <g id="adsr-section" transform="translate(0,140)">
+            <text x="40" y="30" fill="#7dd3fc" font-size="18" font-weight="bold">ENVELOPE</text>
+            <!-- ADSR Dials -->
+            <g id="attack-dial" transform="translate(80,60)">
+              <circle cx="0" cy="0" r="25" fill="url(#dialBg)" stroke="#4a5568" stroke-width="1.5" />
+              <circle cx="0" cy="0" r="18" fill="#0f1220" stroke="#2a3147" />
+              <line id="attack-needle" x1="0" y1="-15" x2="0" y2="-5" stroke="#f59e0b" stroke-width="2"
+                stroke-linecap="round" />
+              <text x="0" y="40" text-anchor="middle" fill="#9aa3ad" font-size="10">A</text>
+              <text id="attack-value" x="0" y="52" text-anchor="middle" fill="#e8ecf1" font-size="9">5ms</text>
+            </g>
+            <g id="decay-dial" transform="translate(160,60)">
+              <circle cx="0" cy="0" r="25" fill="url(#dialBg)" stroke="#4a5568" stroke-width="1.5" />
+              <circle cx="0" cy="0" r="18" fill="#0f1220" stroke="#2a3147" />
+              <line id="decay-needle" x1="0" y1="-15" x2="0" y2="-5" stroke="#f59e0b" stroke-width="2"
+                stroke-linecap="round" />
+              <text x="0" y="40" text-anchor="middle" fill="#9aa3ad" font-size="10">D</text>
+              <text id="decay-value" x="0" y="52" text-anchor="middle" fill="#e8ecf1" font-size="9">120ms</text>
+            </g>
+            <g id="sustain-dial" transform="translate(240,60)">
+              <circle cx="0" cy="0" r="25" fill="url(#dialBg)" stroke="#4a5568" stroke-width="1.5" />
+              <circle cx="0" cy="0" r="18" fill="#0f1220" stroke="#2a3147" />
+              <line id="sustain-needle" x1="0" y1="-15" x2="0" y2="-5" stroke="#f59e0b" stroke-width="2"
+                stroke-linecap="round" />
+              <text x="0" y="40" text-anchor="middle" fill="#9aa3ad" font-size="10">S</text>
+              <text id="sustain-value" x="0" y="52" text-anchor="middle" fill="#e8ecf1" font-size="9">0.5</text>
+            </g>
+            <g id="release-dial" transform="translate(320,60)">
+              <circle cx="0" cy="0" r="25" fill="url(#dialBg)" stroke="#4a5568" stroke-width="1.5" />
+              <circle cx="0" cy="0" r="18" fill="#0f1220" stroke="#2a3147" />
+              <line id="release-needle" x1="0" y1="-15" x2="0" y2="-5" stroke="#f59e0b" stroke-width="2"
+                stroke-linecap="round" />
+              <text x="0" y="40" text-anchor="middle" fill="#9aa3ad" font-size="10">R</text>
+              <text id="release-value" x="0" y="52" text-anchor="middle" fill="#e8ecf1" font-size="9">80ms</text>
+            </g>
+            <!-- ADSR Curve Visualization -->
+            <g id="adsr-curve" transform="translate(450,40)">
+              <rect x="0" y="0" width="200" height="80" fill="#0f1220" stroke="#2a3147" rx="4" />
+              <polyline id="adsr-line" points="10,70 30,10 80,40 160,40 190,70" fill="none" stroke="#22c55e"
+                stroke-width="2" />
+              <text x="100" y="95" text-anchor="middle" fill="#9aa3ad" font-size="10">ENVELOPE SHAPE</text>
+            </g>
+          </g>
+
+          <!-- Filter Section -->
+          <g id="filter-section" transform="translate(0,280)">
+            <text x="40" y="30" fill="#7dd3fc" font-size="18" font-weight="bold">FILTER</text>
+            <!-- Filter type LEDs -->
+            <g id="filter-leds" transform="translate(40,50)">
+              <circle id="led-lowpass" cx="20" cy="0" r="5" fill="#333" stroke="#555" />
+              <text x="35" y="4" fill="#9aa3ad" font-size="11">LP</text>
+              <circle id="led-highpass" cx="80" cy="0" r="5" fill="#333" stroke="#555" />
+              <text x="95" y="4" fill="#9aa3ad" font-size="11">HP</text>
+              <circle id="led-bandpass" cx="140" cy="0" r="5" fill="#333" stroke="#555" />
+              <text x="155" y="4" fill="#9aa3ad" font-size="11">BP</text>
+            </g>
+            <!-- Cutoff dial -->
+            <g id="cutoff-dial" transform="translate(250,60)">
+              <circle cx="0" cy="0" r="30" fill="url(#dialBg)" stroke="#4a5568" stroke-width="2" />
+              <circle cx="0" cy="0" r="22" fill="#0f1220" stroke="#2a3147" />
+              <line id="cutoff-needle" x1="0" y1="-18" x2="0" y2="-5" stroke="#ef4444" stroke-width="3"
+                stroke-linecap="round" />
+              <text x="0" y="45" text-anchor="middle" fill="#9aa3ad" font-size="12">CUTOFF</text>
+              <text id="cutoff-value" x="0" y="58" text-anchor="middle" fill="#e8ecf1" font-size="10">1200Hz</text>
+            </g>
+            <!-- Q/Resonance dial -->
+            <g id="q-dial" transform="translate(350,60)">
+              <circle cx="0" cy="0" r="25" fill="url(#dialBg)" stroke="#4a5568" stroke-width="1.5" />
+              <circle cx="0" cy="0" r="18" fill="#0f1220" stroke="#2a3147" />
+              <line id="q-needle" x1="0" y1="-15" x2="0" y2="-5" stroke="#ef4444" stroke-width="2"
+                stroke-linecap="round" />
+              <text x="0" y="40" text-anchor="middle" fill="#9aa3ad" font-size="10">Q</text>
+              <text id="q-value" x="0" y="52" text-anchor="middle" fill="#e8ecf1" font-size="9">0.7</text>
+            </g>
+            <!-- Filter envelope dial -->
+            <g id="filter-env-dial" transform="translate(450,60)">
+              <circle cx="0" cy="0" r="25" fill="url(#dialBg)" stroke="#4a5568" stroke-width="1.5" />
+              <circle cx="0" cy="0" r="18" fill="#0f1220" stroke="#2a3147" />
+              <line id="filter-env-needle" x1="0" y1="-15" x2="0" y2="-5" stroke="#ef4444" stroke-width="2"
+                stroke-linecap="round" />
+              <text x="0" y="40" text-anchor="middle" fill="#9aa3ad" font-size="10">ENV</text>
+              <text id="filter-env-value" x="0" y="52" text-anchor="middle" fill="#e8ecf1" font-size="9">0.0</text>
+            </g>
+            <!-- Frequency response curve -->
+            <g id="freq-response" transform="translate(550,40)">
+              <rect x="0" y="0" width="150" height="80" fill="#0f1220" stroke="#2a3147" rx="4" />
+              <path id="response-curve" d="M10,70 Q75,70 140,10" fill="none" stroke="#ef4444" stroke-width="2" />
+              <text x="75" y="95" text-anchor="middle" fill="#9aa3ad" font-size="10">RESPONSE</text>
+            </g>
+          </g>
+
+          <!-- Effects & Modulation Section -->
+          <g id="effects-section" transform="translate(0,420)">
+            <text x="40" y="30" fill="#7dd3fc" font-size="18" font-weight="bold">EFFECTS & MOD</text>
+            <!-- LFO Rate dial -->
+            <g id="lfo-dial" transform="translate(80,60)">
+              <circle cx="0" cy="0" r="25" fill="url(#dialBg)" stroke="#4a5568" stroke-width="1.5" />
+              <circle cx="0" cy="0" r="18" fill="#0f1220" stroke="#2a3147" />
+              <line id="lfo-needle" x1="0" y1="-15" x2="0" y2="-5" stroke="#a855f7" stroke-width="2"
+                stroke-linecap="round" />
+              <text x="0" y="40" text-anchor="middle" fill="#9aa3ad" font-size="10">LFO</text>
+              <text id="lfo-value" x="0" y="52" text-anchor="middle" fill="#e8ecf1" font-size="9">0Hz</text>
+            </g>
+            <!-- Drive dial -->
+            <g id="drive-dial" transform="translate(160,60)">
+              <circle cx="0" cy="0" r="25" fill="url(#dialBg)" stroke="#4a5568" stroke-width="1.5" />
+              <circle cx="0" cy="0" r="18" fill="#0f1220" stroke="#2a3147" />
+              <line id="drive-needle" x1="0" y1="-15" x2="0" y2="-5" stroke="#f59e0b" stroke-width="2"
+                stroke-linecap="round" />
+              <text x="0" y="40" text-anchor="middle" fill="#9aa3ad" font-size="10">DRIVE</text>
+              <text id="drive-value" x="0" y="52" text-anchor="middle" fill="#e8ecf1" font-size="9">0.0</text>
+            </g>
+            <!-- Voices dial -->
+            <g id="voices-dial" transform="translate(240,60)">
+              <circle cx="0" cy="0" r="25" fill="url(#dialBg)" stroke="#4a5568" stroke-width="1.5" />
+              <circle cx="0" cy="0" r="18" fill="#0f1220" stroke="#2a3147" />
+              <line id="voices-needle" x1="0" y1="-15" x2="0" y2="-5" stroke="#22c55e" stroke-width="2"
+                stroke-linecap="round" />
+              <text x="0" y="40" text-anchor="middle" fill="#9aa3ad" font-size="10">VOICES</text>
+              <text id="voices-value" x="0" y="52" text-anchor="middle" fill="#e8ecf1" font-size="9">1</text>
+            </g>
+            <!-- Volume meter -->
+            <g id="volume-meter" transform="translate(350,40)">
+              <rect x="0" y="0" width="20" height="80" fill="#1a1f2e" stroke="#2a3147" rx="10" />
+              <rect id="vol-fill" x="2" y="78" width="16" height="0" fill="#22c55e" rx="8" />
+              <text x="10" y="95" text-anchor="middle" fill="#9aa3ad" font-size="10">VOL</text>
+              <text id="vol-value" x="10" y="107" text-anchor="middle" fill="#e8ecf1" font-size="9">0dB</text>
+            </g>
+            <!-- Effects LEDs -->
+            <g id="effects-leds" transform="translate(420,50)">
+              <circle id="led-reverb" cx="0" cy="0" r="8" fill="#333" stroke="#555" />
+              <text x="0" y="20" text-anchor="middle" fill="#9aa3ad" font-size="10">REVERB</text>
+              <circle id="led-delay" cx="60" cy="0" r="8" fill="#333" stroke="#555" />
+              <text x="60" y="20" text-anchor="middle" fill="#9aa3ad" font-size="10">DELAY</text>
+              <circle id="led-chorus" cx="120" cy="0" r="8" fill="#333" stroke="#555" />
+              <text x="120" y="20" text-anchor="middle" fill="#9aa3ad" font-size="10">CHORUS</text>
+            </g>
+            <!-- Spectrum analyzer -->
+            <g id="spectrum" transform="translate(580,40)">
+              <rect x="0" y="0" width="150" height="80" fill="#0f1220" stroke="#2a3147" rx="4" />
+              <g id="spectrum-bars">
+                <!-- Spectrum bars will be generated dynamically -->
+              </g>
+              <text x="75" y="95" text-anchor="middle" fill="#9aa3ad" font-size="10">SPECTRUM</text>
+            </g>
+          </g>
+
+          <!-- Status indicators -->
+          <g id="status-section" transform="translate(0,580)">
+            <rect x="40" y="0" width="720" height="60" fill="#0f1220" stroke="#2a3147" rx="8" />
+            <text x="60" y="25" fill="#7dd3fc" font-size="14" font-weight="bold">STATUS</text>
+            <circle id="power-led" cx="60" cy="40" r="6" fill="#22c55e" filter="url(#glow)" />
+            <text x="80" y="45" fill="#e8ecf1" font-size="12">READY</text>
+            <!-- Waveform display -->
+            <g id="waveform-display" transform="translate(200,10)">
+              <rect x="0" y="0" width="400" height="40" fill="#0a0d14" stroke="#1a1f2e" rx="4" />
+              <polyline id="waveform" points="" fill="none" stroke="#7dd3fc" stroke-width="1" opacity="0.7" />
+              <text x="200" y="55" text-anchor="middle" fill="#9aa3ad" font-size="10">WAVEFORM</text>
+            </g>
+          </g>
+        </svg>
+      </div>
+      <p class="small" style="margin-top:10px">Interactive visual feedback - dials, LEDs, and meters update in real-time
+        as you change parameters.</p>
+    </aside>
+
+    <section class="card" style="grid-column:1 / -1">
+      <h2>Syntax</h2>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px"></div>
+      <div>
+        <div class="small">General</div>
+        <div class="examples">
+          <code>wave=(sine|square|saw|triangle|noise)</code>
+          <code>note=A4  or  freq=440Hz</code>
+          <code>dur=0.5s  (max 5s)</code>
+          <code>volume=-6dB</code>
+          <code>seed=123 (for noise variation)</code>
+        </div>
+      </div>
+      <div>
+        <div class="small">Envelope</div>
+        <div class="examples">
+          <code>attack=5ms decay=120ms sustain=0.5 release=80ms</code>
+          <code>pitch_sweep=+12st/80ms  (semitones over time)</code>
+        </div>
+      </div>
+      <div>
+        <div class="small">Filter</div>
+        <div class="examples">
+          <code>filter=(lowpass|highpass|bandpass)</code>
+          <code>cutoff=1200Hz q=0.8</code>
+        </div>
+      </div>
+      <div>
+        <div class="small">LFO & Drive</div>
+        <div class="examples">
+          <code>lfo=5Hz-&gt;cutoff:2400</code>
+          <code>lfo=6Hz-&gt;pitch:30c   (cents)</code>
+          <code>drive=0.3  (soft distortion)</code>
+        </div>
+      </div>
+      <div>
+        <div class="small">Voices & Filter Env</div>
+        <div class="examples">
+          <code>voices=3 detune=7c spread=0.8</code>
+          <code>filter_env=0.8 filter_attack=10ms filter_decay=200ms</code>
+        </div>
+      </div>
+      <div>
+        <div class="small">Effects</div>
+        <div class="examples">
+          <code>reverb=0.3 room=(small|medium|large|hall)</code>
+          <code>delay=0.2s feedback=0.4 delay_mix=0.3</code>
+          <code>chorus=0.5 chorus_rate=2Hz chorus_depth=5ms</code>
+        </div>
+      </div>
+      <div>
+        <div class="small">Advanced Synthesis</div>
+        <div class="examples">
+          <code>fm_ratio=2.1 fm_depth=500 (FM synthesis)</code>
+          <code>am_rate=6Hz am_depth=0.5 (amplitude mod)</code>
+          <code>ring_freq=440Hz ring_mix=0.3 (ring mod)</code>
+          <code>h2=0.3 h3=0.2 h4=0.1 h5=0.05 (harmonics)</code>
+        </div>
+      </div>
+      <div>
+        <div class="small">Audio Processing</div>
+        <div class="examples">
+          <code>bits=8 sample_rate=0.5 (bit crushing)</code>
+          <code>phaser_rate=2Hz phaser_depth=0.8 phaser_feedback=0.3</code>
+          <code>comp_threshold=0.7 comp_ratio=4 (compressor)</code>
+          <code>eq_low=1.2 eq_mid=0.8 eq_high=1.5 (3-band EQ)</code>
+        </div>
+      </div>
+      <div>
+        <div class="small">Formant & Granular</div>
+        <div class="examples">
+          <code>formant_f1=800Hz formant_f2=1200Hz formant_f3=2600Hz</code>
+          <code>grain_size=0.1s grain_pitch=1.5 (granular)</code>
+        </div>
+      </div>
+      </div>
+      <p class="small" style="margin-top:8px">Tokens are space-separated <code>key=value</code>. Units: ms, s, Hz, kHz,
+        dB, st (semitones), c (cents). Unknown tokens are ignored.</p>
+    </section>
+
+    <section class="card" style="grid-column:1 / -1">
+      <h2>AI Audio Generation Prompt Template</h2>
+      <p class="small">Copy this complete specification to tell AI systems exactly what synthesis tools are available
+        and how to format commands.</p>
+
+      <div class="row" style="margin-top:10px">
+        <button id="btnCopySpec" class="ok">Copy Full AI Specification</button>
+        <span class="small">Use this with ChatGPT, Claude, or other AI systems</span>
+      </div>
+
+      <div id="aiSpec" class="out" style="font-size:11px;line-height:1.4;margin-top:12px"></div>
+      <strong>AUDIO SYNTHESIS COMMAND FORMAT:</strong>
+      Use space-separated key=value pairs. Available synthesis tools and parameters:
+
+      <strong>OSCILLATORS & WAVEFORMS:</strong>
+      • wave=(sine|square|saw|triangle|noise) - Base waveform
+      • note=A4 or freq=440Hz - Pitch (notes: C3-C6, frequencies: 20Hz-20kHz)
+      • dur=0.5s - Duration (0.01s to 5.0s maximum)
+      • seed=123 - Random seed for noise variation
+
+      <strong>ENVELOPE (ADSR):</strong>
+      • attack=5ms - Attack time (0-1000ms)
+      • decay=120ms - Decay time (0-2000ms)
+      • sustain=0.5 - Sustain level (0.0-1.0)
+      • release=80ms - Release time (0-2000ms)
+
+      <strong>FILTER:</strong>
+      • filter=(lowpass|highpass|bandpass) - Filter type
+      • cutoff=1200Hz - Cutoff frequency (20Hz-20kHz)
+      • q=0.8 - Resonance/Q factor (0.1-30)
+      • filter_env=0.6 - Filter envelope amount (0-1)
+      • filter_attack=10ms, filter_decay=200ms - Filter envelope timing
+
+      <strong>MODULATION:</strong>
+      • lfo=6Hz->cutoff:2400 - LFO to filter (rate in Hz, amount in Hz)
+      • lfo=5Hz->pitch:30c - LFO to pitch (rate in Hz, amount in cents)
+      • pitch_sweep=+7st/70ms - Pitch bend (semitones over time)
+
+      <strong>VOICES & UNISON:</strong>
+      • voices=3 - Number of voices (1-8)
+      • detune=12c - Voice detuning in cents (0-50c)
+      • spread=0.8 - Stereo spread (0-1, 0=mono, 1=full stereo)
+
+      <strong>ADVANCED SYNTHESIS:</strong>
+      • fm_ratio=2.1 fm_depth=500 - FM synthesis (ratio 0.1-20, depth 0-1000)
+      • am_rate=6Hz am_depth=0.5 - Amplitude modulation (rate 0-50Hz, depth 0-1)
+      • ring_freq=440Hz ring_mix=0.3 - Ring modulation (freq 0-5kHz, mix 0-1)
+      • h2=0.3 h3=0.2 h4=0.1 h5=0.05 - Harmonic enhancement (levels 0-1)
+
+      <strong>AUDIO EFFECTS:</strong>
+      • drive=0.3 - Soft distortion/saturation (0-1)
+      • reverb=0.3 room=(small|medium|large|hall) - Reverb (mix 0-1)
+      • delay=0.2s feedback=0.4 delay_mix=0.3 - Echo effect
+      • chorus=0.5 chorus_rate=2Hz chorus_depth=5ms - Chorus modulation
+      • phaser_rate=2Hz phaser_depth=0.8 phaser_feedback=0.3 - Phaser sweep
+
+      <strong>AUDIO PROCESSING:</strong>
+      • bits=8 sample_rate=0.5 - Bit crushing (bits 1-16, rate 0.1-1)
+      • comp_threshold=0.7 comp_ratio=4 - Compressor (threshold 0.1-1, ratio 1-20)
+      • eq_low=1.2 eq_mid=0.8 eq_high=1.5 - 3-band EQ (gain multipliers 0.1-10)
+      • formant_f1=800Hz formant_f2=1200Hz formant_f3=2600Hz - Vocal formants
+
+      <strong>VOLUME:</strong>
+      • volume=-6dB - Output level (-60dB to 0dB)
+
+      <strong>UNITS:</strong> ms=milliseconds, s=seconds, Hz=hertz, kHz=kilohertz, dB=decibels, st=semitones, c=cents
+
+      <strong>EXAMPLE COMMANDS:</strong>
+      Basic: wave=saw note=A4 dur=0.8 attack=5ms decay=150ms sustain=0.6 cutoff=1800Hz
+      Complex: wave=square note=C3 dur=1.5 voices=3 detune=8c fm_ratio=1.5 fm_depth=300 h2=0.2 drive=0.4 reverb=0.3
+      room=large phaser_rate=1.5Hz eq_low=1.2 comp_ratio=3
+      </div>
+
+      <div style="margin-top:16px;padding:12px;background:#0f1220;border:1px solid #2a3147;border-radius:8px">
+        <div class="small" style="color:#7dd3fc;margin-bottom:8px"><strong>AI PROMPT TEMPLATE:</strong></div>
+        <div style="font-size:12px;font-family:ui-monospace,monospace;color:#e8ecf1">
+          "Generate a [type of sound] using this synthesis command format. Use these available parameters: [paste
+          parameter list above]. Create a command like: wave=saw note=A4 dur=0.8 attack=5ms decay=150ms sustain=0.6
+          release=200ms cutoff=1800Hz q=1.2 drive=0.3 reverb=0.25 room=medium. Make it sound [describe desired
+          characteristics]."
+        </div>
+      </div>
+    </section>
+
+    <section class="card" style="grid-column:1 / -1">
+      <h2>Tests</h2>
+      <div class="row">
+        <button id="btnTests" class="warn">Run Tests</button>
+        <span class="small">Sanity checks for synth + parser.</span>
+      </div>
+      <pre id="testOut" class="small" style="margin-top:8px"></pre>
+    </section>
+  </main>
+
+  <script>
+    // ---------------- Utilities ----------------
+    const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+    const dbToGain = (db) => Math.pow(10, db / 20);
+    const noteToFreq = (n) => { // A4=440
+      const m = /^([A-Ga-g])(#|b)?(\d)$/.exec(n);
+      if (!m) return 440;
+      const N = m[1].toUpperCase();
+      const accidental = m[2] || "";
+      const oct = parseInt(m[3], 10);
+      const map = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+      let sem = map[N];
+      if (accidental === "#") sem += 1; else if (accidental === "b") sem -= 1;
+      const a4 = 9 + 12 * 4; // semitone index for A4
+      const nIdx = sem + 12 * oct;
+      return 440 * Math.pow(2, (nIdx - a4) / 12);
+    };
+    const parseNum = (s, def = 0) => {
+      if (s == null) return def;
+      s = String(s).trim();
+      const ms = s.match(/^(-?\d+(?:\.\d+)?)(ms|s|Hz|kHz|dB|st|c)?$/);
+      if (!ms) return def;
+      let v = parseFloat(ms[1]); const u = ms[2] || "";
+      switch (u) {
+        case "ms": return v / 1000;
+        case "s": return v;
+        case "Hz": return v;
+        case "kHz": return v * 1000;
+        case "dB": return dbToGain(v);
+        case "st": return v; // semitones (handled elsewhere)
+        case "c": return v / 100; // cents to semitones
+        default: return v;
+      }
+    };
+
+    function parseCommand(str) {
+      const out = {
+        wave: "sine", freq: 440, dur: 0.5,
+        attack: 0.005, decay: 0.12, sustain: 0.5, release: 0.08,
+        filter: "lowpass", cutoff: 20000, q: 0.7,
+        lfo: null, drive: 0.0, volume: 0.5,
+        pitchSweep: { st: 0, t: 0 }, seed: 0,
+        // New effects
+        reverb: { mix: 0, room: "medium" }, delay: { time: 0, feedback: 0, mix: 0 },
+        chorus: { mix: 0, rate: 2, depth: 0.005 }, voices: { count: 1, detune: 0, spread: 1 },
+        filterEnv: { amount: 0, attack: 0.01, decay: 0.2 },
+        // Advanced synthesis parameters
+        fm: { ratio: 1, depth: 0 }, // FM synthesis
+        am: { rate: 0, depth: 0 }, // Amplitude modulation
+        ringMod: { freq: 0, mix: 0 }, // Ring modulation
+        bitCrush: { bits: 16, rate: 1 }, // Bit crushing
+        phaser: { rate: 0, depth: 0, feedback: 0 }, // Phaser effect
+        compressor: { threshold: 1, ratio: 1, attack: 0.003, release: 0.1 }, // Compressor
+        eq: { low: 0, mid: 0, high: 0 }, // 3-band EQ
+        harmonics: { h2: 0, h3: 0, h4: 0, h5: 0 }, // Harmonic enhancement
+        granular: { size: 0.1, overlap: 0.5, pitch: 1 }, // Granular synthesis
+        formant: { f1: 800, f2: 1200, f3: 2600 } // Formant filtering
+      };
+      const toks = (str || "").split(/\s+/).map(t => t.trim()).filter(Boolean);
+      for (const t of toks) {
+        const [k, rawV] = t.split("="); if (!rawV) continue;
+        const v = rawV.trim();
+        switch (k) {
+          case "wave": if (["sine", "square", "saw", "triangle", "noise"].includes(v)) out.wave = v; break;
+          case "note": out.freq = noteToFreq(v); break;
+          case "freq": out.freq = parseNum(v); break;
+          case "dur": out.dur = clamp(parseNum(v), 0.01, 5.0); break;
+          case "attack": out.attack = Math.max(0, parseNum(v)); break;
+          case "decay": out.decay = Math.max(0, parseNum(v)); break;
+          case "sustain": out.sustain = clamp(parseFloat(v), 0, 1); break;
+          case "release": out.release = Math.max(0, parseNum(v)); break;
+          case "filter": if (["lowpass", "highpass", "bandpass"].includes(v)) out.filter = v; break;
+          case "cutoff": out.cutoff = clamp(parseNum(v), 20, 22000); break;
+          case "q": out.q = clamp(parseFloat(v), 0.0001, 30); break;
+          case "lfo": {
+            // lfo=6Hz->cutoff:2400  OR  lfo=5Hz->pitch:30c
+            const m = v.match(/^(\d+(?:\.\d+)?)Hz->(cutoff|pitch):(\+?-?\d+(?:\.\d+)?)(c|)$/);
+            if (m) {
+              const rate = parseFloat(m[1]);
+              const target = m[2];
+              let amt = parseFloat(m[3]);
+              if (target === "pitch") amt = amt / 100; // cents to semitones if 'c' used
+              out.lfo = { rate, target, amt };
+            }
+          } break;
+          case "pitch_sweep": {
+            // +12st/80ms  or -7st/0.3s
+            const m = v.match(/^(\+?-?\d+(?:\.\d+)?)st\/(\d+(?:\.\d+)?)(ms|s)$/);
+            if (m) { out.pitchSweep = { st: parseFloat(m[1]), t: parseNum(m[2] + m[3]) }; }
+          } break;
+          case "drive": out.drive = clamp(parseFloat(v), 0, 1); break;
+          case "volume": out.volume = parseNum(v); break; // accepts dB
+          case "seed": out.seed = (parseInt(v, 10) || 0) >>> 0; break;
+          // New effects parsing
+          case "reverb": out.reverb.mix = clamp(parseFloat(v), 0, 1); break;
+          case "room": if (["small", "medium", "large", "hall"].includes(v)) out.reverb.room = v; break;
+          case "delay": out.delay.time = clamp(parseNum(v), 0, 1); break;
+          case "feedback": out.delay.feedback = clamp(parseFloat(v), 0, 0.95); break;
+          case "delay_mix": out.delay.mix = clamp(parseFloat(v), 0, 1); break;
+          case "chorus": out.chorus.mix = clamp(parseFloat(v), 0, 1); break;
+          case "chorus_rate": out.chorus.rate = clamp(parseNum(v), 0.1, 20); break;
+          case "chorus_depth": out.chorus.depth = clamp(parseNum(v), 0, 0.02); break;
+          case "voices": out.voices.count = clamp(parseInt(v, 10), 1, 8); break;
+          case "detune": out.voices.detune = clamp(parseNum(v), 0, 50); break; // cents
+          case "spread": out.voices.spread = clamp(parseFloat(v), 0, 1); break;
+          case "filter_env": out.filterEnv.amount = clamp(parseFloat(v), 0, 1); break;
+          case "filter_attack": out.filterEnv.attack = Math.max(0, parseNum(v)); break;
+          case "filter_decay": out.filterEnv.decay = Math.max(0, parseNum(v)); break;
+          // Advanced synthesis parameters
+          case "fm_ratio": out.fm.ratio = clamp(parseFloat(v), 0.1, 20); break;
+          case "fm_depth": out.fm.depth = clamp(parseFloat(v), 0, 1000); break;
+          case "am_rate": out.am.rate = clamp(parseNum(v), 0, 50); break;
+          case "am_depth": out.am.depth = clamp(parseFloat(v), 0, 1); break;
+          case "ring_freq": out.ringMod.freq = clamp(parseNum(v), 0, 5000); break;
+          case "ring_mix": out.ringMod.mix = clamp(parseFloat(v), 0, 1); break;
+          case "bits": out.bitCrush.bits = clamp(parseInt(v, 10), 1, 16); break;
+          case "sample_rate": out.bitCrush.rate = clamp(parseFloat(v), 0.1, 1); break;
+          case "phaser_rate": out.phaser.rate = clamp(parseNum(v), 0, 10); break;
+          case "phaser_depth": out.phaser.depth = clamp(parseFloat(v), 0, 1); break;
+          case "phaser_feedback": out.phaser.feedback = clamp(parseFloat(v), 0, 0.9); break;
+          case "comp_threshold": out.compressor.threshold = clamp(parseNum(v), 0.1, 1); break;
+          case "comp_ratio": out.compressor.ratio = clamp(parseFloat(v), 1, 20); break;
+          case "eq_low": out.eq.low = clamp(parseNum(v), 0.1, 10); break;
+          case "eq_mid": out.eq.mid = clamp(parseNum(v), 0.1, 10); break;
+          case "eq_high": out.eq.high = clamp(parseNum(v), 0.1, 10); break;
+          case "h2": out.harmonics.h2 = clamp(parseFloat(v), 0, 1); break;
+          case "h3": out.harmonics.h3 = clamp(parseFloat(v), 0, 1); break;
+          case "h4": out.harmonics.h4 = clamp(parseFloat(v), 0, 1); break;
+          case "h5": out.harmonics.h5 = clamp(parseFloat(v), 0, 1); break;
+          case "grain_size": out.granular.size = clamp(parseNum(v), 0.01, 1); break;
+          case "grain_pitch": out.granular.pitch = clamp(parseFloat(v), 0.25, 4); break;
+          case "formant_f1": out.formant.f1 = clamp(parseNum(v), 200, 2000); break;
+          case "formant_f2": out.formant.f2 = clamp(parseNum(v), 500, 3000); break;
+          case "formant_f3": out.formant.f3 = clamp(parseNum(v), 1000, 4000); break;
+          default: /* ignore unknown */ break;
+        }
+      }
+      return out;
+    }
+
+    function seedRNG(seed) {
+      let s = seed | 0; if (s === 0) s = 123456789;
+      return () => { // xorshift32
+        s ^= s << 13; s ^= s >>> 17; s ^= s << 5; return ((s >>> 0) / 4294967296);
+      };
+    }
+
+    function makeNoiseBuffer(ctx, seconds, rng) {
+      const len = Math.max(1, Math.floor(ctx.sampleRate * seconds));
+      const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = (rng() * 2 - 1) * 0.9;
+      return buf;
+    }
+
+    function makeDistCurve(amount) { // soft clip
+      const n = 2048, curve = new Float32Array(n);
+      const k = amount * 10 + 0.0001;
+      for (let i = 0; i < n; i++) {
+        const x = i * 2 / (n - 1) - 1;
+        curve[i] = (1 + k) * x / (1 + k * Math.abs(x));
+      }
+      return curve;
+    }
+
+    function createReverb(ctx, room) {
+      const convolver = ctx.createConvolver();
+      const roomSizes = { small: 0.5, medium: 1.0, large: 2.0, hall: 3.0 };
+      const size = roomSizes[room] || 1.0;
+      const length = Math.floor(ctx.sampleRate * size);
+      const impulse = ctx.createBuffer(2, length, ctx.sampleRate);
+
+      for (let ch = 0; ch < 2; ch++) {
+        const data = impulse.getChannelData(ch);
+        for (let i = 0; i < length; i++) {
+          const decay = Math.pow(1 - i / length, 2);
+          data[i] = (Math.random() * 2 - 1) * decay * 0.3;
+        }
+      }
+      convolver.buffer = impulse;
+      return convolver;
+    }
+
+    function createChorus(ctx, rate, depth) {
+      const delay = ctx.createDelay(0.05);
+      const lfo = ctx.createOscillator();
+      const lfoGain = ctx.createGain();
+
+      lfo.frequency.value = rate;
+      lfoGain.gain.value = depth;
+      delay.delayTime.value = 0.01; // base delay
+
+      lfo.connect(lfoGain).connect(delay.delayTime);
+      lfo.start(0);
+
+      return { delay, lfo };
+    }
+
+    function createBitCrusher(ctx, bits, sampleRate) {
+      const crusher = ctx.createScriptProcessor(4096, 1, 1);
+      const step = Math.pow(2, bits - 1);
+      const downsample = Math.floor(ctx.sampleRate * sampleRate);
+      let phase = 0;
+      let lastSample = 0;
+
+      crusher.onaudioprocess = (e) => {
+        const input = e.inputBuffer.getChannelData(0);
+        const output = e.outputBuffer.getChannelData(0);
+
+        for (let i = 0; i < input.length; i++) {
+          phase++;
+          if (phase >= downsample) {
+            phase = 0;
+            lastSample = Math.round(input[i] * step) / step;
+          }
+          output[i] = lastSample;
+        }
+      };
+      return crusher;
+    }
+
+    function createPhaser(ctx, rate, depth, feedback) {
+      const allpass1 = ctx.createBiquadFilter();
+      const allpass2 = ctx.createBiquadFilter();
+      const allpass3 = ctx.createBiquadFilter();
+      const allpass4 = ctx.createBiquadFilter();
+      const lfo = ctx.createOscillator();
+      const lfoGain = ctx.createGain();
+      const feedbackGain = ctx.createGain();
+      const wetGain = ctx.createGain();
+      const dryGain = ctx.createGain();
+      const output = ctx.createGain();
+
+      [allpass1, allpass2, allpass3, allpass4].forEach(filter => {
+        filter.type = 'allpass';
+        filter.frequency.value = 1000;
+        filter.Q.value = 1;
+      });
+
+      lfo.frequency.value = rate;
+      lfoGain.gain.value = depth * 1000;
+      feedbackGain.gain.value = feedback;
+      wetGain.gain.value = 0.5;
+      dryGain.gain.value = 0.5;
+
+      lfo.connect(lfoGain);
+      [allpass1, allpass2, allpass3, allpass4].forEach(filter => {
+        lfoGain.connect(filter.frequency);
+      });
+
+      allpass1.connect(allpass2).connect(allpass3).connect(allpass4);
+      allpass4.connect(feedbackGain).connect(allpass1);
+      allpass4.connect(wetGain).connect(output);
+
+      lfo.start(0);
+      return { input: allpass1, output, dryGain, lfo };
+    }
+
+    function createCompressor(ctx, threshold, ratio, attack, release) {
+      const compressor = ctx.createDynamicsCompressor();
+      compressor.threshold.value = -60 + (threshold * 60);
+      compressor.ratio.value = ratio;
+      compressor.attack.value = attack;
+      compressor.release.value = release;
+      compressor.knee.value = 5;
+      return compressor;
+    }
+
+    function create3BandEQ(ctx, low, mid, high) {
+      const lowShelf = ctx.createBiquadFilter();
+      const midPeak = ctx.createBiquadFilter();
+      const highShelf = ctx.createBiquadFilter();
+
+      lowShelf.type = 'lowshelf';
+      lowShelf.frequency.value = 320;
+      lowShelf.gain.value = 20 * Math.log10(low);
+
+      midPeak.type = 'peaking';
+      midPeak.frequency.value = 1000;
+      midPeak.Q.value = 1;
+      midPeak.gain.value = 20 * Math.log10(mid);
+
+      highShelf.type = 'highshelf';
+      highShelf.frequency.value = 3200;
+      highShelf.gain.value = 20 * Math.log10(high);
+
+      lowShelf.connect(midPeak).connect(highShelf);
+      return { input: lowShelf, output: highShelf };
+    }
+
+    function createFormantFilter(ctx, f1, f2, f3) {
+      const formant1 = ctx.createBiquadFilter();
+      const formant2 = ctx.createBiquadFilter();
+      const formant3 = ctx.createBiquadFilter();
+
+      formant1.type = 'bandpass';
+      formant1.frequency.value = f1;
+      formant1.Q.value = 10;
+
+      formant2.type = 'bandpass';
+      formant2.frequency.value = f2;
+      formant2.Q.value = 10;
+
+      formant3.type = 'bandpass';
+      formant3.frequency.value = f3;
+      formant3.Q.value = 10;
+
+      const mixer = ctx.createGain();
+      const gain1 = ctx.createGain();
+      const gain2 = ctx.createGain();
+      const gain3 = ctx.createGain();
+
+      gain1.gain.value = 0.6;
+      gain2.gain.value = 0.3;
+      gain3.gain.value = 0.1;
+
+      formant1.connect(gain1).connect(mixer);
+      formant2.connect(gain2).connect(mixer);
+      formant3.connect(gain3).connect(mixer);
+
+      return {
+        input1: formant1, input2: formant2, input3: formant3,
+        output: mixer
+      };
+    }
+
+    async function renderSFX(params) {
+      const sr = 48000;
+      const length = Math.ceil(sr * params.dur);
+      const offline = new OfflineAudioContext({ numberOfChannels: 2, length, sampleRate: sr });
+
+      // Create mixer for multiple voices
+      const voiceMixer = offline.createGain();
+      voiceMixer.gain.value = 1 / Math.sqrt(params.voices.count); // normalize volume
+
+      // Create voices (unison)
+      for (let v = 0; v < params.voices.count; v++) {
+        let srcNode;
+        const voiceGain = offline.createGain();
+
+        // Pan spread for multiple voices
+        if (params.voices.count > 1) {
+          const panner = offline.createStereoPanner();
+          const panPos = (v / (params.voices.count - 1) - 0.5) * 2 * params.voices.spread;
+          panner.pan.value = Math.max(-1, Math.min(1, panPos));
+          voiceGain.connect(panner).connect(voiceMixer);
+        } else {
+          voiceGain.connect(voiceMixer);
+        }
+
+        // Detune calculation
+        const detuneCents = params.voices.count > 1 ?
+          (v - (params.voices.count - 1) / 2) * params.voices.detune : 0;
+        const detuneFreq = params.freq * Math.pow(2, detuneCents / 1200);
+
+        // Osc / Noise per voice
+        if (params.wave === 'noise') {
+          const rng = seedRNG(params.seed + v);
+          const buf = makeNoiseBuffer(offline, params.dur, rng);
+          const bsrc = offline.createBufferSource();
+          bsrc.buffer = buf; bsrc.loop = false;
+          srcNode = bsrc;
+        } else {
+          // Create main oscillator
+          const osc = offline.createOscillator();
+          osc.type = params.wave; osc.frequency.value = detuneFreq;
+
+          // Harmonic enhancement - add overtones
+          const harmonicMixer = offline.createGain();
+          const mainGain = offline.createGain();
+          mainGain.gain.value = 1;
+          osc.connect(mainGain).connect(harmonicMixer);
+
+          // Add harmonics
+          if (params.harmonics.h2 > 0) {
+            const h2 = offline.createOscillator();
+            const h2Gain = offline.createGain();
+            h2.type = params.wave; h2.frequency.value = detuneFreq * 2;
+            h2Gain.gain.value = params.harmonics.h2 * 0.5;
+            h2.connect(h2Gain).connect(harmonicMixer);
+            h2.start(0); h2.stop(params.dur);
+          }
+          if (params.harmonics.h3 > 0) {
+            const h3 = offline.createOscillator();
+            const h3Gain = offline.createGain();
+            h3.type = params.wave; h3.frequency.value = detuneFreq * 3;
+            h3Gain.gain.value = params.harmonics.h3 * 0.33;
+            h3.connect(h3Gain).connect(harmonicMixer);
+            h3.start(0); h3.stop(params.dur);
+          }
+          if (params.harmonics.h4 > 0) {
+            const h4 = offline.createOscillator();
+            const h4Gain = offline.createGain();
+            h4.type = params.wave; h4.frequency.value = detuneFreq * 4;
+            h4Gain.gain.value = params.harmonics.h4 * 0.25;
+            h4.connect(h4Gain).connect(harmonicMixer);
+            h4.start(0); h4.stop(params.dur);
+          }
+          if (params.harmonics.h5 > 0) {
+            const h5 = offline.createOscillator();
+            const h5Gain = offline.createGain();
+            h5.type = params.wave; h5.frequency.value = detuneFreq * 5;
+            h5Gain.gain.value = params.harmonics.h5 * 0.2;
+            h5.connect(h5Gain).connect(harmonicMixer);
+            h5.start(0); h5.stop(params.dur);
+          }
+
+          // Amplitude Modulation
+          let amOutput = harmonicMixer;
+          if (params.am.rate > 0 && params.am.depth > 0) {
+            const amOsc = offline.createOscillator();
+            const amGain = offline.createGain();
+            const amDepthGain = offline.createGain();
+            const amMixer = offline.createGain();
+
+            amOsc.frequency.value = params.am.rate;
+            amDepthGain.gain.value = params.am.depth;
+            amGain.gain.value = 1;
+
+            // Create AM effect
+            harmonicMixer.connect(amMixer);
+            amOsc.connect(amDepthGain).connect(amGain.gain);
+            harmonicMixer.connect(amGain).connect(amMixer);
+
+            amOsc.start(0); amOsc.stop(params.dur);
+            amOutput = amMixer;
+          }
+
+          // Pitch sweep
+          if (params.pitchSweep.st !== 0 && params.pitchSweep.t > 0) {
+            const tgt = Math.max(0.001, detuneFreq * Math.pow(2, params.pitchSweep.st / 12));
+            osc.frequency.setValueAtTime(Math.max(0.001, detuneFreq), 0);
+            osc.frequency.exponentialRampToValueAtTime(tgt, Math.min(params.pitchSweep.t, params.dur));
+          }
+
+          // LFO to pitch via detune
+          if (params.lfo && params.lfo.target === 'pitch') {
+            const lfo = offline.createOscillator(); lfo.frequency.value = params.lfo.rate;
+            const lg = offline.createGain();
+            const cents = params.lfo.amt * 100;
+            lg.gain.value = cents;
+            lfo.connect(lg).connect(osc.detune);
+            lfo.start(0); lfo.stop(params.dur);
+          }
+
+          srcNode = { connect: (dest) => amOutput.connect(dest), start: () => osc.start(0), stop: (t) => osc.stop(t) };
+        }
+
+        // Voice envelope
+        const now = 0;
+        const relStart = Math.max(0, Math.min(params.dur, params.dur - params.release));
+        voiceGain.gain.setValueAtTime(0.0001, now);
+        voiceGain.gain.linearRampToValueAtTime(1, now + params.attack);
+        voiceGain.gain.linearRampToValueAtTime(params.sustain, now + params.attack + params.decay);
+        voiceGain.gain.setValueAtTime(params.sustain, relStart);
+        voiceGain.gain.linearRampToValueAtTime(0.0001, params.dur);
+
+        srcNode.connect(voiceGain);
+        if (srcNode.start) srcNode.start(0);
+        if (srcNode.stop) srcNode.stop(params.dur);
+      }
+
+      // Main processing chain
+      const filt = offline.createBiquadFilter();
+      filt.type = params.filter; filt.frequency.value = params.cutoff; filt.Q.value = params.q;
+
+      // Filter envelope
+      if (params.filterEnv.amount > 0) {
+        const envAmount = params.filterEnv.amount * params.cutoff * 2;
+        const now = 0;
+        filt.frequency.setValueAtTime(params.cutoff, now);
+        filt.frequency.linearRampToValueAtTime(params.cutoff + envAmount, now + params.filterEnv.attack);
+        filt.frequency.linearRampToValueAtTime(params.cutoff, now + params.filterEnv.attack + params.filterEnv.decay);
+      }
+
+      const dist = offline.createWaveShaper();
+      dist.curve = makeDistCurve(params.drive); dist.oversample = '4x';
+
+      // Osc / Noise
+      if (params.wave === 'noise') {
+        const rng = seedRNG(params.seed);
+        const buf = makeNoiseBuffer(offline, params.dur, rng);
+        const bsrc = offline.createBufferSource();
+        bsrc.buffer = buf; bsrc.loop = false;
+        srcNode = bsrc;
+      } else {
+        const osc = offline.createOscillator();
+        osc.type = params.wave; osc.frequency.value = params.freq;
+        // Pitch sweep (exponential requires >0 values)
+        if (params.pitchSweep.st !== 0 && params.pitchSweep.t > 0) {
+          const tgt = Math.max(0.001, params.freq * Math.pow(2, params.pitchSweep.st / 12));
+          osc.frequency.setValueAtTime(Math.max(0.001, params.freq), 0);
+          osc.frequency.exponentialRampToValueAtTime(tgt, Math.min(params.pitchSweep.t, params.dur));
+        }
+        // LFO to pitch via detune (cents)
+        if (params.lfo && params.lfo.target === 'pitch') {
+          const lfo = offline.createOscillator(); lfo.frequency.value = params.lfo.rate;
+          const lg = offline.createGain();
+          const cents = params.lfo.amt * 100; // semitones -> cents
+          lg.gain.value = cents; // detune in cents
+          lfo.connect(lg).connect(osc.detune);
+          lfo.start(0); lfo.stop(params.dur);
+        }
+        srcNode = osc;
+      }
+
+      // LFO to cutoff
+      if (params.lfo && params.lfo.target === 'cutoff') {
+        const lfo = offline.createOscillator(); lfo.frequency.value = params.lfo.rate;
+        const lg = offline.createGain(); lg.gain.value = params.lfo.amt;
+        lfo.connect(lg).connect(filt.frequency);
+        lfo.start(0); lfo.stop(params.dur);
+      }
+
+      // Advanced Effects Chain
+      let effectsChain = dist;
+
+      // FM Synthesis (frequency modulation)
+      if (params.fm.depth > 0) {
+        const fmOsc = offline.createOscillator();
+        const fmGain = offline.createGain();
+        fmOsc.frequency.value = params.freq * params.fm.ratio;
+        fmGain.gain.value = params.fm.depth;
+        fmOsc.connect(fmGain);
+        // Connect FM to all voice oscillators (simplified for this implementation)
+        fmOsc.start(0);
+        fmOsc.stop(params.dur);
+      }
+
+      // Ring Modulation
+      if (params.ringMod.mix > 0 && params.ringMod.freq > 0) {
+        const ringOsc = offline.createOscillator();
+        const ringGain = offline.createGain();
+        const ringMix = offline.createGain();
+        const ringDry = offline.createGain();
+        const ringOutput = offline.createGain();
+
+        ringOsc.frequency.value = params.ringMod.freq;
+        ringGain.gain.value = 1;
+        ringMix.gain.value = params.ringMod.mix;
+        ringDry.gain.value = 1 - params.ringMod.mix;
+
+        // Create ring modulation effect using gain node
+        const ringMod = offline.createGain();
+        effectsChain.connect(ringMod);
+        ringOsc.connect(ringGain).connect(ringMod.gain);
+
+        effectsChain.connect(ringDry).connect(ringOutput);
+        ringMod.connect(ringMix).connect(ringOutput);
+
+        ringOsc.start(0);
+        ringOsc.stop(params.dur);
+        effectsChain = ringOutput;
+      }
+
+      // Bit Crusher
+      if (params.bitCrush.bits < 16 || params.bitCrush.rate < 1) {
+        const crusher = createBitCrusher(offline, params.bitCrush.bits, params.bitCrush.rate);
+        effectsChain.connect(crusher);
+        effectsChain = crusher;
+      }
+
+      // 3-Band EQ
+      if (params.eq.low !== 0 || params.eq.mid !== 0 || params.eq.high !== 0) {
+        const eq = create3BandEQ(offline,
+          params.eq.low || 1,
+          params.eq.mid || 1,
+          params.eq.high || 1
+        );
+        effectsChain.connect(eq.input);
+        effectsChain = eq.output;
+      }
+
+      // Phaser
+      if (params.phaser.rate > 0 && params.phaser.depth > 0) {
+        const phaser = createPhaser(offline, params.phaser.rate, params.phaser.depth, params.phaser.feedback);
+        effectsChain.connect(phaser.input);
+        effectsChain.connect(phaser.dryGain).connect(phaser.output);
+        effectsChain = phaser.output;
+      }
+
+      // Compressor
+      if (params.compressor.ratio > 1) {
+        const comp = createCompressor(offline,
+          params.compressor.threshold,
+          params.compressor.ratio,
+          params.compressor.attack,
+          params.compressor.release
+        );
+        effectsChain.connect(comp);
+        effectsChain = comp;
+      }
+
+      // Formant Filter
+      if (params.formant.f1 !== 800 || params.formant.f2 !== 1200 || params.formant.f3 !== 2600) {
+        const formant = createFormantFilter(offline, params.formant.f1, params.formant.f2, params.formant.f3);
+        effectsChain.connect(formant.input1);
+        effectsChain.connect(formant.input2);
+        effectsChain.connect(formant.input3);
+        effectsChain = formant.output;
+      }
+
+      // Chorus
+      if (params.chorus.mix > 0) {
+        const chorusWet = offline.createGain();
+        const chorusDry = offline.createGain();
+        const chorusMix = offline.createGain();
+
+        chorusWet.gain.value = params.chorus.mix;
+        chorusDry.gain.value = 1 - params.chorus.mix;
+
+        const chorus = createChorus(offline, params.chorus.rate, params.chorus.depth);
+
+        effectsChain.connect(chorusDry).connect(chorusMix);
+        effectsChain.connect(chorus.delay).connect(chorusWet).connect(chorusMix);
+
+        effectsChain = chorusMix;
+      }
+
+      // Delay
+      if (params.delay.mix > 0 && params.delay.time > 0) {
+        const delayWet = offline.createGain();
+        const delayDry = offline.createGain();
+        const delayMix = offline.createGain();
+        const delayNode = offline.createDelay(1);
+        const delayFeedback = offline.createGain();
+
+        delayNode.delayTime.value = params.delay.time;
+        delayFeedback.gain.value = params.delay.feedback;
+        delayWet.gain.value = params.delay.mix;
+        delayDry.gain.value = 1 - params.delay.mix;
+
+        effectsChain.connect(delayDry).connect(delayMix);
+        effectsChain.connect(delayNode).connect(delayWet).connect(delayMix);
+        delayNode.connect(delayFeedback).connect(delayNode);
+
+        effectsChain = delayMix;
+      }
+
+      // Reverb
+      if (params.reverb.mix > 0) {
+        const reverbWet = offline.createGain();
+        const reverbDry = offline.createGain();
+        const reverbMix = offline.createGain();
+        const reverb = createReverb(offline, params.reverb.room);
+
+        reverbWet.gain.value = params.reverb.mix;
+        reverbDry.gain.value = 1 - params.reverb.mix;
+
+        effectsChain.connect(reverbDry).connect(reverbMix);
+        effectsChain.connect(reverb).connect(reverbWet).connect(reverbMix);
+
+        effectsChain = reverbMix;
+      }
+
+      // Wiring
+      voiceMixer.connect(filt).connect(dist);
+      const master = offline.createGain();
+      // Apply 3x gain boost for more sensitive volume control
+      master.gain.value = params.volume * 3.0;
+      effectsChain.connect(master).connect(offline.destination);
+
+      const buf = await offline.startRendering();
+      return buf;
+    }
+
+    // Buffer -> WAV Blob
+    function toWavBlob(audioBuffer) {
+      const numOfChan = audioBuffer.numberOfChannels;
+      const length = audioBuffer.length * numOfChan * 2 + 44;
+      const buffer = new ArrayBuffer(length);
+      const view = new DataView(buffer);
+      const channels = [];
+      let pos = 0;
+
+      function setUint16(data) { view.setUint16(pos, data, true); pos += 2; }
+      function setUint32(data) { view.setUint32(pos, data, true); pos += 4; }
+
+      // RIFF chunk descriptor
+      setUint32(0x46464952); // "RIFF"
+      setUint32(length - 8); // file length - 8
+      setUint32(0x45564157); // "WAVE"
+
+      // FMT sub-chunk
+      setUint32(0x20746d66); // "fmt "
+      setUint32(16); // PCM
+      setUint16(1); // linear PCM
+      setUint16(numOfChan);
+      setUint32(audioBuffer.sampleRate);
+      setUint32(audioBuffer.sampleRate * numOfChan * 2); // byte rate
+      setUint16(numOfChan * 2); // block align
+      setUint16(16); // bits per sample
+
+      // data sub-chunk
+      setUint32(0x61746164); // "data"
+      setUint32(length - pos - 4);
+
+      // write interleaved data
+      for (let i = 0; i < audioBuffer.numberOfChannels; i++) channels.push(audioBuffer.getChannelData(i));
+      let offset = 0;
+      while (pos < length) {
+        for (let i = 0; i < numOfChan; i++) {
+          let sample = channels[i][offset] || 0;
+          sample = Math.max(-1, Math.min(1, sample));
+          view.setInt16(pos, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+          pos += 2;
+        }
+        offset++;
+      }
+      return new Blob([buffer], { type: 'audio/wav' });
+    }
+
+    // ---------- UI & Playback ----------
+    const cmdEl = document.getElementById('cmd');
+    const btnRender = document.getElementById('btnRender');
+    const btnStop = document.getElementById('btnStop');
+    const btnRandomize = document.getElementById('btnRandomize');
+    const btnCopy = document.getElementById('btnCopy');
+    const btnCopySpec = document.getElementById('btnCopySpec');
+    const btnTests = document.getElementById('btnTests');
+    const btnRelease = document.getElementById('btnRelease');
+    const autoRelease = document.getElementById('autoRelease');
+    const testOut = document.getElementById('testOut');
+    const statusEl = document.getElementById('status');
+    const player = document.getElementById('player');
+    const dl = document.getElementById('dl');
+    const filename = document.getElementById('filename');
+    const info = document.getElementById('info');
+    const errEl = document.getElementById('err');
+
+    const pWave = document.getElementById('txtWave');
+    const pNote = document.getElementById('txtNote');
+    const pDur = document.getElementById('txtDur');
+    const pA = document.getElementById('txtA');
+    const pD = document.getElementById('txtD');
+    const pS = document.getElementById('txtS');
+    const pR = document.getElementById('txtR');
+    const pFType = document.getElementById('txtFType');
+    const pCut = document.getElementById('txtCut');
+    const pQ = document.getElementById('txtQ');
+    const pLFO = document.getElementById('txtLFO');
+    const pSweep = document.getElementById('txtSweep');
+    const pDrive = document.getElementById('txtDrive');
+    const pVol = document.getElementById('txtVol');
+    const pVoices = document.getElementById('txtVoices');
+    const pDetune = document.getElementById('txtDetune');
+    const pFilterEnv = document.getElementById('txtFilterEnv');
+    const pReverb = document.getElementById('txtReverb');
+    const pDelay = document.getElementById('txtDelay');
+    const pChorus = document.getElementById('txtChorus');
+
+    let currentURL = null; // currently attached blob URL
+    let renderToken = 0;   // cancel obsolete plays
+    let lastDetachedURL = null; // revoke safely after 'emptied'
+
+    function setError(msg) { if (errEl) errEl.textContent = msg || ''; }
+    function setStatus(msg) {
+      if (statusEl) statusEl.textContent = msg;
+      updateStatusLED(msg);
+    }
+
+    function updateStatusLED(status) {
+      const powerLed = document.getElementById('power-led');
+      if (!powerLed) return;
+
+      if (status.includes('Rendering')) {
+        powerLed.setAttribute('fill', '#f59e0b');
+        powerLed.setAttribute('filter', 'url(#glow)');
+      } else if (status.includes('Playing')) {
+        powerLed.setAttribute('fill', '#22c55e');
+        powerLed.setAttribute('filter', 'url(#glow)');
+      } else if (status.includes('Error')) {
+        powerLed.setAttribute('fill', '#ef4444');
+        powerLed.setAttribute('filter', 'url(#glow)');
+      } else {
+        powerLed.setAttribute('fill', '#7dd3fc');
+        powerLed.setAttribute('filter', 'url(#glow)');
+      }
+    }
+
+    function updateDownloadFilename() {
+      let fname = filename.value.trim() || 'sfx.wav';
+      if (!fname.toLowerCase().endsWith('.wav')) fname += '.wav';
+      dl.setAttribute('download', fname);
+    }
+
+    function fmtMs(s) { return Math.round(s * 1000) + "ms" }
+
+    function reflect(params) {
+      // Update text displays (keep for compatibility)
+      if (pWave) pWave.textContent = `wave: ${params.wave}`;
+      if (pNote) pNote.textContent = `note: ${Math.round(params.freq)}Hz`;
+      if (pDur) pDur.textContent = `dur: ${params.dur.toFixed(2)}s`;
+      if (pA) pA.textContent = `attack: ${fmtMs(params.attack)}`;
+      if (pD) pD.textContent = `decay: ${fmtMs(params.decay)}`;
+      if (pS) pS.textContent = `sustain: ${params.sustain.toFixed(2)}`;
+      if (pR) pR.textContent = `release: ${fmtMs(params.release)}`;
+      if (pFType) pFType.textContent = `type: ${params.filter}`;
+      if (pCut) pCut.textContent = `cutoff: ${Math.round(params.cutoff)}Hz`;
+      if (pQ) pQ.textContent = `Q: ${params.q}`;
+
+      // Update visual interface
+      updateVisualInterface(params);
+    }
+
+    function updateVisualInterface(params) {
+      // Wave type LEDs
+      ['sine', 'square', 'saw', 'triangle', 'noise'].forEach(wave => {
+        const led = document.getElementById(`led-${wave}`);
+        if (led) {
+          led.setAttribute('fill', wave === params.wave ? '#7dd3fc' : '#333');
+          led.setAttribute('filter', wave === params.wave ? 'url(#glow)' : '');
+        }
+      });
+
+      // Frequency dial (0-360 degrees for 20Hz-20kHz log scale)
+      const freqAngle = Math.log10(Math.max(20, Math.min(20000, params.freq)) / 20) / Math.log10(1000) * 270 - 135;
+      const freqNeedle = document.getElementById('freq-needle');
+      const freqValue = document.getElementById('freq-value');
+      if (freqNeedle) freqNeedle.setAttribute('transform', `rotate(${freqAngle})`);
+      if (freqValue) freqValue.textContent = `${Math.round(params.freq)}Hz`;
+
+      // Duration bar (0-5 seconds)
+      const durWidth = Math.min(params.dur / 5, 1) * 116;
+      const durFill = document.getElementById('dur-fill');
+      const durValue = document.getElementById('dur-value');
+      if (durFill) durFill.setAttribute('width', durWidth);
+      if (durValue) durValue.textContent = `${params.dur.toFixed(2)}s`;
+
+      // ADSR dials (0-270 degrees)
+      const updateDial = (id, value, max, unit = '') => {
+        const angle = (value / max) * 270 - 135;
+        const needle = document.getElementById(`${id}-needle`);
+        const valueEl = document.getElementById(`${id}-value`);
+        if (needle) needle.setAttribute('transform', `rotate(${angle})`);
+        if (valueEl) valueEl.textContent = `${typeof value === 'number' ? value.toFixed(value < 1 ? 2 : 0) : value}${unit}`;
+      };
+
+      updateDial('attack', params.attack * 1000, 1000, 'ms');
+      updateDial('decay', params.decay * 1000, 2000, 'ms');
+      updateDial('sustain', params.sustain, 1);
+      updateDial('release', params.release * 1000, 2000, 'ms');
+
+      // ADSR curve visualization
+      const adsrLine = document.getElementById('adsr-line');
+      if (adsrLine) {
+        const a = Math.min(params.attack * 200, 40);
+        const d = Math.min(params.decay * 100, 60);
+        const s = 70 - params.sustain * 50;
+        const r = Math.min(params.release * 100, 40);
+        const points = `10,70 ${10 + a},10 ${10 + a + d},${s} ${160},${s} ${160 + r},70`;
+        adsrLine.setAttribute('points', points);
+      }
+
+      // Filter type LEDs
+      ['lowpass', 'highpass', 'bandpass'].forEach(type => {
+        const led = document.getElementById(`led-${type}`);
+        if (led) {
+          led.setAttribute('fill', type === params.filter ? '#ef4444' : '#333');
+          led.setAttribute('filter', type === params.filter ? 'url(#glow)' : '');
+        }
+      });
+
+      // Filter dials
+      updateDial('cutoff', params.cutoff, 20000, 'Hz');
+      updateDial('q', params.q, 30);
+      updateDial('filter-env', params.filterEnv.amount, 1);
+
+      // Filter response curve
+      const responseCurve = document.getElementById('response-curve');
+      if (responseCurve) {
+        const cutoffPos = Math.log10(params.cutoff / 20) / Math.log10(1000) * 130 + 10;
+        const qHeight = Math.max(10, 70 - params.q * 20);
+        let path = '';
+        if (params.filter === 'lowpass') {
+          path = `M10,70 L${cutoffPos},${qHeight} Q${cutoffPos + 20},10 140,10`;
+        } else if (params.filter === 'highpass') {
+          path = `M10,10 Q${cutoffPos - 20},10 ${cutoffPos},${qHeight} L140,70`;
+        } else { // bandpass
+          path = `M10,70 Q${cutoffPos - 30},70 ${cutoffPos},${qHeight} Q${cutoffPos + 30},70 140,70`;
+        }
+        responseCurve.setAttribute('d', path);
+      }
+
+      // Effects dials and LEDs
+      const lfoRate = params.lfo ? params.lfo.rate : 0;
+      updateDial('lfo', lfoRate, 20, 'Hz');
+      updateDial('drive', params.drive, 1);
+      updateDial('voices', params.voices.count, 8);
+
+      // Volume meter
+      const volDb = 20 * Math.log10(params.volume || 0.001);
+      const volHeight = Math.max(0, Math.min(76, (volDb + 60) / 60 * 76));
+      const volFill = document.getElementById('vol-fill');
+      const volValue = document.getElementById('vol-value');
+      if (volFill) {
+        volFill.setAttribute('height', volHeight);
+        volFill.setAttribute('y', 78 - volHeight);
+        const color = volDb > -6 ? '#ef4444' : volDb > -12 ? '#f59e0b' : '#22c55e';
+        volFill.setAttribute('fill', color);
+      }
+      if (volValue) volValue.textContent = `${volDb.toFixed(1)}dB`;
+
+      // Effects LEDs
+      const updateEffectLED = (id, active) => {
+        const led = document.getElementById(`led-${id}`);
+        if (led) {
+          led.setAttribute('fill', active ? '#7dd3fc' : '#333');
+          led.setAttribute('filter', active ? 'url(#glow)' : '');
+        }
+      };
+
+      updateEffectLED('reverb', params.reverb.mix > 0);
+      updateEffectLED('delay', params.delay.mix > 0);
+      updateEffectLED('chorus', params.chorus.mix > 0);
+
+      // Generate spectrum bars
+      const spectrumBars = document.getElementById('spectrum-bars');
+      if (spectrumBars) {
+        spectrumBars.innerHTML = '';
+        for (let i = 0; i < 20; i++) {
+          const x = i * 7 + 5;
+          const height = Math.random() * 60 + 5; // Simulated spectrum
+          const bar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+          bar.setAttribute('x', x);
+          bar.setAttribute('y', 75 - height);
+          bar.setAttribute('width', 5);
+          bar.setAttribute('height', height);
+          bar.setAttribute('fill', height > 50 ? '#ef4444' : height > 30 ? '#f59e0b' : '#22c55e');
+          bar.setAttribute('opacity', '0.8');
+          spectrumBars.appendChild(bar);
+        }
+      }
+
+      // Generate waveform preview
+      const waveform = document.getElementById('waveform');
+      if (waveform) {
+        let points = '';
+        const samples = 200;
+        for (let i = 0; i < samples; i++) {
+          const x = i * 2;
+          let y = 20; // center
+
+          if (params.wave === 'sine') {
+            y = 20 + Math.sin(i * 0.1) * 15;
+          } else if (params.wave === 'square') {
+            y = 20 + (Math.sin(i * 0.1) > 0 ? 15 : -15);
+          } else if (params.wave === 'saw') {
+            y = 20 + ((i * 0.1) % (Math.PI * 2) - Math.PI) / Math.PI * 15;
+          } else if (params.wave === 'triangle') {
+            const phase = (i * 0.1) % (Math.PI * 2);
+            y = 20 + (phase < Math.PI ? (phase / Math.PI * 2 - 1) : (2 - phase / Math.PI * 2 - 1)) * 15;
+          } else if (params.wave === 'noise') {
+            y = 20 + (Math.random() - 0.5) * 30;
+          }
+
+          points += `${x},${y} `;
+        }
+        waveform.setAttribute('points', points.trim());
+      }
+    }
+
+    function detachPlayer() {
+      return new Promise((resolve) => {
+        try { player.pause(); } catch { }
+        const oldURL = currentURL; // capture
+        lastDetachedURL = oldURL;
+        currentURL = null;
+
+        // Listen for 'emptied' which fires when the media element has released the resource
+        const onEmptied = () => {
+          player.removeEventListener('emptied', onEmptied);
+          // Revoke after the element is fully detached to avoid AbortError surfacing
+          if (oldURL) { setTimeout(() => { try { URL.revokeObjectURL(oldURL); } catch { } }, 0); }
+          resolve();
+        };
+        player.addEventListener('emptied', onEmptied, { once: true });
+
+        try {
+          player.removeAttribute('src');
+          player.load();
+        } catch { resolve(); }
+
+        // Fallback in case 'emptied' is not delivered (older browsers)
+        setTimeout(() => { try { URL.revokeObjectURL(oldURL); } catch { }; resolve(); }, 200);
+      });
+    }
+
+    btnStop.onclick = async () => {
+      await detachPlayer();
+      setStatus('Stopped.');
+      info.textContent = '';
+      dl.removeAttribute('href');
+    };
+
+    function generateRandomCommand() {
+      const waves = ['sine', 'square', 'saw', 'triangle', 'noise'];
+      const notes = ['C3', 'D3', 'E3', 'F3', 'G3', 'A3', 'B3', 'C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5', 'D5', 'E5'];
+      const filters = ['lowpass', 'highpass', 'bandpass'];
+      const rooms = ['small', 'medium', 'large', 'hall'];
+
+      const rand = (min, max) => Math.random() * (max - min) + min;
+      const randInt = (min, max) => Math.floor(rand(min, max + 1));
+      const choice = (arr) => arr[randInt(0, arr.length - 1)];
+      const maybe = (prob = 0.5) => Math.random() < prob;
+
+      let cmd = [];
+
+      // Core parameters
+      cmd.push(`wave=${choice(waves)}`);
+      cmd.push(`note=${choice(notes)}`);
+      cmd.push(`dur=${rand(0.3, 2.5).toFixed(2)}s`);
+
+      // ADSR Envelope
+      cmd.push(`attack=${randInt(1, 50)}ms`);
+      cmd.push(`decay=${randInt(20, 500)}ms`);
+      cmd.push(`sustain=${rand(0.1, 0.9).toFixed(2)}`);
+      cmd.push(`release=${randInt(30, 800)}ms`);
+
+      // Filter
+      cmd.push(`filter=${choice(filters)}`);
+      cmd.push(`cutoff=${randInt(200, 8000)}Hz`);
+      cmd.push(`q=${rand(0.3, 3.0).toFixed(1)}`);
+
+      // Volume (adjusted for increased sensitivity)
+      cmd.push(`volume=${rand(-18, -6).toFixed(1)}dB`);
+
+      // Advanced features (probabilistic)
+      if (maybe(0.7)) {
+        cmd.push(`voices=${randInt(1, 4)}`);
+        if (randInt(1, 4) > 1) cmd.push(`detune=${randInt(3, 20)}c`);
+        cmd.push(`spread=${rand(0.3, 1.0).toFixed(1)}`);
+      }
+
+      if (maybe(0.6)) {
+        cmd.push(`drive=${rand(0.1, 0.8).toFixed(2)}`);
+      }
+
+      if (maybe(0.5)) {
+        const lfoRate = rand(0.5, 8).toFixed(1);
+        const lfoTarget = choice(['cutoff', 'pitch']);
+        const lfoAmount = lfoTarget === 'cutoff' ? randInt(500, 3000) : randInt(10, 50);
+        cmd.push(`lfo=${lfoRate}Hz->${lfoTarget}:${lfoAmount}${lfoTarget === 'pitch' ? 'c' : ''}`);
+      }
+
+      if (maybe(0.4)) {
+        cmd.push(`pitch_sweep=${maybe() ? '+' : '-'}${randInt(3, 12)}st/${randInt(50, 300)}ms`);
+      }
+
+      if (maybe(0.6)) {
+        cmd.push(`filter_env=${rand(0.2, 1.0).toFixed(1)}`);
+        cmd.push(`filter_attack=${randInt(5, 100)}ms`);
+        cmd.push(`filter_decay=${randInt(50, 400)}ms`);
+      }
+
+      // Effects
+      if (maybe(0.5)) {
+        cmd.push(`reverb=${rand(0.1, 0.6).toFixed(2)}`);
+        cmd.push(`room=${choice(rooms)}`);
+      }
+
+      if (maybe(0.4)) {
+        cmd.push(`delay=${rand(0.05, 0.3).toFixed(2)}s`);
+        cmd.push(`feedback=${rand(0.2, 0.7).toFixed(1)}`);
+        cmd.push(`delay_mix=${rand(0.1, 0.4).toFixed(1)}`);
+      }
+
+      if (maybe(0.4)) {
+        cmd.push(`chorus=${rand(0.2, 0.6).toFixed(1)}`);
+        cmd.push(`chorus_rate=${rand(1, 5).toFixed(1)}Hz`);
+        cmd.push(`chorus_depth=${randInt(2, 8)}ms`);
+      }
+
+      // Advanced synthesis (less frequent but interesting)
+      if (maybe(0.3)) {
+        cmd.push(`fm_ratio=${rand(0.5, 4.0).toFixed(1)}`);
+        cmd.push(`fm_depth=${randInt(50, 800)}`);
+      }
+
+      if (maybe(0.3)) {
+        cmd.push(`am_rate=${rand(2, 12).toFixed(1)}Hz`);
+        cmd.push(`am_depth=${rand(0.2, 0.8).toFixed(1)}`);
+      }
+
+      if (maybe(0.2)) {
+        cmd.push(`ring_freq=${randInt(100, 2000)}Hz`);
+        cmd.push(`ring_mix=${rand(0.2, 0.6).toFixed(1)}`);
+      }
+
+      if (maybe(0.3)) {
+        if (maybe()) cmd.push(`h2=${rand(0.1, 0.5).toFixed(2)}`);
+        if (maybe()) cmd.push(`h3=${rand(0.05, 0.3).toFixed(2)}`);
+        if (maybe()) cmd.push(`h4=${rand(0.02, 0.2).toFixed(2)}`);
+        if (maybe()) cmd.push(`h5=${rand(0.01, 0.15).toFixed(2)}`);
+      }
+
+      if (maybe(0.2)) {
+        cmd.push(`bits=${randInt(4, 12)}`);
+        cmd.push(`sample_rate=${rand(0.3, 0.9).toFixed(1)}`);
+      }
+
+      if (maybe(0.3)) {
+        cmd.push(`phaser_rate=${rand(0.5, 4).toFixed(1)}Hz`);
+        cmd.push(`phaser_depth=${rand(0.3, 0.9).toFixed(1)}`);
+        cmd.push(`phaser_feedback=${rand(0.1, 0.6).toFixed(1)}`);
+      }
+
+      if (maybe(0.4)) {
+        cmd.push(`comp_threshold=${rand(0.4, 0.9).toFixed(1)}`);
+        cmd.push(`comp_ratio=${rand(1.5, 6).toFixed(1)}`);
+      }
+
+      if (maybe(0.3)) {
+        cmd.push(`eq_low=${rand(0.7, 1.5).toFixed(1)}`);
+        cmd.push(`eq_mid=${rand(0.6, 1.4).toFixed(1)}`);
+        cmd.push(`eq_high=${rand(0.8, 1.6).toFixed(1)}`);
+      }
+
+      if (maybe(0.2)) {
+        cmd.push(`formant_f1=${randInt(400, 1200)}Hz`);
+        cmd.push(`formant_f2=${randInt(800, 2000)}Hz`);
+        cmd.push(`formant_f3=${randInt(1500, 3500)}Hz`);
+      }
+
+      return cmd.join(' ');
+    }
+
+    btnRandomize.onclick = () => {
+      const randomCmd = generateRandomCommand();
+      cmdEl.value = randomCmd;
+      const params = parseCommand(randomCmd);
+      reflect(params);
+      setStatus('Randomized! Click Render to hear the result.');
+    };
+
+    btnCopy.onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(cmdEl.value);
+        setStatus('Command copied to clipboard!');
+        setTimeout(() => setStatus('Ready.'), 2000);
+      } catch (err) {
+        // Fallback for older browsers
+        cmdEl.select();
+        document.execCommand('copy');
+        setStatus('Command copied to clipboard!');
+        setTimeout(() => setStatus('Ready.'), 2000);
+      }
+    };
+
+    btnCopySpec.onclick = async () => {
+      const aiSpecText = `AUDIO SYNTHESIS COMMAND FORMAT:
+Use space-separated key=value pairs. Available synthesis tools and parameters:
+
+OSCILLATORS & WAVEFORMS:
+• wave=(sine|square|saw|triangle|noise) - Base waveform
+• note=A4 or freq=440Hz - Pitch (notes: C3-C6, frequencies: 20Hz-20kHz)
+• dur=0.5s - Duration (0.01s to 5.0s maximum)
+• seed=123 - Random seed for noise variation
+
+ENVELOPE (ADSR):
+• attack=5ms - Attack time (0-1000ms)
+• decay=120ms - Decay time (0-2000ms) 
+• sustain=0.5 - Sustain level (0.0-1.0)
+• release=80ms - Release time (0-2000ms)
+
+FILTER:
+• filter=(lowpass|highpass|bandpass) - Filter type
+• cutoff=1200Hz - Cutoff frequency (20Hz-20kHz)
+• q=0.8 - Resonance/Q factor (0.1-30)
+• filter_env=0.6 - Filter envelope amount (0-1)
+• filter_attack=10ms, filter_decay=200ms - Filter envelope timing
+
+MODULATION:
+• lfo=6Hz->cutoff:2400 - LFO to filter (rate in Hz, amount in Hz)
+• lfo=5Hz->pitch:30c - LFO to pitch (rate in Hz, amount in cents)
+• pitch_sweep=+7st/70ms - Pitch bend (semitones over time)
+
+VOICES & UNISON:
+• voices=3 - Number of voices (1-8)
+• detune=12c - Voice detuning in cents (0-50c)
+• spread=0.8 - Stereo spread (0-1, 0=mono, 1=full stereo)
+
+ADVANCED SYNTHESIS:
+• fm_ratio=2.1 fm_depth=500 - FM synthesis (ratio 0.1-20, depth 0-1000)
+• am_rate=6Hz am_depth=0.5 - Amplitude modulation (rate 0-50Hz, depth 0-1)
+• ring_freq=440Hz ring_mix=0.3 - Ring modulation (freq 0-5kHz, mix 0-1)
+• h2=0.3 h3=0.2 h4=0.1 h5=0.05 - Harmonic enhancement (levels 0-1)
+
+AUDIO EFFECTS:
+• drive=0.3 - Soft distortion/saturation (0-1)
+• reverb=0.3 room=(small|medium|large|hall) - Reverb (mix 0-1)
+• delay=0.2s feedback=0.4 delay_mix=0.3 - Echo effect
+• chorus=0.5 chorus_rate=2Hz chorus_depth=5ms - Chorus modulation
+• phaser_rate=2Hz phaser_depth=0.8 phaser_feedback=0.3 - Phaser sweep
+
+AUDIO PROCESSING:
+• bits=8 sample_rate=0.5 - Bit crushing (bits 1-16, rate 0.1-1)
+• comp_threshold=0.7 comp_ratio=4 - Compressor (threshold 0.1-1, ratio 1-20)
+• eq_low=1.2 eq_mid=0.8 eq_high=1.5 - 3-band EQ (gain multipliers 0.1-10)
+• formant_f1=800Hz formant_f2=1200Hz formant_f3=2600Hz - Vocal formants
+
+VOLUME:
+• volume=-6dB - Output level (-60dB to 0dB)
+
+UNITS: ms=milliseconds, s=seconds, Hz=hertz, kHz=kilohertz, dB=decibels, st=semitones, c=cents
+
+EXAMPLE COMMANDS:
+Basic: wave=saw note=A4 dur=0.8 attack=5ms decay=150ms sustain=0.6 cutoff=1800Hz
+Complex: wave=square note=C3 dur=1.5 voices=3 detune=8c fm_ratio=1.5 fm_depth=300 h2=0.2 drive=0.4 reverb=0.3 room=large phaser_rate=1.5Hz eq_low=1.2 comp_ratio=3
+
+AI PROMPT TEMPLATE:
+"Generate a [type of sound] using this synthesis command format. Use these available parameters: [paste parameter list above]. Create a command like: wave=saw note=A4 dur=0.8 attack=5ms decay=150ms sustain=0.6 release=200ms cutoff=1800Hz q=1.2 drive=0.3 reverb=0.25 room=medium. Make it sound [describe desired characteristics]."`;
+
+      try {
+        await navigator.clipboard.writeText(aiSpecText);
+        setStatus('Full AI specification copied to clipboard!');
+        setTimeout(() => setStatus('Ready.'), 3000);
+      } catch (err) {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = aiSpecText;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        setStatus('Full AI specification copied to clipboard!');
+        setTimeout(() => setStatus('Ready.'), 3000);
+      }
+    };
+
+    btnRender.onclick = async () => {
+      setError('');
+      const params = parseCommand(cmdEl.value);
+      reflect(params);
+      setStatus('Rendering…');
+      btnRender.disabled = true;
+      const myToken = ++renderToken; // identify this render
+      try {
+        const buf = await renderSFX(params);
+        if (myToken !== renderToken) { return; } // another render superseded
+        const blob = toWavBlob(buf);
+        const url = URL.createObjectURL(blob);
+
+        // Detach any previous media first to avoid aborting an in-flight fetch
+        await detachPlayer();
+
+        currentURL = url;
+        player.src = url;
+        player.currentTime = 0;
+
+        dl.href = url;
+        updateDownloadFilename();
+        info.textContent = `${(buf.duration).toFixed(3)}s • ${buf.sampleRate} Hz • ${buf.numberOfChannels}ch`;
+
+        // Wait for media to become playable before attempting autoplay
+        const waitCanPlay = new Promise((resolve) => {
+          if (player.readyState >= 2) return resolve();
+          const onReady = () => { player.removeEventListener('canplay', onReady); resolve(); };
+          player.addEventListener('canplay', onReady, { once: true });
+          try { player.load(); } catch { }
+        });
+        await waitCanPlay;
+
+        setStatus('Ready.');
+
+        // Attempt playback; harmless if user prefers clicking play
+        const p = player.play();
+        if (p && typeof p.catch === 'function') {
+          p.catch(e => {
+            if (e && (e.name === 'AbortError' || e.name === 'NotAllowedError')) {
+              console.warn('Playback interrupted/blocked:', e.name);
+              setStatus('Ready (use Play button).');
+            } else {
+              console.error(e);
+              setError('Playback error: ' + e.message);
+              setStatus('Error');
+            }
+          });
+        }
+      } catch (e) {
+        console.error(e);
+        setError('Error: ' + e.message);
+        setStatus('Error');
+      } finally {
+        btnRender.disabled = false;
+      }
+    };
+
+    // Extra diagnostics and safe cleanup hooks
+    player.addEventListener('play', () => { setStatus('Playing…'); });
+    player.addEventListener('pause', () => { setStatus('Paused.'); });
+    player.addEventListener('ended', async () => {
+      setStatus('Ended.');
+      if (autoRelease && autoRelease.checked) { await detachPlayer(); setStatus('Ended (released).'); }
+    });
+    player.addEventListener('error', () => {
+      const e = player.error;
+      if (!e) return;
+      const codes = ['MEDIA_ERR_CUSTOM', 'MEDIA_ERR_ABORTED', 'MEDIA_ERR_NETWORK', 'MEDIA_ERR_DECODE', 'MEDIA_ERR_SRC_NOT_SUPPORTED'];
+      setError(`Audio error: ${codes[e.code] || e.code}`);
+    });
+
+    // Filename input listener
+    filename.addEventListener('input', updateDownloadFilename);
+    filename.addEventListener('blur', updateDownloadFilename);
+
+    // Ignore benign AbortError promise rejections globally (triggered by fast re-renders)
+    window.addEventListener('unhandledrejection', (ev) => {
+      if (ev && ev.reason && ev.reason.name === 'AbortError') {
+        ev.preventDefault();
+        console.warn('Ignored AbortError from media fetch/play race');
+      }
+    });
+
+    // ---------- Tests ----------
+    function nearlyEqual(a, b, eps = 1e-4) { return Math.abs(a - b) <= eps; }
+    async function runTests() {
+      const lines = [];
+      function pass(msg) { lines.push('✔ ' + msg); }
+      function fail(msg) { lines.push('✖ ' + msg); }
+
+      try {
+        // T0: errEl exists
+        if (document.getElementById('err')) pass('#err exists'); else fail('#err missing');
+
+        // T1: duration clamp to ≤5s
+        let p = parseCommand('wave=sine dur=7s');
+        let b = await renderSFX(p);
+        if (b.duration <= 5.01 && b.duration >= 4.9) pass('Dur clamp: 7s -> ~5s'); else fail('Dur clamp wrong: ' + b.duration.toFixed(3) + 's');
+
+        // T2: noise seed determinism
+        p = parseCommand('wave=noise dur=0.2s seed=42');
+        const b1 = await renderSFX(p);
+        const b2 = await renderSFX(p);
+        let same = true; const ch1 = b1.getChannelData(0), ch2 = b2.getChannelData(0);
+        for (let i = 0; i < Math.min(ch1.length, ch2.length); i += 128) { if (ch1[i] !== ch2[i]) { same = false; break; } }
+        if (same) pass('Noise deterministic with same seed'); else fail('Noise not deterministic');
+
+        // T3: note vs freq equivalence (approx)
+        const pA = parseCommand('wave=sine note=A4 dur=0.1s');
+        const pB = parseCommand('wave=sine freq=440Hz dur=0.1s');
+        const bA = await renderSFX(pA);
+        const bB = await renderSFX(pB);
+        if (nearlyEqual(bA.duration, bB.duration, 1e-3)) pass('note vs freq duration equal'); else fail('note vs freq duration mismatch');
+
+        // T4: pitch LFO changes signal (not identical to no LFO)
+        const p0 = parseCommand('wave=sine freq=440Hz dur=0.1s');
+        const pL = parseCommand('wave=sine freq=440Hz dur=0.1s lfo=6Hz->pitch:20c');
+        const b0 = await renderSFX(p0); const bL = await renderSFX(pL);
+        const a0 = b0.getChannelData(0), aL = bL.getChannelData(0);
+        let diff = false; for (let i = 0; i < Math.min(a0.length, aL.length); i += 64) { if (Math.abs(a0[i] - aL[i]) > 1e-6) { diff = true; break; } }
+        if (diff) pass('Pitch LFO alters signal'); else fail('Pitch LFO had no effect');
+
+        // T5: WAV blob sanity
+        const tb = toWavBlob(b0);
+        if (tb && tb.size > 44 && tb.type === 'audio/wav') pass('WAV blob looks valid'); else fail('WAV blob invalid');
+
+      } catch (e) {
+        fail('Test harness error: ' + e.message);
+      }
+      testOut.textContent = lines.join('\n');
+    }
+
+    btnTests.onclick = runTests;
+
+    // Seed an example with advanced features
+    cmdEl.value = 'wave=saw note=A4 dur=1.2 attack=5ms decay=150ms sustain=0.6 release=300ms cutoff=1800Hz q=1.2 lfo=4Hz->cutoff:3200 drive=0.3 pitch_sweep=+5st/100ms volume=-12dB voices=2 detune=8c spread=0.8 filter_env=0.7 filter_attack=10ms filter_decay=200ms reverb=0.3 room=large delay=0.18s feedback=0.4 delay_mix=0.25 chorus=0.4 chorus_rate=2.5Hz chorus_depth=4ms fm_ratio=1.5 fm_depth=200 h2=0.2 h3=0.1 am_rate=3Hz am_depth=0.3 phaser_rate=1.5Hz phaser_depth=0.6 eq_low=1.1 eq_high=1.3 comp_ratio=2.5';
+    reflect(parseCommand(cmdEl.value));
+    updateDownloadFilename(); // Initialize download filename
+  </script>
+</body>
+
+</html>
