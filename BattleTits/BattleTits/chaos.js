@@ -585,12 +585,15 @@ export function triggerChaosEvent() {
   }
 }
 
+// Track active chaos messages for stacking
+let activeMessages = [];
+
 export function showChaosMessage(message) {
   const chaosDiv = document.createElement('div');
+  chaosDiv.className = 'chaos-message';
   chaosDiv.style.position = 'fixed';
-  chaosDiv.style.top = '50%';
   chaosDiv.style.left = '50%';
-  chaosDiv.style.transform = 'translate(-50%, -50%)';
+  chaosDiv.style.transform = 'translateX(-50%)';
   chaosDiv.style.fontSize = '36px';
   chaosDiv.style.fontWeight = 'bold';
   chaosDiv.style.color = '#ff0000';
@@ -601,19 +604,43 @@ export function showChaosMessage(message) {
   chaosDiv.style.padding = '20px';
   chaosDiv.style.borderRadius = '15px';
   chaosDiv.style.border = '3px solid #ff0000';
+  chaosDiv.style.whiteSpace = 'nowrap';
   chaosDiv.textContent = message;
+  
+  // Calculate position based on existing messages - display in UI area
+  const messageHeight = 80; // Approximate height including padding
+  const startY = 120; // Start below the title (around 120px from top)
+  const offsetY = activeMessages.length * messageHeight;
+  
+  chaosDiv.style.top = `${startY + offsetY}px`;
+  
+  // Add to active messages list
+  activeMessages.push(chaosDiv);
   
   document.body.appendChild(chaosDiv);
   
-  // REDUCED SCREEN SHAKE - only for major events!
-  if (Math.random() < 0.3) { // Only 30% chance for screenshake
-    document.body.style.animation = 'ui-chaos 0.1s infinite';
-  }
+  // Screen shake removed - only earthquake should shake
   
   setTimeout(() => {
-    document.body.removeChild(chaosDiv);
+    if (document.body.contains(chaosDiv)) {
+      document.body.removeChild(chaosDiv);
+    }
+    // Remove from active messages list
+    activeMessages = activeMessages.filter(msg => msg !== chaosDiv);
+    // Reposition remaining messages
+    repositionMessages();
     document.body.style.animation = '';
   }, 3000);
+}
+
+function repositionMessages() {
+  const messageHeight = 80;
+  const startY = 120; // Below title, in UI area
+  
+  activeMessages.forEach((msg, index) => {
+    const offsetY = index * messageHeight;
+    msg.style.top = `${startY + offsetY}px`;
+  });
 }
 
 export function getRandomMessage() {

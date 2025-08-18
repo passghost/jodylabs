@@ -601,6 +601,18 @@
         transform: scale(1);
       }
     }
+
+    @keyframes blink {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.3;
+      }
+    }
   </style>
 </head>
 
@@ -640,39 +652,40 @@
     padding: 8px;
     box-shadow: 0 0 10px rgba(255, 255, 0, 0.3);
   ">
-    <span style="color: #00ff00;">P1: WASD + SPACE</span> | 
-    <span style="color: #0080ff;">P2: ARROWS + NUM0</span> | 
-    <span style="color: #ff8800;">PRESS P FOR PLAYER 2</span> | 
+    <span style="color: #00ff00;">P1: WASD + SPACE</span> |
+    <span style="color: #0080ff;">P2: ARROWS + NUM0</span> |
+    <span style="color: #ff8800;">PRESS P FOR PLAYER 2</span> |
     <span style="color: #ffffff;">ESC: PAUSE</span>
   </div>
 
-  <div style="position:relative;width:800px;height:500px;">
+  <div style="position:relative;width:800px;height:500px;margin:0 auto;">
     <div id="effects-layer"
       style="position:absolute;top:0;left:0;width:800px;height:500px;z-index:3;pointer-events:none;"></div>
     <div id="projectile-layer"
       style="position:absolute;top:0;left:0;width:800px;height:500px;z-index:2;pointer-events:none;"></div>
     <div class="pixel-art-container" id="game-area" style="z-index:1;"></div>
+  </div>
 
-    <!-- Game screens -->
-    <div id="game-over">
-      <h1>GAME OVER</h1>
-      <p>Final Score: <span id="final-score">0</span></p>
-      <p>Level Reached: <span id="final-level">1</span></p>
-      <button onclick="restartGame()">RESTART</button>
-    </div>
+  <!-- Game screens -->
+  <div id="game-over">
+    <h1>GAME OVER</h1>
+    <p>Final Score: <span id="final-score">0</span></p>
+    <p>Level Reached: <span id="final-level">1</span></p>
+    <button onclick="restartGame()">RESTART</button>
+  </div>
 
-    <div id="victory">
-      <h1>VICTORY!</h1>
-      <p>You defeated the OMEGA DESTROYER!</p>
-      <p>Final Score: <span id="victory-score">0</span></p>
-      <p>All 10 levels completed!</p>
-      <button onclick="restartGame()">PLAY AGAIN</button>
-    </div>
+  <div id="victory">
+    <h1>VICTORY!</h1>
+    <p>You defeated the OMEGA DESTROYER!</p>
+    <p>Final Score: <span id="victory-score">0</span></p>
+    <p>All 10 levels completed!</p>
+    <button onclick="restartGame()">PLAY AGAIN</button>
+  </div>
 
-    <div id="pause-screen">
-      <h1>PAUSED</h1>
-      <p>Press ESC to resume</p>
-    </div>
+  <div id="pause-screen">
+    <h1>PAUSED</h1>
+    <p>Press ESC to resume</p>
+  </div>
   </div>
 
   <!-- Supabase CDN -->

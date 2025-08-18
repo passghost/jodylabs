@@ -87,6 +87,8 @@ let bloodEffects = [];
 let bloodPools = [];
 let explosions = [];
 let muzzleFlashes = [];
+// Helper turrets spawned by a weapon
+let helpers = [];
 
 // Enemy state
 let enemies = [];
@@ -96,6 +98,24 @@ let bossProjectiles = [];
 // Powerup state
 let powerups = [];
 let activePowerups = [];
+
+// Weapon upgrade station state
+let weaponUpgradeStations = [];
+let player1UpgradeProgress = new Map(); // stationId -> progress (0-1)
+let player2UpgradeProgress = new Map();
+let player1PermanentDamage = 0;
+let player2PermanentDamage = 0;
+let lastUpgradeStationSpawn = 0;
+
+// Airstrike station state
+let airstrikeStations = [];
+let player1AirstrikeProgress = new Map(); // stationId -> progress (0-1)
+let player2AirstrikeProgress = new Map();
+let lastAirstrikeStationSpawn = 0;
+
+// Rogue enemy state (enemies that go after the title enemy)
+let rogueEnemies = [];
+let lastRogueEnemySpawn = 0;
 
 // Toggle Player 2
 function togglePlayer2() {
@@ -174,6 +194,19 @@ function initGame() {
   bossProjectiles = [];
   powerups = [];
   activePowerups = [];
+  weaponUpgradeStations = [];
+  player1UpgradeProgress.clear();
+  player2UpgradeProgress.clear();
+  player1PermanentDamage = 0;
+  player2PermanentDamage = 0;
+  lastUpgradeStationSpawn = 0;
+  airstrikeStations = [];
+  player1AirstrikeProgress.clear();
+  player2AirstrikeProgress.clear();
+  lastAirstrikeStationSpawn = 0;
+  cleanupRogueEnemies();
+  rogueEnemies = [];
+  lastRogueEnemySpawn = 0;
   bloodEffects = [];
   bloodPools = [];
   explosions = [];
@@ -310,13 +343,20 @@ function updateUI() {
 
   // Active powerups
   if (powerupList) {
+    console.log('Updating UI - Active powerups:', activePowerups.length);
     let content = '<b>◤ ACTIVE EQUIPMENT ◥</b><br>';
     if (activePowerups.length === 0) {
       content += '<span style="color:#666; font-style: italic;">NO EQUIPMENT ACTIVE</span>';
     } else {
       activePowerups.forEach(p => {
         const remaining = Math.ceil((p.endTime - Date.now()) / 1000);
-        content += `<div style="color:${p.color}; margin: 3px 0; text-shadow: 0 0 5px ${p.color};">▶ ${p.effect} [${remaining}s]</div>`;
+        // Ensure we have valid properties
+        const color = p.color || '#ffffff';
+        const effect = p.effect || 'Unknown Effect';
+        console.log('Powerup:', effect, 'Remaining:', remaining);
+        if (remaining > 0) {
+          content += `<div style="color:${color}; margin: 3px 0; text-shadow: 0 0 5px ${color};">▶ ${effect} [${remaining}s]</div>`;
+        }
       });
     }
     powerupList.innerHTML = content;
@@ -331,6 +371,10 @@ function startLevel() {
   // Clear any remaining enemies from previous level
   enemies = [];
   enemyProjectiles = [];
+  
+  // Clean up any rogue enemies from previous level
+  cleanupRogueEnemies();
+  rogueEnemies = [];
 
   console.log(`Starting level ${level}`);
 
@@ -406,7 +450,8 @@ function completeLevel() {
   playerHealth = Math.min(maxPlayerHealth, playerHealth + 20);
 
   // Spawn bonus powerup
-  powerups.push(spawnPowerup(level));
+  const bonusPowerup = spawnPowerupOrUpgradeStation(level);
+  if (bonusPowerup) powerups.push(bonusPowerup);
 
   // Show completion message
   showChaosMessage(`◤ SECTOR ${level} CLEARED! ◥`);
@@ -731,6 +776,14 @@ function renderProjectiles() {
       bullet.style.borderRadius = '0';
       bullet.style.boxShadow = `0 0 8px ${p.color}`;
       bullet.style.border = '2px solid #aa0000';
+    } else if (p.bfg) {
+      // Huge glowing BFG projectile
+      bullet.style.borderRadius = '50%';
+      bullet.style.boxShadow = `0 0 28px ${p.color}, 0 0 60px #ffffff`;
+      bullet.style.border = '3px solid #ffffff';
+      bullet.style.animation = 'pulse 0.25s infinite';
+      bullet.style.width = (p.size || projectileSize * 2.5) + 'px';
+      bullet.style.height = (p.size || projectileSize * 2.5) + 'px';
     } else if (p.fire) {
       bullet.style.borderRadius = '60%';
       bullet.style.boxShadow = `0 0 15px ${p.color}, 0 0 30px #ff4400`;
@@ -976,6 +1029,88 @@ function createMuzzleFlash(x, y) {
   });
 }
 
+// Helper function to create projectile with player info
+function createProjectile(projectileData, playerNum = 1) {
+  return {
+    ...projectileData,
+    player: playerNum
+  };
+}
+
+// Helper turret system (simple friendly turrets that fire at nearby enemies)
+function spawnHelpersAt(x, y, owner = 1, count = 3) {
+  for (let i = 0; i < count; i++) {
+    helpers.push({
+      x: x + (Math.random() - 0.5) * 40,
+      y: y + (Math.random() - 0.5) * 40,
+      life: 600, // frames (~10s at 60fps)
+      shootTimer: 0,
+      shootInterval: 30 + Math.floor(Math.random() * 30),
+      owner: owner
+    });
+  }
+}
+
+function updateHelpers() {
+  for (const h of helpers) {
+    h.life--;
+    if (h.shootTimer > 0) h.shootTimer--;
+
+    // Find nearest enemy
+    if (h.shootTimer <= 0) {
+      let nearest = null;
+      let nearestDist = Infinity;
+      for (const e of enemies) {
+        if (!e.active) continue;
+        const dx = e.x - h.x;
+        const dy = e.y - h.y;
+        const d = Math.sqrt(dx * dx + dy * dy);
+        if (d < nearestDist && d < 400) {
+          nearestDist = d;
+          nearest = e;
+        }
+      }
+      if (nearest) {
+        // Fire a small friendly projectile at the target
+        const dx = (nearest.x + 10) - h.x;
+        const dy = (nearest.y + 10) - h.y;
+        const mag = Math.sqrt(dx * dx + dy * dy) || 1;
+        projectiles.push({
+          x: h.x,
+          y: h.y,
+          dx: dx / mag * 1.5,
+          dy: dy / mag * 1.5,
+          size: 4,
+          color: '#88ccff',
+          damage: 18,
+          player: h.owner
+        });
+        h.shootTimer = h.shootInterval;
+      }
+    }
+  }
+
+  // Remove dead helpers
+  helpers = helpers.filter(h => h.life > 0);
+}
+
+function renderHelpers() {
+  for (const h of helpers) {
+    const elem = document.createElement('div');
+    elem.style.position = 'absolute';
+    elem.style.left = (h.x - 6) + 'px';
+    elem.style.top = (h.y - 6) + 'px';
+    elem.style.width = '12px';
+    elem.style.height = '12px';
+    elem.style.background = 'radial-gradient(circle, #aee9ff, #44aaff)';
+    elem.style.border = '2px solid #0077cc';
+    elem.style.borderRadius = '50%';
+    elem.style.boxShadow = '0 0 8px #44aaff';
+    elem.style.zIndex = '120';
+    container.appendChild(elem);
+  }
+}
+
 // Combat functions
 function shoot() {
   if (gameState !== 'playing' || reloading || ammo <= 0) return;
@@ -1018,7 +1153,7 @@ function shoot() {
           dy: Math.sin(angle) * 1.2,
           size: projectileSize * 0.9,
           color: '#4caf50',
-          damage: 30,
+          damage: 45,
           pierce: false
         });
       }
@@ -1033,7 +1168,7 @@ function shoot() {
         dy: dy * 1.5 + (Math.random() - 0.5) * 0.2,
         size: projectileSize * 0.7,
         color: '#ff9800',
-        damage: 20
+        damage: 30
       });
       break;
 
@@ -1047,7 +1182,7 @@ function shoot() {
         size: projectileSize * 1.5,
         color: '#e91e63',
         explosive: true,
-        damage: 45,
+        damage: 65,
         explosionRange: 60
       });
       break;
@@ -1062,7 +1197,7 @@ function shoot() {
         size: projectileSize * 0.4,
         color: '#ff0080',
         pierce: true,
-        damage: 50,
+        damage: 70,
         laser: true,
         trail: true
       });
@@ -1079,7 +1214,7 @@ function shoot() {
           size: projectileSize * 1.3,
           color: '#8000ff',
           explosive: true,
-          damage: 40,
+          damage: 60,
           plasma: true,
           explosionRange: 40
         });
@@ -1096,7 +1231,7 @@ function shoot() {
         size: projectileSize * 0.3,
         color: '#00ff80',
         pierce: true,
-        damage: 75,
+        damage: 100,
         railgun: true,
         trail: true,
         pierceCount: 5
@@ -1114,7 +1249,7 @@ function shoot() {
         color: '#ffff00',
         explosive: true,
         nuclear: true,
-        damage: 100,
+        damage: 140,
         explosionRange: 100,
         radiation: true
       });
@@ -1132,7 +1267,7 @@ function shoot() {
           size: projectileSize * 0.8,
           color: '#ff8000',
           quantum: true,
-          damage: 35,
+          damage: 50,
           teleport: Math.random() < 0.3
         });
       }
@@ -1150,10 +1285,34 @@ function shoot() {
         antimatter: true,
         pierce: true,
         explosive: true,
-        damage: 120,
+        damage: 160,
         explosionRange: 80,
         voidDamage: true
       });
+      break;
+
+    case 'bfg':
+      // Massive BFG-style projectile: on hit it creates a huge explosion that heavily damages nearby enemies
+      projectiles.push({
+        x: bulletX,
+        y: bulletY,
+        dx: dx * 0.6,
+        dy: dy * 0.6,
+        size: projectileSize * 3,
+        color: '#55ffff',
+        explosive: true,
+        nuclear: false,
+        bfg: true,
+        damage: 220,
+        explosionRange: 180
+      });
+      break;
+
+    case 'drone':
+      // Spawns helper turrets (drones) that assist the player for a short duration
+      spawnHelpersAt(bulletX + dx * 20, bulletY + dy * 20, 1, 3);
+      // Provide a small visual burst
+      createExplosion(bulletX + dx * 20, bulletY + dy * 20, 24);
       break;
 
     // NEW WEAPONS
@@ -1169,7 +1328,7 @@ function shoot() {
           dy: Math.sin(angle) * velocity,
           size: projectileSize * 0.6,
           color: '#ff6600',
-          damage: 18,
+          damage: 28,
           shotgun: true
         });
       }
@@ -1186,7 +1345,7 @@ function shoot() {
           dy: Math.sin(angle) * (0.8 + Math.random() * 0.4),
           size: projectileSize * (1 + Math.random() * 0.5),
           color: ['#ff4400', '#ff6600', '#ff8800', '#ffaa00'][Math.floor(Math.random() * 4)],
-          damage: 15,
+          damage: 25,
           fire: true,
           life: 30 + Math.random() * 20
         });
@@ -1202,7 +1361,7 @@ function shoot() {
         dy: dy,
         size: projectileSize * 1.1,
         color: '#00ccff',
-        damage: 25,
+        damage: 40,
         freeze: true,
         slowEffect: 0.5,
         slowDuration: 120
@@ -1218,7 +1377,7 @@ function shoot() {
         dy: dy * 2.5,
         size: projectileSize * 0.5,
         color: '#ffff88',
-        damage: 40,
+        damage: 60,
         lightning: true,
         chainCount: 3,
         chainRange: 80
@@ -1234,9 +1393,9 @@ function shoot() {
         dy: dy * 0.9,
         size: projectileSize * 1.2,
         color: '#88ff00',
-        damage: 30,
+        damage: 45,
         acid: true,
-        poolDamage: 5,
+        poolDamage: 8,
         poolDuration: 300
       });
       break;
@@ -1250,7 +1409,7 @@ function shoot() {
         dy: dy,
         size: projectileSize * 1.1,
         color: '#ff00ff',
-        damage: 35,
+        damage: 55,
         homing: true,
         homingStrength: 0.1,
         explosive: true,
@@ -1270,7 +1429,7 @@ function shoot() {
           dy: dy + (Math.random() - 0.5) * 0.4,
           size: projectileSize * 0.6,
           color: '#ffaa00',
-          damage: 15
+          damage: 22
         });
       }
       break;
@@ -1284,7 +1443,7 @@ function shoot() {
         dy: dy * 3.5,
         size: projectileSize * 0.4,
         color: '#00ff00',
-        damage: 90,
+        damage: 120,
         pierce: true,
         pierceCount: 3,
         sniper: true,
@@ -1301,7 +1460,7 @@ function shoot() {
         dy: dy * 1.2,
         size: projectileSize,
         color: '#ff8800',
-        damage: 28,
+        damage: 42,
         bounces: 3,
         bouncer: true
       });
@@ -1316,7 +1475,8 @@ function shoot() {
         dy: dy * 1.1,
         size: projectileSize,
         color: '#ffff00',
-        damage: 25
+        damage: 35,
+        player: 1
       });
   }
 
@@ -1385,6 +1545,27 @@ function shoot2() {
       });
       break;
 
+    case 'bfg':
+      projectiles.push({
+        x: bulletX,
+        y: bulletY,
+        dx: dx * 0.6,
+        dy: dy * 0.6,
+        size: projectileSize * 3,
+        color: '#55ffff',
+        explosive: true,
+        bfg: true,
+        damage: 220,
+        explosionRange: 180,
+        player: 2
+      });
+      break;
+
+    case 'drone':
+      spawnHelpersAt(bulletX + dx * 20, bulletY + dy * 20, 2, 3);
+      createExplosion(bulletX + dx * 20, bulletY + dy * 20, 24);
+      break;
+
     default:
       // Enhanced default weapon for Player 2 (blue bullets)
       projectiles.push({
@@ -1394,7 +1575,7 @@ function shoot2() {
         dy: dy * 1.1,
         size: projectileSize,
         color: '#00aaff', // Blue bullets for Player 2
-        damage: 25,
+        damage: 35,
         player: 2
       });
   }
@@ -1435,6 +1616,9 @@ function checkCollisions() {
 
     for (const enemy of enemies) {
       if (!enemy.active) continue;
+      
+      // Skip rogue enemies - they're on a special mission
+      if (enemy.isRogue) continue;
 
       const dx = projectile.x - (enemy.x + 10);
       const dy = projectile.y - (enemy.y + 10);
@@ -1443,7 +1627,10 @@ function checkCollisions() {
       if (distance < 12) {
         if (!projectile.pierce) projectile.hit = true;
 
-        const damage = projectile.damage || 25;
+        const baseDamage = projectile.damage || 35;
+        // Default to player 1 if no player field specified
+        const permanentBonus = (projectile.player === 2) ? player2PermanentDamage : player1PermanentDamage;
+        const damage = baseDamage + permanentBonus;
         enemy.health -= damage;
         enemy.hitFlash = 8;
 
@@ -1459,38 +1646,67 @@ function checkCollisions() {
 
         // Handle special weapon effects
         if (projectile.explosive || projectile.nuclear) {
-          const explosionSize = projectile.nuclear ? 80 : 40;
-          const explosionDamage = projectile.nuclear ? 40 : 15;
-          const explosionRange = projectile.nuclear ? 80 : 50;
+          // Support BFG as a special very-large explosive
+          if (projectile.bfg) {
+            const explosionSize = projectile.explosionRange || 180;
+            const explosionDamage = projectile.damage || 220;
+            createExplosion(projectile.x, projectile.y, explosionSize);
 
-          createExplosion(projectile.x, projectile.y, explosionSize);
+            for (const nearbyEnemy of enemies) {
+              if (nearbyEnemy === enemy || !nearbyEnemy.active) continue;
+              const expDx = nearbyEnemy.x - projectile.x;
+              const expDy = nearbyEnemy.y - projectile.y;
+              const expDist = Math.sqrt(expDx * expDx + expDy * expDy);
+              if (expDist < (projectile.explosionRange || 180)) {
+                // Damage falloff
+                const factor = 1 - (expDist / (projectile.explosionRange || 180));
+                const dmg = Math.max(5, Math.floor(explosionDamage * factor));
+                nearbyEnemy.health -= dmg;
+                nearbyEnemy.hitFlash = 12;
 
-          // Damage nearby enemies
-          for (const nearbyEnemy of enemies) {
-            if (nearbyEnemy === enemy || !nearbyEnemy.active) continue;
-            const expDx = nearbyEnemy.x - projectile.x;
-            const expDy = nearbyEnemy.y - projectile.y;
-            const expDist = Math.sqrt(expDx * expDx + expDy * expDy);
-            if (expDist < explosionRange) {
-              nearbyEnemy.health -= explosionDamage;
-              nearbyEnemy.hitFlash = 8;
-              // Create explosive blood splatter
-              const direction = {
-                x: nearbyEnemy.x - projectile.x,
-                y: nearbyEnemy.y - projectile.y
-              };
-              const magnitude = Math.sqrt(direction.x * direction.x + direction.y * direction.y);
-              if (magnitude > 0) {
-                direction.x /= magnitude;
-                direction.y /= magnitude;
+                const direction = { x: nearbyEnemy.x - projectile.x, y: nearbyEnemy.y - projectile.y };
+                const magnitude = Math.sqrt(direction.x * direction.x + direction.y * direction.y);
+                if (magnitude > 0) { direction.x /= magnitude; direction.y /= magnitude; }
+                const bloodSplatter = createBloodSplatter(nearbyEnemy.x + 10, nearbyEnemy.y + 10, direction, nearbyEnemy);
+                bloodEffects.push(bloodSplatter);
+                const bloodPool = createBloodPool(nearbyEnemy.x + 10, nearbyEnemy.y + 10, nearbyEnemy, 1.8);
+                bloodPools.push(bloodPool);
               }
+            }
+          } else {
+            const explosionSize = projectile.nuclear ? 80 : 40;
+            const explosionDamage = projectile.nuclear ? 40 : 15;
+            const explosionRange = projectile.nuclear ? 80 : 50;
 
-              const bloodSplatter = createBloodSplatter(nearbyEnemy.x + 10, nearbyEnemy.y + 10, direction, nearbyEnemy);
-              bloodEffects.push(bloodSplatter);
+            createExplosion(projectile.x, projectile.y, explosionSize);
 
-              // Create blood pool for explosion damage
-              const bloodPool = createBloodPool(nearbyEnemy.x + 10, nearbyEnemy.y + 10, nearbyEnemy, 1.2);
-              bloodPools.push(bloodPool);
+            // Damage nearby enemies
+            for (const nearbyEnemy of enemies) {
+              if (nearbyEnemy === enemy || !nearbyEnemy.active) continue;
+              const expDx = nearbyEnemy.x - projectile.x;
+              const expDy = nearbyEnemy.y - projectile.y;
+              const expDist = Math.sqrt(expDx * expDx + expDy * expDy);
+              if (expDist < explosionRange) {
+                nearbyEnemy.health -= explosionDamage;
+                nearbyEnemy.hitFlash = 8;
+                // Create explosive blood splatter
+                const direction = {
+                  x: nearbyEnemy.x - projectile.x,
+                  y: nearbyEnemy.y - projectile.y
+                };
+                const magnitude = Math.sqrt(direction.x * direction.x + direction.y * direction.y);
+                if (magnitude > 0) {
+                  direction.x /= magnitude;
+                  direction.y /= magnitude;
+                }
+
+                const bloodSplatter = createBloodSplatter(nearbyEnemy.x + 10, nearbyEnemy.y + 10, direction, nearbyEnemy);
+                bloodEffects.push(bloodSplatter);
+
+                // Create blood pool for explosion damage
+                const bloodPool = createBloodPool(nearbyEnemy.x + 10, nearbyEnemy.y + 10, nearbyEnemy, 1.2);
+                bloodPools.push(bloodPool);
+              }
             }
           }
         }
@@ -1606,7 +1822,8 @@ function checkCollisions() {
           // INCREASED powerup drop chance for much harder levels
           const dropChance = 0.18 + (level * 0.03); // Significantly increased!
           if (Math.random() < dropChance) {
-            powerups.push(spawnPowerup(level));
+            const powerup = spawnPowerupOrUpgradeStation(level);
+            if (powerup) powerups.push(powerup);
           }
 
           // CHAOS: Random chance to spawn GIANT CHICKEN!
@@ -1860,10 +2077,12 @@ function collectPowerup(powerup, playerNum = 1) {
 
   // Helper function to add powerup to active list
   function addActivePowerup(typeObj) {
+    console.log('Adding powerup to active list:', typeObj.type, typeObj.effect);
     activePowerups.push({
       ...typeObj,
       endTime: Date.now() + typeObj.duration
     });
+    console.log('Active powerups count:', activePowerups.length);
   }
 
   switch (powerup.type) {
@@ -1925,10 +2144,8 @@ function collectPowerup(powerup, playerNum = 1) {
 
     case 'explosive':
       weaponType = 'explosive';
-      activePowerups.push({
-        ...typeObj,
-        endTime: Date.now() + typeObj.duration
-      });
+      addActivePowerup(typeObj);
+      showChaosMessage(`💥 EXPLOSIVE ROUNDS ACTIVATED! 💥`);
       break;
 
     case 'laser':
@@ -1939,10 +2156,7 @@ function collectPowerup(powerup, playerNum = 1) {
         weaponType2 = 'laser';
         fireRate2 = 100;
       }
-      activePowerups.push({
-        ...typeObj,
-        endTime: Date.now() + typeObj.duration
-      });
+      addActivePowerup(typeObj);
       showChaosMessage(`⚡ PLAYER ${playerNum} LASER BEAM! ⚡`);
       break;
 
@@ -1954,10 +2168,7 @@ function collectPowerup(powerup, playerNum = 1) {
         weaponType2 = 'plasma';
         fireRate2 = 200;
       }
-      activePowerups.push({
-        ...typeObj,
-        endTime: Date.now() + typeObj.duration
-      });
+      addActivePowerup(typeObj);
       showChaosMessage(`🔮 PLAYER ${playerNum} PLASMA CANNON! 🔮`);
       break;
 
@@ -1969,10 +2180,7 @@ function collectPowerup(powerup, playerNum = 1) {
         weaponType2 = 'railgun';
         fireRate2 = 300;
       }
-      activePowerups.push({
-        ...typeObj,
-        endTime: Date.now() + typeObj.duration
-      });
+      addActivePowerup(typeObj);
       showChaosMessage(`🎯 PLAYER ${playerNum} RAILGUN! 🎯`);
       break;
 
@@ -1984,10 +2192,7 @@ function collectPowerup(powerup, playerNum = 1) {
         weaponType2 = 'nuclear';
         fireRate2 = 500;
       }
-      activePowerups.push({
-        ...typeObj,
-        endTime: Date.now() + typeObj.duration
-      });
+      addActivePowerup(typeObj);
       showChaosMessage(`☢️ PLAYER ${playerNum} NUCLEAR ROUNDS! ☢️`);
       break;
 
@@ -1999,20 +2204,39 @@ function collectPowerup(powerup, playerNum = 1) {
         weaponType2 = 'quantum';
         fireRate2 = 400;
       }
-      activePowerups.push({
-        ...typeObj,
-        endTime: Date.now() + typeObj.duration
-      });
+      addActivePowerup(typeObj);
       showChaosMessage(`⚛️ PLAYER ${playerNum} QUANTUM BURST! ⚛️`);
       break;
 
     case 'antimatter':
       weaponType = 'antimatter';
       fireRate = 600;
-      activePowerups.push({
-        ...typeObj,
-        endTime: Date.now() + typeObj.duration
-      });
+      addActivePowerup(typeObj);
+      showChaosMessage(`◉ ANTIMATTER BEAM ACTIVATED! ◉`);
+      break;
+
+    case 'bfg':
+      if (playerNum === 1) {
+        weaponType = 'bfg';
+        fireRate = 900;
+      } else if (playerNum === 2 && player2Active) {
+        weaponType2 = 'bfg';
+        fireRate2 = 900;
+      }
+      addActivePowerup(typeObj);
+      showChaosMessage(`💥 BFG LOCKED! THIS IS NOT A DRILL! 💥`);
+      break;
+
+    case 'drone':
+      if (playerNum === 1) {
+        weaponType = 'drone';
+        fireRate = 400;
+      } else if (playerNum === 2 && player2Active) {
+        weaponType2 = 'drone';
+        fireRate2 = 400;
+      }
+      addActivePowerup(typeObj);
+      showChaosMessage(`🤖 DRONE DEPLOYMENT READY! 🤖`);
       break;
 
     // NEW WEAPONS
@@ -2247,6 +2471,16 @@ function collectPowerup(powerup, playerNum = 1) {
       showChaosMessage(`💥 ORBITAL STRIKE DEPLOYED! 💥`);
       break;
 
+    case 'weaponUpgrade':
+      // Weapon upgrade stations are handled by proximity system, not instant collection
+      // This case should not be reached as upgrade stations use different mechanics
+      break;
+      
+    case 'airstrikeStation':
+      // Airstrike stations are handled by proximity system, not instant collection
+      // This case should not be reached as airstrike stations use different mechanics
+      break;
+      
     case 'chaos':
       // CHAOS POWERUP! Random effect!
       const chaosEffects = ['health', 'ammo', 'shield', 'rapid', 'spread', 'explosive', 'megahealth', 'berserker'];
@@ -2284,12 +2518,1003 @@ function updatePowerups() {
   });
 }
 
+// Weapon Upgrade Station Functions
+function checkWeaponUpgradeProximity(station, playerX, playerY, playerId) {
+  const dx = playerX + 10 - station.x;
+  const dy = playerY + 10 - station.y;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+  return distance < 40; // 40 pixel activation radius
+}
 
+function updateWeaponUpgradeStations(deltaTime) {
+  for (const station of weaponUpgradeStations) {
+    if (!station.active) continue;
+    
+    // Check Player 1 proximity
+    const player1InRange = checkWeaponUpgradeProximity(station, posX, posY, 1);
+    updateUpgradeProgress(station, 1, player1InRange, deltaTime);
+    
+    // Check Player 2 proximity if active
+    if (player2Active) {
+      const player2InRange = checkWeaponUpgradeProximity(station, pos2X, pos2Y, 2);
+      updateUpgradeProgress(station, 2, player2InRange, deltaTime);
+    }
+  }
+  
+  // Remove completed stations
+  weaponUpgradeStations = weaponUpgradeStations.filter(station => station.active);
+}
+
+function updateUpgradeProgress(station, playerId, inRange, deltaTime) {
+  const progressMap = playerId === 1 ? player1UpgradeProgress : player2UpgradeProgress;
+  const stationId = station.id;
+  
+  if (inRange) {
+    // Increase progress
+    const currentProgress = progressMap.get(stationId) || 0;
+    const newProgress = Math.min(1, currentProgress + deltaTime / 2000); // 2 seconds to complete
+    progressMap.set(stationId, newProgress);
+    
+    // Check if upgrade is complete
+    if (newProgress >= 1) {
+      applyWeaponUpgrade(playerId);
+      station.active = false;
+      progressMap.delete(stationId);
+      
+      // Show upgrade effect
+      createUpgradeEffect(station.x, station.y);
+      showChaosMessage(`⚙️ WEAPON UPGRADED! PERMANENT +15 DAMAGE! ⚙️`);
+    }
+  } else {
+    // Reset progress when out of range
+    progressMap.delete(stationId);
+  }
+}
+
+function applyWeaponUpgrade(playerId) {
+  if (playerId === 1) {
+    player1PermanentDamage += 15;
+  } else {
+    player2PermanentDamage += 15;
+  }
+  updateUI();
+}
+
+function createUpgradeEffect(x, y) {
+  // Create visual effect for successful upgrade
+  for (let i = 0; i < 12; i++) {
+    const angle = (i / 12) * Math.PI * 2;
+    const particle = {
+      x: x,
+      y: y,
+      dx: Math.cos(angle) * 3,
+      dy: Math.sin(angle) * 3,
+      life: 30,
+      maxLife: 30,
+      color: '#ffaa00',
+      size: 4
+    };
+    
+    explosions.push(particle);
+  }
+}
+
+function spawnWeaponUpgradeStation() {
+  const now = Date.now();
+  if (now - lastUpgradeStationSpawn < 30000) return; // 30 second cooldown
+  
+  const station = {
+    id: Date.now(), // Unique ID
+    x: Math.floor(Math.random() * 720) + 40,
+    y: Math.floor(Math.random() * 420) + 40,
+    type: 'weaponUpgrade',
+    active: true,
+    spawnTime: now
+  };
+  
+  weaponUpgradeStations.push(station);
+  lastUpgradeStationSpawn = now;
+}
+
+function spawnPowerupOrUpgradeStation(level) {
+  const rand = Math.random();
+  
+  // 10% chance to spawn weapon upgrade station (increased from 6%)
+  if (rand < 0.10 && level >= 2) {
+    spawnWeaponUpgradeStation();
+    return null; // Don't spawn regular powerup
+  }
+  // 8% chance to spawn airstrike station (increased from 4%)
+  else if (rand < 0.18 && level >= 3) {
+    spawnAirstrikeStation();
+    return null; // Don't spawn regular powerup
+  } 
+  else {
+    return spawnPowerup(level);
+  }
+}
+
+function renderWeaponUpgradeStations() {
+  for (const station of weaponUpgradeStations) {
+    if (!station.active) continue;
+    
+    // Render the station base
+    renderUpgradeStation(station);
+    
+    // Render progress circles for players in range
+    const player1Progress = player1UpgradeProgress.get(station.id) || 0;
+    const player2Progress = player2Active ? (player2UpgradeProgress.get(station.id) || 0) : 0;
+    
+    if (player1Progress > 0) {
+      renderProgressCircle(station.x, station.y, player1Progress, '#00ff00');
+    }
+    
+    if (player2Progress > 0) {
+      renderProgressCircle(station.x, station.y + 5, player2Progress, '#0080ff');
+    }
+  }
+}
+
+function renderUpgradeStation(station) {
+  // Main station circle
+  const elem = document.createElement('div');
+  elem.style.position = 'absolute';
+  elem.style.left = (station.x - 25) + 'px';
+  elem.style.top = (station.y - 25) + 'px';
+  elem.style.width = '50px';
+  elem.style.height = '50px';
+  elem.style.background = 'radial-gradient(circle, #ffaa00, #ff8800)';
+  elem.style.borderRadius = '50%';
+  elem.style.border = '3px solid #ffffff';
+  elem.style.boxShadow = '0 0 20px #ffaa00, 0 0 40px #ff8800';
+  elem.style.zIndex = '100';
+  
+  // Gear symbol
+  const symbol = document.createElement('div');
+  symbol.style.position = 'absolute';
+  symbol.style.left = '50%';
+  symbol.style.top = '50%';
+  symbol.style.transform = 'translate(-50%, -50%)';
+  symbol.style.color = '#fff';
+  symbol.style.fontSize = '24px';
+  symbol.style.fontWeight = 'bold';
+  symbol.style.textShadow = '2px 2px 4px rgba(0,0,0,0.8)';
+  symbol.textContent = '⚙';
+  elem.appendChild(symbol);
+  
+  // Rotating outer ring
+  const ring = document.createElement('div');
+  ring.style.position = 'absolute';
+  ring.style.left = '-4px';
+  ring.style.top = '-4px';
+  ring.style.width = '58px';
+  ring.style.height = '58px';
+  ring.style.border = '2px solid #ffaa00';
+  ring.style.borderRadius = '50%';
+  ring.style.borderTopColor = 'transparent';
+  ring.style.animation = 'spin 2s linear infinite';
+  elem.appendChild(ring);
+  
+  container.appendChild(elem);
+}
+
+function renderProgressCircle(x, y, progress, color) {
+  const elem = document.createElement('div');
+  elem.style.position = 'absolute';
+  elem.style.left = (x - 35) + 'px';
+  elem.style.top = (y - 35) + 'px';
+  elem.style.width = '70px';
+  elem.style.height = '70px';
+  elem.style.borderRadius = '50%';
+  elem.style.border = '4px solid rgba(255,255,255,0.3)';
+  elem.style.borderTop = `4px solid ${color}`;
+  elem.style.transform = `rotate(${progress * 360}deg)`;
+  elem.style.zIndex = '101';
+  elem.style.boxShadow = `0 0 10px ${color}`;
+  
+  container.appendChild(elem);
+}
+
+// Airstrike Station Functions
+function checkAirstrikeProximity(station, playerX, playerY, playerId) {
+  const dx = playerX + 10 - station.x;
+  const dy = playerY + 10 - station.y;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+  return distance < 40; // 40 pixel activation radius
+}
+
+function updateAirstrikeStations(deltaTime) {
+  for (const station of airstrikeStations) {
+    if (!station.active) continue;
+    
+    // Check Player 1 proximity
+    const player1InRange = checkAirstrikeProximity(station, posX, posY, 1);
+    updateAirstrikeProgress(station, 1, player1InRange, deltaTime);
+    
+    // Check Player 2 proximity if active
+    if (player2Active) {
+      const player2InRange = checkAirstrikeProximity(station, pos2X, pos2Y, 2);
+      updateAirstrikeProgress(station, 2, player2InRange, deltaTime);
+    }
+  }
+  
+  // Remove completed stations
+  airstrikeStations = airstrikeStations.filter(station => station.active);
+}
+
+function updateAirstrikeProgress(station, playerId, inRange, deltaTime) {
+  const progressMap = playerId === 1 ? player1AirstrikeProgress : player2AirstrikeProgress;
+  const stationId = station.id;
+  
+  if (inRange) {
+    // Increase progress
+    const currentProgress = progressMap.get(stationId) || 0;
+    const newProgress = Math.min(1, currentProgress + deltaTime / 2000); // 2 seconds to complete
+    progressMap.set(stationId, newProgress);
+    
+    // Check if airstrike is complete
+    if (newProgress >= 1) {
+      triggerAirstrike();
+      station.active = false;
+      progressMap.delete(stationId);
+      
+      // Show airstrike effect
+      createAirstrikeEffect(station.x, station.y);
+      showChaosMessage(`✈️ AIRSTRIKE INCOMING! TAKE COVER! ✈️`);
+    }
+  } else {
+    // Reset progress when out of range
+    progressMap.delete(stationId);
+  }
+}
+
+function triggerAirstrike() {
+  // Create multiple explosions across the battlefield
+  const numStrikes = 8 + Math.floor(Math.random() * 4); // 8-12 strikes
+  
+  for (let i = 0; i < numStrikes; i++) {
+    setTimeout(() => {
+      const x = Math.random() * 800;
+      const y = Math.random() * 500;
+      
+      // Create explosion effect
+      createExplosion(x, y, 80);
+      
+      // Damage all enemies in range
+      for (const enemy of enemies) {
+        if (!enemy.active) continue;
+        
+        const dx = enemy.x - x;
+        const dy = enemy.y - y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance < 100) { // Large damage radius
+          const damage = Math.max(50, 150 - distance); // 50-150 damage based on distance
+          enemy.health -= damage;
+          enemy.hitFlash = 15;
+          
+          // Create blood effect
+          const bloodEffect = createBloodEffect(enemy.x + 10, enemy.y + 10, enemy, 1.5);
+          bloodEffects.push(bloodEffect);
+          
+          if (enemy.health <= 0) {
+            enemy.active = false;
+            enemiesKilled++;
+            score += enemy.points;
+            
+            // Create death blood effect
+            const deathBlood = createDeathBloodEffect(enemy.x + 10, enemy.y + 10, enemy);
+            bloodEffects.push(deathBlood);
+            
+            // Create blood pool
+            const bloodPool = createBloodPool(enemy.x + 10, enemy.y + 10, enemy, 1.5);
+            bloodPools.push(bloodPool);
+          }
+        }
+      }
+      
+      // Also damage boss if present
+      if (currentBoss && currentBoss.active) {
+        const dx = currentBoss.x + currentBoss.size.width/2 - x;
+        const dy = currentBoss.y + currentBoss.size.height/2 - y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance < 120) { // Larger radius for boss
+          const damage = Math.max(30, 100 - distance/2);
+          currentBoss.health -= damage;
+          currentBoss.hitFlash = 10;
+        }
+      }
+      
+    }, i * 200); // Stagger the strikes
+  }
+  
+  updateUI();
+}
+
+function createAirstrikeEffect(x, y) {
+  // Create visual effect for airstrike beacon activation
+  for (let i = 0; i < 16; i++) {
+    const angle = (i / 16) * Math.PI * 2;
+    const particle = {
+      x: x,
+      y: y,
+      dx: Math.cos(angle) * 4,
+      dy: Math.sin(angle) * 4,
+      life: 40,
+      maxLife: 40,
+      color: '#ff4400',
+      size: 6
+    };
+    
+    explosions.push(particle);
+  }
+}
+
+function spawnAirstrikeStation() {
+  const now = Date.now();
+  if (now - lastAirstrikeStationSpawn < 45000) return; // 45 second cooldown (longer than weapon upgrade)
+  
+  const station = {
+    id: Date.now() + Math.random(), // Unique ID
+    x: Math.floor(Math.random() * 720) + 40,
+    y: Math.floor(Math.random() * 420) + 40,
+    type: 'airstrikeStation',
+    active: true,
+    spawnTime: now
+  };
+  
+  airstrikeStations.push(station);
+  lastAirstrikeStationSpawn = now;
+}
+
+function renderAirstrikeStations() {
+  for (const station of airstrikeStations) {
+    if (!station.active) continue;
+    
+    // Render the station base
+    renderAirstrikeStation(station);
+    
+    // Render progress circles for players in range
+    const player1Progress = player1AirstrikeProgress.get(station.id) || 0;
+    const player2Progress = player2Active ? (player2AirstrikeProgress.get(station.id) || 0) : 0;
+    
+    if (player1Progress > 0) {
+      renderProgressCircle(station.x, station.y, player1Progress, '#ff0000');
+    }
+    
+    if (player2Progress > 0) {
+      renderProgressCircle(station.x, station.y + 5, player2Progress, '#ff4400');
+    }
+  }
+}
+
+function renderAirstrikeStation(station) {
+  // Main station circle
+  const elem = document.createElement('div');
+  elem.style.position = 'absolute';
+  elem.style.left = (station.x - 25) + 'px';
+  elem.style.top = (station.y - 25) + 'px';
+  elem.style.width = '50px';
+  elem.style.height = '50px';
+  elem.style.background = 'radial-gradient(circle, #ff4400, #cc3300)';
+  elem.style.borderRadius = '50%';
+  elem.style.border = '3px solid #ffffff';
+  elem.style.boxShadow = '0 0 20px #ff4400, 0 0 40px #cc3300';
+  elem.style.zIndex = '100';
+  
+  // Airplane symbol
+  const symbol = document.createElement('div');
+  symbol.style.position = 'absolute';
+  symbol.style.left = '50%';
+  symbol.style.top = '50%';
+  symbol.style.transform = 'translate(-50%, -50%)';
+  symbol.style.color = '#fff';
+  symbol.style.fontSize = '24px';
+  symbol.style.fontWeight = 'bold';
+  symbol.style.textShadow = '2px 2px 4px rgba(0,0,0,0.8)';
+  symbol.textContent = '✈';
+  elem.appendChild(symbol);
+  
+  // Rotating outer ring with different pattern
+  const ring = document.createElement('div');
+  ring.style.position = 'absolute';
+  ring.style.left = '-4px';
+  ring.style.top = '-4px';
+  ring.style.width = '58px';
+  ring.style.height = '58px';
+  ring.style.border = '2px solid #ff4400';
+  ring.style.borderRadius = '50%';
+  ring.style.borderTopColor = 'transparent';
+  ring.style.borderRightColor = 'transparent';
+  ring.style.animation = 'spin 1.5s linear infinite';
+  elem.appendChild(ring);
+  
+  container.appendChild(elem);
+}
+
+// Rogue Enemy System - enemies that go after the title enemy
+function cleanupRogueEnemies() {
+  // Clean up all rogue enemy UI elements
+  for (const enemy of rogueEnemies) {
+    if (enemy.rogueElement && enemy.rogueElement.parentNode) {
+      enemy.rogueElement.parentNode.removeChild(enemy.rogueElement);
+      enemy.rogueElement = null;
+    }
+    if (enemy.tntElement && enemy.tntElement.parentNode) {
+      enemy.tntElement.parentNode.removeChild(enemy.tntElement);
+      enemy.tntElement = null;
+    }
+    // Reset enemy state
+    if (enemy.isRogue) {
+      enemy.isRogue = false;
+      enemy.active = false;
+    }
+  }
+}
+
+function trySpawnRogueEnemy() {
+  const now = Date.now();
+  // Extremely rare event - only every 5-8 minutes and only if there are enemies
+  if (now - lastRogueEnemySpawn < 300000 || enemies.length === 0) return;
+  
+  // 0.1% chance per second when conditions are met (10x rarer)
+  if (Math.random() < 0.001) {
+    spawnRogueEnemy();
+  }
+}
+
+function spawnRogueEnemy() {
+  // Find a random enemy to convert to rogue
+  const activeEnemies = enemies.filter(e => e.active && !e.isRogue);
+  if (activeEnemies.length === 0) return;
+  
+  const enemy = activeEnemies[Math.floor(Math.random() * activeEnemies.length)];
+  
+  // Convert enemy to rogue
+  enemy.isRogue = true;
+  enemy.roguePhase = 'exiting'; // exiting -> traveling -> attacking -> replacing
+  enemy.rogueTarget = { x: 0, y: 0 };
+  enemy.rogueSpeed = 2;
+  enemy.originalSpeed = enemy.speed;
+  enemy.speed = 0; // Stop normal AI movement
+  enemy.rogueExitTime = 0; // Track time since starting to exit
+  enemy.rogueElement = null; // Will hold the DOM element when outside play area
+  
+  // Add to rogue enemies list
+  rogueEnemies.push(enemy);
+  lastRogueEnemySpawn = Date.now();
+  
+  // Count the rogue enemy as "killed" for level progression since it's leaving the battlefield
+  enemiesKilled++;
+  
+  showChaosMessage(`🎯 ROGUE ENEMY DETECTED! GOING FOR THE TITLE! 🎯`);
+}
+
+function updateRogueEnemies() {
+  for (const enemy of rogueEnemies) {
+    if (!enemy.active || !enemy.isRogue) continue;
+    
+    switch (enemy.roguePhase) {
+      case 'exiting':
+        updateRogueExiting(enemy);
+        break;
+      case 'traveling':
+        updateRogueTraveling(enemy);
+        break;
+      case 'attacking':
+        updateRogueAttacking(enemy);
+        break;
+      case 'retreating':
+        updateRogueRetreating(enemy);
+        break;
+      case 'replacing':
+        updateRogueReplacing(enemy);
+        break;
+    }
+  }
+  
+  // Clean up inactive rogue enemies
+  rogueEnemies = rogueEnemies.filter(e => e.active && e.isRogue);
+}
+
+function updateRogueExiting(enemy) {
+  enemy.rogueExitTime++;
+  
+  // After 0.5 seconds (30 frames at 60fps), create UI layer element
+  if (enemy.rogueExitTime === 30 && !enemy.rogueElement) {
+    createRogueUIElement(enemy);
+  }
+  
+  // Move towards the edge of the play area
+  const centerX = 400;
+  const centerY = 250;
+  const dx = enemy.x - centerX;
+  const dy = enemy.y - centerY;
+  
+  // Find the closest edge
+  let targetX, targetY;
+  if (Math.abs(dx) > Math.abs(dy)) {
+    // Move to left or right edge
+    targetX = dx > 0 ? 850 : -50;
+    targetY = enemy.y;
+  } else {
+    // Move to top or bottom edge
+    targetX = enemy.x;
+    targetY = dy > 0 ? 550 : -50;
+  }
+  
+  // Move towards target
+  const moveX = targetX - enemy.x;
+  const moveY = targetY - enemy.y;
+  const distance = Math.sqrt(moveX * moveX + moveY * moveY);
+  
+  if (distance < 10) {
+    // Reached edge, start traveling
+    enemy.roguePhase = 'traveling';
+    calculateTitlePath(enemy);
+    // Hide the in-game enemy, show only the UI element
+    enemy.hideInGame = true;
+  } else {
+    enemy.x += (moveX / distance) * enemy.rogueSpeed;
+    enemy.y += (moveY / distance) * enemy.rogueSpeed;
+  }
+  
+  // Update UI element position if it exists
+  if (enemy.rogueElement) {
+    updateRogueUIElement(enemy);
+  }
+}
+
+function createRogueUIElement(enemy) {
+  // Create a DOM element that exists outside the game container
+  enemy.rogueElement = document.createElement('div');
+  enemy.rogueElement.style.position = 'fixed';
+  enemy.rogueElement.style.width = '21px'; // Larger to match title enemy
+  enemy.rogueElement.style.height = '18px'; // Larger to match title enemy
+  enemy.rogueElement.style.zIndex = '10000'; // Same layer as title enemy
+  enemy.rogueElement.style.pointerEvents = 'none';
+  
+  // Get the game area position to convert coordinates
+  const gameArea = document.getElementById('game-area');
+  const gameRect = gameArea.getBoundingClientRect();
+  
+  // Set initial position based on current enemy position
+  enemy.rogueElement.style.left = (gameRect.left + enemy.x) + 'px';
+  enemy.rogueElement.style.top = (gameRect.top + enemy.y) + 'px';
+  
+  // Create the enemy sprite in the UI element
+  renderRogueEnemySprite(enemy);
+  
+  // Add to document body (not game container)
+  document.body.appendChild(enemy.rogueElement);
+}
+
+function renderRogueEnemySprite(enemy) {
+  if (!enemy.rogueElement) return;
+  
+  enemy.rogueElement.innerHTML = '';
+  
+  // Larger red enemy sprite for UI layer (matching title enemy size)
+  const sprite = [
+    ["empty","empty","helmet","helmet","helmet","empty","empty"],
+    ["empty","helmet","helmet","helmet","helmet","helmet","empty"],
+    ["empty","empty","skin","skin","skin","empty","empty"],
+    ["redshirt","redshirt","redshirt","redshirt","redshirt","redshirt","rifle"],
+    ["empty","redshirt","redshirt","redshirt","redshirt","redshirt","empty"],
+    ["empty","redpants","redpants","empty","redpants","redpants","empty"],
+    ["empty","boots","empty","empty","empty","boots","empty"]
+  ];
+  
+  for (let row = 0; row < sprite.length; row++) {
+    for (let col = 0; col < sprite[row].length; col++) {
+      const color = sprite[row][col];
+      if (color !== 'empty') {
+        const pixel = document.createElement('div');
+        pixel.className = 'title-pixel'; // Use same class as title enemy
+        pixel.style.left = (col * 3) + 'px'; // 3px pixels like title enemy
+        pixel.style.top = (row * 3) + 'px';
+        
+        // Set pixel colors
+        switch (color) {
+          case 'helmet': pixel.style.background = '#444444'; break;
+          case 'skin': pixel.style.background = '#ffdbac'; break;
+          case 'redshirt': pixel.style.background = '#cc0000'; break;
+          case 'redpants': pixel.style.background = '#880000'; break;
+          case 'boots': pixel.style.background = '#222222'; break;
+          case 'rifle': pixel.style.background = '#666666'; break;
+          default: pixel.style.background = '#ffffff';
+        }
+        
+        // Add glow effect for rogue enemy
+        pixel.style.boxShadow = `0 0 3px #ff0000`;
+        enemy.rogueElement.appendChild(pixel);
+      }
+    }
+  }
+}
+
+function updateRogueUIElement(enemy) {
+  if (!enemy.rogueElement) return;
+  
+  const gameArea = document.getElementById('game-area');
+  const gameRect = gameArea.getBoundingClientRect();
+  
+  // Update position based on enemy coordinates
+  enemy.rogueElement.style.left = (gameRect.left + enemy.x) + 'px';
+  enemy.rogueElement.style.top = (gameRect.top + enemy.y) + 'px';
+}
+
+function calculateTitlePath(enemy) {
+  // Calculate path around the UI to reach the title
+  const titleElement = document.getElementById('game-title');
+  if (!titleElement) return;
+  
+  const titleRect = titleElement.getBoundingClientRect();
+  const gameArea = document.getElementById('game-area');
+  const gameRect = gameArea.getBoundingClientRect();
+  
+  // Convert to game coordinates
+  enemy.rogueTarget.x = titleRect.left + titleRect.width / 2 - gameRect.left;
+  enemy.rogueTarget.y = titleRect.top + titleRect.height / 2 - gameRect.top;
+  
+  // Add some randomness to approach angle
+  const angle = Math.random() * Math.PI * 2;
+  enemy.rogueTarget.x += Math.cos(angle) * 50;
+  enemy.rogueTarget.y += Math.sin(angle) * 50;
+}
+
+function updateRogueTraveling(enemy) {
+  // Move towards the title area
+  const dx = enemy.rogueTarget.x - enemy.x;
+  const dy = enemy.rogueTarget.y - enemy.y;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+  
+  if (distance < 20) {
+    // Reached title area, start attacking
+    enemy.roguePhase = 'attacking';
+    enemy.rogueAttackTimer = 0;
+  } else {
+    enemy.x += (dx / distance) * enemy.rogueSpeed;
+    enemy.y += (dy / distance) * enemy.rogueSpeed;
+  }
+  
+  // Update UI element position
+  if (enemy.rogueElement) {
+    updateRogueUIElement(enemy);
+  }
+}
+
+function updateRogueAttacking(enemy) {
+  enemy.rogueAttackTimer = (enemy.rogueAttackTimer || 0) + 1;
+  
+  // Place TNT next to title enemy
+  if (enemy.rogueAttackTimer === 30) {
+    placeTNTNearTitle(enemy);
+  }
+  
+  // Rogue runs away before explosion
+  if (enemy.rogueAttackTimer === 60) {
+    enemy.roguePhase = 'retreating';
+    enemy.rogueRetreatTarget = calculateRetreatPosition(enemy);
+  }
+  
+  // Update UI element position
+  if (enemy.rogueElement) {
+    updateRogueUIElement(enemy);
+  }
+}
+
+function calculateRetreatPosition(enemy) {
+  // Calculate a safe distance away from the title
+  const titleElement = document.getElementById('title-enemy');
+  if (!titleElement) return { x: enemy.x + 100, y: enemy.y };
+  
+  const titleRect = titleElement.getBoundingClientRect();
+  const gameArea = document.getElementById('game-area');
+  const gameRect = gameArea.getBoundingClientRect();
+  
+  // Move away from title
+  const titleX = titleRect.left + titleRect.width / 2 - gameRect.left;
+  const titleY = titleRect.top + titleRect.height / 2 - gameRect.top;
+  
+  const dx = enemy.x - titleX;
+  const dy = enemy.y - titleY;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+  
+  // Move 150 pixels away from title
+  return {
+    x: titleX + (dx / distance) * 150,
+    y: titleY + (dy / distance) * 150
+  };
+}
+
+function updateRogueRetreating(enemy) {
+  // Move away from the title area before explosion
+  const dx = enemy.rogueRetreatTarget.x - enemy.x;
+  const dy = enemy.rogueRetreatTarget.y - enemy.y;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+  
+  if (distance > 10) {
+    enemy.x += (dx / distance) * enemy.rogueSpeed * 1.5; // Move faster when retreating
+    enemy.y += (dy / distance) * enemy.rogueSpeed * 1.5;
+  }
+  
+  // After retreating for a bit, detonate the TNT
+  enemy.rogueRetreatTimer = (enemy.rogueRetreatTimer || 0) + 1;
+  if (enemy.rogueRetreatTimer > 45) { // 0.75 seconds to retreat
+    detonateTNTAndExplode(enemy);
+    enemy.roguePhase = 'replacing';
+  }
+  
+  // Update UI element position
+  if (enemy.rogueElement) {
+    updateRogueUIElement(enemy);
+  }
+}
+
+function placeTNTNearTitle(enemy) {
+  // Create TNT element near the title enemy
+  const titleElement = document.getElementById('title-enemy');
+  if (!titleElement) return;
+  
+  const titleRect = titleElement.getBoundingClientRect();
+  
+  enemy.tntElement = document.createElement('div');
+  enemy.tntElement.style.position = 'fixed';
+  enemy.tntElement.style.left = (titleRect.left + 25) + 'px'; // Next to title enemy
+  enemy.tntElement.style.top = (titleRect.top + 10) + 'px';
+  enemy.tntElement.style.width = '12px';
+  enemy.tntElement.style.height = '15px';
+  enemy.tntElement.style.zIndex = '10001'; // Above title enemy
+  enemy.tntElement.style.pointerEvents = 'none';
+  
+  // Create TNT sprite
+  renderTNTSprite(enemy.tntElement);
+  
+  document.body.appendChild(enemy.tntElement);
+  
+  showChaosMessage(`💣 TNT PLANTED! TAKE COVER! 💣`);
+}
+
+function renderTNTSprite(tntElement) {
+  tntElement.innerHTML = '';
+  
+  // TNT sprite
+  const tntSprite = [
+    ["empty","red","red","red","empty"],
+    ["red","red","white","red","red"],
+    ["red","white","red","white","red"],
+    ["red","red","white","red","red"],
+    ["red","red","red","red","red"]
+  ];
+  
+  for (let row = 0; row < tntSprite.length; row++) {
+    for (let col = 0; col < tntSprite[row].length; col++) {
+      const color = tntSprite[row][col];
+      if (color !== 'empty') {
+        const pixel = document.createElement('div');
+        pixel.style.position = 'absolute';
+        pixel.style.width = '2px';
+        pixel.style.height = '2px';
+        pixel.style.left = (col * 2) + 'px';
+        pixel.style.top = (row * 3) + 'px';
+        
+        switch (color) {
+          case 'red': pixel.style.background = '#cc0000'; break;
+          case 'white': pixel.style.background = '#ffffff'; break;
+        }
+        
+        pixel.style.boxShadow = '0 0 2px #ff0000';
+        tntElement.appendChild(pixel);
+      }
+    }
+  }
+  
+  // Add blinking fuse effect
+  const fuse = document.createElement('div');
+  fuse.style.position = 'absolute';
+  fuse.style.left = '8px';
+  fuse.style.top = '-3px';
+  fuse.style.width = '2px';
+  fuse.style.height = '3px';
+  fuse.style.background = '#ffff00';
+  fuse.style.animation = 'blink 0.3s infinite';
+  tntElement.appendChild(fuse);
+}
+
+function detonateTNTAndExplode(enemy) {
+  // Remove TNT element
+  if (enemy.tntElement && enemy.tntElement.parentNode) {
+    enemy.tntElement.parentNode.removeChild(enemy.tntElement);
+    enemy.tntElement = null;
+  }
+  
+  // Create explosion effect at title enemy location
+  const titleElement = document.getElementById('title-enemy');
+  if (titleElement) {
+    const titleRect = titleElement.getBoundingClientRect();
+    createUIExplosion(titleRect.left + 10, titleRect.top + 10);
+    
+    // Hide the current title enemy (it got blown up!)
+    titleElement.style.opacity = '0';
+    titleElement.style.transform = 'scale(0)';
+    titleElement.style.transition = 'all 0.3s ease';
+  }
+  
+  showChaosMessage(`💥 TITLE ENEMY ELIMINATED! NEW GUARD ON DUTY! 💥`);
+}
+
+function createUIExplosion(x, y) {
+  // Create explosion particles in UI layer
+  for (let i = 0; i < 12; i++) {
+    const particle = document.createElement('div');
+    particle.style.position = 'fixed';
+    particle.style.left = x + 'px';
+    particle.style.top = y + 'px';
+    particle.style.width = '4px';
+    particle.style.height = '4px';
+    particle.style.background = ['#ff0000', '#ff8000', '#ffff00'][Math.floor(Math.random() * 3)];
+    particle.style.borderRadius = '50%';
+    particle.style.zIndex = '10002';
+    particle.style.pointerEvents = 'none';
+    particle.style.boxShadow = `0 0 6px ${particle.style.background}`;
+    
+    document.body.appendChild(particle);
+    
+    // Animate particle
+    const angle = (i / 12) * Math.PI * 2;
+    const speed = 3 + Math.random() * 2;
+    let life = 30;
+    
+    const animateParticle = () => {
+      life--;
+      if (life <= 0) {
+        if (particle.parentNode) particle.parentNode.removeChild(particle);
+        return;
+      }
+      
+      const currentX = parseFloat(particle.style.left);
+      const currentY = parseFloat(particle.style.top);
+      particle.style.left = (currentX + Math.cos(angle) * speed) + 'px';
+      particle.style.top = (currentY + Math.sin(angle) * speed) + 'px';
+      particle.style.opacity = life / 30;
+      
+      requestAnimationFrame(animateParticle);
+    };
+    
+    requestAnimationFrame(animateParticle);
+  }
+}
+
+function createRogueAttackEffect(enemy) {
+  // Create a "shot" effect towards the title
+  const titleElement = document.getElementById('title-enemy');
+  if (!titleElement) return;
+  
+  // Create muzzle flash
+  const flash = document.createElement('div');
+  flash.style.position = 'absolute';
+  flash.style.left = (enemy.x + 10) + 'px';
+  flash.style.top = (enemy.y + 5) + 'px';
+  flash.style.width = '8px';
+  flash.style.height = '8px';
+  flash.style.background = '#ffff00';
+  flash.style.borderRadius = '50%';
+  flash.style.boxShadow = '0 0 10px #ffff00';
+  flash.style.zIndex = '9999';
+  
+  container.appendChild(flash);
+  
+  setTimeout(() => {
+    if (flash.parentNode) flash.parentNode.removeChild(flash);
+  }, 200);
+  
+  // Show dramatic message
+  showChaosMessage(`💥 TITLE ENEMY ELIMINATED! NEW GUARD ON DUTY! 💥`);
+}
+
+function updateRogueReplacing(enemy) {
+  // Move the rogue to the title position
+  const titleElement = document.getElementById('title-enemy');
+  if (!titleElement) return;
+  
+  const titleRect = titleElement.getBoundingClientRect();
+  const gameArea = document.getElementById('game-area');
+  const gameRect = gameArea.getBoundingClientRect();
+  
+  const targetX = titleRect.left + titleRect.width / 2 - gameRect.left;
+  const targetY = titleRect.top + titleRect.height / 2 - gameRect.top;
+  
+  const dx = targetX - enemy.x;
+  const dy = targetY - enemy.y;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+  
+  if (distance > 5) {
+    // Move towards title position
+    enemy.x += (dx / distance) * enemy.rogueSpeed;
+    enemy.y += (dy / distance) * enemy.rogueSpeed;
+  } else {
+    // Reached title position, complete the takeover
+    completeTitleTakeover(enemy);
+  }
+  
+  // Update UI element position
+  if (enemy.rogueElement) {
+    updateRogueUIElement(enemy);
+  }
+}
+
+function completeTitleTakeover(enemy) {
+  const titleEnemyElement = document.getElementById('title-enemy');
+  if (titleEnemyElement) {
+    // Restore the title enemy but with rogue appearance
+    titleEnemyElement.style.opacity = '1';
+    titleEnemyElement.style.transform = 'scale(1)';
+    titleEnemyElement.style.filter = 'hue-rotate(180deg) brightness(1.2)';
+    titleEnemyElement.style.boxShadow = '0 0 10px #ff0000';
+    titleEnemyElement.style.transition = 'all 0.5s ease';
+  }
+  
+  // Clean up the rogue UI element
+  if (enemy.rogueElement && enemy.rogueElement.parentNode) {
+    enemy.rogueElement.parentNode.removeChild(enemy.rogueElement);
+    enemy.rogueElement = null;
+  }
+  
+  // Clean up TNT element if it still exists
+  if (enemy.tntElement && enemy.tntElement.parentNode) {
+    enemy.tntElement.parentNode.removeChild(enemy.tntElement);
+    enemy.tntElement = null;
+  }
+  
+  // Remove the rogue enemy from the game
+  enemy.active = false;
+  enemy.isRogue = false;
+  
+  // Reset title enemy appearance after some time (back to normal)
+  setTimeout(() => {
+    if (titleEnemyElement) {
+      titleEnemyElement.style.filter = '';
+      titleEnemyElement.style.boxShadow = '';
+    }
+  }, 15000); // Reset after 15 seconds
+}
+
+function renderRogueEnemies() {
+  // Rogue enemies are rendered as part of normal enemy rendering
+  // but we might want to add special effects
+  for (const enemy of rogueEnemies) {
+    if (!enemy.active || !enemy.isRogue) continue;
+    
+    // Only render glow effect if enemy is still in game area (no UI element yet)
+    if (!enemy.hideInGame && !enemy.rogueElement) {
+      // Add special glow effect for rogue enemies
+      const rogueGlow = document.createElement('div');
+      rogueGlow.style.position = 'absolute';
+      rogueGlow.style.left = (enemy.x - 5) + 'px';
+      rogueGlow.style.top = (enemy.y - 5) + 'px';
+      rogueGlow.style.width = (enemy.size + 10) + 'px';
+      rogueGlow.style.height = (enemy.size + 10) + 'px';
+      rogueGlow.style.border = '2px solid #ff0000';
+      rogueGlow.style.borderRadius = '50%';
+      rogueGlow.style.boxShadow = '0 0 15px #ff0000';
+      rogueGlow.style.opacity = '0.7';
+      rogueGlow.style.animation = 'pulse 1s infinite';
+      rogueGlow.style.zIndex = '99';
+      
+      container.appendChild(rogueGlow);
+    }
+  }
+}
 
 function gameOver() {
   gameState = 'gameOver';
   document.getElementById('final-score').textContent = score.toLocaleString();
   document.getElementById('final-level').textContent = level;
+  
+  // Clean up rogue enemies on game over
+  cleanupRogueEnemies();
 
   // Check if this is a high score
   if (isHighScore(score)) {
@@ -2334,6 +3559,9 @@ window.restartGame = function () {
 function updateEnemies() {
   for (const enemy of enemies) {
     if (!enemy.active) continue;
+    
+    // Skip rogue enemies - they have their own update logic
+    if (enemy.isRogue) continue;
 
     // Handle status effects
     if (enemy.frozen && enemy.freezeTime > 0) {
@@ -2740,6 +3968,7 @@ function gameLoop() {
 
   // Update game objects
   updateEnemies();
+  updateHelpers();
   updateProjectiles();
   updateEffects();
   updatePowerups();
@@ -2805,7 +4034,7 @@ function gameLoop() {
   }
 
   for (const enemy of enemies) {
-    if (enemy.active) {
+    if (enemy.active && !enemy.hideInGame) {
       renderEnemy(container, enemy);
     }
   }
@@ -2814,11 +4043,27 @@ function gameLoop() {
     renderBoss(container, currentBoss);
   }
 
+  // Render helper turrets
+  renderHelpers();
+
   for (const powerup of powerups) {
     if (powerup.active) {
       renderPowerupGraphic(container, powerup);
     }
   }
+
+  // Update and render weapon upgrade stations
+  updateWeaponUpgradeStations(16.67); // ~60 FPS delta time
+  renderWeaponUpgradeStations();
+  
+  // Update and render airstrike stations
+  updateAirstrikeStations(16.67); // ~60 FPS delta time
+  renderAirstrikeStations();
+  
+  // Update rogue enemy system
+  trySpawnRogueEnemy();
+  updateRogueEnemies();
+  renderRogueEnemies();
 
   renderProjectiles();
   renderEffects();

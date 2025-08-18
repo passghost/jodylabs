@@ -8,7 +8,7 @@ export const powerupTypes = [
     effect: 'Health Pack',
     symbol: '+',
     duration: 0,
-    rarity: 0.3,
+    rarity: 0.30,
     minLevel: 1
   },
   { 
@@ -17,7 +17,7 @@ export const powerupTypes = [
     effect: 'Ammo Refill',
     symbol: '■',
     duration: 0,
-    rarity: 0.25,
+    rarity: 0.20,
     minLevel: 1
   },
   { 
@@ -25,8 +25,8 @@ export const powerupTypes = [
     color: '#ff9800', 
     effect: 'Rapid Fire',
     symbol: '≡',
-    duration: 8000,
-    rarity: 0.15,
+    duration: 12000,
+    rarity: 0.25,
     minLevel: 1
   },
   { 
@@ -34,27 +34,27 @@ export const powerupTypes = [
     color: '#4caf50', 
     effect: 'Spread Shot',
     symbol: '※',
-    duration: 10000,
-    rarity: 0.1,
-    minLevel: 2
+    duration: 15000,
+    rarity: 0.18,
+    minLevel: 1
   },
   { 
     type: 'pierce', 
     color: '#2196f3', 
     effect: 'Piercing Bullets',
     symbol: '→',
-    duration: 12000,
-    rarity: 0.08,
-    minLevel: 3
+    duration: 18000,
+    rarity: 0.15,
+    minLevel: 2
   },
   { 
     type: 'explosive', 
     color: '#e91e63', 
     effect: 'Explosive Rounds',
     symbol: '※',
-    duration: 8000,
-    rarity: 0.07,
-    minLevel: 3
+    duration: 12000,
+    rarity: 0.12,
+    minLevel: 2
   },
   { 
     type: 'shield', 
@@ -72,18 +72,18 @@ export const powerupTypes = [
     color: '#ff0080', 
     effect: 'Laser Beam',
     symbol: '━',
-    duration: 12000,
-    rarity: 0.06,
-    minLevel: 5
+    duration: 18000,
+    rarity: 0.12,
+    minLevel: 3
   },
   { 
     type: 'plasma', 
     color: '#8000ff', 
     effect: 'Plasma Cannon',
     symbol: '◈',
-    duration: 10000,
-    rarity: 0.05,
-    minLevel: 6
+    duration: 15000,
+    rarity: 0.10,
+    minLevel: 4
   },
   { 
     type: 'railgun', 
@@ -91,15 +91,15 @@ export const powerupTypes = [
     effect: 'Railgun',
     symbol: '▬',
     duration: 15000,
-    rarity: 0.04,
-    minLevel: 7
+    rarity: 0.08,
+    minLevel: 5
   },
   { 
     type: 'nuclear', 
     color: '#ffff00', 
     effect: 'Nuclear Rounds',
     symbol: '☢',
-    duration: 8000,
+    duration: 12000,
     rarity: 0.03,
     minLevel: 8
   },
@@ -121,6 +121,24 @@ export const powerupTypes = [
     rarity: 0.01,
     minLevel: 10
   },
+  { 
+    type: 'bfg',
+    color: '#55ffff',
+    effect: 'BFG (Massive Explosion)',
+    symbol: '✹',
+    duration: 10000,
+    rarity: 0.01,
+    minLevel: 8
+  },
+  {
+    type: 'drone',
+    color: '#44aaff',
+    effect: 'Drone Deployment',
+    symbol: '🤖',
+    duration: 15000,
+    rarity: 0.02,
+    minLevel: 6
+  },
   
   // NEW WEAPONS
   { 
@@ -128,34 +146,34 @@ export const powerupTypes = [
     color: '#ff6600', 
     effect: 'Combat Shotgun',
     symbol: '▣',
-    duration: 12000,
-    rarity: 0.12,
-    minLevel: 2
+    duration: 18000,
+    rarity: 0.18,
+    minLevel: 1
   },
   { 
     type: 'flamethrower', 
     color: '#ff4400', 
     effect: 'Flamethrower',
     symbol: '🔥',
-    duration: 8000,
-    rarity: 0.08,
-    minLevel: 3
+    duration: 12000,
+    rarity: 0.14,
+    minLevel: 2
   },
   { 
     type: 'freeze', 
     color: '#00ccff', 
     effect: 'Freeze Ray',
     symbol: '❄',
-    duration: 10000,
-    rarity: 0.07,
-    minLevel: 4
+    duration: 15000,
+    rarity: 0.12,
+    minLevel: 2
   },
   { 
     type: 'lightning', 
     color: '#ffff88', 
     effect: 'Chain Lightning',
     symbol: '⚡',
-    duration: 9000,
+    duration: 14000,
     rarity: 0.06,
     minLevel: 5
   },
@@ -164,7 +182,7 @@ export const powerupTypes = [
     color: '#88ff00', 
     effect: 'Acid Launcher',
     symbol: '☣',
-    duration: 11000,
+    duration: 16000,
     rarity: 0.05,
     minLevel: 6
   },
@@ -173,7 +191,7 @@ export const powerupTypes = [
     color: '#ff00ff', 
     effect: 'Smart Missiles',
     symbol: '🎯',
-    duration: 13000,
+    duration: 18000,
     rarity: 0.04,
     minLevel: 7
   },
@@ -212,7 +230,7 @@ export const powerupTypes = [
     effect: 'Mega Health Pack',
     symbol: '♥',
     duration: 0,
-    rarity: 0.15,
+    rarity: 0.25,
     minLevel: 3
   },
   { 
@@ -293,7 +311,7 @@ export const powerupTypes = [
     effect: 'Health Regeneration',
     symbol: '♻',
     duration: 25000,
-    rarity: 0.07,
+    rarity: 0.12,
     minLevel: 5
   },
   { 
@@ -313,6 +331,30 @@ export const powerupTypes = [
     duration: 0,
     rarity: 0.04,
     minLevel: 6
+  },
+  
+  // WEAPON UPGRADE STATION!
+  { 
+    type: 'weaponUpgrade', 
+    color: '#ffaa00', 
+    effect: 'WEAPON UPGRADE STATION',
+    symbol: '⚙',
+    duration: 0,
+    rarity: 0.06,
+    minLevel: 2,
+    special: true // Marks this as requiring special handling
+  },
+  
+  // AIRSTRIKE STATION!
+  { 
+    type: 'airstrikeStation', 
+    color: '#ff4400', 
+    effect: 'AIRSTRIKE BEACON',
+    symbol: '✈',
+    duration: 0,
+    rarity: 0.04,
+    minLevel: 3,
+    special: true // Marks this as requiring special handling
   },
   
   // CHAOS POWERUP!
