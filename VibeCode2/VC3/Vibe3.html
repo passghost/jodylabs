@@ -472,7 +472,8 @@
                 if(url.pathname.toLowerCase().includes('/screenshots/') && !url.pathname.startsWith('/screenshots/')){
                   const parts = url.pathname.split('/');
                   const file = parts[parts.length-1];
-                  return location.origin + '/screenshots/' + file;
+                  // Hosted under GitHub Pages at /jodylabs — ensure resolved screenshots use that base
+                  return location.origin + '/jodylabs/screenshots/' + file;
                 }
                 return url.href;
               }catch(e){ return s || ''; }
