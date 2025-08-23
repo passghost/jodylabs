@@ -141,6 +141,27 @@
     .panel header{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid rgba(255,255,255,.06)}
     .panel header h3{font-weight:800}
     .panel .content{padding:18px;display:grid;gap:12px}
+
+    /* small variant for concise popups like contact */
+    .panel.small{
+      max-width:420px;
+      width:auto;
+      min-width:220px;
+      padding:12px;
+      border-radius:14px;
+      /* override default fixed inset so the small panel can center */
+      left:50% !important;
+      right:auto !important;
+      top:50% !important;
+      bottom:auto !important;
+      transform-origin:center center;
+      transform: translateX(-50%) translateY(-50%) scale(.95);
+      max-height:60vh;
+      overflow:hidden;
+    }
+    .panel.small.open{ transform: translateX(-50%) translateY(-50%) scale(1); }
+    .panel.small .content{padding:12px; display:flex; align-items:center; justify-content:center; overflow:auto}
+    .panel.small header{padding:10px 12px}
   /* default: one card per row (full width) so each card can be very wide */
   .panel .grid{display:grid;grid-template-columns:1fr;gap:20px}
   /* Make cards take the full row and layout image + meta inline so they get wider and shorter */
@@ -313,25 +334,14 @@
     </div>
   </section>
 
-  <section class="panel" id="panel-contact" role="dialog" aria-modal="true" aria-labelledby="panel-contact-title">
+  <section class="panel small" id="panel-contact" role="dialog" aria-modal="true" aria-labelledby="panel-contact-title">
     <header>
       <h3 id="panel-contact-title">Contact</h3>
-      <button class="close" data-close>Close</button>
+      <button class="close" data-close aria-label="Close panel">✕</button>
     </header>
     <div class="content">
-      <div class="grid">
-        <article class="card">
-          <img src="https://passghost.github.io/jodylabs/Images/rededge.png" alt="Red edge">
-          <div class="meta-inline"><h4>Email</h4><p><a href="mailto:hello@jodylabs.dev">hello@jodylabs.dev</a></p></div>
-        </article>
-        <article class="card">
-          <img src="https://passghost.github.io/OrbiqWebsite/Images/SphereIcon.png" alt="Sphere">
-          <div class="meta-inline"><h4>Twitter / X</h4><p><a href="#">@JodyLabs</a></p></div>
-        </article>
-        <article class="card">
-          <img src="https://passghost.github.io/jodylabs/screenshots/CardCake.png" alt="CardCake">
-          <div class="meta-inline"><h4>GitHub</h4><p><a href="https://github.com/passghost" target="_blank" rel="noopener">passghost</a></p></div>
-        </article>
+      <div style="display:flex;align-items:center;gap:10px;"> 
+        <div style="font-weight:800;font-size:14px;color:var(--text)">pass6host@gmail.com</div>
       </div>
     </div>
   </section>
