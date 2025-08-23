@@ -4,202 +4,202 @@
     "desc":"Experience our latest online multiplayer card game! Build custom decks with your own images, play against friends in real-time matches, and master strategic card battles. Features include life counters, deck builder, custom card creation, and competitive multiplayer gameplay.",
     "href":"../CardCake/index.html",
     "icon":"../Images/emrald.png",
-    "screenshots":["../screenshots/CardCake.png"]
+  "screenshots":["https://passghost.github.io/jodylabs/screenshots/CardCake.png"]
   },
   {
     "title":"Community Garden",
   "desc":"A garden made for the artistic in mind",
     "href":"../CommunityGarden/garden.html",
     "icon":"../Images/gem3.png",
-  "screenshots":["../screenshots/Flowerz.png"]
+  "screenshots":["https://passghost.github.io/jodylabs/screenshots/Flowerz.png"]
   },
   {
     "title":"Mosaic Index - Visual Mosaic Explorer",
     "desc":"Discover and explore a vibrant index of mosaics! View, create, and interact with beautiful mosaic patterns and digital tile art. Perfect for artists, designers, and anyone who loves visual creativity.",
     "href":"../MosaicMaker/index.html",
     "icon":"../Images/gem2.png",
-    "screenshots":["../screenshots/mosaic.png"]
+  "screenshots":["https://passghost.github.io/jodylabs/screenshots/mosaic.png"]
   },
   {
     "title":"Jousti",
     "desc":"Jousti is a fast-paced single-player arcade game where you control a rider on a flying mount, battling waves of enemies in airborne duels. Master precise movement, timing, and strategy to defeat opponents and climb the leaderboard in this retro-inspired action experience.",
     "href":"../Jousti/index.html",
     "icon":"../Images/gem3.png",
-    "screenshots":["../screenshots/Jousti.gif"]
+  "screenshots":["https://passghost.github.io/jodylabs/screenshots/Jousti.gif"]
   },
   {
     "title":"Pixelyar",
     "desc":"Pixelyar is an experimental MMO pirate game. Join a world of swashbuckling pirates, treasure hunts, and ship battles—explore islands, form crews, and compete for loot in real-time multiplayer action.",
     "href":"../PixelYar/index.html",
     "icon":"../Images/gem4.png",
-    "screenshots":["../screenshots/pixelyar.png"]
+  "screenshots":["https://passghost.github.io/jodylabs/screenshots/pixelyar.png"]
   },
   {
     "title":"Firefly - Placeholder Game",
     "desc":"Light up the night with Firefly! Placeholder description for the new Firefly game. Explore, play, and enjoy the glow.",
     "href":"../Firefly/glowing_dragonfly.html",
     "icon":"../Images/gem2.png",
-    "screenshots":["../screenshots/Firefly.png"]
+  "screenshots":["https://passghost.github.io/jodylabs/screenshots/Firefly.png"]
   },
   {
     "title":"Battletits - Placeholder Game",
     "desc":"Engage in classic arcade warfare: outmaneuver enemies, survive chaotic battles, and fight for victory in a fast-paced action game.",
     "href":"../BattleTits/pixel-commando.html",
     "icon":"../Images/gem3.png",
-    "screenshots":["../screenshots/battletits.png"]
+  "screenshots":["https://passghost.github.io/jodylabs/screenshots/battletits.png"]
   },
   {
     "title":"BreakupPhone - Relationship Ender",
     "desc":"Need to break up? Let BreakupPhone do the talking. Placeholder description for the new BreakupPhone tool.",
     "href":"../BreakupPhone/breaker.html",
     "icon":"../Images/gem2.png",
-    "screenshots":["../screenshots/Breaker.png"]
+  "screenshots":["https://passghost.github.io/jodylabs/screenshots/Breaker.png"]
   },
   {
     "title":"WordBind - Masked Character Filler",
     "desc":"Test your vocabulary and deduction skills! WordBind challenges you to fill in masked characters and guess the hidden word. Great for word game fans and puzzle lovers.",
     "href":"../MaskingPower/mask_char_filler.html",
     "icon":"../Images/gem4.png",
-    "screenshots":["../screenshots/wordbind.png"]
+  "screenshots":["https://passghost.github.io/jodylabs/screenshots/wordbind.png"]
   },
   {
     "title":"Dad's Web Counter v2 - Multi Counter Dashboard",
     "desc":"The next evolution of Dad's classic web counter! Manage multiple counters in a fast, simple dashboard—perfect for games, events, or productivity. Add, reset, and monitor all your counts with retro style and modern features.",
     "href":"../counter2/counter-grid.html",
     "icon":"../Images/gem3.png",
-    "screenshots":["../screenshots/counter2.png","../screenshots/counter2grid.png"]
+  "screenshots":["https://passghost.github.io/jodylabs/screenshots/counter2.png","https://passghost.github.io/jodylabs/screenshots/counter2grid.png"]
   },
   {
     "title":"SandSation - Sand Physics Simulation",
     "desc":"Explore mesmerizing falling sand physics! Interact with virtual grains, create landscapes, and watch realistic sand flow and pile up. Perfect for relaxation, creativity, and experimenting with digital sand art.",
     "href":"../SandSensation/sand_fall.html",
     "icon":"../Images/gem2.png",
-    "screenshots":["../screenshots/SandFall.png"]
+  "screenshots":["https://passghost.github.io/jodylabs/screenshots/SandFall.png"]
   },
   {
     "title":"Vertical Dot Matrix Marquee",
     "desc":"Display custom scrolling messages in a retro dot-matrix style! Add your own text, pick colors, and watch your message scroll vertically in a glowing ticker. Great for fun, announcements, or digital signage.",
     "href":"../Marquee/marquee.html",
     "icon":"../Images/gem4.png",
-    "screenshots":["../screenshots/Marquee.png"]
+  "screenshots":["https://passghost.github.io/jodylabs/screenshots/Marquee.png"]
   },
   {
     "title":"Stoner Homepage - Relaxation Hub",
     "desc":"Visit our chill homepage featuring live news feeds, weather widgets, relaxing content, and peaceful digital spaces. Perfect for unwinding with curated content designed for relaxation and mindfulness.",
     "href":"../StonerHome/stonerhome.html",
     "icon":"../Images/gem3.png",
-    "screenshots":["../screenshots/stonerhome.png"]
+  "screenshots":["https://passghost.github.io/jodylabs/screenshots/stonerhome.png"]
   },
   {
     "title":"GIF Creator - Animated GIF Maker",
     "desc":"Create custom animated GIFs with our free web-based GIF maker tool. Upload multiple images, adjust timing and effects, and generate high-quality animated GIFs perfect for social media, presentations, memes, and digital marketing.",
     "href":"../sandbox.html",
     "icon":"../Images/gem4.png",
-    "screenshots":["../screenshots/Gifcreator.png"]
+  "screenshots":["https://passghost.github.io/jodylabs/screenshots/Gifcreator.png"]
   },
   {
     "title":"Jody'sList - Community Marketplace",
     "desc":"A community-driven trading platform specifically for Eastern Kentucky residents. Buy, sell, and trade items with your neighbors. Keep commerce local and build community connections with this simple, effective marketplace.",
     "href":"../EKYTrade/index.html",
     "icon":"../Images/gem5.png",
-    "screenshots":["../screenshots/Jody'slist.png"]
+  "screenshots":["https://passghost.github.io/jodylabs/screenshots/Jody'slist.png"]
   },
   {
     "title":"NeonPang - AI Pong Game",
     "desc":"Play our vibrant neon-styled Pong game featuring an intelligent AI opponent, spectacular glowing visual effects, and modern gameplay mechanics. This classic arcade game gets a futuristic makeover with smooth animations and challenging AI.",
     "href":"../NeonPang/NeonPang.html",
     "icon":"../Images/emrald.png",
-    "screenshots":["../screenshots/NeonPang.png"]
+  "screenshots":["https://passghost.github.io/jodylabs/screenshots/NeonPang.png"]
   },
   {
     "title":"GalacticBrow - Space Combat Game",
     "desc":"Engage in epic space battles in our scrolling space shooter! Fight dynamic enemy ships, navigate through asteroid fields, and experience thrilling interstellar combat with smooth controls, power-ups, and challenging boss battles.",
     "href":"../GalacticBrow/GB.html",
     "icon":"../Images/gem5.png",
-    "screenshots":["../screenshots/Galacticbrow.png"]
+  "screenshots":["https://passghost.github.io/jodylabs/screenshots/Galacticbrow.png"]
   },
   {
     "title":"Prinko - Ball Drop Physics Game",
     "desc":"Experience the satisfying physics of ball-dropping in Prinko! Drop balls through a pin-filled board, aim for multiplier slots, and watch mesmerizing ball physics in action. Features realistic physics simulation and addictive gameplay mechanics.",
     "href":"../Prinko/Prinko.html",
     "icon":"../Images/emrald2.png",
-    "screenshots":["../screenshots/Prinko.png"]
+  "screenshots":["https://passghost.github.io/jodylabs/screenshots/Prinko.png"]
   },
   {
     "title":"Dad's Web Counter - Retro Counter",
     "desc":"Dad's web counter, he used to play with a similar program he coded back in the day. This is my ode to my observations of my father's behaviors and hobbies growing up.",
   "href":"../DadSim/DadSim.html",
     "icon":"../Images/gem3.png",
-    "screenshots":["../screenshots/DadSim.png"]
+  "screenshots":["https://passghost.github.io/jodylabs/screenshots/DadSim.png"]
   },
   {
     "title":"Germ Sim - Microorganism Simulation",
     "desc":"Explore the fascinating microscopic world with our educational germ simulation! Observe germs growing, reproducing, and evolving in real-time. Perfect for education, featuring realistic biological behaviors and interactive controls.",
     "href":"../GermSim/GermSim.html",
     "icon":"../Images/emrald.png",
-    "screenshots":["../screenshots/GermSim.png"]
+  "screenshots":["https://passghost.github.io/jodylabs/screenshots/GermSim.png"]
   },
   {
     "title":"AI Photobooth - Classic Booth Experience",
     "desc":"Step into a virtual photobooth! Snap fun pictures, get instant photo strips, and enjoy the retro booth vibe—just like the classic mall experience. No editing, just pure photobooth nostalgia.",
     "href":"../PhotoBooth/Photobooth.html",
     "icon":"../Images/emrald.png",
-    "screenshots":["../screenshots/photobooth.png"]
+  "screenshots":["https://passghost.github.io/jodylabs/screenshots/photobooth.png"]
   },
   {
     "title":"404Museum - Interactive Error Art Gallery",
     "desc":"Transform boring 404 error pages into stunning interactive art galleries! This embeddable JavaScript library detects 404 errors and replaces them with generative art displays, creating engaging experiences from broken links. Perfect for developers who want to turn user frustration into artistic discovery.",
     "href":"../404museum/index.html",
     "icon":"../Images/gem2.png",
-    "screenshots":["../screenshots/404museum.png"]
+  "screenshots":["https://passghost.github.io/jodylabs/screenshots/404museum.png"]
   },
   {
     "title":"Calfabochi - Virtual Pet Game",
     "desc":"Raise and care for your own virtual calf pet! Feed it, play with it, and watch it grow in this interactive digital pet simulation. Track your pet's health, happiness, and hunger while bonding with your adorable pixel companion.",
     "href":"../Calf/index.html",
     "icon":"../Images/gem4.png",
-    "screenshots":["../screenshots/Calf.png"]
+  "screenshots":["https://passghost.github.io/jodylabs/screenshots/Calf.png"]
   },
   {
     "title":"Masker - Image Masking Application",
     "desc":"Try our new Masker app for creative image masking and overlays! Upload your image, apply custom masks, and experiment with unique visual effects. Perfect for artists, designers, and anyone who loves digital creativity.",
     "href":"../Masker/MaskFill.html",
     "icon":"../Images/gem4.png",
-    "screenshots":["../screenshots/Masker.png"]
+  "screenshots":["https://passghost.github.io/jodylabs/screenshots/Masker.png"]
   },
   {
     "title":"Gtechbox - Ghost Box 2025",
     "desc":"Experience the mysterious Ghost Box 2025! Listen to unique audio, explore interactive features, and discover the secrets of the Gtechbox. Perfect for fans of paranormal and experimental web audio.",
     "href":"../Gtechbox/GhostBox2025swag.html",
     "icon":"../Images/gem2.png",
-    "screenshots":["../screenshots/ghostbox.png"]
+  "screenshots":["https://passghost.github.io/jodylabs/screenshots/ghostbox.png"]
   },
   {
     "title":"Sounds of Appa - Sound Experience",
     "desc":"Immerse yourself in the Sounds of Appa! Enjoy a curated collection of relaxing and atmospheric sounds. Great for background ambiance, meditation, or creative inspiration.",
     "href":"../Soundsofappa/Sounds.html",
     "icon":"../Images/gem3.png",
-    "screenshots":["../screenshots/SoundsofAppa.png"]
+  "screenshots":["https://passghost.github.io/jodylabs/screenshots/SoundsofAppa.png"]
   },
   {
     "title":"AI Synth Prompter",
     "desc":"Make any sound effect using AI-assisted tools and prompts. Create, keep, and distribute sounds under your chosen license.",
     "href":"../synthweb/SynthWeb.html",
     "icon":"../Images/gem2.png",
-    "screenshots":["../screenshots/synth.png"]
+  "screenshots":["https://passghost.github.io/jodylabs/screenshots/synth.png"]
   },
   {
     "title":"Spyropainter - Generative Art Tool",
     "desc":"Create mesmerizing generative art with Spyropainter! Experiment with colors, shapes, and patterns to produce unique digital artwork. Perfect for artists and anyone who loves creative coding.",
     "href":"../Spyropainter/SpyroPainter.html",
     "icon":"../Images/emrald2.png",
-    "screenshots":["../screenshots/spyropainter.png"]
+  "screenshots":["https://passghost.github.io/jodylabs/screenshots/spyropainter.png"]
   },
   {
     "title":"Panel Whiteboard - Collaborative Drawing",
     "desc":"Collaborate and draw together on the Panel Whiteboard! Share ideas, sketch diagrams, and brainstorm in real-time with friends or colleagues. Great for remote teamwork and creative sessions.",
     "href":"../Panelwhiteboard/test.html",
     "icon":"../Images/gem4.png",
-    "screenshots":["../screenshots/PanelWhiteboard.png"]
+  "screenshots":["https://passghost.github.io/jodylabs/screenshots/PanelWhiteboard.png"]
   }
 ]
