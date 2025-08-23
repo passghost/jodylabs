@@ -466,16 +466,17 @@
             const resolve = (s)=>{
               try{
                 if(!s) return '';
-                const url = new URL(s, base);
-                // If screenshots live at site root but resolved under VibeCode2 (e.g. /VibeCode2/screenshots/..),
-                // map them to the site's root /screenshots/ so the resources load correctly.
-                if(url.pathname.toLowerCase().includes('/screenshots/') && !url.pathname.startsWith('/screenshots/')){
-                  const parts = url.pathname.split('/');
-                  const file = parts[parts.length-1];
-                  // Hosted under GitHub Pages at /jodylabs — ensure resolved screenshots use that base
+                // If the value is an absolute URL already, return it unchanged
+                if(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(s)) return s;
+                // Clean leading ../ or ./ segments
+                const cleaned = s.replace(/^(?:\.\/|\.\.\/)+/, '');
+                // If this looks like a screenshots path, map to the site screenshots root
+                if(/screenshots\//i.test(cleaned) || /screenshots\//i.test(s)){
+                  const file = cleaned.split('/').pop();
                   return location.origin + '/jodylabs/screenshots/' + file;
                 }
-                return url.href;
+                // Map any other relative hrefs to the site root to avoid embedding VibeCode2 in the path
+                return location.origin + '/jodylabs/' + cleaned.replace(/^\//, '');
               }catch(e){ return s || ''; }
             };
             return {
