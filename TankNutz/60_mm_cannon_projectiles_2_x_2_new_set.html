@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>60mm Cannon Projectiles — New 4 Variants (HTML-only)</title>
+<style>
+  :root{
+    --bg:#0f1116; --grid:#1b1f2a; --pad:14px; --gap:14px;
+    /* Base palette */
+    --outline:#0b0d12;
+    --steel-dark:#424a57; --steel-mid:#647189; --steel-light:#a9b4c8;
+    --olive-dark:#3f4a32; --olive-mid:#586b3d; --olive-light:#8aa050;
+    --copper:#c97b36; --brass:#d7a646; --yellow:#ffd75a; --black:#080a0e;
+    --red:#d93a2b; --orange:#ff9d2d; --amber:#ffcf5c; --white:#ffffff;
+    --smoke1:#595b62; --smoke2:#3b3f47;
+    /* Added hues for this new set */
+    --navy:#17304a; --blue:#2f6bd3; --teal:#2aa79b; --purple:#7b53c5;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; min-height:100vh; display:grid; place-items:center; background:var(--bg); color:#cfd3da; font:14px/1.2 ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial}
+  .wrap{display:grid; gap:10px; place-items:center}
+  .spec{opacity:.75; font-size:12px}
+  .grid{display:grid; grid-template-columns:repeat(2, 48px); grid-auto-rows:48px; gap:var(--gap); padding:var(--pad); background:linear-gradient(135deg,var(--grid),#10131a); border:1px solid #1e2430; border-radius:12px; box-shadow:0 8px 30px rgba(0,0,0,.35)}
+  canvas{ width:48px; height:48px; image-rendering: pixelated; image-rendering: crisp-edges; border-radius:6px; background:transparent; display:block }
+  .hint{opacity:.6; font-size:11px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="spec">Subject: 60mm cannon projectile · View: side · Canvas: 48×48 · Motion: 6 frames @ 120ms · Hitbox/Anchor: tight, center · Variety: 4 variants</div>
+  <div class="grid" id="grid" aria-label="2×2 variants">
+    <canvas width="48" height="48" data-variant="0" data-anchor="center" data-hitbox="tight" title="APCBC (capped, boat-tail)"></canvas>
+    <canvas width="48" height="48" data-variant="1" data-anchor="center" data-hitbox="tight" title="HEAT (cone liner)"></canvas>
+    <canvas width="48" height="48" data-variant="2" data-anchor="center" data-hitbox="tight" title="SMOKE (stub canister)"></canvas>
+    <canvas width="48" height="48" data-variant="3" data-anchor="center" data-hitbox="tight" title="TP (practice blue)"></canvas>
+  </div>
+  <div class="hint">Single-file HTML. No external libraries. Each tile is one cohesive sprite with attached flame/smoke.</div>
+</div>
+<script>
+(function(){
+  const S = 3;                 // pixel scale: 16×16 base → 48×48 canvas
+  const W = 16, H = 16;        // logical grid
+  const FPS_MS = 120;          // 6 frames @ 120ms
+
+  const C = getComputedStyle(document.documentElement);
+  const COL = k => C.getPropertyValue(k).trim();
+
+  const P = {
+    outline: COL('--outline'), steelD: COL('--steel-dark'), steelM: COL('--steel-mid'), steelL: COL('--steel-light'),
+    oliveD: COL('--olive-dark'), oliveM: COL('--olive-mid'), oliveL: COL('--olive-light'),
+    copper: COL('--copper'), brass: COL('--brass'), yellow: COL('--yellow'), black: COL('--black'),
+    red: COL('--red'), orange: COL('--orange'), amber: COL('--amber'), white: COL('--white'),
+    smoke1: COL('--smoke1'), smoke2: COL('--smoke2'), navy: COL('--navy'), blue: COL('--blue'), teal: COL('--teal'), purple: COL('--purple')
+  };
+
+  function px(ctx,x,y,clr){ ctx.fillStyle = clr; ctx.fillRect(x*S, y*S, S, S); }
+  function rect(ctx,x,y,w,h,clr){ ctx.fillStyle = clr; ctx.fillRect(x*S, y*S, w*S, h*S); }
+  function clear(ctx){ ctx.clearRect(0,0,W*S,H*S); }
+
+  function shimmerX(frame){ return [0,2,4,5,3,1][frame%6]; }
+
+  function flame(frame, baseX, baseY, tall=false, smoky=false){
+    const f = frame%6;
+    const len = tall ? 4 + (f%3) : 2 + (f%3);
+    const spread = smoky ? 2 : 1;
+    const cells = [];
+    for(let i=0;i<len;i++){
+      const x = baseX + i;
+      const wobble = ( (f+i)%2===0 ? 0 : 1 );
+      const y = baseY + (i%2===0?0:1) - wobble;
+      const c = i<2 ? P.white : (i<4 ? P.amber : (smoky ? (i%2?P.smoke1:P.smoke2) : P.orange));
+      cells.push({x, y, c});
+      if(i>1 && spread){ cells.push({x, y: y+1, c}); if(i%3===0) cells.push({x, y: y-1, c}); }
+    }
+    return cells;
+  }
+
+  // === NEW VARIANTS ===
+  function draw_APCBC(ctx, frame){
+    clear(ctx);
+    const fx = shimmerX(frame);
+    // APCBC: long steel body with soft cap and boat-tail
+    px(ctx,2,8,P.steelL); px(ctx,3,7,P.steelL); px(ctx,3,8,P.steelM); px(ctx,3,9,P.steelL);
+    rect(ctx,4,7,8,3,P.steelD);
+    rect(ctx,4,8,8,1,P.steelM);
+    rect(ctx,8,7,1,3,P.brass);                         // driving band
+    px(ctx,12,7,P.steelM); rect(ctx,12,8,1,1,P.steelD); px(ctx,12,9,P.steelM); // boat-tail
+    px(ctx,4,6,P.outline); px(ctx,5,6,P.outline); px(ctx,11,6,P.outline);
+    px(ctx,11,10,P.outline); px(ctx,4,10,P.outline);
+    const hx = 4 + fx; if(hx<=11) px(ctx,hx,7,P.steelL);
+    flame(frame, 13, 7, false, false).forEach(p=>px(ctx,p.x,p.y,p.c));
+  }
+
+  function draw_HEAT(ctx, frame){
+    clear(ctx);
+    const fx = shimmerX(frame);
+    // HEAT: copper cone liner, olive body
+    px(ctx,2,8,P.copper); px(ctx,3,7,P.copper); px(ctx,3,8,P.copper); px(ctx,3,9,P.copper);
+    rect(ctx,4,7,8,3,P.oliveD);
+    rect(ctx,4,8,8,1,P.oliveM);
+    rect(ctx,6,7,1,3,P.white); // white ID band
+    rect(ctx,12,7,1,3,P.oliveM);
+    px(ctx,4,6,P.outline); px(ctx,11,6,P.outline); px(ctx,11,10,P.outline); px(ctx,4,10,P.outline);
+    const hx = 4 + fx; if(hx<=11) px(ctx,hx,7,P.oliveL);
+    flame(frame, 13, 7, true, false).forEach(p=>px(ctx,p.x,p.y,p.c));
+  }
+
+  function draw_SMOKE(ctx, frame){
+    clear(ctx);
+    const fx = shimmerX(frame);
+    // SMOKE: stubby canister with purple band
+    rect(ctx,3,7,2,3,P.smoke2);                       // blunt nose
+    rect(ctx,5,7,7,3,P.smoke1);                       // fat body
+    rect(ctx,5,8,7,1,P.steelM);                       // seam
+    rect(ctx,7,7,1,3,P.purple);                       // ID band
+    rect(ctx,12,7,1,3,P.smoke2);                      // base
+    px(ctx,3,6,P.outline); px(ctx,5,6,P.outline); px(ctx,11,6,P.outline);
+    px(ctx,11,10,P.outline); px(ctx,5,10,P.outline); px(ctx,3,10,P.outline);
+    const hx = 5 + fx; if(hx<=11) px(ctx,hx,7,P.steelL);
+    flame(frame, 13, 7, true, true).forEach(p=>px(ctx,p.x,p.y,p.c));
+  }
+
+  function draw_TP(ctx, frame){
+    clear(ctx);
+    const fx = shimmerX(frame);
+    // TP: practice blue, slender body with white band
+    px(ctx,2,8,P.blue);
+    rect(ctx,3,7,2,3,P.navy);
+    rect(ctx,5,7,7,3,P.blue);
+    rect(ctx,5,8,7,1,P.teal);
+    rect(ctx,9,7,1,3,P.white);
+    rect(ctx,12,7,1,3,P.navy);
+    px(ctx,3,6,P.outline); px(ctx,5,6,P.outline); px(ctx,12,6,P.outline);
+    px(ctx,12,10,P.outline); px(ctx,5,10,P.outline); px(ctx,3,10,P.outline);
+    const hx = 5 + fx; if(hx<=11) px(ctx,hx,7,P.white);
+    flame(frame, 13, 7, false, false).forEach(p=>px(ctx,p.x,p.y,p.c));
+  }
+
+  const drawers = [draw_APCBC, draw_HEAT, draw_SMOKE, draw_TP];
+
+  const canvases = Array.from(document.querySelectorAll('canvas[data-variant]'))
+    .map(c => ({ c, ctx: c.getContext('2d'), v: +c.dataset.variant }));
+  canvases.forEach(({ctx}) => { ctx.imageSmoothingEnabled = false; });
+
+  let frame = 0;
+  function tick(){ canvases.forEach(({ctx,v}) => drawers[v](ctx, frame)); frame = (frame + 1) % 6; }
+  tick(); setInterval(tick, FPS_MS);
+})();
+</script>
+</body>
+</html>

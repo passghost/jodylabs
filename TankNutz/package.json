@@ -6,5 +6,8 @@
     "start": "http-server . -p 8080"
   },
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "puppeteer": "^24.16.2"
+  }
 }

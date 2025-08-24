@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>AMERICA Tank — Detailed Hull & Treads (64×64)</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+  :root { --bg:#06111f; --panel:#0b1526; --ink:#eaf2ff; }
+  html,body{background:var(--bg);color:var(--ink);font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;margin:0}
+  .wrap{max-width:900px;margin:24px auto;padding:16px}
+  h1{font-size:18px;margin:0 0 8px}
+  .row{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start}
+  canvas{image-rendering:pixelated;image-rendering:crisp-edges;background:#0c1220;border:1px solid #1b2740;border-radius:12px;box-shadow:0 8px 36px rgba(0,0,0,.5)}
+  .panel{background:var(--panel);border:1px solid #1a2644;border-radius:12px;padding:12px;min-width:320px}
+  .grid{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;font-size:12px;opacity:.95}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .controls{display:flex;gap:8px;margin-top:10px}
+  button{background:#142649;color:var(--ink);border:1px solid #253a66;border-radius:10px;padding:8px 12px;font-weight:600;cursor:pointer}
+  button:hover{filter:brightness(1.08)}
+  .small{font-size:12px;opacity:.85}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>🇺🇸 AMERICA Tank — Detailed Body & Treads, Spinning Turret</h1>
+    <div class="row">
+      <canvas id="sprite" width="256" height="256" aria-label="AMERICA tank sprite"></canvas>
+      <div class="panel">
+        <div class="grid">
+          <div class="mono">Subject</div><div>AMERICA tank (stars/stripes, eagle crest, flag)</div>
+          <div class="mono">View</div><div>Top-down (overhead)</div>
+          <div class="mono">Canvas</div><div>64×64 (rendered at 4× scale)</div>
+          <div class="mono">Palette</div><div>steel grays + red/white/blue, gold accents</div>
+          <div class="mono">Style</div><div>chunky shading, rim-light, strong silhouette</div>
+          <div class="mono">Motion</div><div>24 frames @ 60ms (links scroll, turret spins, slight suspension bounce)</div>
+          <div class="mono">Hitbox/anchor</div><div>pivot center (32,32); hull 40×32</div>
+          <div class="mono">Constraints</div><div>Single-file HTML, cohesive single element, no libs</div>
+          <div class="mono">Keys</div><div><b>H</b> overlay • <b>Pause</b>/<b>Replay</b></div>
+        </div>
+        <div class="controls">
+          <button id="playPause">Pause</button>
+          <button id="replay">Replay</button>
+        </div>
+        <p class="small">Pause and press <b>H</b> to inspect pivot &amp; hitbox.</p>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* ===== Config ===== */
+const GRID=64, SCALE=4;
+const FRAMES=24, FRAME_MS=60;
+const CENTER={x:32,y:32};
+const PIVOT={x:32,y:32};
+const HITBOX={x:12,y:16,w:40,h:32};
+
+/* ===== Palette ===== */
+const PAL={
+  outline:"#08101a",
+  black:"#0a0f17",
+  steelDD:"#222a39",
+  steelD:"#2a3344",
+  steelM:"#44506a",
+  steelL:"#6e7c99",
+  steelXL:"#8a98b5",
+  steelSpec:"#b6c1d9",
+  rubber:"#202633",
+  rubberHi:"#323b4f",
+  shadow:"#0a0e16",
+  blue:"#173a9b",
+  red:"#d21f2b",
+  white:"#ffffff",
+  gold:"#f7cc3a",
+  treadHi:"#9fb0cc",
+  green:"#7ee787"
+};
+
+/* ===== Canvas ===== */
+const cvs=document.getElementById('sprite');
+const ctx=cvs.getContext('2d',{alpha:false});
+ctx.imageSmoothingEnabled=false;
+
+/* ===== Pixel helpers ===== */
+function px(x,y,c){ if(x<0||y<0||x>=GRID||y>=GRID) return; ctx.fillStyle=c; ctx.fillRect(x*SCALE,y*SCALE,SCALE,SCALE); }
+function fillRect(x,y,w,h,c){ ctx.fillStyle=c; ctx.fillRect(x*SCALE,y*SCALE,w*SCALE,h*SCALE); }
+function outlineRect(x,y,w,h,c){ for(let i=x;i<x+w;i++){ px(i,y,c); px(i,y+h-1,c);} for(let j=y;j<y+h;j++){ px(x,j,c); px(x+w-1,j,c);} }
+function clear(){ ctx.fillStyle="#0c1220"; ctx.fillRect(0,0,cvs.width,cvs.height); }
+function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+function fillCircle(cx,cy,r,c){ for(let y=-r;y<=r;y++){ for(let x=-r;x<=r;x++){ if(x*x+y*y<=r*r) px(cx+x,cy+y,c); } } }
+function circle(cx,cy,r,c){ for(let t=0;t<360;t+=3){ const rads=t*Math.PI/180; px(Math.round(cx+Math.cos(rads)*r),Math.round(cy+Math.sin(rads)*r),c);} }
+function lineThin(x0,y0,x1,y1,c){ let dx=Math.abs(x1-x0),sx=x0<x1?1:-1; let dy=-Math.abs(y1-y0),sy=y0<y1?1:-1; let err=dx+dy,e2; for(;;){ px(x0,y0,c); if(x0===x1&&y0===y1) break; e2=2*err; if(e2>=dy){ err+=dy; x0+=sx; } if(e2<=dx){ err+=dx; y0+=sy; } } }
+function lineThick(x0,y0,x1,y1,c,outline){ let dx=Math.abs(x1-x0),sx=x0<x1?1:-1; let dy=-Math.abs(y1-y0),sy=y0<y1?1:-1; let err=dx+dy,e2; for(;;){ px(x0,y0,c); if(dx>Math.abs(dy)) px(x0,y0+sy,c); else px(x0+sx,y0,c); if(outline){ px(x0-1,y0,outline); px(x0+1,y0,outline); px(x0,y0-1,outline); px(x0,y0+1,outline); } if(x0===x1&&y0===y1) break; e2=2*err; if(e2>=dy){ err+=dy; x0+=sx; } if(e2<=dx){ err+=dx; y0+=sy; } } }
+function rot(dx,dy,a){ const ca=Math.cos(a),sa=Math.sin(a); return {x:Math.round(dx*ca-dy*sa), y:Math.round(dx*sa+dy*ca)}; }
+
+/* ===== Tracks with wheels, link animation, & side-skirts ===== */
+function drawTrackAssembly(side, phase, bounce){
+  // side: -1 = left, +1 = right
+  const x0 = (side<0)? 8 : 48;          // outer edge
+  const inner = x0 + (side<0? 0 : 0);   // keep symmetric
+  const w=8, h=32, y0=16 + bounce;
+
+  // Shadow under skirts
+  fillRect(x0, y0, w, h, PAL.shadow);
+
+  // Road wheels (5) + return rollers (2) baked under rubber belt
+  const wheelXs = (side<0)? [11,13,15,17,19] : [49,51,53,55,57]; // centers under belt
+  const wheelY = 40 + bounce;
+  wheelXs.forEach(cx=>{ fillCircle(cx, wheelY, 3, PAL.steelD); px(cx, wheelY, PAL.steelSpec); });
+  const retY = 20 + bounce;
+  const retXs = (side<0)? [12,18] : [50,56];
+  retXs.forEach(cx=>{ fillCircle(cx, retY, 2, PAL.steelD); px(cx, retY, PAL.steelSpec); });
+
+  // Rubber belt (track body)
+  fillRect(x0, y0, w, h, PAL.rubber);
+  outlineRect(x0, y0, w, h, PAL.outline);
+
+  // Link plates (scrolling)
+  // pattern: plate every 3px, offset by phase (0..5)
+  for(let yy=0; yy<h; yy++){
+    const gy = y0 + yy;
+    const link = ((yy + phase) % 6) === 0;
+    if(link){
+      // inner plate + twin pin heads
+      const ix = x0 + 2, rx = x0 + w - 3;
+      px(ix, gy, PAL.rubberHi); px(ix+1, gy, PAL.rubberHi);
+      px(rx, gy, PAL.rubberHi); px(rx-1, gy, PAL.rubberHi);
+      // light scuff stripe
+      if(yy%2===0){ px(x0+4, gy, PAL.treadHi); }
+    }
+  }
+
+  // Raised guide teeth in the center run (evoke center guides)
+  for(let gy=y0+2; gy<y0+h-1; gy+=4){
+    const mid = (side<0)? x0+4 : x0+3;
+    px(mid, gy, PAL.steelL);
+  }
+
+  // Side-skirts with rivets & star pips (above belt)
+  const skirtY = y0 - 2, skirtH = 4;
+  fillRect(x0-1, skirtY, w+2, skirtH, PAL.steelM);
+  outlineRect(x0-1, skirtY, w+2, skirtH, PAL.outline);
+  // Rivets along skirt edge
+  for(let i=0;i<4;i++){ px(x0+i*2, skirtY+skirtH-1, PAL.steelXL); }
+  // Blue stars on skirt ends
+  px(x0, skirtY+1, PAL.blue); px(x0+w-1, skirtY+1, PAL.blue);
+}
+
+/* ===== Hull: angled glacis, deck grilles, boxes, hooks, flag band ===== */
+function drawHullDetailed(frame){
+  // Lower hull slab
+  fillRect(16,18,32,28,PAL.steelM);
+  fillRect(18,20,28,24,PAL.steelL);
+
+  // Angled glacis (front slope)
+  // Replace leading edge with darker wedge
+  for(let i=0;i<12;i++){ px(20+i,18, PAL.steelD); }
+  for(let i=0;i<8;i++){ px(18+i,19, PAL.steelD); }
+
+  // Rear engine deck bevel
+  for(let i=0;i<12;i++){ px(32+i,45, PAL.steelD); }
+  for(let i=0;i<8;i++){ px(40+i,44, PAL.steelD); }
+
+  // Turret ring guard
+  const ringR=9;
+  for(let t=0;t<16;t++){
+    const a=t*(Math.PI*2/16);
+    const x=Math.round(CENTER.x+Math.cos(a)*ringR);
+    const y=Math.round(CENTER.y+Math.sin(a)*ringR);
+    px(x,y,PAL.steelD);
+  }
+
+  // Intake & exhaust grilles (rear deck)
+  // Left intake (3 vents)
+  for(let i=0;i<3;i++){
+    fillRect(20, 40+i*2, 8, 1, PAL.steelDD);
+    px(20,40+i*2, PAL.outline); px(27,40+i*2, PAL.outline);
+  }
+  // Right exhaust (perforated)
+  for(let i=0;i<3;i++){
+    for(let j=0;j<5;j++){ px(36+j*2, 40+i*2, PAL.steelDD); }
+  }
+
+  // Stowage boxes (left/right)
+  fillRect(16,30,4,8,PAL.steelM); outlineRect(16,30,4,8,PAL.outline); px(18,34,PAL.steelXL);
+  fillRect(44,30,4,8,PAL.steelM); outlineRect(44,30,4,8,PAL.outline); px(46,34,PAL.steelXL);
+
+  // Tow hooks (front corners)
+  px(16,20,PAL.steelDD); px(17,20,PAL.steelDD);
+  px(47,20,PAL.steelDD); px(46,20,PAL.steelDD);
+
+  // Big flag band on roof
+  const bandY0=21, bandH=10, bandX0=19, bandW=26;
+  const canton={x:bandX0,y:bandY0,w:12,h:bandH};
+  fillRect(canton.x,canton.y,canton.w,canton.h,PAL.blue);
+  const twinkle = frame % 6;
+  const stars=[{x:canton.x+3,y:canton.y+3},{x:canton.x+7,y:canton.y+3},{x:canton.x+5,y:canton.y+6},{x:canton.x+9,y:canton.y+6},{x:canton.x+3,y:canton.y+8},{x:canton.x+7,y:canton.y+8}];
+  stars.forEach((s,i)=>{ const col=(i===twinkle)?PAL.white:PAL.gold; px(s.x,s.y,col); px(s.x-1,s.y,col); px(s.x+1,s.y,col); px(s.x,s.y-1,col); px(s.x,s.y+1,col); });
+  for(let y=0;y<bandH;y++){ fillRect(bandX0+canton.w, bandY0+y, bandW-canton.w, 1, (y%2===0)?PAL.red:PAL.white); }
+  outlineRect(bandX0,bandY0,bandW,bandH,PAL.outline);
+
+  // Panel lines & bolts (subtle)
+  for(let i=0;i<5;i++){ px(24+i*4, 32, PAL.steelDD); }
+  for(let i=0;i<4;i++){ px(22+i*6, 36, PAL.steelDD); }
+  outlineRect(16,18,32,28,PAL.outline);
+  px(16,18,PAL.outline); px(47,18,PAL.outline); px(16,45,PAL.outline); px(47,45,PAL.outline);
+}
+
+/* ===== Rim light ===== */
+function drawRimLight(){
+  for(let i=0;i<28;i++){ px(18+i,20,PAL.white); }
+  for(let j=0;j<22;j++){ px(18,20+j,PAL.white); }
+  for(let i=0;i<28;i+=3){ px(18+i,20,PAL.steelL); }
+  for(let j=0;j<22;j+=3){ px(18,20+j,PAL.steelL); }
+}
+
+/* ===== Turret (same detailed spinner from prior step) ===== */
+function drawTurret(angle, frame){
+  const cx=CENTER.x, cy=CENTER.y;
+  fillCircle(cx,cy,7,PAL.steelM); fillCircle(cx,cy,6,PAL.steelL); circle(cx,cy,7,PAL.outline);
+  for(let y=-6;y<=6;y++){ for(let x=-6;x<=6;x++){ if(x*x+y*y<=36 && (x+y)<-4) px(cx+x,cy+y,PAL.steelXL); } }
+  // Crest
+  px(cx,cy,PAL.gold); px(cx-1,cy,PAL.gold); px(cx+1,cy,PAL.gold); px(cx-2,cy+1,PAL.gold); px(cx+2,cy+1,PAL.gold); px(cx,cy-1,PAL.gold);
+
+  const dirx=Math.sin(angle), diry=-Math.cos(angle);
+  const perpX=diry, perpY=-dirx;
+
+  // Barrel
+  const bLen=20, bx0=cx, by0=cy-1, bx1=Math.round(cx+dirx*bLen), by1=Math.round(cy+diry*bLen);
+  lineThick(bx0,by0,bx1,by1,PAL.steelM,PAL.outline); px(bx1,by1,PAL.black);
+  px(clamp(bx1+perpX,0,63),clamp(by1+perpY,0,63),PAL.black);
+  px(clamp(bx1-perpX,0,63),clamp(by1-perpY,0,63),PAL.black);
+
+  // Coax
+  const mgOff=1;
+  const mgx0=Math.round(bx0+perpX*mgOff), mgy0=Math.round(by0+perpY*mgOff);
+  const mgx1=Math.round(cx+dirx*14+perpX*mgOff), mgy1=Math.round(cy+diry*14+perpY*mgOff);
+  lineThin(mgx0,mgy0,mgx1,mgy1,PAL.steelM); px(mgx1,mgy1,PAL.black);
+
+  // Cupola + hatch
+  const cupOff=rot(3,0,angle); const cupX=cx+cupOff.x, cupY=cy+cupOff.y;
+  fillCircle(cupX,cupY,3,PAL.steelL); circle(cupX,cupY,3,PAL.outline);
+  const hx0=Math.round(cupX-perpX*2), hy0=Math.round(cupY-perpY*2);
+  const hx1=Math.round(cupX+perpX*2), hy1=Math.round(cupY+perpY*2);
+  lineThin(hx0,hy0,hx1,hy1,PAL.outline);
+  const p1={x:Math.round(cupX+dirx*2),y:Math.round(cupY+diry*2)};
+  const p2={x:Math.round(cupX+dirx*1 - perpX*1),y:Math.round(cupY+diry*1 - perpY*1)};
+  px(p1.x,p1.y,PAL.white); px(p2.x,p2.y,PAL.white);
+
+  // Antenna + flag
+  const antBase=rot(3,-1,angle); const ax0=cx+antBase.x, ay0=cy+antBase.y;
+  const ax1=Math.round(ax0 - dirx*6 + perpX*1), ay1=Math.round(ay0 - diry*6 + perpY*1);
+  lineThin(ax0,ay0,ax1,ay1,PAL.steelXL);
+  const flip=(frame%2===0)?1:-1, fx=Math.round(ax1+perpX*flip), fy=Math.round(ay1+perpY*flip);
+  px(ax1,ay1,PAL.blue); px(fx,fy,PAL.white); px(fx+(perpX||0), fy+(perpY||0), PAL.red);
+
+  // Rear vents on turret
+  for(let i=-1;i<=1;i++){
+    const off=rot(i*2,-4,angle);
+    const sx0=cx+off.x-Math.round(perpX), sy0=cy+off.y-Math.round(perpY);
+    const sx1=cx+off.x+Math.round(perpX), sy1=cy+off.y+Math.round(perpY);
+    lineThin(sx0,sy0,sx1,sy1,PAL.steelD);
+  }
+}
+
+/* ===== Overlay ===== */
+function drawHitboxOverlay(show){
+  if(!show) return;
+  const C=PAL.green;
+  px(PIVOT.x,PIVOT.y,C); px(PIVOT.x-1,PIVOT.y,C); px(PIVOT.x+1,PIVOT.y,C);
+  px(PIVOT.x,PIVOT.y-1,C); px(PIVOT.x,PIVOT.y+1,C);
+  outlineRect(HITBOX.x,HITBOX.y,HITBOX.w,HITBOX.h,C);
+}
+
+/* ===== Animation ===== */
+let frame=0, timer=null, playing=true, showHitbox=false;
+
+function drawFrame(n){
+  clear();
+
+  // Small suspension bounce (subtle)
+  const bounce = (n%6===0 || n%6===3)? 0 : (n%6<3 ? 1 : -1);
+
+  // Track assemblies with visible wheels, links, skirts
+  const treadPhase = (n % 6); // sync to link spacing
+  drawTrackAssembly(-1, treadPhase, bounce); // left
+  drawTrackAssembly(+1, treadPhase, bounce); // right
+
+  // Hull with added geometry & details
+  drawHullDetailed(n);
+
+  // Turret spin
+  const angle=(n/FRAMES)*Math.PI*2;
+  drawTurret(angle,n);
+
+  // Highlights & overlay
+  drawRimLight();
+  drawHitboxOverlay(showHitbox);
+}
+
+function tick(){ drawFrame(frame); frame=(frame+1)%FRAMES; }
+
+/* ===== Controls ===== */
+const btnPlay=document.getElementById('playPause');
+const btnReplay=document.getElementById('replay');
+function start(){ if(!timer) timer=setInterval(tick,FRAME_MS); }
+function stop(){ if(timer){ clearInterval(timer); timer=null; } }
+btnPlay.addEventListener('click',()=>{ playing=!playing; if(playing){ start(); btnPlay.textContent='Pause'; } else { stop(); btnPlay.textContent='Play'; } });
+btnReplay.addEventListener('click',()=>{ frame=0; if(!playing) drawFrame(frame); });
+window.addEventListener('keydown',e=>{ if(e.key.toLowerCase()==='h'){ showHitbox=!showHitbox; if(!playing) drawFrame(frame); }});
+
+/* Boot */
+drawFrame(0); start();
+</script>
+</body>
+</html>

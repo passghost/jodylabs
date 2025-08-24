@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Pixel Sprite – Black/Red Gatling Gun Tank (Top-Down, 64×64)</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+  html,body{height:100%;margin:0;background:#0b0b0f;color:#ddd;font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+  .wrap{display:flex;align-items:center;justify-content:center;min-height:100%}
+  .card{padding:16px 18px;border-radius:14px;background:#111218;box-shadow:0 10px 30px rgba(0,0,0,.45), inset 0 0 0 1px #1a1c25}
+  .row{display:flex;gap:16px;align-items:center}
+  canvas{image-rendering: pixelated;image-rendering: crisp-edges;border-radius:8px;box-shadow:0 0 0 1px #27293a, 0 8px 24px rgba(0,0,0,.35)}
+  .meta{font-size:12px;color:#9ea2a9;margin-top:10px}
+  .meta b{color:#c8ccd6}
+  .btn{cursor:pointer;border:0;border-radius:10px;background:#1c1f2b;color:#e6e9f2;padding:8px 12px}
+  .btn:active{transform:translateY(1px)}
+  .err{margin-top:8px;color:#ff6b6b;font-size:12px;display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <div class="row">
+      <canvas id="view" width="512" height="512" aria-label="64x64 pixel tank sprite preview"></canvas>
+      <canvas id="sheet" width="384" height="64" aria-label="sprite sheet 6x 64x64" title="Sprite sheet (click to toggle bg)"></canvas>
+    </div>
+    <div class="meta">
+      <div><b>Subject:</b> black with red accent gatling gun tank</div>
+      <div><b>View:</b> top-down | <b>Canvas:</b> 64×64 | <b>Frames:</b> 6 @ 120ms | <b>Pivot/Anchor:</b> (32,32)</div>
+      <div><b>Palette:</b> #0b0b0f, #15151a, #232531, #2f3242, #9ea2a9, #d4002a, #ff4554, #ffc744, #000000</div>
+      <div style="margin-top:6px;display:flex;gap:10px">
+        <button class="btn" id="playPause">Pause</button>
+        <button class="btn" id="replay">Replay</button>
+        <button class="btn" id="bg">Toggle BG</button>
+        <button class="btn" id="debug">Toggle Debug</button>
+      </div>
+      <div class="meta" style="margin-top:6px">Constraint: single cohesive element, no external libs. Turret + barrels remain connected to hull every frame.</div>
+      <div id="err" class="err"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const S = 64, SCALE = 8, FRAMES = 6, FRAME_MS = 120;
+
+  const C = {
+    clear:'rgba(0,0,0,0)', hull:'#0b0b0f', hull2:'#15151a', rim:'#2f3242',
+    mid:'#232531', steel:'#9ea2a9', red:'#d4002a', redHi:'#ff4554',
+    flash:'#ffc744', tread:'#0a0b10', tread2:'#000000'
+  };
+
+  const view = document.getElementById('view');
+  const sheet = document.getElementById('sheet');
+  const vc = view.getContext('2d'); vc.imageSmoothingEnabled = false;
+  const sc = sheet.getContext('2d'); sc.imageSmoothingEnabled = false;
+
+  const off = document.createElement('canvas'); off.width = S; off.height = S;
+  const oc = off.getContext('2d'); oc.imageSmoothingEnabled = false;
+
+  const anchor = { x: 32, y: 32 };
+  let debug = false, showBG = false;
+
+  function px(ctx,x,y,w=1,h=1,c='#fff'){ ctx.fillStyle=c; ctx.fillRect(x|0,y|0,w|0,h|0); }
+  function rect(ctx,x,y,w,h,c){ px(ctx,x,y,w,h,c); }
+  function rectOutline(ctx,x,y,w,h,c){
+    px(ctx,x,y,w,1,c); px(ctx,x,y+h-1,w,1,c);
+    px(ctx,x,y,1,h,c); px(ctx,x+w-1,y,1,h,c);
+  }
+  function disc(ctx,cx,cy,r,c){
+    for(let y=-r;y<=r;y++){ const s=Math.floor(Math.sqrt(r*r - y*y)); px(ctx,cx-s,cy+y,2*s+1,1,c); }
+  }
+  function line(ctx,x0,y0,x1,y1,c){
+    x0|=0;y0|=0;x1|=0;y1|=0;
+    let dx=Math.abs(x1-x0), sx=x0<x1?1:-1;
+    let dy=-Math.abs(y1-y0), sy=y0<y1?1:-1;
+    let err=dx+dy;
+    for(;;){
+      px(ctx,x0,y0,1,1,c);
+      if(x0===x1 && y0===y1) break;
+      const e2=2*err;
+      if(e2>=dy){ err+=dy; x0+=sx; }
+      if(e2<=dx){ err+=dx; y0+=sy; }
+    }
+  }
+  function thickLine(ctx,x0,y0,x1,y1,c,th=2){
+    for(let i=-Math.floor(th/2); i<Math.ceil(th/2); i++){
+      for(let j=-Math.floor(th/2); j<Math.ceil(th/2); j++){
+        line(ctx,x0+i,y0+j,x1+i,y1+j,c);
+      }
+    }
+  }
+
+  function drawFrame(ctx, f){
+    ctx.clearRect(0,0,S,S);
+
+    if(showBG){
+      for(let y=0;y<S;y+=8){
+        for(let x=0;x<S;x+=8){
+          px(ctx,x,y,8,8, ((x+y)>>3)&1 ? '#1a1b24' : '#131421');
+        }
+      }
+    }
+
+    const rotStep = f % FRAMES;
+    const rot = rotStep * (Math.PI*2/6);
+    const treadTick = rotStep;
+    const recoil = (rotStep===0)? 1 : 0;
+
+    // Tracks
+    const trackW=8, trackH=44, trackY=10, lX=6, rX=S-6-trackW;
+    rect(ctx,lX,trackY,trackW,trackH,C.tread);
+    rect(ctx,rX,trackY,trackW,trackH,C.tread);
+    for(let y=trackY; y<trackY+trackH; y+=4){
+      const phase = ((y>>2)+treadTick)%2;
+      const col = phase? C.tread2 : C.mid;
+      px(ctx,lX+1,y,trackW-2,1,col);
+      px(ctx,rX+1,y,trackW-2,1,col);
+    }
+
+    // Hull
+    const hullX=14, hullY=14, hullW=36, hullH=36;
+    rect(ctx,hullX,hullY,hullW,hullH,C.hull);
+    // bevels (FIXED: removed hidden character in 'hullW')
+    px(ctx,hullX, hullY, 2,2, C.mid);
+    px(ctx,hullX+hullW-2, hullY, 2,2, C.mid);
+    px(ctx,hullX, hullY+hullH-2, 2,2, C.mid);
+    px(ctx,hullX+hullW-2, hullY+hullH-2, 2,2, C.mid);
+
+    rect(ctx, hullX+3, hullY+3, hullW-6, 1, C.rim);
+    rect(ctx, hullX+3, hullY+4, hullW-6, 1, C.hull2);
+
+    rect(ctx, hullX+4, hullY+8,      hullW-8, 2, C.red);
+    rect(ctx, hullX+4, hullY+hullH-10, hullW-8, 2, C.red);
+    rect(ctx, hullX+6, hullY+8,      hullW-12, 1, C.redHi);
+
+    // Turret base
+    const tx=anchor.x, ty=anchor.y;
+    disc(ctx, tx, ty, 10, C.hull2);
+    rectOutline(ctx, tx-11, ty-11, 22, 22, C.mid);
+
+    // Turret cap
+    disc(ctx, tx, ty - recoil, 7, C.mid);
+    disc(ctx, tx, ty - recoil, 6, C.hull2);
+    rect(ctx, tx-6, ty-1-recoil, 12, 2, C.red);
+    rect(ctx, tx-5, ty-1-recoil, 10, 1, C.redHi);
+
+    // Neck + hub
+    thickLine(ctx, tx, ty-2-recoil, tx, ty-10-recoil, C.hull2, 3);
+    disc(ctx, tx, ty-12-recoil, 3, C.mid);
+
+    // Rotating barrels
+    const baseR=6, tipR=14;
+    for(let i=0;i<6;i++){
+      const a = rot + i*(Math.PI*2/6);
+      const sx = Math.round(tx + Math.cos(a)*baseR);
+      const sy = Math.round(ty - recoil + Math.sin(a)*baseR);
+      const ex = Math.round(tx + Math.cos(a)*tipR);
+      const ey = Math.round(ty - recoil + Math.sin(a)*tipR);
+      thickLine(ctx, sx, sy, ex, ey, C.steel, 2);
+      disc(ctx, ex, ey, 1, C.steel);
+    }
+
+    // Muzzle flash every 6th frame on the front (up) barrel
+    if(rotStep===0){
+      const a0 = -Math.PI/2;
+      const ex = Math.round(tx + Math.cos(a0)*tipR);
+      const ey = Math.round(ty - recoil + Math.sin(a0)*tipR);
+      disc(ctx, ex, ey, 2, C.flash);
+      line(ctx, ex-3, ey, ex+3, ey, C.flash);
+      line(ctx, ex, ey-3, ex, ey+3, C.flash);
+    }
+
+    // Rim lights
+    rect(ctx, hullX+hullW-2, hullY+2, 1, hullH-4, C.rim);
+    rect(ctx, hullX+2, hullY+2, hullW-4, 1, C.rim);
+
+    if(debug){
+      // anchor + hitbox
+      px(ctx, anchor.x-1, anchor.y, 3,1, '#39ff14');
+      px(ctx, anchor.x,   anchor.y-1, 1,3, '#39ff14');
+      rectOutline(ctx, hullX+1, hullY+1, hullW-2, hullH-2, '#39ff14');
+    }
+  }
+
+  function buildSheet(){
+    sc.clearRect(0,0,FRAMES*S,S);
+    for(let f=0; f<FRAMES; f++){
+      drawFrame(oc, f);
+      sc.drawImage(off, f*S, 0);
+    }
+  }
+
+  let acc=0, last=performance.now(), frame=0, playing=true;
+
+  function loop(now){
+    const dt = now - last; last = now;
+    if(playing){
+      acc += dt;
+      while(acc >= FRAME_MS){
+        frame = (frame + 1) % FRAMES;
+        acc -= FRAME_MS;
+      }
+    }
+    drawFrame(oc, frame);
+    const vcx = view.getContext('2d');
+    vcx.imageSmoothingEnabled = false;
+    vcx.clearRect(0,0,view.width,view.height);
+    vcx.drawImage(off, 0,0, S,S, 0,0, S*SCALE, S*SCALE);
+    requestAnimationFrame(loop);
+  }
+
+  // UI
+  const btnPP = document.getElementById('playPause');
+  const btnReplay = document.getElementById('replay');
+  const btnBG = document.getElementById('bg');
+  const btnDbg = document.getElementById('debug');
+  const errBox = document.getElementById('err');
+
+  btnPP.addEventListener('click', () => {
+    playing = !playing;
+    btnPP.textContent = playing ? 'Pause' : 'Play';
+  });
+
+  btnReplay.addEventListener('click', () => {
+    // Reset timeline: start at frame 0 with muzzle flash
+    frame = 0;
+    acc = 0;
+    playing = true;
+    btnPP.textContent = 'Pause';
+    buildSheet(); // refresh the strip preview too
+  });
+
+  btnBG.addEventListener('click', () => { showBG = !showBG; buildSheet(); });
+  btnDbg.addEventListener('click', () => { debug = !debug; buildSheet(); });
+  sheet.addEventListener('click', () => { showBG = !showBG; buildSheet(); });
+
+  // Boot (with basic runtime error surfacing)
+  try{
+    buildSheet();
+    requestAnimationFrame((t)=>{ last=t; loop(t); });
+  }catch(e){
+    errBox.style.display='block';
+    errBox.textContent='Error: '+ e.message;
+    console.error(e);
+  }
+})();
+</script>
+</body>
+</html>

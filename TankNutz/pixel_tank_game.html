@@ -5,13 +5,85 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Tiny Tank Game — WASD + Mouse Aim</title>
   <link rel="stylesheet" href="css/style.css">
+  <script src="js/i18n.js"></script>
 </head>
 <body>
-  <div class="ui">WASD: drive • Move mouse: aim turret • Space: shoot • R: restart</div>
-  <div class="hud" id="hud">Score: 0 &nbsp; Health: 3</div>
+  <div class="hud" id="hud"></div>
+  <script>
+    try{ const hud = document.getElementById('hud'); if (hud){ hud.innerHTML = `${t('score')}: 0 &nbsp; ${t('health')}: 3`; } }catch(_){ }
+  </script>
   <canvas id="game" width="3200" height="2400" tabindex="0" aria-label="Tiny tank game"></canvas>
   <div id="center" class="center-msg" style="display:none"></div>
-  <script src="js/game.js"></script>
+  <script>
+    // Make the visible play area a bit wider (CSS-only) without changing canvas backing size
+    (function(){
+      const c = document.getElementById('game');
+      // keep the drawing buffer intact (do not change c.width/c.height)
+      // only increase the displayed width so more world is visible on wider screens
+      c.style.width = '1400px';
+      // height will scale automatically to preserve aspect ratio
+    })();
+  </script>
+  <!-- Inject the full kitten painter + projectile frames so the game can use the exact animation -->
+  <script>
+    (function(){
+      try{
+        // Copy of painter data and draw function from kittenfodder.html (variant A)
+        const FPS_MS = 120;
+        const p = (ctx,x,y,c)=>{ if(x>=0&&x<12&&y>=0&&y<12){ ctx.fillStyle=c; ctx.fillRect(x,y,1,1);} };
+        const PALETTES = {
+          A: { base:'#FF8DBA', light:'#FFD2E7', shadow:'#E36BA0', outline:'#3A1B2A', ear:'#FFA5C8', nose:'#B84E84', eye:'#22151E', shine:'#FFFFFF' }
+        };
+        const TAIL = [-1,0,1,1,0,-1];
+        const PAWS = [0,1,0,1,0,1];
+        const BLINK = [false,false,false,true,false,false];
+        function drawKitten(ctx, f, variant){
+          const P = PALETTES[variant]; ctx.clearRect(0,0,12,12);
+          const base=P.base, light=P.light, shadow=P.shadow, o=P.outline, ear=P.ear, eye=P.eye, nose=P.nose, shine=P.shine;
+          const bob = (f===1||f===4)?0:0;
+          p(ctx,3,1+bob,base); p(ctx,4,1+bob,base); p(ctx,5,1+bob,base);
+          p(ctx,2,1+bob,base); p(ctx,6,1+bob,base);
+          const earTint = (f===1||f===4)? light : ear;
+          p(ctx,2,2+bob,earTint); p(ctx,6,2+bob,earTint);
+          [2,3,4,5,6].forEach(x=>p(ctx,x,2+bob,base)); [2,3,4,5,6].forEach(x=>p(ctx,x,3+bob,base)); [2,3,4,5,6].forEach(x=>p(ctx,x,4+bob,base)); [3,4,5].forEach(x=>p(ctx,x,5+bob,base));
+          p(ctx,3,2+bob,light); p(ctx,4,2+bob,light); p(ctx,5,5+bob,shadow); p(ctx,2,4+bob,shadow);
+          if(!BLINK[f]) { p(ctx,3,3+bob,eye); p(ctx,5,3+bob,eye); }
+          p(ctx,4,4+bob,nose);
+          p(ctx,2,3+bob,o); p(ctx,6,3+bob,o); p(ctx,3,1+bob,o); p(ctx,5,1+bob,o);
+          [5,5,6,7].forEach((x,i)=>p(ctx,5+i,5+bob,base)); [4,5,6,7,8].forEach((x,i)=>p(ctx,4+i,6+bob,base)); [4,5,6,7,8,9].forEach((x,i)=>p(ctx,4+i,7+bob,base)); [4,5,6,7,8].forEach((x,i)=>p(ctx,4+i,8+bob,base)); [5,6,7].forEach((x,i)=>p(ctx,5+i,9+bob,base));
+          [6,8,7,8,5,9,6,9,7,9].forEach((v,i)=>{ if(i%2===0) p(ctx,v,8+bob,shadow); });
+          const pawUp = PAWS[f] ? -1 : 0; p(ctx,4,9+bob+pawUp,light); p(ctx,5,10+bob-pawUp,light); p(ctx,7,10+bob,shadow);
+          const tOff = TAIL[f]; p(ctx,9,7+bob,base); p(ctx,10,7+tOff+bob,base); p(ctx,11,7+Math.sign(tOff)+tOff+bob,base); if(f===0||f===3) p(ctx,11,7+Math.sign(tOff)+tOff+bob,shine);
+          p(ctx,3,2+bob,shine); p(ctx,5,5+bob,shadow);
+        }
+        function makeFramesForVariant(variant){
+          const frames = [];
+          for (let f=0; f<6; f++){ const c = document.createElement('canvas'); c.width=12; c.height=12; const g = c.getContext('2d'); g.imageSmoothingEnabled=false; drawKitten(g, f, variant); frames.push(c); }
+          return frames;
+        }
+        const projectileFrames = makeFramesForVariant('A');
+        try{ globalThis.kittenProjectileFrames = projectileFrames; }catch(_){ }
+        globalThis.drawKittenProjectile = function(ctx, kb, sx, sy, camera, now){
+          try{
+            const frames = globalThis.kittenProjectileFrames || projectileFrames; if(!frames || frames.length===0) return;
+            // use per-bullet timebase if present so each shot's animation runs independently
+            const tbase = (kb && kb.t0) ? kb.t0 : (now || performance.now());
+            const idx = Math.floor(((now || performance.now()) - tbase)/FPS_MS) % frames.length;
+            const safeIdx = ((idx % frames.length) + frames.length) % frames.length; // ensure positive
+            const img = frames[safeIdx];
+                // choose integer scale based on camera.zoom to keep pixels crisp
+                const z = (camera && camera.zoom) ? camera.zoom : 1;
+                const scale = Math.max(1, Math.round(z));
+                const w = img.width * scale; const h = img.height * scale;
+                // draw centered at integer pixel position to avoid pieces drifting due to subpixel transforms
+                const dx = Math.round(-w/2); const dy = Math.round(-h/2);
+                ctx.save(); ctx.imageSmoothingEnabled = false; ctx.translate(Math.round(sx), Math.round(sy)); ctx.drawImage(img,0,0,img.width,img.height,dx,dy,w,h); ctx.restore();
+          }catch(_){ }
+        };
+      }catch(_){ }
+    })();
+  </script>
+  <script type="module" src="js/game.js"></script>
  
 </body>
 </html>

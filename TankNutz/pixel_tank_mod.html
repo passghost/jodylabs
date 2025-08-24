@@ -5,10 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Tiny Tank Game — Modular Bootstrap</title>
   <link rel="stylesheet" href="css/style.css">
+  <script src="js/i18n.js"></script>
 </head>
 <body>
-  <div class="ui">WASD: drive • Move mouse: aim turret • Space: shoot • R: restart</div>
-  <div class="hud" id="hud">Score: 0 &nbsp; Health: 3</div>
+  <div class="hud" id="hud"></div>
+  <script>
+    try{ const hud = document.getElementById('hud'); if (hud){ hud.innerHTML = `${t('score')}: 0 &nbsp; ${t('health')}: 3`; } }catch(_){ }
+  </script>
   <canvas id="game" width="3200" height="2400" tabindex="0" aria-label="Tiny tank game"></canvas>
   <div id="center" class="center-msg" style="display:none"></div>
 

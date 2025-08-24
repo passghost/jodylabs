@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Killdozer Tank (Top-Down, 64×64)</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+  :root { color-scheme: dark; }
+  html,body{height:100%;margin:0;background:#0e0f12;display:grid;place-items:center}
+  canvas{image-rendering: pixelated; image-rendering: crisp-edges; box-shadow:0 10px 40px rgba(0,0,0,.6); background:transparent}
+</style>
+</head>
+<body>
+<canvas id="sprite" width="256" height="256"></canvas>
+
+<script>
+/*
+Subject: "killdozer tank from above"
+View: top-down
+Canvas: 64×64 logical (rendered at 4× scale on 256×256 canvas)
+Palette: 9 colors (steel dark, steel mid, steel light, tread, blade gold, blade light, hazard dark, glass, warning red)
+Style notes: chunky shading, rim light, strong silhouette, no floating parts
+Motion: 6-frame tread scroll (120ms/frame), blinking beacon, exhaust puffs, slight idle shimmy
+Hitbox/anchor: pivot at (32,32). Approx hull hitbox 28×36 centered.
+Export: single-file HTML only
+Constraints: no external libs; cohesive single element
+*/
+
+(() => {
+  const cvs = document.getElementById('sprite');
+  const ctx = cvs.getContext('2d');
+  // Logical grid 64×64, render at 4×
+  const S = 4;
+  ctx.imageSmoothingEnabled = false;
+
+  // Helpers (grid space)
+  function useGrid() { ctx.setTransform(S,0,0,S,0,0); }
+  function px(x,y,w=1,h=1,c){ ctx.fillStyle=c; ctx.fillRect(x,y,w,h); }
+  function outlineRect(x,y,w,h,c){
+    px(x,y,w,1,c); px(x,y+h-1,w,1,c); px(x,y,1,h,c); px(x+w-1,y,1,h,c);
+  }
+  function fillCircle(cx,cy,r,c){
+    ctx.fillStyle=c;
+    for(let y=-r;y<=r;y++){
+      const span = Math.floor(Math.sqrt(r*r - y*y));
+      ctx.fillRect(cx - span, cy + y, span*2+1, 1);
+    }
+  }
+
+  // Palette
+  const P = {
+    steelD: "#2a2d32",
+    steelM: "#3c4148",
+    steelL: "#6f7886",
+    tread:  "#17191c",
+    blade:  "#c6a43a",
+    bladeL: "#edd67a",
+    hazD:   "#7a6321",
+    glass:  "#9fe3ff",
+    warn:   "#ff3b30",
+    shadow: "rgba(0,0,0,0.28)",
+    smokeA: "rgba(160,160,160,0.35)",
+    smokeB: "rgba(110,110,110,0.3)"
+  };
+
+  // State
+  let frame = 0;
+  let last = 0;
+  const FRAME_MS = 120; // 6–8 fps vibe for chunky pixels
+  let showOverlay = false;
+
+  // Input: toggle hitbox/pivot
+  addEventListener('keydown', (e)=>{
+    if(e.key==='h' || e.key==='H') showOverlay = !showOverlay;
+  });
+
+  function drawShadow(){
+    // Soft oval shadow under the whole body to anchor the sprite
+    ctx.save();
+    useGrid();
+    ctx.fillStyle = P.shadow;
+    // simple stretched ellipse using many horizontal slices
+    for(let i=0;i<7;i++){
+      const y = 48 + i;
+      const w = 36 - i*3; // taper
+      px(32 - Math.floor(w/2), y, w, 1, P.shadow);
+    }
+    ctx.restore();
+  }
+
+  function drawTracks(t){
+    useGrid();
+    const yTop = 14, h = 36, w = 10;
+    const leftX  = 6;
+    const rightX = 64 - 6 - w;
+
+    // Track carcass
+    px(leftX, yTop,  w, h, P.tread);
+    px(rightX,yTop,  w, h, P.tread);
+
+    // Inner cavity
+    px(leftX+2,  yTop+2,  w-4, h-4, P.steelD);
+    px(rightX+2, yTop+2,  w-4, h-4, P.steelD);
+
+    // Road wheels (implied)
+    for(let i=0;i<5;i++){
+      const wy = yTop + 4 + i*6;
+      fillCircle(leftX+5, wy, 1, P.steelM);
+      fillCircle(rightX+5,wy, 1, P.steelM);
+    }
+
+    // Tread lugs scrolling (6 steps loop)
+    const shift = Math.floor((t/1)%6);
+    for(let y=yTop+2+shift; y<yTop+h-2; y+=6){
+      // left
+      px(leftX+1, y, 2, 2, P.steelL);
+      px(leftX+7, y, 2, 2, P.steelL);
+      // right
+      px(rightX+1, y, 2, 2, P.steelL);
+      px(rightX+7, y, 2, 2, P.steelL);
+    }
+
+    // Top rim light
+    for(let i=0;i<w;i++){
+      px(leftX+i, yTop, 1, 1, P.steelL);
+      px(rightX+i,yTop, 1, 1, P.steelL);
+    }
+  }
+
+  function drawHull(t){
+    useGrid();
+    // Central hull block
+    const hx = 18, hy = 18, hw = 28, hh = 30;
+    px(hx, hy, hw, hh, P.steelM);
+    // Rim lights
+    outlineRect(hx, hy, hw, hh, P.steelD);
+    // Face shading
+    px(hx, hy, hw, 2, P.steelL);
+    px(hx, hy+hh-2, hw, 2, P.steelD);
+    // Side bevels
+    px(hx, hy+3, 1, hh-6, P.steelD);
+    px(hx+hw-1, hy+3, 1, hh-6, P.steelL);
+
+    // Engine deck lines
+    for(let i=0;i<5;i++){
+      px(hx+4, hy+6+i*4, hw-8, 1, P.steelD);
+    }
+
+    // Cabin / periscope block (forward-biased)
+    px(hx+8, hy+2, 12, 6, P.steelD);
+    outlineRect(hx+8, hy+2, 12, 6, P.steelL);
+    // Glass slit
+    px(hx+10, hy+4, 8, 1, P.glass);
+
+    // Beacon (blinks every ~7 frames)
+    const blink = ((t/1)|0)%14 < 6;
+    px(hx+hw-4, hy+1, 2, 2, blink ? P.warn : P.steelL);
+
+    // Blade arms
+    px(hx+3,  12, 3, 8, P.steelD);
+    px(hx+hw-6,12, 3, 8, P.steelD);
+    px(hx+4,  13, 1, 6, P.steelL);
+    px(hx+hw-5,13,1, 6, P.steelL);
+
+    // Subtle idle shimmy (micro-dark pixels)
+    if(((t/2)|0)%2===0){
+      px(hx+2, hy+1, 1,1, P.steelD);
+      px(hx+hw-3, hy+hh-2, 1,1, P.steelD);
+    }
+  }
+
+  function drawBlade(t){
+    useGrid();
+    // Front blade plate (wide with slight chamfer)
+    const bx = 10, by = 8, bw = 44, bh = 6;
+    px(bx, by, bw, bh, P.blade);
+    outlineRect(bx, by, bw, bh, P.hazD);
+    // Chamfer hints
+    px(bx, by+bh-1, 4, 1, P.hazD);
+    px(bx+bw-4, by+bh-1, 4, 1, P.hazD);
+    px(bx+1, by+1, bw-2, 1, P.bladeL);
+
+    // Hazard stripes (diagonal implied by stepped pattern)
+    for(let x=0; x<bw; x++){
+      const col = ((x + Math.floor(t/2)) % 6) < 3 ? P.blade : P.hazD;
+      px(bx+x, by+2, 1, 2, col);
+    }
+
+    // Push-plate lower lip
+    px(bx+2, by+bh, bw-4, 1, P.hazD);
+  }
+
+  function drawExhaust(t){
+    useGrid();
+    // Exhaust port at rear
+    px(32-2, 48, 4, 2, P.steelD);
+
+    // Puffs drifting backward (downwards)
+    const cycle = (t%24);
+    const puffY = 50 + Math.floor(cycle/4);
+    if(puffY < 64){
+      const off = (cycle%8)-4;
+      fillCircle(32+off, puffY, 2, P.smokeA);
+      fillCircle(30+off, puffY+2, 1, P.smokeB);
+    }
+  }
+
+  function drawOverlay(){
+    useGrid();
+    // Pivot
+    fillCircle(32,32,1,"#00ffd0");
+    // Hitbox
+    const w=28,h=36;
+    outlineRect(32-Math.floor(w/2), 32-Math.floor(h/2), w, h, "#00ffd0");
+  }
+
+  function render(t){
+    // Reset transform & clear in device pixels
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.clearRect(0,0,cvs.width,cvs.height);
+
+    // Layers
+    drawShadow();
+    drawTracks(frame);
+    drawHull(frame);
+    drawBlade(frame);
+    drawExhaust(frame);
+
+    if(showOverlay) drawOverlay();
+  }
+
+  function loop(ts){
+    if(!last) last = ts;
+    const dt = ts - last;
+    if(dt >= FRAME_MS){
+      frame++;
+      last = ts;
+    }
+    render(frame);
+    requestAnimationFrame(loop);
+  }
+
+  useGrid();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

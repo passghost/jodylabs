@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Two Chained Heavy Tanks — vertical sine bump loop</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+  :root{
+    --outline:#0b0f12; --hull-dk:#23402a; --hull-mid:#2e5a36; --hull-li:#3f7a4a; --rim:#b4e39d;
+    --metal-dk:#2e2e33; --metal-mid:#4b4f57; --metal-li:#9aa2ad;
+    --track-rubber:#1b1f24; --track-tread:#767d86; --shadow: rgba(0,0,0,.25);
+    --dust:#9aa2ad22; --dust2:#cfd3da22; --bg:#0f0f12;
+  }
+  html,body{height:100%}
+  body{margin:0;display:grid;place-items:center;background:var(--bg);color:#cfd3da;font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial}
+  .wrap{display:grid;gap:.5rem;place-items:center}
+  canvas{image-rendering:pixelated;image-rendering:crisp-edges;box-shadow:0 16px 40px rgba(0,0,0,.45),inset 0 0 0 2px rgba(255,255,255,.03);border-radius:20px;background:radial-gradient(60% 40% at 50% 70%, rgba(255,255,255,.05), transparent 70%),linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0))}
+  .label{opacity:.7;font-size:.85rem;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <canvas id="world" width="192" height="128"></canvas>
+  <div class="label">Vertical sine: bump → separate (slack) → bump again. No right drift. (R reset · H debug)</div>
+</div>
+<script>
+(() => {
+  // ===== Canvas =====
+  const S=6,W=192,H=128; const cvs=document.getElementById('world'); const ctx=cvs.getContext('2d',{alpha:true});
+  ctx.imageSmoothingEnabled=false; cvs.style.width=(W*S)+'px'; cvs.style.height=(H*S)+'px';
+
+  // ===== Palette =====
+  const C=getComputedStyle(document.documentElement), col=n=>C.getPropertyValue(n).trim();
+  const OUT=col('--outline'),HDK=col('--hull-dk'),HMID=col('--hull-mid'),HLI=col('--hull-li'),RIM=col('--rim');
+  const MDK=col('--metal-dk'),MMID=col('--metal-mid'),MLI=col('--metal-li');
+  const RUB=col('--track-rubber'),TRD=col('--track-tread'),SHD=col('--shadow');
+  const D1=col('--dust'),D2=col('--dust2');
+
+  // ===== Pixel helpers =====
+  const px=(x,y,w=1,h=1,c)=>{ctx.fillStyle=c;ctx.fillRect(x,y,w,h)};
+  const rectOutline=(x,y,w,h,c)=>{px(x,y,w,1,c);px(x,y+h-1,w,1,c);px(x,y,1,h,c);px(x+w-1,y,1,c)};
+  const circ=(xc,yc,r,c)=>{for(let y=-r;y<=r;y++){const s=Math.floor(Math.sqrt(r*r-y*y));px(xc-s,yc+y,2*s+1,1,c)}};
+  const ring=(xc,yc,ri,ro,c)=>{for(let r=ri;r<=ro;r++)circ(xc,yc,r,c)};
+
+  // ===== Tank drawing =====
+  function drawTank(x,y,treadPhase,turretRot,dust=0){
+    const L=24,T=24,ox=Math.round(x-L),oy=Math.round(y-T);
+    px(ox+8,oy+38,32,3,SHD); px(ox+10,oy+37,28,1,SHD); px(ox+12,oy+36,24,1,SHD);
+    px(ox+2,oy+6,6,36,RUB); px(ox+40,oy+6,6,36,RUB);
+    for(let yy=6;yy<42;yy++) if(((yy+treadPhase)%3)===0){px(ox+2,oy+yy,6,1,TRD);px(ox+40,oy+yy,6,1,TRD)}
+    rectOutline(ox+2,oy+6,6,36,OUT); rectOutline(ox+40,oy+6,6,36,OUT);
+    px(ox+7,oy+9,34,30,HDK); px(ox+9,oy+11,30,26,HMID); px(ox+11,oy+13,26,22,HLI);
+    px(ox+11,oy+13,26,1,RIM); px(ox+11,oy+13,1,22,RIM); rectOutline(ox+7,oy+9,34,30,OUT);
+    for(let i=0;i<6;i++){px(ox+14+i*3,oy+32,2,1,MMID);px(ox+14+i*3,oy+33,2,1,MDK)}
+    px(ox+14,oy+16,20,1,RIM); px(ox+8,oy+28,32,3,HMID); rectOutline(ox+8,oy+28,32,3,OUT);
+    for(const vx of [20,24,28]){px(ox+vx,oy+15,2,1,MDK);px(ox+vx,oy+14,2,1,MLI)} rectOutline(ox+6,oy+6,36,36,OUT);
+    const cx=Math.round(x),cy=Math.round(y-1),R=10; circ(cx,cy,R,HMID); circ(cx,cy,R-1,HLI); ring(cx-2,cy-2,R-2,R-2,RIM); ring(cx,cy,R,R,OUT);
+    ctx.save(); ctx.translate(cx,cy); ctx.rotate(turretRot);
+      px(-7,-4,5,5,HMID); rectOutline(-7,-4,5,5,OUT); px(2,-4,5,5,HMID); rectOutline(2,-4,5,5,OUT);
+      px(-6,-7,12,3,HDK); rectOutline(-6,-7,12,3,OUT); circ(-3,-3,2,HMID); px(-3,-3,1,1,HLI);
+      const Lb=16; px(-5,-7-Lb,2,Lb,MMID); px(-5,-7-Lb,1,Lb,MLI); rectOutline(-5,-7-Lb,2,Lb,OUT);
+      px(3,-7-Lb,2,Lb,MMID);  px(3,-7-Lb,1,Lb,MLI);  rectOutline(3,-7-Lb,2,Lb,OUT);
+      px(-5,-7-Lb,2,1,MDK); px(3,-7-Lb,2,1,MDK);
+    ctx.restore();
+    if(dust>0.2){const n=Math.min(12,2+Math.floor(dust*10));for(let i=0;i<n;i++){const rx=(Math.random()*12-6)|0;px(cx-18+rx,oy+42,3,1,D1);px(cx+12+rx,oy+42,3,1,D2)}}
+  }
+
+  // ===== Chains =====
+  function drawChain(ax,ay,bx,by,tension){
+    const dx=bx-ax,dy=by-ay,dist=Math.hypot(dx,dy),step=4,count=Math.max(1,Math.floor(dist/step));
+    for(let i=1;i<count;i++){const t=i/count,x=Math.round(ax+dx*t),y=Math.round(ay+dy*t),w=(i%2?1:2),h=(i%2?2:1),shade=tension>0.6?MDK:MMID;px(x-w/2|0,y-h/2|0,w,h,shade);if(i%3===0)px(x,y,1,1,MLI)}
+    ring(Math.round(ax),Math.round(ay),1,1,MLI); ring(Math.round(bx),Math.round(by),1,1,MLI);
+  }
+  function drawLooseChainNodes(nodes){for(let i=0;i<nodes.length-1;i++){const a=nodes[i],b=nodes[i+1];drawChain(a.x,a.y,b.x,b.y,0.4)}const t=nodes[nodes.length-1];px(Math.round(t.x),Math.round(t.y),1,1,MLI)}
+
+  const anchorsFor=t=>[{x:t.x-10,y:t.y-4},{x:t.x+0,y:t.y-4},{x:t.x+10,y:t.y-4}];
+
+  // ===== Simulation (vertical sine only; no right drift) =====
+  const BASE0_X=68, DX_BASE=58, BASE1_X=BASE0_X+DX_BASE; // baseline horizontal gap
+  const YC=74, AMP=14, WZ=2*Math.PI*0.35; // center Y, amplitude, angular freq
+  const X_K=22, Y_K=18;                   // stiffness toward lanes
+  const DAMP=0.88;                        // isotropic damping
+  const ROT_STEP=Math.PI/70, SPEED_CAP=26;
+  const REST=[62,64,66];                  // three chains rest lengths
+  const BOUNDS={x1:28,x2:W-28,y1:28,y2:H-28};
+  const COLLIDE_MIN=40, eRest=0.35, muT=0.30; // collision circle & restitution
+  const CHAIN_CORR=0.25, CHAIN_IMP=0.2;       // chain only when taut
+
+  const tanks=[
+    {x:BASE0_X,y:YC,vx:0,vy:0,tread:0,trot:0},
+    {x:BASE1_X,y:YC,vx:0,vy:0,tread:0,trot:Math.PI/10}
+  ];
+
+  // trailing broken chain behind tank[0]
+  const tail={segs:10,len:6,nodes:[]};
+  function initTail(){tail.nodes.length=0;for(let i=0;i<tail.segs;i++)tail.nodes.push({x:tanks[0].x,y:tanks[0].y+10+i*tail.len,vx:0,vy:0})} initTail();
+
+  function applyChainConstraint(ax,ay,bx,by,L){
+    const dx=bx-ax,dy=by-ay,dist=Math.hypot(dx,dy)||0.0001,ex=dist-L; if(ex<=0) return 0; // slack → no effect
+    const nx=dx/dist,ny=dy/dist; const corr=ex*CHAIN_CORR; // pull only when taut
+    tanks[0].x+=nx*corr; tanks[0].y+=ny*corr; tanks[1].x-=nx*corr; tanks[1].y-=ny*corr;
+    const rvx=tanks[1].vx-tanks[0].vx, rvy=tanks[1].vy-tanks[0].vy, sep=rvx*nx + rvy*ny;
+    if(sep>0){const imp=sep*CHAIN_IMP; tanks[0].vx+=nx*imp; tanks[0].vy+=ny*imp; tanks[1].vx-=nx*imp; tanks[1].vy-=ny*imp}
+    return ex;
+  }
+
+  function step(){
+    const dt=1/60; const tNow=performance.now()*0.001;
+
+    // target lanes: vertical sines with phase offset → repeated bumps
+    const lane0Y = YC + AMP*Math.sin(WZ*tNow);
+    const lane1Y = YC + AMP*Math.sin(WZ*tNow + 1.2);
+
+    // steer toward lanes; keep x anchored to bases (no right drift)
+    const bases=[BASE0_X, BASE1_X];
+    const lanes=[lane0Y, lane1Y];
+    for(let i=0;i<2;i++){
+      const t=tanks[i];
+      // spring toward base X and lane Y
+      t.vx += (bases[i] - t.x) * (X_K*dt);
+      t.vy += (lanes[i] - t.y) * (Y_K*dt);
+      // damping
+      t.vx *= DAMP; t.vy *= DAMP;
+      // speed cap
+      const sp=Math.hypot(t.vx,t.vy); if(sp>SPEED_CAP){const s=SPEED_CAP/sp; t.vx*=s; t.vy*=s}
+      // integrate
+      t.x+=t.vx*dt; t.y+=t.vy*dt;
+      // bounds
+      if(t.x<BOUNDS.x1){t.x=BOUNDS.x1;t.vx*=-0.4} if(t.x>BOUNDS.x2){t.x=BOUNDS.x2;t.vx*=-0.4}
+      if(t.y<BOUNDS.y1){t.y=BOUNDS.y1;t.vy*=-0.4} if(t.y>BOUNDS.y2){t.y=BOUNDS.y2;t.vy*=-0.4}
+      // spin & treads
+      t.trot+=ROT_STEP; t.tread=(t.tread+1)%6;
+    }
+
+    // hull collision (circle approx)
+    const dx=tanks[1].x-tanks[0].x, dy=tanks[1].y-tanks[0].y; let dist=Math.hypot(dx,dy)||0.0001;
+    if(dist<COLLIDE_MIN){
+      const nx=dx/dist, ny=dy/dist; const pen=(COLLIDE_MIN-dist)/2;
+      tanks[0].x-=nx*pen; tanks[0].y-=ny*pen; tanks[1].x+=nx*pen; tanks[1].y+=ny*pen;
+      const rvx=tanks[1].vx-tanks[0].vx, rvy=tanks[1].vy-tanks[0].vy; const vrel=rvx*nx+rvy*ny;
+      if(vrel<0){ const j=-(1+eRest)*vrel/2; tanks[0].vx-=nx*j; tanks[0].vy-=ny*j; tanks[1].vx+=nx*j; tanks[1].vy+=ny*j;
+        const tx=-ny,ty=nx, vt=rvx*tx+rvy*ty, f=vt*muT/2; tanks[0].vx+=tx*f; tanks[0].vy+=ty*f; tanks[1].vx-=tx*f; tanks[1].vy-=ty*f; }
+    }
+
+    // chains (only when taut)
+    const aA=anchorsFor(tanks[0]), bA=anchorsFor(tanks[1]);
+    for(let i=0;i<3;i++) applyChainConstraint(aA[i].x,aA[i].y,bA[i].x,bA[i].y,REST[i]);
+
+    // trailing chain follow (behind tank 0)
+    const anchorX=tanks[0].x, anchorY=tanks[0].y+10; const axv=tanks[0].vx, ayv=tanks[0].vy; const N=tail.nodes.length;
+    tail.nodes[0].x=anchorX; tail.nodes[0].y=anchorY; tail.nodes[0].vx=axv; tail.nodes[0].vy=ayv;
+    for(let i=1;i<N;i++){const n=tail.nodes[i]; n.vx*=0.95; n.vy*=0.95; n.x+=n.vx*dt; n.y+=n.vy*dt;}
+    for(let it=0;it<2;it++) for(let i=0;i<N-1;i++){const a=tail.nodes[i],b=tail.nodes[i+1]; const dx=b.x-a.x,dy=b.y-a.y; const d=Math.hypot(dx,dy)||0.0001; const diff=d-tail.len, nx=dx/d, ny=dy/d; if(i===0){b.x-=nx*diff; b.y-=ny*diff; b.vx-=nx*diff*0.5; b.vy-=ny*diff*0.5;} else {a.x+=nx*diff*0.5; a.y+=ny*diff*0.5; b.x-=nx*diff*0.5; b.y-=ny*diff*0.5;}}
+  }
+
+  // ===== Render =====
+  let last=performance.now();
+  function frame(now){
+    while(now-last>16){step(); last+=16}
+    ctx.clearRect(0,0,W,H);
+    const aA=anchorsFor(tanks[0]), bA=anchorsFor(tanks[1]); for(let i=0;i<3;i++) drawChain(aA[i].x,aA[i].y,bA[i].x,bA[i].y,0.5);
+    drawLooseChainNodes(tail.nodes);
+    drawTank(tanks[0].x,tanks[0].y,tanks[0].tread,tanks[0].trot,0.2);
+    drawTank(tanks[1].x,tanks[1].y,tanks[1].tread,tanks[1].trot,0.2);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  // ===== Debug =====
+  function reset(){
+    tanks[0].x=BASE0_X; tanks[0].y=YC; tanks[0].vx=tanks[0].vy=0; tanks[0].tread=0; tanks[0].trot=0;
+    tanks[1].x=BASE1_X; tanks[1].y=YC; tanks[1].vx=tanks[1].vy=0; tanks[1].tread=0; tanks[1].trot=Math.PI/10;
+    initTail();
+  }
+  addEventListener('keydown',e=>{const k=e.key.toLowerCase(); if(k==='r') reset(); if(k==='h'){rectOutline(0,0,W,H,'#ff00ff'); px(tanks[0].x-1,tanks[0].y,3,1,'#ff00ff');px(tanks[0].x,tanks[0].y-1,1,3,'#ff00ff'); px(tanks[1].x-1,tanks[1].y,3,1,'#ff00ff');px(tanks[1].x,tanks[1].y-1,1,3,'#ff00ff')}});
+})();
+</script>
+</body>
+</html>

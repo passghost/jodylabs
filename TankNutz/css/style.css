@@ -13,10 +13,31 @@ canvas {
   position: fixed; top: 14px; left: 50%; transform: translateX(-50%);
   color: #e7e7ea; font-size: 14px; user-select: none; text-align:center;
 }
-.hud { position: fixed; right: 18px; top: 18px; color:#cfd3da; font-size:13px; display:flex; align-items:center; gap:10px; }
+.hud { position: fixed; left: 50%; top: 14px; transform: translateX(-50%); color:#cfd3da; font-size:13px; display:flex; align-items:center; gap:10px; }
 .hud .score-badge{ background: linear-gradient(180deg,#ffd166,#ff8a00); color:#2b1b00; font-weight:700; padding:6px 10px; border-radius:999px; box-shadow: 0 4px 10px rgba(0,0,0,0.45), inset 0 -2px 0 rgba(0,0,0,0.08); font-size:14px; }
 .hud .heart{ font-size:16px; margin-left:4px; text-shadow: 0 1px 0 rgba(0,0,0,0.6); }
 .hud .heart.full{ color:#ff3b30; filter: drop-shadow(0 2px 6px rgba(255,59,48,0.25)); }
 .hud .heart.empty{ color:rgba(255,255,255,0.12); }
 .hud .powerup{ background: linear-gradient(180deg,#fff6c8,#ffd54f); color:#4b2c00; padding:4px 8px; border-radius:8px; font-weight:700; box-shadow: 0 2px 6px rgba(0,0,0,0.25); }
 .center-msg { position: fixed; left:50%; top:50%; transform:translate(-50%,-50%); color:#fff; font-size:20px; text-align:center; }
+
+/* Journal (left side) */
+.journal-toggle{ position: fixed; right: 12px; top: 18px; background: rgba(255,255,255,0.05); color:#d7d7db; padding:8px 10px; border-radius:8px; cursor:pointer; user-select:none; box-shadow: 0 4px 12px rgba(0,0,0,0.6); }
+.journal{ position: fixed; right: 8px; top: 56px; bottom: 12px; width: 260px; max-height: calc(100vh - 40px); background: linear-gradient(180deg, rgba(18,18,20,0.95), rgba(14,14,16,0.95)); border-radius:10px; box-shadow: 0 10px 30px rgba(0,0,0,0.6); padding:10px; display:flex; flex-direction:column; transform: translateX(8px); transition: transform 220ms ease, opacity 220ms ease; opacity:0.98; }
+.journal.closed{ transform: translateX(220px); opacity:0.9; }
+.journal.open{ transform: translateX(0); }
+.journal-health{ display:flex; align-items:center; gap:8px; margin-bottom:8px; flex: 0 0 auto; }
+.journal-hearts .heart{ font-size:14px; }
+.journal-entries{ display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; overflow-y:auto; flex: 1 1 auto; padding-right:6px; align-content: start; grid-auto-rows: min-content; }
+.journal-entry{ display:flex; flex-direction:column; gap:4px; align-items:center; justify-content:center; padding:6px; background: rgba(255,255,255,0.02); border-radius:6px; align-self: start; }
+.journal-entry-icon{ width:48px; height:48px; max-width:48px; max-height:48px; object-fit: contain; image-rendering: pixelated; border-radius:6px; display:block; }
+.journal-entry-box{ width:48px; height:48px; background:#3b3b3b; border-radius:6px; display:flex; align-items:center; justify-content:center; }
+.journal-entry-count{ color:#e7e7ea; font-size:13px; font-weight:700; }
+.journal-entry-label{ color:#aeb3b8; font-size:11px; text-align:center; margin-top:4px; }
+
+/* Shooting upgrade phase indicator (left side) */
+.shoot-phase { position: fixed; left: 18px; top: 18px; display:flex; align-items:center; gap:8px; background: rgba(255,255,255,0.03); padding:6px 8px; border-radius:8px; box-shadow: 0 6px 18px rgba(0,0,0,0.6); color:#dfe6ea; font-weight:700; }
+.shoot-phase .dot { width:14px; height:14px; border-radius:50%; background: rgba(255,255,255,0.12); box-shadow: inset 0 -2px 0 rgba(0,0,0,0.2); }
+.shoot-phase .dot.active { background: linear-gradient(180deg,#ffd866,#ff8b00); box-shadow: 0 4px 12px rgba(255,138,0,0.18); }
+.shoot-phase .label { font-size:12px; color:#d7dce0; }
+

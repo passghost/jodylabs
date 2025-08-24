@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Pink Kitten — 12×12 • 4 Iterations • 6f @120ms</title>
+<style>
+  :root { --bg:#0b0b10; --fg:#e9e9f0; --sub:#9aa0a6; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100svh; display: grid; place-items: center;
+    background: radial-gradient(1200px 600px at 50% 0%, #14141b, var(--bg));
+    color: var(--fg); font: 14px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, Monaco, "Courier New", monospace;
+  }
+  .wrap {
+    width: min(94vw, 860px);
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px;
+    padding: 24px;
+  }
+  .card {
+    background: #11131a; border: 1px solid #1e2230; border-radius: 14px;
+    padding: 14px 14px 18px; box-shadow: 0 8px 28px rgba(0,0,0,.35) inset, 0 10px 24px rgba(0,0,0,.25);
+  }
+  .head {
+    display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px;
+  }
+  .title { font-weight: 700; letter-spacing: .3px; }
+  .meta { color: var(--sub); font-size: 12px; }
+  canvas {
+    width: 192px; height: 192px;                  /* upscale 16× with CSS */
+    image-rendering: pixelated; image-rendering: crisp-edges;
+    display: block; margin: 6px auto 0;
+    background: transparent;
+  }
+  .note {
+    text-align: center; opacity: .65; font-size: 12px; margin-top: 6px;
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="head">
+        <div class="title">Kitten A — Soft Pink</div>
+        <div class="meta">12×12 • 6f • 120ms</div>
+      </div>
+      <canvas width="12" height="12" data-variant="A"></canvas>
+      <div class="note">3/4 view • gentle tail sway</div>
+    </div>
+    <div class="card">
+      <div class="head">
+        <div class="title">Kitten B — Hot Magenta</div>
+        <div class="meta">12×12 • 6f • 120ms</div>
+      </div>
+      <canvas width="12" height="12" data-variant="B"></canvas>
+      <div class="note">brighter palette • ear twitch</div>
+    </div>
+    <div class="card">
+      <div class="head">
+        <div class="title">Kitten C — Pink Tabby</div>
+        <div class="meta">12×12 • 6f • 120ms</div>
+      </div>
+      <canvas width="12" height="12" data-variant="C"></canvas>
+      <div class="note">subtle stripes • blink</div>
+    </div>
+    <div class="card">
+      <div class="head">
+        <div class="title">Kitten D — Pastel + Chest Patch</div>
+        <div class="meta">12×12 • 6f • 120ms</div>
+      </div>
+      <canvas width="12" height="12" data-variant="D"></canvas>
+      <div class="note">white chest • knead</div>
+    </div>
+  </div>
+
+<script>
+/* === PIXEL HELPERS === */
+const p = (ctx,x,y,c)=>{ if(x>=0&&x<12&&y>=0&&y<12){ ctx.fillStyle=c; ctx.fillRect(x,y,1,1);} };
+
+/* === PALETTES (≤10 colors each) === */
+const PALETTES = {
+  A: { // Soft Pink
+    base:'#FF8DBA', light:'#FFD2E7', shadow:'#E36BA0', outline:'#3A1B2A',
+    ear:'#FFA5C8', nose:'#B84E84', eye:'#22151E', shine:'#FFFFFF'
+  },
+  B: { // Hot Magenta
+    base:'#FF53B8', light:'#FFA9DA', shadow:'#D33E93', outline:'#2E0E23',
+    ear:'#FF7CCB', nose:'#A83B79', eye:'#140A12', shine:'#FFFFFF'
+  },
+  C: { // Pink Tabby (adds stripes)
+    base:'#FF9CC7', light:'#FFD5EA', shadow:'#DB6EA5', outline:'#3A1B2A',
+    ear:'#FFB0D3', nose:'#B14B82', eye:'#22151E', shine:'#FFFFFF', stripe:'#C8548C'
+  },
+  D: { // Pastel w/ chest patch
+    base:'#FFB0D9', light:'#FFE0F1', shadow:'#D77BAA', outline:'#2F1826',
+    ear:'#FFC1E2', nose:'#A5477C', eye:'#1B1119', shine:'#FFFFFF', chest:'#FFEAF5'
+  },
+};
+
+/* === ANIMATION === */
+const FPS_MS = 120;               // 6 frames @ 120ms
+const TAIL = [-1, 0, 1, 1, 0, -1];// tail swing per frame
+const PAWS = [0,1,0,1,0,1];       // knead up/down
+const BLINK = [false,false,false,true,false,false]; // frame 3 blink
+
+function drawKitten(ctx, f, variant) {
+  const P = PALETTES[variant];
+  ctx.clearRect(0,0,12,12);
+
+  // convenience
+  const base=P.base, light=P.light, shadow=P.shadow, o=P.outline, ear=P.ear, eye=P.eye, nose=P.nose, shine=P.shine;
+
+  // slight body bobbing (sub-pixel in px world => 0/1 px)
+  const bob = (f===1||f===4)?0:0;
+
+  // HEAD (rounded diamond 5×5-ish, 3/4 view)
+  // crown
+  p(ctx,3,1+bob,base); p(ctx,4,1+bob,base); p(ctx,5,1+bob,base);
+  // ears (tips)
+  p(ctx,2,1+bob,base); p(ctx,6,1+bob,base);
+  // ear inner (twitch brighten on frames 1 & 4)
+  const earTint = (f===1||f===4)? light : ear;
+  p(ctx,2,2+bob,earTint); p(ctx,6,2+bob,earTint);
+
+  // face mass
+  [2,3,4,5,6].forEach(x=>p(ctx,x,2+bob,base));
+  [2,3,4,5,6].forEach(x=>p(ctx,x,3+bob,base));
+  [2,3,4,5,6].forEach(x=>p(ctx,x,4+bob,base));
+  [3,4,5].forEach(x=>p(ctx,x,5+bob,base));
+
+  // highlights + shadow shaping
+  p(ctx,3,2+bob,light); p(ctx,4,2+bob,light);
+  p(ctx,5,5+bob,shadow); p(ctx,2,4+bob,shadow);
+
+  // eyes (blink on frame 3)
+  if(!BLINK[f]) { p(ctx,3,3+bob,eye); p(ctx,5,3+bob,eye); }
+
+  // nose/mouth
+  p(ctx,4,4+bob,nose);
+
+  // HEAD outline accents (selective to tighten silhouette)
+  p(ctx,2,3+bob,o); p(ctx,6,3+bob,o);
+  p(ctx,3,1+bob,o); p(ctx,5,1+bob,o);
+
+  // BODY (oval-ish behind head, right-leaning rump)
+  [5,5,6,7].forEach((x,i)=>p(ctx,5+i,5+bob,base));
+  [4,5,6,7,8].forEach((x,i)=>p(ctx,4+i,6+bob,base));
+  [4,5,6,7,8,9].forEach((x,i)=>p(ctx,4+i,7+bob,base));
+  [4,5,6,7,8].forEach((x,i)=>p(ctx,4+i,8+bob,base));
+  [5,6,7].forEach((x,i)=>p(ctx,5+i,9+bob,base));
+
+  // shading underbelly
+  [6,8,7,8,5,9,6,9,7,9].forEach((v,i)=>{ if(i%2===0) p(ctx,v,8+bob,shadow); });
+
+  // stripes (variant C)
+  if(variant==='C'){
+    const s = P.stripe;
+    p(ctx,6,6+bob,s); p(ctx,7,7+bob,s); p(ctx,6,8+bob,s);
+    p(ctx,3,2+bob,s); // forehead tiny stripe
+  }
+
+  // chest patch (variant D)
+  if(variant==='D'){
+    const c = P.chest;
+    p(ctx,5,6+bob,c); p(ctx,5,7+bob,c);
+    p(ctx,4,7+bob,c); p(ctx,5,8+bob,c);
+  }
+
+  // paws (front two, tiny knead)
+  const pawUp = PAWS[f] ? -1 : 0;
+  p(ctx,4,9+bob+pawUp,light);
+  p(ctx,5,10+bob-pawUp,light);
+
+  // back paw hint
+  p(ctx,7,10+bob,shadow);
+
+  // tail (attached at rump 9,7) swings with TAIL offset, never floating
+  const tOff = TAIL[f]; // -1 up, 0 mid, +1 down
+  // ensure continuous connection: base joint + mid + tip
+  p(ctx,9,7+bob,base);                 // joint
+  p(ctx,10,7+tOff+bob,base);           // mid
+  p(ctx,11,7+Math.sign(tOff)+tOff+bob,base); // tip stays connected
+  // tiny shine on tip sometimes
+  if(f===0||f===3) p(ctx,11,7+Math.sign(tOff)+tOff+bob,shine);
+
+  // rim-light along top-left edges for silhouette pop
+  p(ctx,3,2+bob,shine);
+  p(ctx,5,5+bob,shadow);
+}
+
+function boot() {
+  const canvases = Array.from(document.querySelectorAll('canvas'));
+  const timers = [];
+  canvases.forEach((cv,i)=>{
+    const ctx = cv.getContext('2d', { willReadFrequently:true });
+    const variant = cv.dataset.variant || 'A';
+    let f = 0;
+    // prime first frame
+    drawKitten(ctx, f, variant);
+    const t = setInterval(()=>{
+      f = (f+1)%6;
+      drawKitten(ctx, f, variant);
+    }, FPS_MS);
+    timers.push(t);
+  });
+}
+addEventListener('DOMContentLoaded', boot);
+
+// Build offscreen frames for use as projectile sprites and install draw hook
+function makeFramesForVariant(variant){
+  const frames = [];
+  for (let f = 0; f < 6; f++){
+    const c = document.createElement('canvas'); c.width = 12; c.height = 12;
+    const g = c.getContext('2d'); g.imageSmoothingEnabled = false;
+    // reuse same drawKitten painter to populate frames
+    drawKitten(g, f, variant);
+    frames.push(c);
+  }
+  return frames;
+}
+
+// When this page loads, prepare the projectile frames and expose a draw hook
+addEventListener('DOMContentLoaded', ()=>{
+  try{
+    // default variant for projectiles - use 'A' but you can change to B/C/D
+    const defaultVariant = 'A';
+    const projectileFrames = makeFramesForVariant(defaultVariant);
+    // expose frames for debugging or external tweaks
+    try{ globalThis.kittenProjectileFrames = projectileFrames; }catch(_){ }
+
+    // Hook the game's kitten projectile renderer. Signature used by game.js:
+    // drawKittenProjectile(ctx, kb, screenX, screenY, camera, now)
+    globalThis.drawKittenProjectile = function(ctx, kb, sx, sy, camera, now){
+      try{
+        const frames = globalThis.kittenProjectileFrames || projectileFrames;
+        if (!frames || frames.length === 0) return;
+        const idx = Math.floor((now || performance.now()) / FPS_MS) % frames.length;
+        const img = frames[idx];
+  // Pixel-perfect rendering: pick an integer scale factor. Prefer 2x by default.
+  // Avoid fractional scaling from camera.zoom to keep pixels exact.
+  // choose integer scale based on camera.zoom when present, otherwise default to 4
+  const z = (camera && camera.zoom) ? camera.zoom : 4;
+  const scale = Math.max(1, Math.round(z));
+  const w = img.width * scale;
+  const h = img.height * scale;
+  // align to integer pixels to avoid subpixel blur
+  const dx = Math.round(sx - w/2);
+  const dy = Math.round(sy - h/2);
+  ctx.save(); ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(img, 0,0, img.width, img.height, dx, dy, w, h);
+  ctx.restore();
+      }catch(_){ /* silent fallback to default pink dot handled by game.js */ }
+    };
+  }catch(_){ }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pixel Billboard Gibbing</title>
+<style>
+  :root{ --scale:8; --bg:#0f0f12; }
+  body{margin:0;display:grid;place-items:center;height:100vh;background:var(--bg);}
+  canvas{width:calc(64px*var(--scale));height:calc(64px*var(--scale));image-rendering:pixelated;}
+</style>
+</head>
+<body>
+<canvas id="pix" width="64" height="64"></canvas>
+<script>
+(function(){
+  const w=64,h=64; const c=document.getElementById('pix'); const ctx=c.getContext('2d');
+  ctx.imageSmoothingEnabled=false;
+
+  // Palette
+  const P = {
+    bgDark:'#0f0f12', baseShadow:'#1b2026', steelDark:'#2f3640', steelMid:'#3f4753',
+    steelLight:'#5b6673', panelShadow:'#8f9aa8', panelLight:'#cfd6e3', panelWhite:'#f3f7ff', neonCyan:'#9feaf9'
+  };
+
+  const panel = {x:10,y:6,w:44,h:28};
+  const GROUND_Y = 60;
+  const GRAV = 0.35;
+
+  // --- helpers ---
+  const R = (x,y,w,h,fill)=>{ ctx.fillStyle=fill; ctx.fillRect(x|0,y|0,w|0,h|0); };
+  const px = (x,y,fill)=>R(x,y,1,1,fill);
+  function hexToRgb(hex){ const h=hex.replace('#',''); const n=parseInt(h,16); return {r:(n>>16)&255,g:(n>>8)&255,b:n&255}; }
+  function blend(a,b,t){ const A=hexToRgb(a),B=hexToRgb(b); const m=k=>Math.round(A[k]+(B[k]-A[k])*t); return `rgb(${m('r')},${m('g')},${m('b')})`; }
+
+  // --- IDLE (original billboard with flicker) ---
+  function drawIdleFrame(f){
+    // Clear + ground
+    R(0,0,w,h,P.bgDark);
+    R(8,56,48,2,P.baseShadow); R(12,58,40,1,'#0b0d10');
+
+    // Posts
+    R(16,22,4,34,P.steelDark); R(16,22,4,12,P.steelLight); R(16,34,4,12,P.steelMid);
+    R(44,22,4,34,P.steelDark); R(44,22,4,12,P.steelLight); R(44,34,4,12,P.steelMid);
+
+    // Feet
+    R(12,56,12,4,P.steelMid); R(40,56,12,4,P.steelMid); R(11,60,14,1,P.baseShadow); R(39,60,14,1,P.baseShadow);
+
+    // Braces
+    R(20,32,4,2,P.steelLight); R(24,30,4,2,P.steelLight); R(28,28,4,2,P.steelLight);
+    R(40,32,4,2,P.steelLight); R(36,30,4,2,P.steelLight); R(32,28,4,2,P.steelLight);
+
+    // Frame outer
+    R(panel.x-2,panel.y-2,panel.w+4,2,P.steelDark);
+    R(panel.x-2,panel.y+panel.h, panel.w+4,2,P.steelDark);
+    R(panel.x-2,panel.y,2,panel.h,P.steelDark);
+    R(panel.x+panel.w,panel.y,2,panel.h,P.steelDark);
+    // Inner bevel
+    R(panel.x-1,panel.y-1,panel.w+2,1,P.steelLight);
+    R(panel.x-1,panel.y+panel.h, panel.w+2,1,P.steelMid);
+    R(panel.x-1,panel.y,1,panel.h,P.steelMid);
+    R(panel.x+panel.w, panel.y,1,panel.h,P.steelLight);
+
+    // Panel face
+    const flick = [0.20,0.55,1.00,0.80,0.40,0.90][f%6];
+    const base = blend(P.panelLight,P.panelWhite,flick*0.6);
+    R(panel.x, panel.y, panel.w, panel.h, base);
+    // Vignette bands
+    R(panel.x, panel.y, panel.w, 2, P.panelShadow);
+    R(panel.x, panel.y+panel.h-2, panel.w, 2, P.panelShadow);
+    R(panel.x, panel.y+2, 2, panel.h-4, P.panelShadow);
+    R(panel.x+panel.w-2, panel.y+2, 2, panel.h-4, P.panelShadow);
+
+    // Scanlines
+    const scan = Math.floor(40*(1.0 - flick));
+    ctx.globalAlpha = 0.12 + 0.10*(1.0 - flick);
+    for(let y=panel.y+2; y<panel.y+panel.h-2; y+=2){ R(panel.x+2,y,panel.w-4,1,`rgb(${220-scan},${225-scan},${232-scan})`); }
+    ctx.globalAlpha = 1;
+
+    // Neon rim pulse
+    const neonOn = [0,1,1,0,1,1][f%6];
+    if(neonOn){
+      for(let x=panel.x-3; x<panel.x+panel.w+3; x++){ px(x,panel.y-3,P.neonCyan); px(x,panel.y+panel.h+2,P.neonCyan); }
+      for(let y=panel.y-3; y<panel.y+panel.h+3; y++){ px(panel.x-3,y,P.neonCyan); px(panel.x+panel.w+2,y,P.neonCyan); }
+    }
+
+    // Service box + cable
+    R(12,40,6,8,P.steelDark); R(12,40,6,2,P.steelLight);
+    cable([[18,48],[20,46],[22,44],[24,42],[26,40],[28,38],[30,36]], P.steelMid);
+
+    // Anchor crosshair
+    const ax=32,ay=60; ctx.globalAlpha=.25; px(ax,ay,P.baseShadow); px(ax-1,ay,P.baseShadow); px(ax+1,ay,P.baseShadow); px(ax,ay-1,P.baseShadow); px(ax,ay+1,P.baseShadow); ctx.globalAlpha=1;
+  }
+
+  function cable(points,color){ for(let i=0;i<points.length;i++){ const [x,y]=points[i]; R(x,y,2,2,color); } }
+
+  // --- EXPLOSION (gib into fat logical pieces) ---
+  function makeChunks(){
+    const chunks=[];
+    const addChunk=(x,y,w,h,blocks)=>{ const bb={x,y,w,h,ox:x,oy:y,blocks:blocks||[{dx:0,dy:0,w,h,fill:'#fff'}],vx:0,vy:0,settled:false}; chunks.push(bb); return bb; };
+
+    // Posts
+    addChunk(16,22,4,34,[{dx:0,dy:0,w:4,h:12,fill:P.steelLight},{dx:0,dy:12,w:4,h:12,fill:P.steelMid},{dx:0,dy:24,w:4,h:10,fill:P.steelDark}]);
+    addChunk(44,22,4,34,[{dx:0,dy:0,w:4,h:12,fill:P.steelLight},{dx:0,dy:12,w:4,h:12,fill:P.steelMid},{dx:0,dy:24,w:4,h:10,fill:P.steelDark}]);
+
+    // Feet
+    addChunk(12,56,12,5,[{dx:0,dy:0,w:12,h:4,fill:P.steelMid},{dx:-1,dy:4,w:14,h:1,fill:P.baseShadow}]);
+    addChunk(40,56,12,5,[{dx:0,dy:0,w:12,h:4,fill:P.steelMid},{dx:-1,dy:4,w:14,h:1,fill:P.baseShadow}]);
+
+    // Braces (each as one chunky piece)
+    addChunk(20,28,12,6,[{dx:0,dy:4,w:4,h:2,fill:P.steelLight},{dx:4,dy:2,w:4,h:2,fill:P.steelLight},{dx:8,dy:0,w:4,h:2,fill:P.steelLight}]);
+    addChunk(32,28,12,6,[{dx:8,dy:4,w:4,h:2,fill:P.steelLight},{dx:4,dy:2,w:4,h:2,fill:P.steelLight},{dx:0,dy:0,w:4,h:2,fill:P.steelLight}]);
+
+    // Frame sides
+    addChunk(panel.x-2,panel.y,2,panel.h,[{dx:0,dy:0,w:2,h:panel.h,fill:P.steelDark}]);
+    addChunk(panel.x+panel.w,panel.y,2,panel.h,[{dx:0,dy:0,w:2,h:panel.h,fill:P.steelDark}]);
+    // Frame top/bottom (thick)
+    addChunk(panel.x-2,panel.y-2,panel.w+4,3,[{dx:0,dy:0,w:panel.w+4,h:2,fill:P.steelDark},{dx:1,dy:2,w:panel.w+2,h:1,fill:P.steelLight}]);
+    addChunk(panel.x-2,panel.y+panel.h, panel.w+4,3,[{dx:0,dy:0,w:panel.w+4,h:2,fill:P.steelDark},{dx:1,dy:2,w:panel.w+2,h:1,fill:P.steelMid}]);
+
+    // Panel face subdivided into 4×2 fat tiles
+    const tw=11, th=14; let idx=0;
+    for(let j=0;j<2;j++){
+      for(let i=0;i<4;i++){
+        const x=panel.x+i*tw, y=panel.y+j*th;
+        const f = 0.25 + 0.15*(i) + 0.05*(j); // subtle gradient
+        const fill = blend(P.panelLight,P.panelWhite,Math.min(0.9,f));
+        const blocks=[{dx:0,dy:0,w:tw,h:th,fill},{dx:0,dy:0,w:tw,h:2,fill:P.panelShadow},{dx:0,dy:th-2,w:tw,h:2,fill:P.panelShadow}];
+        addChunk(x,y,tw,th,blocks); idx++;
+      }
+    }
+
+    // Service box
+    addChunk(12,40,6,8,[{dx:0,dy:0,w:6,h:8,fill:P.steelDark},{dx:0,dy:0,w:6,h:2,fill:P.steelLight}]);
+
+    // Cable as one chunky serpentine piece
+    const cablePts=[[18,48],[20,46],[22,44],[24,42],[26,40],[28,38],[30,36]];
+    const cblocks=cablePts.map(([x,y])=>({dx:x-18,dy:y-36,w:2,h:2,fill:P.steelMid}));
+    addChunk(18,36,14,14,cblocks);
+
+    return chunks;
+  }
+
+  function drawBackground(shakeX=0,shakeY=0){
+    R(0,0,w,h,P.bgDark);
+    R(8+shakeX,56+shakeY,48,2,P.baseShadow);
+    R(12+shakeX,58+shakeY,40,1,'#0b0d10');
+  }
+
+  function drawChunk(ch){ for(const b of ch.blocks){ R(Math.round(ch.x+b.dx), Math.round(ch.y+b.dy), b.w, b.h, b.fill); } }
+
+  // Physics + animation
+  let mode='idle', f=0, idleTimer=null, rafId=null, chunks=[], shake=0;
+
+  function startIdle(){ stopRAF(); mode='idle'; f=0; drawIdleFrame(f); idleTimer=setInterval(()=>{ f=(f+1)%6; drawIdleFrame(f); },120); }
+  function stopIdle(){ if(idleTimer){ clearInterval(idleTimer); idleTimer=null; } }
+  function startRAF(){ stopRAF(); const loop=()=>{ stepExplode(); rafId=requestAnimationFrame(loop); }; rafId=requestAnimationFrame(loop); }
+  function stopRAF(){ if(rafId){ cancelAnimationFrame(rafId); rafId=null; } }
+
+  function explode(){ if(mode!=='idle') return; stopIdle(); mode='explode'; chunks=makeChunks();
+    for(const ch of chunks){ const cx=ch.x+ch.w/2, cy=ch.y+ch.h/2; const ang=Math.atan2(cy-32,cx-32); const sp=2.0+Math.random()*2.5; ch.vx=Math.cos(ang)*sp + (Math.random()-0.5); ch.vy=Math.sin(ang)*sp - (3+Math.random()*2); }
+    shake=8; startRAF(); }
+
+  function reset(){ stopRAF(); startIdle(); }
+
+  function stepExplode(){
+    const sx=(Math.random()-0.5)*shake, sy=(Math.random()-0.5)*shake; shake=Math.max(0,shake-0.4);
+    drawBackground(sx,sy);
+    let allSettled=true;
+    for(const ch of chunks){ ch.vy+=GRAV; ch.x+=ch.vx; ch.y+=ch.vy; if(ch.y+ch.h>=GROUND_Y){ ch.y=GROUND_Y-ch.h; ch.vy*=-0.35; ch.vx*=0.92; if(Math.abs(ch.vy)<0.25) ch.vy=0; } if(Math.abs(ch.vx)>0.02||Math.abs(ch.vy)>0.02) ch.settled=false; else ch.settled=true; drawChunk(ch); if(!ch.settled) allSettled=false; }
+    if(shake>0.5){ ctx.globalAlpha=0.25; const g=blend('#000000',P.neonCyan,0.2); for(let i=0;i<6;i++){ px(8+((Math.random()*48)|0),56+((Math.random()*4)|0),g); } ctx.globalAlpha=1; }
+    if(allSettled){ /* keep final state */ }
+  }
+
+  c.addEventListener('click', explode);
+  window.addEventListener('keydown', (e)=>{ if(e.key==='r'||e.key==='R') reset(); if(e.key==='e'||e.key==='E') explode(); });
+
+  startIdle();
+})();
+</script>
+</body>
+</html>

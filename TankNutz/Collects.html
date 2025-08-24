@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Weird Projectiles — 4x Variations (2×2) | 6f @120ms | single-file</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root { --cell: 48; --grid: 2; --scale: 6; }
+  html, body { background:#0e0f12; color:#e9e9ef; margin:0; font:14px/1.2 system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif; }
+  .wrap { max-width: 620px; margin: 18px auto; padding: 12px; }
+  h1 { font-size:16px; margin:0 0 10px; font-weight:700; letter-spacing:.2px; }
+  .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px; }
+  button {
+    appearance:none; border:0; padding:8px 12px; border-radius:10px; background:#181a1f; color:#f0f0f3;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); cursor:pointer;
+  }
+  button:hover { box-shadow: inset 0 0 0 1px rgba(255,255,255,.16); }
+  .hint { opacity:.7; font-size:12px; }
+  canvas{
+    image-rendering: pixelated; image-rendering: crisp-edges;
+    background:#101114; border-radius:12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.35), inset 0 0 0 1px rgba(255,255,255,.06);
+    display:block; margin: 8px 0 6px;
+    width: calc(var(--cell)*var(--grid)*var(--scale)*1px);
+    height: calc(var(--cell)*var(--grid)*var(--scale)*1px);
+  }
+  .labels { display:grid; grid-template-columns:1fr 1fr; gap:4px 10px; margin-top:4px; }
+  .labels div { font-size:12px; opacity:.8; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>4 Weird Projectiles (Top-down · pivot center · cohesive single element)</h1>
+  <div class="row">
+    <button id="playPause">Pause</button>
+    <button id="replay">Replay</button>
+    <button id="shuffle">Shuffle Traits</button>
+    <span class="hint">6 frames · 120ms · 2×2 grid · no libs</span>
+  </div>
+  <canvas id="grid" width="96" height="96" aria-label="2x2 grid of weird projectile variations"></canvas>
+  <div class="labels">
+    <div>TL: Saw Halo</div><div>TR: Plasma Peanut</div>
+    <div>BL: Boomer Crescent</div><div>BR: Spike Star</div>
+  </div>
+</div>
+
+<script>
+(() => {
+  // ===== Spec =====
+  const CELL = 48;          // per-sprite canvas
+  const GRID = 2;           // 2x2
+  const FRAMES = 6;         // 6 frames
+  const FRAME_MS = 120;     // 120ms
+  // Hitbox/anchor: pivot center in each cell
+
+  // ===== Seeded RNG so Replay is stable; Shuffle randomizes traits =====
+  function mulberry32(a){ return function(){ let t=a+=0x6D2B79F5; t=Math.imul(t^t>>>15, t|1); t^=t+Math.imul(t^t>>>7, t|61); return ((t^t>>>14)>>>0)/4294967296; } }
+  const state = { seed: (Math.random()*1e9|0), rng: null, traits: null };
+  function reseed(seed){ state.seed = seed|0; state.rng = mulberry32(state.seed); }
+
+  // ===== Palettes (random per shuffle) =====
+  const PALETTES = [
+    { name:'Inferno', deep:'#2b0707', dark:'#601010', mid:'#b31a1a', light:'#ff3f3f', rim:'#ffe6e6', glow:'#ff8080' },
+    { name:'Toxic',   deep:'#071a09', dark:'#103a15', mid:'#2a8f3c', light:'#55d96e', rim:'#e7ffe7', glow:'#95ffae' },
+    { name:'Void',    deep:'#07071f', dark:'#16164a', mid:'#3a38a1', light:'#7a7bf0', rim:'#e6e7ff', glow:'#9ea2ff' },
+    { name:'Solar',   deep:'#2a1b00', dark:'#5a3500', mid:'#b87400', light:'#ffc33a', rim:'#fff3cf', glow:'#ffd36e' },
+    { name:'Glacier', deep:'#07161f', dark:'#0e2f44', mid:'#1877a6', light:'#5cc5f0', rim:'#e2f8ff', glow:'#9ee5ff' },
+  ];
+  function pick(arr){ return arr[(state.rng()*arr.length)|0]; }
+
+  // ===== Canvas =====
+  const canvas = document.getElementById('grid');
+  const ctx = canvas.getContext('2d', { alpha:false });
+  ctx.imageSmoothingEnabled = false;
+
+  // ===== Controls =====
+  const btnPlay = document.getElementById('playPause');
+  const btnReplay = document.getElementById('replay');
+  const btnShuffle = document.getElementById('shuffle');
+
+  let frame = 0, running = true, raf = null, last = performance.now(), acc = 0;
+
+  btnPlay.onclick = () => {
+    running = !running;
+    btnPlay.textContent = running ? 'Pause' : 'Play';
+    if (running && !raf){ last = performance.now(); raf = requestAnimationFrame(loop); }
+  };
+  btnReplay.onclick = () => { frame = 0; acc = 0; draw(); };
+  btnShuffle.onclick = () => { reseed((Math.random()*1e9)|0); state.traits = randomizeTraits(); frame = 0; acc = 0; draw(); };
+
+  // ===== Helpers =====
+  function fillRect(x,y,w,h,c){ ctx.fillStyle=c; ctx.fillRect(x|0,y|0,w|0,h|0); }
+  function poly(points, fill, stroke){
+    ctx.beginPath(); ctx.moveTo(points[0][0], points[0][1]);
+    for(let i=1;i<points.length;i++) ctx.lineTo(points[i][0], points[i][1]);
+    ctx.closePath();
+    if (fill){ ctx.fillStyle=fill; ctx.fill(); }
+    if (stroke){ ctx.strokeStyle=stroke; ctx.lineWidth=1; ctx.stroke(); }
+  }
+  function diamondPoints(w,h){ return [[0,-h],[w,0],[0,h],[-w,0]]; }
+
+  // ===== Trait randomizer for each projectile (stable per seed) =====
+  function randomizeTraits(){
+    const common = { palette: pick(PALETTES) };
+    return {
+      saw: {
+        ...common,
+        teeth: 8 + ((state.rng()*5)|0),         // 8..12
+        spinDir: state.rng()<0.5 ? 1 : -1,
+        halo: state.rng()<0.7,
+        trail: (state.rng()*2)|0                 // 0..1 afterimages
+      },
+      jelly: {
+        ...common,
+        wobbleAmp: 0.18 + state.rng()*0.15,     // 0.18..0.33
+        wobbleFreq: 1 + ((state.rng()*2)|0),    // 1..2
+        coreScale: 0.55 + state.rng()*0.15,     // 0.55..0.70
+        droplet: state.rng()<0.5
+      },
+      crescent: {
+        ...common,
+        curve: 0.40 + state.rng()*0.25,         // thickness factor
+        rockAmp: 0.20 + state.rng()*0.20,
+        spinDir: state.rng()<0.5 ? 1 : -1,
+        trail: (state.rng()*3)|0                // 0..2
+      },
+      star: {
+        ...common,
+        spikes: 5 + ((state.rng()*4)|0),        // 5..8
+        pulseAmp: 0.18 + state.rng()*0.18,
+        spinDir: state.rng()<0.5 ? 1 : -1,
+        wobble: state.rng()<0.6
+      }
+    };
+  }
+
+  // ===== Draw variants =====
+  function drawSawHalo(cx,cy,t, tr){
+    const P=tr.palette; const TWO=Math.PI*2;
+    const ang = tr.spinDir * t * TWO;
+    ctx.save(); ctx.translate(cx,cy); ctx.rotate(ang);
+
+    // glow halo
+    if (tr.halo){ ctx.globalAlpha=0.15; poly(diamondPoints(18,18), P.glow, null); ctx.globalAlpha=1; }
+
+    // disc
+    ctx.fillStyle=P.dark; ctx.beginPath(); ctx.arc(0,0,16,0,TWO); ctx.fill();
+    ctx.fillStyle=P.mid; ctx.beginPath(); ctx.arc(0,0,11,0,TWO); ctx.fill();
+    ctx.fillStyle=P.light; ctx.beginPath(); ctx.arc(0,0,6,0,TWO); ctx.fill();
+
+    // teeth
+    const teeth = tr.teeth;
+    for(let i=0;i<teeth;i++){
+      const a = (i/teeth)*TWO;
+      ctx.save();
+      ctx.rotate(a);
+      fillRect(11, -1, 6, 2, P.rim);
+      ctx.restore();
+    }
+
+    // tiny trail ticks (afterimage)
+    if (tr.trail>0){
+      ctx.globalAlpha=0.25;
+      for(let k=1;k<=tr.trail;k++){
+        ctx.save(); ctx.rotate(ang - tr.spinDir*k*(TWO/FRAMES)*0.6);
+        ctx.beginPath(); ctx.arc(0,0,16-k*2, 0, TWO); ctx.strokeStyle=P.glow; ctx.stroke();
+        ctx.restore();
+      }
+      ctx.globalAlpha=1;
+    }
+
+    ctx.restore();
+  }
+
+  function drawJelly(cx,cy,t, tr){
+    const P=tr.palette; const TWO=Math.PI*2;
+    const wobble = 1 + tr.wobbleAmp*Math.sin(TWO*t*tr.wobbleFreq);
+    ctx.save(); ctx.translate(cx,cy); ctx.scale(wobble, 1/wobble);
+
+    // outer blobby diamond layers (chunky)
+    ctx.globalAlpha=0.14; poly(diamondPoints(17,17), P.glow, null); ctx.globalAlpha=1;
+    poly(diamondPoints(16,16), P.dark, P.deep);
+    ctx.save(); ctx.scale(0.80,0.80); poly(diamondPoints(16,16), P.mid, null); ctx.restore();
+    ctx.save(); ctx.scale(tr.coreScale,tr.coreScale); poly(diamondPoints(16,16), P.light, null); ctx.restore();
+
+    // rim light wedge
+    ctx.save(); ctx.translate(-2,-2); ctx.scale(0.42,0.42); poly(diamondPoints(16,16), P.rim, null); ctx.restore();
+
+    // optional droplet nub
+    if (tr.droplet){
+      ctx.save(); ctx.translate(0,16); ctx.rotate(Math.sin(TWO*t)*0.2);
+      poly([[0,0],[3,3],[0,6],[-3,3]], P.light, null);
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+
+  function drawCrescent(cx,cy,t,tr){
+    const P=tr.palette; const TWO=Math.PI*2;
+    const baseAng = tr.spinDir * t * TWO;
+    const rock = tr.rockAmp * Math.sin(TWO*t*2);
+    ctx.save(); ctx.translate(cx,cy); ctx.rotate(baseAng + rock);
+
+    // Outer ring
+    ctx.beginPath(); ctx.fillStyle=P.dark; ctx.arc(0,0,16, -Math.PI/2, Math.PI/2, false); ctx.arc(0,0,16*tr.curve, Math.PI/2, -Math.PI/2, true); ctx.fill();
+    // Inner cut (to make crescent)
+    ctx.globalCompositeOperation='destination-out';
+    ctx.beginPath(); ctx.arc(0,0,12, -Math.PI/2, Math.PI/2, false); ctx.arc(0,0,12*tr.curve, Math.PI/2, -Math.PI/2, true); ctx.fill();
+    ctx.globalCompositeOperation='source-over';
+
+    // Highlight edge
+    ctx.save(); ctx.translate(-2,-2); ctx.beginPath(); ctx.fillStyle=P.rim;
+    ctx.arc(0,0,10, -Math.PI/2, Math.PI/2, false); ctx.arc(0,0,10*tr.curve, Math.PI/2, -Math.PI/2, true); ctx.fill(); ctx.restore();
+
+    // Trail lines
+    if (tr.trail>0){
+      ctx.globalAlpha=0.22;
+      for (let k=1;k<=tr.trail;k++){
+        ctx.rotate(-tr.spinDir*k*(TWO/FRAMES)*0.7);
+        ctx.beginPath(); ctx.strokeStyle=P.glow; ctx.arc(0,0,16-k*2, -Math.PI/3, Math.PI/3); ctx.stroke();
+      }
+      ctx.globalAlpha=1;
+    }
+
+    ctx.restore();
+  }
+
+  function drawSpikeStar(cx,cy,t,tr){
+    const P=tr.palette; const TWO=Math.PI*2;
+    const ang = tr.spinDir * t * TWO;
+    const pulse = 1 + tr.pulseAmp*Math.sin(TWO*t);
+    ctx.save(); ctx.translate(cx,cy); ctx.rotate(ang); ctx.scale(pulse, pulse);
+
+    // glow
+    ctx.globalAlpha=0.12; poly(diamondPoints(18,18), P.glow, null); ctx.globalAlpha=1;
+
+    // star
+    const spikes = tr.spikes;
+    ctx.beginPath();
+    for (let i=0;i<spikes*2;i++){
+      const r = (i%2===0)? 16 : 8;
+      const a = (i/(spikes*2))*TWO;
+      const x = Math.cos(a)*r, y = Math.sin(a)*r;
+      if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.closePath();
+    ctx.fillStyle=P.mid; ctx.fill();
+    ctx.strokeStyle=P.deep; ctx.lineWidth=1; ctx.stroke();
+
+    // core + rim
+    ctx.beginPath(); ctx.arc(0,0,6,0,TWO); ctx.fillStyle=P.light; ctx.fill();
+    ctx.beginPath(); ctx.arc(0,0,3,0,TWO); ctx.fillStyle=P.rim; ctx.fill();
+
+    ctx.restore();
+  }
+
+  // ===== Draw a cell =====
+  function drawCell(x, y, variant, f){
+    const left = x*CELL, top = y*CELL;
+    const cx = left + CELL/2, cy = top + CELL/2;
+    const t = f / FRAMES; // 0..1
+    // cell backdrop (kept dark for silhouette pop)
+    fillRect(left, top, CELL, CELL, '#101114');
+
+    if (variant===0)      drawSawHalo(cx,cy,t, state.traits.saw);
+    else if (variant===1) drawJelly(cx,cy,t, state.traits.jelly);
+    else if (variant===2) drawCrescent(cx,cy,t, state.traits.crescent);
+    else                  drawSpikeStar(cx,cy,t, state.traits.star);
+  }
+
+  // ===== Main draw / loop =====
+  function draw(){
+    fillRect(0,0,canvas.width,canvas.height,'#0e0f12');
+    drawCell(0,0,0,frame);
+    drawCell(1,0,1,frame);
+    drawCell(0,1,2,frame);
+    drawCell(1,1,3,frame);
+  }
+  function loop(ts){
+    if (!running){ raf=null; return; }
+    const dt = ts - last; last = ts; acc += dt;
+    while (acc >= FRAME_MS){ frame = (frame+1)%FRAMES; acc -= FRAME_MS; }
+    draw();
+    raf = requestAnimationFrame(loop);
+  }
+
+  // ===== Boot =====
+  reseed(state.seed);
+  state.traits = randomizeTraits();
+  draw();
+  raf = requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

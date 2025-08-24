@@ -63,7 +63,8 @@ export function initInput({ canvas, width, height, worldW = 4000, worldH = 3000 
     const r = rect();
     mouse.x = (e.clientX - r.left) * (canvas.width / r.width);
     mouse.y = (e.clientY - r.top) * (canvas.height / r.height);
-    const detail = { button: e.button, mouse: { x: mouse.x, y: mouse.y } };
+    // include buttons mask so listeners can detect simultaneous buttons
+    const detail = { button: e.button, buttons: e.buttons, mouse: { x: mouse.x, y: mouse.y } };
     window.dispatchEvent(new CustomEvent('game-pointerdown', { detail }));
   });
 
