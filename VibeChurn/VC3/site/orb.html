@@ -580,9 +580,13 @@
   btn.style.pointerEvents = btn.style.pointerEvents || 'auto';
   btn.tabIndex = 0;
   const nd = nodes[i] || {};
-  // prefer preloaded screenshot if available
-  const bgUrl = (nd._preloaded && nd._preloaded.ok && nd._preloaded.src) || nd.screenshot || nd.icon || ICON_URL;
-  btn.style.backgroundImage = `url(${bgUrl})`;
+  // prefer preloaded screenshot if available; if none, leave background-image empty so CSS renders a blank orb
+  const bgUrl = (nd._preloaded && nd._preloaded.ok && nd._preloaded.src) || nd.screenshot || nd.icon || '';
+  if(bgUrl){
+    btn.style.backgroundImage = `url(${bgUrl})`;
+  } else {
+    btn.style.backgroundImage = '';
+  }
       btn.style.backgroundSize = 'cover';
       btn.style.backgroundPosition = 'center';
       const label = document.createElement('span');
@@ -1211,7 +1215,7 @@
       });
     })();
 
-    submitForm && submitForm.addEventListener('submit', (ev)=>{
+    submitForm && submitForm.addEventListener('submit', async (ev)=>{
       ev.preventDefault(); submitMsg.textContent='';
       const title = projTitle.value.trim(); const href = projHref.value.trim(); const img = projImage.value.trim();
       if(!title || !href) { submitMsg.textContent = 'Please add title and URL.'; return; }
@@ -1223,7 +1227,14 @@
       list.push(entry); saveProjects(list);
       submitMsg.textContent = 'Thanks — project submitted! It may appear in the index.';
       // refresh orb nodes so the newly-submitted project can surface in the sphere
-      try{ nodes.push({ label: entry.title, href: entry.href, icon: entry.image, screenshot: entry.image, desc: entry.desc }); TOTAL_ICONS = Math.max(8, nodes.length); buildSpherePoints(); buildRing(); positionNodes(); }catch(e){}
+      try{
+        const newNode = ensureIdForNode({ label: entry.title, href: entry.href, icon: entry.image, screenshot: entry.image, desc: entry.desc });
+        nodes.push(newNode);
+        TOTAL_ICONS = Math.max(8, nodes.length);
+        // preload the image for the newly added node so the orb updates immediately
+        try{ await preloadNodeImages([newNode]); }catch(_){ }
+        buildSpherePoints(); buildRing(); positionNodes();
+      }catch(e){ console.warn('Error updating nodes after submit', e); }
       setTimeout(()=>{ closeAllPanels(); }, 900);
     });
 
