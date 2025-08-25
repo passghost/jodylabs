@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VIBECHURN — Orbital Interface</title>
+  <meta name="description" content="An animated one‑page experience — teal/indigo theme, draggable icon orb, target lock, and curated project panels from VIBECHURN." />
+  <link rel="canonical" href="https://passghost.github.io/jodylabs/VibeCode2/VC3/site/orb.html" />
+  <!-- Open Graph / Social -->
+  <meta property="og:title" content="VIBECHURN — Orbital Interface (Vibe3)" />
+  <meta property="og:description" content="Interactive showcase of experiments, tools, and visual projects — explore previews and open demos directly from the orb interface." />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="VIBECHURN" />
+  <meta property="og:url" content="https://passghost.github.io/jodylabs/VibeCode2/VC3/site/orb.html" />
+  <meta property="og:image" content="https://drive.google.com/file/d/1XQXJlgIykHWHeVecXl3N79oPgy4FjX8O/view?usp=drive_link" />
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="VIBECHURN — Orbital Interface (Vibe3)" />
+  <meta name="twitter:description" content="Interactive showcase of experiments, tools, and visual projects — explore previews and open demos directly from the orb interface." />
+  <meta name="twitter:image" content="https://drive.google.com/file/d/1XQXJlgIykHWHeVecXl3N79oPgy4FjX8O/view?usp=drive_link" />
+
+  <!-- Structured data (JSON-LD) -->
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"WebPage","name":"VIBECHURN — Orbital Interface","url":"https://passghost.github.io/jodylabs/VibeCode2/VC3/site/orb.html","description":"Interactive showcase of experiments, tools, and visual projects from VIBECHURN.","image":"https://drive.google.com/file/d/1XQXJlgIykHWHeVecXl3N79oPgy4FjX8O/view?usp=drive_link","publisher":{"@type":"Organization","name":"VIBECHURN","url":"https://passghost.github.io/jodylabs/"}}
+  </script>
+  <style>
+    /* --- RESET --- */
+    *,*::before,*::after{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial; background:#0a0a0c;color:#f4f4f5;overflow-x:hidden}
+    h1,h2,h3,p{margin:0}
+    a{color:inherit;text-decoration:none}
+
+    :root{
+      --accent:#00d4ff; /* teal */
+      --accent-2:#6f6fff; /* indigo */
+  --eraser-lift: 120px; /* distance the eraser lifts and the search bar pushes */
+      --text:#f7f7f8;
+      --muted:#b1b1b6;
+      --panel:#0f1220ee;
+      --card:#0b1120;
+      --glass:rgba(0,212,255,.06);
+      --radius:22px;
+      --shadow:0 12px 28px rgba(0,212,255,.18), inset 0 1px 0 rgba(255,255,255,.04);
+    }
+
+    /* --- Background --- */
+    #bg {position:fixed;inset:0;z-index:-1;background:
+      radial-gradient(1200px 800px at 80% -10%, rgba(0,212,255,.14), rgba(0,212,255,0) 60%),
+      radial-gradient(900px 600px at 10% 120%, rgba(111,111,255,.10), rgba(111,111,255,0) 55%),
+      linear-gradient(180deg,#071029 0%,#0b1220 100%);
+    }
+
+    /* --- Top bar --- */
+  .topbar{position:fixed;top:12px;left:12px;right:12px;display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:16px;background:var(--glass);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:var(--shadow);z-index:999}
+    .brand{display:flex;gap:12px;align-items:center}
+    .logo{width:30px;height:30px;border-radius:50%;overflow:hidden;display:grid;place-items:center;background:conic-gradient(from 220deg, var(--accent), var(--accent-2), var(--accent)); box-shadow:0 0 40px rgba(0,212,255,.45)}
+    .logo img{width:100%;height:100%;object-fit:cover;filter:drop-shadow(0 0 12px rgba(0,212,255,.35))}
+    .brand h3{font-weight:800;letter-spacing:.4px}
+    .pill{font-size:12px;color:var(--muted);padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.06)}
+    .cta{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(90deg,var(--accent),var(--accent-2));padding:10px 14px;border-radius:999px;color:#041028;font-weight:800;border:none;box-shadow:0 10px 26px rgba(0,212,255,.18);cursor:pointer}
+  /* topbar controls: allow multiple items on the right */
+  .topbar .controls{display:flex;align-items:center;gap:12px}
+  /* small hit counter pill next to Contact */
+  .hit-pill{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:6px 10px;font-size:12px;font-weight:700;color:#041028;background:linear-gradient(90deg,var(--accent),var(--accent-2));border-radius:999px;border:1px solid rgba(0,0,0,0.15);box-shadow:0 8px 18px rgba(0,212,255,0.08);min-height:32px;min-width:40px}
+  .hit-pill .counter-value{color:inherit}
+
+    /* --- Hero --- */
+    .hero{min-height:100svh;display:grid;place-items:center;padding:120px 20px 80px}
+    .hero-inner{max-width:1200px;width:100%;display:grid;grid-template-columns:1.05fr .95fr;gap:28px;align-items:center}
+    .headline{font-size:clamp(32px,6vw,64px);line-height:1.06;font-weight:900;letter-spacing:.2px}
+    .headline .accent{background:linear-gradient(90deg,var(--accent),var(--accent-2));-webkit-background-clip:text;background-clip:text;color:transparent}
+    .sub{margin-top:14px;color:var(--muted);font-size:clamp(14px,2vw,18px)}
+    .hero-card{background:var(--glass);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
+  .hero-card{position:relative}
+    .badges{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+    .badge{padding:8px 10px;border-radius:999px;background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.12);font-size:13px;color:#fff}
+
+    /* --- Orbital stage (CENTERED SPHERE) --- */
+    .stage{position:relative;min-height:520px;perspective:1200px;display:grid;place-items:center}
+    .orbit-wrap{position:relative;width:min(90vw,680px);height:min(90vw,680px);max-width:700px;max-height:700px;transform-style:preserve-3d;user-select:none}
+    .ring{position:relative;width:100%;height:100%;display:grid;place-items:center;transform-style:preserve-3d}
+  /* ring is decorative only; let pointer events pass to node elements placed above it */
+  .ring{pointer-events:none}
+    .ring::before{content:"";position:absolute;inset:0;border-radius:50%;border:1.5px dashed rgba(255,255,255,.08)}
+    .ring-bg{position:absolute;inset:12%;border-radius:50%;background-size:cover;background-position:center;filter:blur(6px) saturate(120%);opacity:0;transition:opacity .25s ease;mix-blend-mode:screen}
+
+  /* allow pointer events to pass through decorative ring backgrounds and borders */
+  .ring::before, .ring-bg { pointer-events: none; }
+    .ring-bg.show{opacity:.22}
+
+    /* Target indicator */
+  .target{position:absolute;top:50%;right:2%;transform:translate(-50%,-50%);width:46px;height:46px;border-radius:50%;display:grid;place-items:center;z-index:3}
+    .target::before,.target::after{content:"";position:absolute;border-radius:50%}
+    .target::before{inset:0;border:2px solid rgba(255,255,255,.18)}
+    .target::after{inset:8px;border:2px solid var(--accent)}
+    .target .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 14px rgba(0,212,255,.6)}
+
+    .node{position:absolute;left:50%;top:50%;display:flex;flex-direction:column;align-items:center;gap:10px;transform-style:preserve-3d}
+  .node{pointer-events:auto}
+  /* Make orb icons brighter and more vivid */
+  .node button{width:84px;height:84px;border:none;border-radius:50%;padding:0;background:#0b1120;background-size:cover;background-position:center;border:1px solid rgba(255,255,255,.08);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);box-shadow:0 14px 36px rgba(0,212,255,.24), inset 0 1px 0 rgba(255,255,255,.04);cursor:pointer;display:grid;place-items:center;position:relative;overflow:hidden;transition:transform .18s ease, box-shadow .18s ease, filter .18s ease;pointer-events:auto;filter:brightness(1.12) contrast(1.06) saturate(1.12)}
+  /* reduce the dark vignette so icon artwork reads better */
+  .node button::after{content:"";position:absolute;inset:0;background:radial-gradient(80px 80px at 50% 140%,rgba(0,0,0,0),rgba(0,0,0,.06));pointer-events:none;z-index:0}
+  /* hover/focus: lift and further brighten so icons pop under pointer/keyboard focus */
+  .node button:hover,.node button:focus{transform:translateY(-6px) scale(1.06);filter:brightness(1.35) contrast(1.12) saturate(1.25);box-shadow:0 26px 60px rgba(0,212,255,.36), 0 6px 12px rgba(0,0,0,.45);outline:none}
+  /* Icon title label: placed on the node (outside the button) so it won't be clipped by overflow */
+  /* place label in normal flow (below the circular button) so it centers naturally */
+  .node .label{position:relative;margin-top:10px;font-size:13px;font-weight:800;color:#fff;background:linear-gradient(180deg, rgba(0,0,0,.64), rgba(0,0,0,.4));padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.08);text-shadow:0 3px 8px rgba(0,0,0,.6);max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-sizing:border-box;z-index:6;pointer-events:none;align-self:center}
+    /* hit state: stronger glow and lift so the currently-targeted icon reads as the focal item */
+    .node.hit button{box-shadow:0 0 0 3px rgba(0,212,255,.65), 0 28px 56px rgba(0,212,255,.24);transform:translateZ(8px) scale(1.02);filter:brightness(1.28) saturate(1.18)}
+
+    .hint{position:absolute;bottom:8px;left:0;right:0;text-align:center;color:var(--muted);font-size:12px;opacity:.8}
+
+    /* --- Search box (left column) - prominent teal/indigo theme --- */
+  .left-col{display:flex;flex-direction:column;align-items:center}
+  /* make search-wrap relative so the floating card can position itself above; increased top margin for card room */
+  .left-col .search-wrap{margin-top:64px;display:flex;gap:10px;align-items:center;justify-content:center;z-index:48;position:relative;transition:transform .5s cubic-bezier(.2,.9,.2,1)}
+  .search-wrap input{width:min(520px,90%);padding:12px 16px;border-radius:14px;border:1px solid rgba(255,255,255,.08);background:linear-gradient(180deg, rgba(4,12,18,.75), rgba(2,6,12,.45));color:var(--text);font-size:16px;box-shadow:0 8px 30px rgba(0,212,255,.12), inset 0 1px 0 rgba(255,255,255,.03);outline:none;transition:box-shadow .15s ease,transform .08s ease}
+  .search-wrap input:focus{box-shadow:0 14px 40px rgba(0,212,255,.22);transform:translateY(-2px)}
+  .search-wrap button{padding:12px 16px;border-radius:12px;border:none;background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#041028;font-weight:800;cursor:pointer;box-shadow:0 10px 26px rgba(0,212,255,.18)}
+  .search-wrap .theme-pill{font-size:13px;padding:8px 10px;border-radius:999px;background:linear-gradient(90deg, rgba(0,0,0,.18), rgba(0,212,255,.04));border:1px solid rgba(255,255,255,.06);color:var(--text);margin-left:6px}
+
+  /* small Orbiq link placed under the search input */
+  .orbiq-link{margin-top:12px;display:flex;justify-content:center}
+  .orbiq-link a{display:inline-block;padding:8px 12px;border-radius:999px;background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#041028;font-weight:800;text-decoration:none;box-shadow:0 8px 22px rgba(0,212,255,0.08)}
+
+  /* floating search result card that appears above the search input */
+  /* Make the popup fixed so it can be wider than the small search-wrap.
+    JS will compute and set its left/top so it visually sits above the input. */
+  .search-card-outer{position:fixed;left:50%;top:0;transform:translateX(-50%);width:min(380px,90vw);max-width:380px;pointer-events:auto;z-index:9999;/* animate vertical position only; make opacity change instant */transition:transform .36s cubic-bezier(.2,.9,.2,1), opacity 0s linear;opacity:0}
+  /* when showing, we only adjust opacity/translate for subtle horizontal nudge; vertical is controlled by script via top */
+  .search-card-outer.show{opacity:1}
+  .search-card{background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:10px;box-shadow:0 18px 40px rgba(0,0,0,.6);display:flex;gap:10px;align-items:center;overflow:hidden}
+  .search-card img{width:84px;height:64px;object-fit:cover;border-radius:8px;flex:0 0 84px}
+  .search-card .meta{flex:1;min-width:0}
+  .search-card h4{margin:0;font-size:15px;font-weight:800}
+  .search-card p{margin:6px 0 0;color:var(--muted);font-size:13px;line-height:1.2}
+  .search-card a{display:inline-block;margin-top:8px;color:var(--accent-2);font-weight:700}
+
+  /* eraser-like reveal: a mask that animates to reveal card content */
+  /* The mask was darkening the card after reveal; keep the element for JS animations but make it transparent */
+  .search-card .mask{position:absolute;inset:auto 0 0 0;height:100%;left:0;top:0;background:transparent;transform-origin:top;clip-path:inset(0 0 0 0);pointer-events:none;opacity:0}
+
+  /* Eraser / presenter that moves the headline and subtext up and down */
+  .eraser{position:relative;display:block;overflow:visible;transition:transform .5s cubic-bezier(.2,.9,.2,1);z-index:45}
+  .eraser::after{content:"";position:absolute;left:50%;transform:translateX(-50%);bottom:-6px;width:120px;height:12px;border-radius:8px;background:linear-gradient(90deg, rgba(0,0,0,.45), rgba(0,212,255,.06));box-shadow:0 10px 30px rgba(0,0,0,.6);opacity:0.9}
+  /* when active, nudge upward to act as a presenter/eraser revealing content above */
+  .eraser.active{transform:translateY(calc(var(--eraser-lift) * -1)) scale(0.995)}
+
+  /* when the eraser lifts, push the search-wrap down the same distance */
+  .search-wrap.pushed{transform:translateY(var(--eraser-lift))}
+
+
+    /* --- Panels --- */
+  /* allow panels to expand wider so individual cards can be very wide */
+  .panel{position:fixed;inset:auto 14px 14px 14px;top:80px;max-width:1400px;width:calc(100% - 28px);margin:0 auto;background:var(--panel);border:1px solid rgba(255,255,255,.08);border-radius:24px;box-shadow:var(--shadow);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);transform-origin:var(--x,50%) var(--y,50%); transform:scale(.9) translateY(8px);opacity:0;pointer-events:none;transition:opacity .35s ease, transform .35s ease;z-index:50}
+
+  /* when a panel receives the .open class it should become visible and interactive */
+  .panel.open{opacity:1;transform:scale(1) translateY(0);pointer-events:auto}
+
+  /* small panels (contact/submit) - make them narrower and centered so the window is smaller */
+  .panel.small{max-width:360px;width:88%;left:50% !important;right:auto !important;top:50% !important;bottom:auto !important;transform-origin:center center;transform: translateX(-50%) translateY(-50%) scale(.95);padding:12px;border-radius:14px;}
+  .panel.small.open{ transform: translateX(-50%) translateY(-50%) scale(1); }
+
+</style>
+</head>
+<body>
+  <canvas id="bg"></canvas>
+
+  <nav class="topbar" aria-label="Primary">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">
+  <img src="https://passghost.github.io/OrbiqWebsite/Images/SphereIcon.png" alt="VIBECHURN logo" />
+      </div>
+      <h3>VIBECHURN</h3>
+      <span class="pill">Interactive R&D</span>
+    </div>
+    <div class="controls">
+  <button class="cta" id="openIndex" aria-controls="index">Index</button>
+  <button class="cta" id="submitOpen" aria-haspopup="dialog" aria-controls="panel-submit">Submit</button>
+  <button class="cta" id="contactOpen" aria-haspopup="dialog" aria-controls="panel-contact">Contact</button>
+      <div class="hit-pill" id="hit-pill" title="Page hits">
+        <span style="font-size:11px;color:rgba(0,0,0,0.6);font-weight:600;margin-right:4px;">Hits</span>
+        <span class="counter-value" id="hit-count-pill">0</span>
+      </div>
+    </div>
+  </nav>
+
+  <main class="hero">
+    <section class="hero-inner">
+      <div class="left-col">
+        <!-- eraser/presenter: this chunk will move up/down to reveal or cover the floating cards -->
+        <div id="eraser" class="eraser" aria-hidden="false">
+          <h1 class="headline">A laboratory of YOUR code based experiments choze by YOU.</h1>
+          <p class="sub">An interactive showcase of tools, visuals, and prototypes built with my own artwork and code. Explore the cards to see what’s active right now.</p>
+        </div>
+        
+        <div class="search-wrap" id="searchWrap">
+          <input id="orbSearch" type="search" placeholder="Search projects..." aria-label="Search projects" />
+          <button id="orbSearchBtn" type="button">Go</button>
+        </div>
+        <div class="orbiq-link">
+          <a href="https://passghost.github.io/OrbiqWebsite/" target="_blank" rel="noopener">Try Orbiq on your desktop today!</a>
+        </div>
+      </div>
+
+      <div class="hero-card stage" aria-label="Icon orb interface">
+        <div class="orbit-wrap" id="orbit" aria-live="polite">
+          <div class="ring" id="ring">
+            <div class="ring-bg" id="ringBg"></div>
+          </div>
+          <div class="target" id="hitTarget" aria-hidden="true"><div class="dot"></div></div>
+          
+        </div>
+        
+        </div>
+  </div>
+    </section>
+  </main>
+
+  <!-- Panels -->
+  <section class="panel" id="panel-projects" role="dialog" aria-modal="true" aria-labelledby="panel-projects-title">
+    <header>
+      <h3 id="panel-projects-title">Projects</h3>
+      <button class="close" data-close>Close</button>
+    </header>
+    <div class="content">
+      <div class="grid">
+        <article class="card">
+          <img src="https://passghost.github.io/jodylabs/screenshots/CardCake.png" alt="Project screenshot">
+          <div class="meta-inline"><h4>Shortcut Sphere</h4><p>A draggable shortcut orb for Windows with hotkey summon and theming.</p></div>
+        </article>
+        <article class="card">
+          <img src="https://passghost.github.io/jodylabs/Images/Snip/EyeballM3.png" alt="Orbiq Eyeball">
+          <div class="meta-inline"><h4>Orbiq Icons</h4><p>Procedural icon set and 3D spin rig with back‑fade.</p></div>
+        </article>
+        <article class="card">
+          <img src="https://passghost.github.io/jodylabs/Images/rededge.png" alt="Red texture">
+          <div class="meta-inline"><h4>Peeks</h4><p>Pygame UI with voice control, RGB sliders, and idle animations.</p></div>
+        </article>
+
+    </div>
+      </div>
+    </section>
+
+        <!-- Experiments panel (missing in earlier port) -->
+    <section class="panel" id="panel-experiments" role="dialog" aria-modal="true" aria-labelledby="panel-experiments-title">
+      <header>
+        <h3 id="panel-experiments-title">Experiments</h3>
+        <button class="close" data-close>Close</button>
+      </header>
+      <div class="content">
+        <div class="grid">
+          <article class="card">
+            <img src="https://passghost.github.io/jodylabs/Images/rededge.png" alt="Red edge">
+            <div class="meta-inline"><h4>Grid Glitch</h4><p>CSS-only aurora lighting with conic gradients.</p></div>
+          </article>
+          <article class="card">
+            <img src="https://passghost.github.io/jodylabs/Images/Snip/EyeballM3.png" alt="Eyeball">
+            <div class="meta-inline"><h4>Edge‑Aware Pixel Heli</h4><p>Tiny canvas toy that knows its bounds.</p></div>
+          </article>
+          <article class="card">
+            <img src="https://passghost.github.io/jodylabs/screenshots/CardCake.png" alt="CardCake">
+            <div class="meta-inline"><h4>LLM Prompter</h4><p>In‑browser prompt macros & tokens playground.</p></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tools panel (missing in earlier port) -->
+    <section class="panel" id="panel-tools" role="dialog" aria-modal="true" aria-labelledby="panel-tools-title">
+      <header>
+        <h3 id="panel-tools-title">Tools</h3>
+        <button class="close" data-close>Close</button>
+      </header>
+      <div class="content">
+        <div class="grid">
+          <article class="card">
+            <img src="https://passghost.github.io/jodylabs/Images/rededge.png" alt="Red">
+            <div class="meta-inline"><h4>Download</h4><p>Link your latest launcher build here.</p></div>
+          </article>
+          <article class="card">
+            <img src="https://passghost.github.io/OrbiqWebsite/Images/SphereIcon.png" alt="Sphere">
+            <div class="meta-inline"><h4>Docs</h4><p>Quick start, hotkeys, theming, FAQ.</p></div>
+          </article>
+          <article class="card">
+            <img src="https://passghost.github.io/jodylabs/Images/Snip/EyeballM3.png" alt="Eyeball">
+            <div class="meta-inline"><h4>Press Kit</h4><p>Logos, screenshots, and a one‑pager.</p></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Contact panel (small) -->
+    <section class="panel small" id="panel-contact" role="dialog" aria-modal="true" aria-labelledby="panel-contact-title">
+      <header>
+        <h3 id="panel-contact-title">Contact</h3>
+        <button class="close" data-close aria-label="Close panel">✕</button>
+      </header>
+      <div class="content">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="font-weight:800;font-size:14px;color:var(--text)">pass6host@gmail.com</div>
+        </div>
+      </div>
+    </section>
+
+        <!-- Search popup (used by search input) -->
+      <div class="search-card-outer" id="searchCardOuter" aria-hidden="true">
+        <div class="search-card" id="searchCard">
+          <img id="searchCardImg" src="https://passghost.github.io/jodylabs/screenshots/CardCake.png" alt="preview">
+          <div class="meta">
+            <h4 id="searchCardTitle">No results</h4>
+            <p id="searchCardDesc">Type to search projects.</p>
+            <a id="searchCardLink" href="#" target="_blank">Open</a>
+          </div>
+          <div class="mask"></div>
+        </div>
+      </div>
+
+      <!-- Submit panel -->
+      <section class="panel small" id="panel-submit" role="dialog" aria-modal="true" aria-labelledby="panel-submit-title">
+        <header>
+          <h3 id="panel-submit-title">Submit a Project</h3>
+          <button class="close" data-close id="submitClose">Close</button>
+        </header>
+        <div class="content">
+          <form id="submitForm">
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <input id="projTitle" placeholder="Project title" required />
+              <input id="projHref" placeholder="https://example.com" required />
+              <input id="projImage" placeholder="Image URL (thumbnail)" />
+              <div style="display:flex;gap:8px;align-items:center">
+                <div id="captchaLabel" style="font-weight:800"></div>
+                <input id="captchaInput" placeholder="Answer" style="width:80px" required />
+              </div>
+              <div style="display:flex;gap:8px;align-items:center">
+                <img id="projPreview" src="https://passghost.github.io/OrbiqWebsite/Images/SphereIcon.png" alt="preview" style="width:84px;height:64px;border-radius:8px;background:#0b1120;object-fit:cover;border:1px solid rgba(255,255,255,.06)" />
+                <div id="projPreviewStatus" style="color:var(--muted);font-size:13px">Preview will show here</div>
+              </div>
+              <div id="submitMsg" style="color:var(--muted);font-size:13px"></div>
+              <div style="display:flex;gap:8px;justify-content:flex-end">
+                <button type="submit" class="cta">Submit</button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <script>
+  // ===== 1) LIVING BACKGROUND (particle flowfield) =====
+  const bg = document.getElementById('bg');
+  const g = bg.getContext('2d');
+  let W, H, dpr, particles, t = 0, mouse = {x:0,y:0, active:false};
+
+  function resize(){
+    dpr = Math.min(2, window.devicePixelRatio || 1);
+    W = bg.width = innerWidth * dpr;
+    H = bg.height = innerHeight * dpr;
+    bg.style.width = innerWidth + 'px';
+    bg.style.height = innerHeight + 'px';
+    initParticles();
+  }
+
+  function initParticles(){
+    const count = Math.floor((W*H) / (22000 * dpr));
+    particles = new Array(count).fill().map(()=>({
+      x: Math.random()*W,
+      y: Math.random()*H,
+      v: 0,
+      a: 0,
+      s: 0.7 + Math.random()*1.1
+    }));
+  }
+
+  function noise(x,y){
+    return Math.sin(x*0.0009 + t*0.002) + Math.cos(y*0.0012 - t*0.002);
+  }
+
+  function tick(){
+    t+=1;
+    g.clearRect(0,0,W,H);
+
+    g.globalCompositeOperation = 'lighter';
+    for(const p of particles){
+      const n = noise(p.x, p.y);
+      const angle = n * Math.PI;
+      const force = 0.6;
+
+      p.a += (angle - p.a)*0.08;
+      p.v += force * 0.6;
+
+      if(mouse.active){
+        const dx = (mouse.x*dpr - p.x), dy = (mouse.y*dpr - p.y);
+        const d = Math.hypot(dx,dy) + 0.0001;
+        const pull = Math.min(1.5, 40/d);
+        p.x += dx * pull * 0.008;
+        p.y += dy * pull * 0.008;
+      }
+
+      p.x += Math.cos(p.a) * p.v * 0.08;
+      p.y += Math.sin(p.a) * p.v * 0.08;
+      p.v *= 0.92;
+
+      if(p.x<0) p.x+=W; if(p.x>W) p.x-=W; if(p.y<0) p.y+=H; if(p.y>H) p.y-=H;
+
+      g.beginPath();
+      g.arc(p.x, p.y, p.s, 0, Math.PI*2);
+      const grad = g.createRadialGradient(p.x, p.y, 0, p.x, p.y, 16);
+  grad.addColorStop(0, 'rgba(0,212,255,.55)');
+  grad.addColorStop(1, 'rgba(0,212,255,0)');
+      g.fillStyle = grad;
+      g.fill();
+    }
+    requestAnimationFrame(tick);
+  }
+
+  addEventListener('resize', resize);
+  bg.addEventListener('pointermove', e=>{mouse.x=e.clientX;mouse.y=e.clientY});
+  bg.addEventListener('pointerdown', ()=>mouse.active=true);
+  bg.addEventListener('pointerup', ()=>mouse.active=false);
+  resize(); tick();
+
+  // Diagnostic hooks: log pointer events so we can see if clicks reach document/orbit/button
+  document.addEventListener('pointerdown', (e)=>{ try{ console.debug('document.pointerdown', e.type, e.target && (e.target.tagName || e.target.className)); }catch(err){} });
+
+
+  // ===== 2) ICON SPHERE (dynamic from VibeCode2 projects.json) =====
+  const ICON_URL = 'https://passghost.github.io/OrbiqWebsite/Images/SphereIcon.png'; // fallback icon
+
+  const ring = document.getElementById('ring');
+  const ringBg = document.getElementById('ringBg');
+  const orbit = document.getElementById('orbit');
+  console.debug('orbit element:', !!orbit, 'ring:', !!ring, 'ringBg:', !!ringBg);
+
+  // default fallback nodes if projects.json can't be loaded
+  const DEFAULT_BASE = [
+    {label:'Projects', panel:'#panel-projects'},
+    {label:'Experiments', panel:'#panel-experiments'},
+    {label:'Tools', panel:'#panel-tools'},
+    {label:'Contact', panel:'#panel-contact'},
+  ];
+
+  // Local storage helpers for client-side registry
+  const STORAGE_KEY = 'vibecode_projects_v1';
+  function loadProjectsFromStorage(){ try{ const raw = localStorage.getItem(STORAGE_KEY); if(!raw) return []; const parsed = JSON.parse(raw); return Array.isArray(parsed) ? parsed : []; }catch(e){ return []; } }
+  function saveProjectsToStorage(list){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(list || [])); }catch(e){} }
+  function ensureIdForNode(nd){ if(!nd) return nd; if(!nd.id) nd.id = 'p_' + (nd.title || nd.label || 'x').replace(/\W+/g,'_') + '_' + (Date.now()%100000); if(typeof nd.score === 'undefined') nd.score = Number(nd.score) || 0; return nd; }
+
+  let nodes = [];
+  let points = [];
+  let TOTAL_ICONS = 32;
+  let rotX = -0.3, rotY = 0; // free rotation
+  let dragging = false, last = {x:0,y:0}, inertia = {x:0,y:0};
+  // tap detection: store pointerdown candidates and synthesize a click on pointerup
+  const tapMap = new Map();
+
+  // fetch projects.json and build nodes; prefer localStorage-submitted projects when present
+  async function loadProjectNodes(){
+    // first check localStorage for user-submitted projects and pick top scored ones for the main sphere
+    try{
+      const stored = loadProjectsFromStorage();
+      if(Array.isArray(stored) && stored.length){
+        // normalize entries
+        const normalized = stored.map(s=> ensureIdForNode({ label: s.title || s.label || 'Untitled', href: s.href || s.url || '#', icon: s.image || s.icon || '', screenshot: s.image || (s.screenshots && s.screenshots[0]) || '', desc: s.desc || s.description || '', id: s.id || s._id || null, score: Number(s.score) || 0 }));
+        // sort by score desc
+        normalized.sort((a,b)=> (b.score || 0) - (a.score || 0));
+        // pick main top and some wildcard low-score/random entries so everyone has a chance
+        const TOP_COUNT = 24; // primary slots for high scorers
+        const WILDCARD_COUNT = 8; // random entries from the rest
+        const top = normalized.slice(0, TOP_COUNT);
+        const rest = normalized.slice(TOP_COUNT);
+        // pick random wildcards from rest (or from top if rest is small)
+        const wildcards = [];
+        if(rest.length > 0){
+          // Fisher-Yates shuffle subset
+          for(let i = rest.length - 1; i > 0 && wildcards.length < WILDCARD_COUNT; i--){
+            const j = Math.floor(Math.random() * (i + 1)); [rest[i], rest[j]] = [rest[j], rest[i]];
+          }
+          wildcards.push(...rest.slice(0, WILDCARD_COUNT));
+        }
+        const combined = top.concat(wildcards).slice(0, Math.max(8, TOP_COUNT + WILDCARD_COUNT));
+        return combined.map(x=>ensureIdForNode(x));
+      }
+    }catch(e){ console.warn('storage read error', e); }
+    // try fetching projects.json as a secondary source
+    try{
+      const res = await fetch('../components/projects.json');
+      if(res.ok){
+        const projects = await res.json();
+        if(Array.isArray(projects) && projects.length){
+          return projects.map(p=> ensureIdForNode({ label: p.title || 'Untitled', href: p.href || '#', icon: p.icon || '', screenshot: (p.screenshots && p.screenshots[0]) || '', desc: p.desc || '' }));
+        }
+      }
+    }catch(e){ console.warn('projects.json load failed', e); }
+    // fallback: build repeated default nodes
+    return Array.from({length:TOTAL_ICONS}, (_,i)=> ensureIdForNode({ label: DEFAULT_BASE[i % DEFAULT_BASE.length].label, href:'#', icon:'', desc:'' }));
+  }
+
+  function buildSpherePoints(){
+    points = [];
+    const n = TOTAL_ICONS;
+  console.debug('buildSpherePoints: TOTAL_ICONS=', n);
+    for(let i=0;i<n;i++){
+      const k = i + 0.5;
+      const phi = Math.acos(1 - 2*k/n);
+      const theta = Math.PI * (1 + Math.sqrt(5)) * k;
+      const x = Math.cos(theta) * Math.sin(phi);
+      const y = Math.cos(phi);
+      const z = Math.sin(theta) * Math.sin(phi);
+      points.push({x,y,z});
+    }
+  }
+
+  function buildRing(){
+    ring.innerHTML = '<div class="ring-bg" id="ringBg"></div>';
+    // create a sibling container to hold the interactive node elements so the decorative
+    // `.ring` element doesn't capture hit-testing. Nodes will be appended into this container.
+    let nodesWrap = orbit.querySelector('.nodes');
+    if(!nodesWrap){
+      nodesWrap = document.createElement('div');
+      nodesWrap.className = 'nodes';
+      nodesWrap.style.position = 'absolute';
+      nodesWrap.style.inset = '0';
+      nodesWrap.style.pointerEvents = 'auto';
+      orbit.appendChild(nodesWrap);
+    } else {
+      nodesWrap.innerHTML = '';
+    }
+    // Robust container-level handlers: sometimes pointer capture or overlays can
+    // prevent the individual button handlers from firing. Listen on the nodes
+    // wrapper and synthesize the same behavior as the per-button handlers.
+    nodesWrap.addEventListener('click', (e)=>{
+      try{
+        const nodeEl = e.target.closest && e.target.closest('.node');
+        if(!nodeEl) return;
+        const idx = parseInt(nodeEl.getAttribute('data-index'), 10);
+        if(isNaN(idx) || !nodes[idx]) return;
+        console.debug('nodesWrap click -> node', idx, nodes[idx].label);
+        try{ if(typeof searchInput !== 'undefined') searchInput.value = nodes[idx].label || ''; }catch(_){ }
+        focusNodeByIndex(idx);
+        updateSearchCard(nodes[idx] || {});
+        positionSearchCard();
+        showSearchCard();
+        e.stopPropagation();
+      }catch(err){ console.warn('nodesWrap click handler error', err); }
+    });
+    nodesWrap.addEventListener('dblclick', (e)=>{
+      try{
+        const nodeEl = e.target.closest && e.target.closest('.node');
+        if(!nodeEl) return;
+        const idx = parseInt(nodeEl.getAttribute('data-index'), 10);
+        if(isNaN(idx) || !nodes[idx]) return;
+        console.debug('nodesWrap dblclick -> node', idx, nodes[idx].label);
+        updateSearchCard(nodes[idx] || {});
+        // position near clicked point
+        const btn = nodeEl.querySelector('button');
+        try{
+          const r = btn.getBoundingClientRect();
+          const centerX = r.left + r.width/2;
+          searchCardOuter.style.left = centerX + 'px';
+          const h = searchCardOuter.offsetHeight || 180; const gap = 12;
+          let top = r.top - h - gap; if(top < 12) top = r.bottom + gap;
+          searchCardOuter.style.top = top + 'px';
+        }catch(_){ }
+        showSearchCard();
+        e.stopPropagation();
+      }catch(err){ console.warn('nodesWrap dblclick handler error', err); }
+    });
+  console.debug('buildRing: nodesWrap ready, TOTAL_ICONS=', TOTAL_ICONS, 'nodes.length=', nodes.length);
+    for(let i=0;i<TOTAL_ICONS;i++){
+      const el = document.createElement('div');
+      el.className = 'node';
+      el.setAttribute('data-index', i);
+
+      const btn = document.createElement('button');
+  btn.setAttribute('type','button');
+  // ensure the button accepts pointer events and is keyboard-focusable
+  btn.style.pointerEvents = btn.style.pointerEvents || 'auto';
+  btn.tabIndex = 0;
+  const nd = nodes[i] || {};
+  // prefer preloaded screenshot if available
+  const bgUrl = (nd._preloaded && nd._preloaded.ok && nd._preloaded.src) || nd.screenshot || nd.icon || ICON_URL;
+  btn.style.backgroundImage = `url(${bgUrl})`;
+      btn.style.backgroundSize = 'cover';
+      btn.style.backgroundPosition = 'center';
+      const label = document.createElement('span');
+      label.className = 'label';
+      label.textContent = nd.label || '';
+  // label will be appended after the button so it won't be clipped by the circular button's overflow
+      // clicking opens the projects panel and shows a mini-card for this project
+      // ignore single-click if it immediately follows a dblclick
+  btn.addEventListener('click', (ev)=>{
+        const now = Date.now();
+        if(btn.__lastDbl && (now - btn.__lastDbl) < 500) return; // ignore click triggered by dblclick
+        // Single-click should behave like a search: focus the orb on this node
+        // and show the floating search card as if the user searched for it.
+        const idx = i;
+        if(typeof idx === 'number' && idx >= 0 && idx < nodes.length){
+          console.debug('node click', idx, nodes[idx] && nodes[idx].label);
+          // mirror search input so behavior matches running a search
+          try{ searchInput.value = nodes[idx].label || ''; }catch(e){}
+          focusNodeByIndex(idx);
+          updateSearchCard(nodes[idx] || {});
+          // position card relative to the search input (same as runSearch)
+          positionSearchCard();
+          showSearchCard();
+        }
+      });
+  // tap detection handlers: record pointerdown, and on pointerup determine if this was a tap
+  btn.addEventListener('pointerdown', (e)=>{
+    try{ btn.setPointerCapture && btn.setPointerCapture(e.pointerId); }catch(_){}
+    tapMap.set(e.pointerId, { x: e.clientX, y: e.clientY, t: Date.now(), idx: i, btn });
+  });
+  btn.addEventListener('pointerup', (e)=>{
+    try{ btn.releasePointerCapture && btn.releasePointerCapture(e.pointerId); }catch(_){}
+    const rec = tapMap.get(e.pointerId);
+    if(rec){
+      tapMap.delete(e.pointerId);
+      const dx = e.clientX - rec.x, dy = e.clientY - rec.y;
+      const dist = Math.hypot(dx, dy);
+      const dt = Date.now() - rec.t;
+      // thresholds: small movement and short time -> treat as tap
+      if(dist < 8 && dt < 300){
+        // mark as handled so native click handler (if fired) won't double-run
+        try{ rec.btn.__synthHandled = true; }catch(_){ }
+        // run the same logic as a click handler
+        const idx = rec.idx;
+        if(typeof idx === 'number' && idx >= 0 && idx < nodes.length){
+          console.debug('node tap', idx, nodes[idx] && nodes[idx].label);
+          try{ searchInput.value = nodes[idx].label || ''; }catch(e){}
+          focusNodeByIndex(idx);
+          updateSearchCard(nodes[idx] || {});
+          positionSearchCard();
+          showSearchCard();
+        }
+      }
+    }
+  });
+  // don't intercept pointerdown here - let the orbit's handlers receive the event so drag works
+      // double-clicking shows the floating search/project card near the clicked icon
+  btn.addEventListener('dblclick', (ev)=>{
+        // mark timestamp so click handler can ignore the click(s) produced by the dblclick
+        btn.__lastDbl = Date.now();
+  // ensure card content updates for this node
+  updateSearchCard(nodes[i] || {});
+        // position the fixed popup near the clicked button
+        try{
+          const r = btn.getBoundingClientRect();
+          const centerX = r.left + r.width/2;
+          searchCardOuter.style.left = centerX + 'px';
+          const h = searchCardOuter.offsetHeight || 180;
+          const gap = 12;
+          let top = r.top - h - gap;
+          if(top < 12) top = r.bottom + gap;
+          searchCardOuter.style.top = top + 'px';
+        }catch(e){ /* ignore if element not yet present */ }
+        showSearchCard();
+      });
+
+  el.appendChild(btn);
+  // append label after button so flex column centers it underneath
+  el.appendChild(label);
+  nodesWrap.appendChild(el);
+    }
+    positionNodes();
+  }
+
+    // preload images for nodes and attach a small _preloaded object to each node
+    async function preloadNodeImages(list){
+      await Promise.all(list.map(async (nd, idx)=>{
+        const src = nd.screenshot || nd.icon || '';
+        if(!src) return nd._preloaded = { ok: false };
+        try{
+          await new Promise((resolve, reject)=>{
+            const img = new Image(); img.onload = ()=>resolve(img); img.onerror = reject; img.src = src;
+          });
+          nd._preloaded = { ok: true, src };
+        }catch(e){ nd._preloaded = { ok: false }; }
+      }));
+    }
+
+  // show project details in the Projects panel (single card)
+  function showProjectInPanel(nd, anchor){
+    nd = nd || {};
+    const p = document.querySelector('#panel-projects');
+    if(!p) return;
+    const grid = p.querySelector('.grid');
+    if(!grid) return;
+    grid.innerHTML = '';
+    const article = document.createElement('article');
+    article.className = 'card';
+    const img = document.createElement('img');
+    img.src = nd.screenshot || nd.icon || ICON_URL;
+    img.alt = nd.label || 'project';
+    const h4 = document.createElement('h4'); h4.textContent = nd.label || '';
+    const pdesc = document.createElement('p'); pdesc.textContent = nd.desc || '';
+    const a = document.createElement('a'); a.href = nd.href || '#'; a.textContent = 'Open project'; a.target = '_blank'; a.rel='noopener';
+    a.addEventListener('click', ()=>{
+      try{
+        const list = loadProjectsFromStorage();
+        const idx = list.findIndex(x=>x.id === (nd.id || nd._id));
+        if(idx >= 0){ list[idx].score = (list[idx].score || 0) + 1; saveProjectsToStorage(list); }
+      }catch(e){}
+    });
+    article.appendChild(img); article.appendChild(h4); article.appendChild(pdesc); article.appendChild(a);
+    grid.appendChild(article);
+    openPanel('#panel-projects', anchor || document.querySelector('.node'));
+  }
+
+  
+
+  function onDown(e){ dragging=true; last.x=e.clientX; last.y=e.clientY; inertia.x=0; inertia.y=0; orbit.setPointerCapture(e.pointerId); }
+  function onMove(e){ if(!dragging) return; const dx=e.clientX-last.x, dy=e.clientY-last.y; last.x=e.clientX; last.y=e.clientY; rotY += dx*0.008; rotX += dy*0.008; inertia.x = dx*0.008; inertia.y = dy*0.008; positionNodes(); }
+  function onUp(e){ dragging=false; orbit.releasePointerCapture(e.pointerId); }
+
+  orbit.addEventListener('pointerdown', onDown);
+  orbit.addEventListener('pointermove', onMove);
+  orbit.addEventListener('pointerup', onUp);
+
+  // orbit diagnostic logs
+  orbit.addEventListener('pointerdown', (e)=>{ try{ console.debug('orbit.pointerdown', e.target && (e.target.tagName || e.target.className)); }catch(err){} });
+  orbit.addEventListener('pointerup', (e)=>{ try{ console.debug('orbit.pointerup', e.target && (e.target.tagName || e.target.className)); }catch(err){} });
+
+  // Global pointer tracking to synthesize taps on pointerup using elementFromPoint.
+  // This bypasses pointer capture/drag stealing by the orbit container.
+  let __lastPointer = { x:0, y:0, t:0 };
+  document.addEventListener('pointerdown', (e)=>{ __lastPointer = { x: e.clientX, y: e.clientY, t: Date.now() }; });
+  document.addEventListener('pointerup', (e)=>{
+    try{
+      const dt = Date.now() - (__lastPointer.t || 0);
+      const dx = e.clientX - (__lastPointer.x || 0);
+      const dy = e.clientY - (__lastPointer.y || 0);
+      const dist = Math.hypot(dx, dy);
+      // only consider as a tap if small movement and reasonably quick
+      if(dist <= 10 && dt < 400){
+        const el = document.elementFromPoint(e.clientX, e.clientY);
+        // also inspect the full stacking list for richer diagnostics
+        try{
+          const stack = document.elementsFromPoint(e.clientX, e.clientY) || [];
+          console.debug('elementsFromPoint stack:', stack.slice(0,8).map(x=>({ tag: x.tagName, cls: x.className }))); 
+        }catch(_){ }
+        if(!el){ console.debug('elementFromPoint returned null'); return; }
+        // log the element and its classes to help debug hit-testing
+        try{ console.debug('elementFromPoint ->', el.tagName, el.className, el); }catch(_){ }
+  const nodeEl = el.closest && el.closest('.node');
+  if(nodeEl){
+          const idx = parseInt(nodeEl.getAttribute('data-index'), 10);
+          if(!isNaN(idx) && nodes[idx]){
+            const btn = nodeEl.querySelector('button');
+            // avoid double-handling if the button's dblclick logic just ran
+            const now = Date.now();
+            if(btn && btn.__lastDbl && (now - btn.__lastDbl) < 600) return;
+            // mark as synthetic handled so native click won't duplicate
+            if(btn) btn.__synthHandled = true;
+            console.debug('global tap detected on node', idx, nodes[idx] && nodes[idx].label);
+            try{ searchInput.value = nodes[idx].label || ''; }catch(e){}
+            focusNodeByIndex(idx);
+            updateSearchCard(nodes[idx] || {});
+            positionSearchCard();
+            showSearchCard();
+          }
+          else {
+            try{ console.debug('no .node ancestor found for elementFromPoint result', el.tagName, el.className); }catch(_){ }
+          }
+        }
+      }
+    }catch(err){ console.warn('pointerup synth error', err); }
+  }, { capture: true });
+
+  addEventListener('keydown', (e)=>{
+    if(e.key==='ArrowRight') { rotY += 0.2; }
+    else if(e.key==='ArrowLeft') { rotY -= 0.2; }
+    else if(e.key==='ArrowUp') { rotX -= 0.2; }
+    else if(e.key==='ArrowDown') { rotX += 0.2; }
+    else if(e.key==='Escape'){ closeAllPanels(); }
+    positionNodes();
+  });
+
+  function animate(){
+  if(!searching){ rotX += (inertia.y *= 0.94) * 0.3; rotY += (inertia.x *= 0.94) * 0.3; }
+    positionNodes();
+    requestAnimationFrame(animate);
+  }
+
+  // initialize orb from projects.json and start animation
+  (async function initOrb(){
+    const projNodes = await loadProjectNodes();
+    nodes = projNodes;
+    TOTAL_ICONS = Math.max(8, nodes.length);
+    buildSpherePoints();
+    buildRing();
+    positionNodes();
+    animate();
+    addEventListener('resize', ()=>{positionNodes()});
+  })();
+
+  // periodically refresh projects from storage so submissions/scores propagate
+  setInterval(async ()=>{
+    try{
+      const newNodes = await loadProjectNodes();
+      // naive replace to incorporate updated scores and new submissions
+      nodes = newNodes;
+      TOTAL_ICONS = Math.max(8, nodes.length);
+      buildSpherePoints();
+      buildRing();
+      positionNodes();
+    }catch(e){ console.warn('periodic refresh error', e); }
+  }, 30000);
+
+  // ===== SEARCH & FOCUS =====
+  const searchInput = document.getElementById('orbSearch');
+  const searchBtn = document.getElementById('orbSearchBtn');
+
+  function findBestNodeMatch(query){
+    if(!query) return -1;
+    const normalize = str=> (str||'').toLowerCase().replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim();
+    const q = normalize(query);
+    if(!q) return -1;
+    const qTokens = q.split(' ');
+    let best = -1, bestScore = -1;
+    for(let i=0;i<nodes.length;i++){
+      const n = nodes[i] || {};
+      const title = normalize(n.label || n.title || '');
+      const desc = normalize(n.desc || '');
+      const href = normalize(n.href || '');
+      const hay = (title + ' ' + desc + ' ' + href).trim();
+      if(!hay) continue;
+      // exact title match highest
+      if(title === q) return i;
+      let score = 0;
+      // token matches
+      for(const tok of qTokens){
+        if(title.split(' ').some(w=>w.startsWith(tok))) score += 30; // prefix in title
+        else if(title.includes(tok)) score += 18; // anywhere in title
+        else if(desc.includes(tok)) score += 6;
+        else if(href.includes(tok)) score += 4;
+      }
+      // small boost for title length proximity
+      const lenDiff = Math.abs((title.split(' ').length || 1) - qTokens.length);
+      score += Math.max(0, 6 - lenDiff);
+      if(score > bestScore){ bestScore = score; best = i; }
+    }
+    return bestScore >= 6 ? best : -1;
+  }
+
+  // analytically compute rotX and rotY so that the rotated point faces right (toward the target)
+  function pointToAngles(pt){
+    // Solve rotX so that y' = 0: y' = pt.y*cosX - pt.z*sinX => tanX = pt.y/pt.z
+    // rotX = atan2(pt.y, pt.z)
+    // After rotX, z1 = pt.y*sinX + pt.z*cosX
+    // Solve rotY so that z'' = -pt.x*sinY + z1*cosY = 0 => tanY = z1/pt.x => rotY = atan2(z1, pt.x)
+    try{
+      const rotX_guess = Math.atan2(pt.y, pt.z || 1e-6);
+      const sinX = Math.sin(rotX_guess), cosX = Math.cos(rotX_guess);
+      const z1 = pt.y * sinX + pt.z * cosX;
+      const rotY_guess = Math.atan2(z1, pt.x || 1e-6);
+      return { rotX: rotX_guess, rotY: rotY_guess };
+    }catch(e){
+      return { rotX: rotX, rotY: rotY };
+    }
+  }
+
+  // project a sphere point to screen coords for a candidate rotation
+  function projectToScreen(pt, rx, ry){
+    const cosX = Math.cos(rx), sinX = Math.sin(rx);
+    const cosY = Math.cos(ry), sinY = Math.sin(ry);
+    const y1 = pt.y * cosX - pt.z * sinX;
+    const z1 = pt.y * sinX + pt.z * cosX;
+    const x2 = pt.x * cosY + z1 * sinY;
+    const y2 = y1;
+    // compute screen center of orbit
+    const bounds = orbit.getBoundingClientRect();
+    const R = Math.min(bounds.width, bounds.height) * 0.42;
+    const cx = bounds.left + bounds.width/2;
+    const cy = bounds.top + bounds.height/2;
+    return { x: cx + x2 * R, y: cy + y2 * R };
+  }
+
+  // hill-climb refine angles to minimize distance between projected point and target screen coords
+  function refineAngles(pt, targetScreen, initial, iters=10){
+    let cur = { rotX: initial.rotX, rotY: initial.rotY };
+    let step = 0.8;
+    let best = { rotX: cur.rotX, rotY: cur.rotY };
+    function err(a){ const p = projectToScreen(pt, a.rotX, a.rotY); const dx = p.x - targetScreen.x; const dy = p.y - targetScreen.y; return dx*dx + dy*dy; }
+    let bestErr = err(best);
+    for(let k=0;k<iters;k++){
+      let improved = false;
+      for(const dx of [-step,0,step]){
+        for(const dy of [-step,0,step]){
+          const cand = { rotX: best.rotX + dx, rotY: best.rotY + dy };
+          const e = err(cand);
+          if(e < bestErr){ bestErr = e; best = cand; improved = true; }
+        }
+      }
+      if(!improved) step *= 0.55; // reduce step
+    }
+    return best;
+  }
+
+  let searchAnim = null;
+  let searching = false;
+  function animateToAngles(target, duration=700){
+    if(searchAnim) cancelAnimationFrame(searchAnim.id);
+    // pause inertia and autobrotation influence
+    searching = true;
+    inertia.x = 0; inertia.y = 0;
+    const startX = rotX, startY = rotY;
+    const start = performance.now();
+    function step(now){
+      const t = Math.min(1, (now - start) / duration);
+      // easeInOutQuad
+      const e = t<.5?2*t*t:-1+(4-2*t)*t;
+      rotX = startX + (target.rotX - startX) * e;
+      rotY = startY + (target.rotY - startY) * e;
+      positionNodes();
+      if(t < 1) searchAnim.id = requestAnimationFrame(step);
+      else { searching = false; searchAnim = null; }
+    }
+    searchAnim = {id: requestAnimationFrame(step)};
+  }
+
+  function focusNodeByIndex(i){
+  if(i < 0 || i >= points.length) return;
+  const pt = points[i];
+  // desired target: current hitTarget center (use its current DOM position as the goal)
+  const targetEl = document.getElementById('hitTarget');
+  const targRect = targetEl.getBoundingClientRect();
+  // nudge target slightly downward so the icon settles a bit lower visually
+  const SEARCH_Y_OFFSET = 20; // pixels (raised by 10px as requested)
+  const targetScreen = { x: targRect.left + targRect.width/2, y: targRect.top + targRect.height/2 + SEARCH_Y_OFFSET };
+  // initial analytic guess
+  const init = pointToAngles(pt);
+  // refine numerically against the actual target screen coords
+  const refined = refineAngles(pt, targetScreen, init, 12);
+  animateToAngles(refined, 900);
+  }
+
+  function runSearch(){
+    const q = searchInput.value || '';
+    const idx = findBestNodeMatch(q);
+    if(idx >= 0){
+      focusNodeByIndex(idx);
+      // update and show the floating card above the search box
+      updateSearchCard(nodes[idx]);
+      showSearchCard();
+    } else {
+      // no match: show friendly hint then hide
+      updateSearchCard(null);
+      hideSearchCard(1200);
+    }
+  }
+
+  searchBtn.addEventListener('click', runSearch);
+  searchInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter') runSearch(); });
+
+  // ===== SEARCH CARD UI =====
+  const searchCardOuter = document.getElementById('searchCardOuter');
+  const searchCardImg = document.getElementById('searchCardImg');
+  const searchCardTitle = document.getElementById('searchCardTitle');
+  const searchCardDesc = document.getElementById('searchCardDesc');
+  const searchCardLink = document.getElementById('searchCardLink');
+  let hideCardTimer = null;
+
+  function showSearchCard(){
+    if(hideCardTimer){ clearTimeout(hideCardTimer); hideCardTimer = null; }
+  // ensure popup is positioned correctly (fixed positioning needs explicit coords)
+  positionSearchCard();
+  searchCardOuter.classList.add('show');
+  searchCardOuter.setAttribute('aria-hidden','false');
+  // animate eraser up to reveal the floating card
+  const eraser = document.getElementById('eraser'); if(eraser) eraser.classList.add('active');
+  const wrap = document.getElementById('searchWrap'); if(wrap) wrap.classList.add('pushed');
+  }
+  function hideSearchCard(delay=0){
+    if(hideCardTimer) clearTimeout(hideCardTimer);
+    if(delay>0){ hideCardTimer = setTimeout(()=>{ searchCardOuter.classList.remove('show'); searchCardOuter.setAttribute('aria-hidden','true'); }, delay); }
+    else { searchCardOuter.classList.remove('show'); searchCardOuter.setAttribute('aria-hidden','true'); }
+  // restore eraser when card is hidden
+  const eraser = document.getElementById('eraser'); if(eraser) eraser.classList.remove('active');
+  const wrap = document.getElementById('searchWrap'); if(wrap) wrap.classList.remove('pushed');
+  }
+
+  function updateSearchCard(nd){
+    if(!nd){
+      searchCardImg.src = ICON_URL;
+      searchCardTitle.textContent = 'No results';
+      searchCardDesc.textContent = 'No matching project found. Try a different keyword.';
+      searchCardLink.href = '#';
+      searchCardLink.textContent = 'Browse projects';
+  // ensure popup repositions even for the empty state
+  positionSearchCard();
+  return;
+    }
+    searchCardImg.src = nd.screenshot || nd.icon || ICON_URL;
+    searchCardTitle.textContent = nd.label || 'Untitled';
+    searchCardDesc.textContent = nd.desc || '';
+  searchCardLink.href = nd.href || '#';
+  searchCardLink.textContent = nd.href ? 'Open project' : 'More';
+  // increment score when user opens from the floating card
+  searchCardLink.onclick = function(){ try{ const list = loadProjectsFromStorage(); const idx = list.findIndex(x=>x.id === (nd.id || nd._id)); if(idx>=0){ list[idx].score = (list[idx].score||0) + 1; saveProjectsToStorage(list); } }catch(e){} };
+    // position the card centered above the search input (fixed popup needs explicit coords)
+    positionSearchCard();
+    // small reveal animation (mask is transparent)
+    const mask = document.querySelector('#searchCard .mask');
+    if(mask){ mask.animate([{ transform: 'scaleY(1)' }, { transform: 'scaleY(0)' }], { duration: 420, easing: 'cubic-bezier(.2,.9,.2,1)' }); }
+  }
+
+  // Position the fixed popup centered above the search input
+  function positionSearchCard(){
+    if(!searchCardOuter) return;
+    const wrap = document.getElementById('searchWrap');
+    if(!wrap) return;
+    const rect = wrap.getBoundingClientRect();
+    // Prefer to center horizontally inside the left column (where the headline and search live).
+    const wrapCenter = rect.left + rect.width / 2;
+    const leftCol = document.querySelector('.left-col');
+    const leftRect = leftCol ? leftCol.getBoundingClientRect() : null;
+    const eraser = document.getElementById('eraser') || document.querySelector('.eraser');
+    const eraserRect = eraser ? eraser.getBoundingClientRect() : null;
+    let centerX = wrapCenter;
+    if(leftRect){
+      // center inside the left-column to place the card visually between text and input
+      centerX = Math.round(leftRect.left + leftRect.width / 2);
+    } else if(eraserRect){
+      // fallback: bias slightly toward the wording so the card sits nearer the text
+      const eraserEdge = eraserRect.right;
+      const bias = 0.4; // 0..1 where 0.0 => nearer search input, 1.0 => nearer wording
+      centerX = Math.round(eraserEdge * (1 - bias) + wrapCenter * bias);
+    }
+    searchCardOuter.style.left = centerX + 'px';
+
+    // measure height (element exists in DOM even when opacity:0)
+    const h = searchCardOuter.offsetHeight || 180;
+    const gap = 12;
+    // compute a vertical position between the bottom of the eraser and the top of the search input
+    let top = rect.top - h - gap;
+    if(eraserRect){
+      // prefer the midpoint between eraser bottom and input top
+      top = Math.round((eraserRect.bottom + rect.top) / 2 - h / 2);
+    }
+    // clamp below the topbar so it doesn't overlap the fixed topbar
+    const topbar = document.querySelector('.topbar');
+    const topbarRect = topbar ? topbar.getBoundingClientRect() : null;
+    const minTop = topbarRect ? Math.round(topbarRect.bottom + 8) : 12;
+    if(top < minTop) top = minTop;
+    if(top + h > window.innerHeight - 12) top = Math.max(minTop, rect.bottom + gap);
+    searchCardOuter.style.top = top + 'px';
+  }
+
+  // reposition on resize/scroll so the popup stays aligned
+  window.addEventListener('resize', positionSearchCard);
+  document.addEventListener('scroll', positionSearchCard, true);
+
+  // hide card when clicking outside search area
+  document.addEventListener('click', (e)=>{
+    if(!document.getElementById('searchWrap').contains(e.target)){
+      hideSearchCard(250);
+    }
+  });
+  function rotateVec(v){
+    // rotate around X then Y
+    const cosX = Math.cos(rotX), sinX = Math.sin(rotX);
+    const cosY = Math.cos(rotY), sinY = Math.sin(rotY);
+    let y = v.y * cosX - v.z * sinX;
+    let z = v.y * sinX + v.z * cosX;
+    let x = v.x * cosY + z * sinY;
+    z = -v.x * sinY + z * cosY;
+    return {x,y,z};
+  }
+
+  function positionNodes(){
+  const nodesWrap = orbit.querySelector('.nodes');
+  const children = nodesWrap ? Array.from(nodesWrap.querySelectorAll('.node')) : Array.from(ring.querySelectorAll('.node'));
+    const bounds = orbit.getBoundingClientRect();
+    const R = Math.min(bounds.width, bounds.height) * 0.42;
+
+    let hitIdx = -1, hitScore = 0;
+
+    children.forEach((el, i)=>{
+      const pt = points[i];
+      if(!pt) return;
+      const v = rotateVec(pt);
+      const x = v.x * R, y = v.y * R, z = v.z * R;
+      el.style.transform = `translate3d(calc(-50% + ${x}px), calc(-50% + ${y}px), ${z}px)`;
+      el.style.zIndex = 1000 + Math.round(z);
+      const scale = 0.65 + 0.35 * ((z + R) / (2*R));
+      el.firstChild.style.transform = `scale(${scale.toFixed(3)})`;
+      el.style.opacity = 0.3 + 0.7 * ((z + R) / (2*R));
+
+      // target on the right: prefer x close to +R and front-facing (z>0)
+      const rightness = Math.max(0, (v.x + 1) / 2); // 0..1, 1 is far right
+      const frontness = Math.max(0, (v.z + 1) / 2); // 0..1, 1 is toward viewer
+      const s = Math.pow(rightness, 3) * frontness; // sharpen rightness
+      if(s > hitScore){ hitScore = s; hitIdx = i; }
+    });
+
+    children.forEach(c=>c.classList.remove('hit'));
+    const bgEl = document.getElementById('ringBg');
+    if(hitIdx !== -1 && hitScore > 0.5){
+      children[hitIdx].classList.add('hit');
+      bgEl.style.backgroundImage = `url(${ICON_URL})`;
+      bgEl.classList.add('show');
+    } else {
+      bgEl.classList.remove('show');
+    }
+  }
+
+  function onDown(e){ dragging=true; last.x=e.clientX; last.y=e.clientY; inertia.x=0; inertia.y=0; orbit.setPointerCapture(e.pointerId); }
+  function onMove(e){ if(!dragging) return; const dx=e.clientX-last.x, dy=e.clientY-last.y; last.x=e.clientX; last.y=e.clientY; rotY += dx*0.008; rotX += dy*0.008; inertia.x = dx*0.008; inertia.y = dy*0.008; positionNodes(); }
+  function onUp(e){ dragging=false; orbit.releasePointerCapture(e.pointerId); }
+
+  orbit.addEventListener('pointerdown', onDown);
+  orbit.addEventListener('pointermove', onMove);
+  orbit.addEventListener('pointerup', onUp);
+
+  addEventListener('keydown', (e)=>{
+    if(e.key==='ArrowRight') { rotY += 0.2; }
+    else if(e.key==='ArrowLeft') { rotY -= 0.2; }
+    else if(e.key==='ArrowUp') { rotX -= 0.2; }
+    else if(e.key==='ArrowDown') { rotX += 0.2; }
+    else if(e.key==='Escape'){ closeAllPanels(); }
+    positionNodes();
+  });
+
+  // initOrb bootstraps nodes, points, and starts animation. Duplicate boot calls removed.
+  addEventListener('resize', ()=>{positionNodes()});
+
+  // ===== 3) PANELS =====
+  const panels = document.querySelectorAll('.panel');
+
+  function openPanel(selector, anchor){
+    const p = document.querySelector(selector);
+  console.debug('openPanel called', selector, anchor);
+    // if anchor is missing or not an element, center the panel
+    if(!anchor || !anchor.getBoundingClientRect){
+      p.style.setProperty('--x', '50%');
+      p.style.setProperty('--y', '48%');
+    } else {
+      const rect = anchor.getBoundingClientRect();
+      p.style.setProperty('--x', ((rect.left + rect.width/2) / innerWidth * 100).toFixed(2) + '%');
+      p.style.setProperty('--y', ((rect.top + rect.height/2) / innerHeight * 100).toFixed(2) + '%');
+    }
+    p.classList.add('open');
+  }
+  function closeAllPanels(){ panels.forEach(p=>p.classList.remove('open')); }
+  document.querySelectorAll('[data-close]').forEach(btn=>btn.addEventListener('click', closeAllPanels));
+  const contactOpenBtn = document.getElementById('contactOpen');
+  if(contactOpenBtn) contactOpenBtn.addEventListener('click', ()=>openPanel('#panel-contact', document.querySelector('.cta')));
+
+  // ===== 4) Misc =====
+  const yearEl = document.getElementById('year'); if(yearEl) yearEl.textContent = new Date().getFullYear();
+  </script>
+  <script>
+  // --- Submission & LocalStorage-backed project registry (client-side prototype) ---
+  (function(){
+    const STORAGE_KEY = 'vibecode_projects_v1';
+    const submitOpen = document.getElementById('submitOpen');
+    const panelSubmit = document.getElementById('panel-submit');
+    const submitForm = document.getElementById('submitForm');
+    const submitMsg = document.getElementById('submitMsg');
+    const projTitle = document.getElementById('projTitle');
+    const projHref = document.getElementById('projHref');
+    const projImage = document.getElementById('projImage');
+  const projPreview = document.getElementById('projPreview');
+  const projPreviewStatus = document.getElementById('projPreviewStatus');
+    const captchaLabel = document.getElementById('captchaLabel');
+    const captchaInput = document.getElementById('captchaInput');
+
+    // simple math captcha
+    function genCaptcha(){
+      const a = Math.floor(Math.random()*9)+1; const b = Math.floor(Math.random()*9)+1; return { q: `${a} + ${b} = ?`, a: a+b };
+    }
+  let currentCaptcha = genCaptcha(); if(captchaLabel) captchaLabel.textContent = currentCaptcha.q;
+
+    function loadProjects(){
+      try{ const raw = localStorage.getItem(STORAGE_KEY); if(!raw) return []; return JSON.parse(raw); }catch(e){ return []; }
+    }
+    function saveProjects(list){ localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); }
+
+    // open submit panel
+    // ensure submitOpen opens the submit panel; fallback to locating a CTA if id isn't present
+    (function(){
+      const btn = submitOpen || document.querySelector('.cta');
+      // timestamp to avoid double-handling between the direct button handler and the document fallback
+      let lastSubmitOpenAt = 0;
+      if(btn){
+        btn.addEventListener('click', (e)=>{
+          // prevent the document-level fallback from running as well
+          e.stopPropagation && e.stopPropagation();
+          console.debug('submitOpen handler fired', btn);
+          // use the actual button as the anchor so the panel positions correctly
+          openPanel('#panel-submit', btn);
+          currentCaptcha = genCaptcha(); if(captchaLabel) captchaLabel.textContent = currentCaptcha.q; if(captchaInput) captchaInput.value=''; if(submitMsg) submitMsg.textContent='';
+          lastSubmitOpenAt = Date.now();
+        });
+      }
+      // Extra global fallback: any element with aria-controls="panel-submit" should open the panel
+    document.addEventListener('click', (e)=>{
+        try{
+          const opener = e.target && e.target.closest && e.target.closest('[aria-controls="panel-submit"]');
+      if(!opener) return;
+          // if the click originated from the real submit button, or the button handler just ran, skip — it has its own handler
+          if(submitOpen && opener === submitOpen) return;
+          if(lastSubmitOpenAt && (Date.now() - lastSubmitOpenAt) < 700) return;
+          console.debug('document-level submit opener click', opener);
+          openPanel('#panel-submit', opener);
+          currentCaptcha = genCaptcha(); if(captchaLabel) captchaLabel.textContent = currentCaptcha.q; if(captchaInput) captchaInput.value=''; if(submitMsg) submitMsg.textContent='';
+        }catch(err){ console.warn('submit opener fallback error', err); }
+      });
+    })();
+
+    submitForm && submitForm.addEventListener('submit', (ev)=>{
+      ev.preventDefault(); submitMsg.textContent='';
+      const title = projTitle.value.trim(); const href = projHref.value.trim(); const img = projImage.value.trim();
+      if(!title || !href) { submitMsg.textContent = 'Please add title and URL.'; return; }
+      if(Number(captchaInput.value.trim()) !== currentCaptcha.a){ submitMsg.textContent = 'CAPTCHA incorrect. Try again.'; currentCaptcha = genCaptcha(); captchaLabel.textContent = currentCaptcha.q; captchaInput.value=''; return; }
+      // load existing, append new project with initial score 0 and createdAt
+      const list = loadProjects();
+      const id = 'proj_' + Date.now() + '_' + Math.floor(Math.random()*9000+1000);
+      const entry = { id, title, href, image: img || '', desc: '', score: 0, createdAt: new Date().toISOString() };
+      list.push(entry); saveProjects(list);
+      submitMsg.textContent = 'Thanks — project submitted! It may appear in the index.';
+      // refresh orb nodes so the newly-submitted project can surface in the sphere
+      try{ nodes.push({ label: entry.title, href: entry.href, icon: entry.image, screenshot: entry.image, desc: entry.desc }); TOTAL_ICONS = Math.max(8, nodes.length); buildSpherePoints(); buildRing(); positionNodes(); }catch(e){}
+      setTimeout(()=>{ closeAllPanels(); }, 900);
+    });
+
+    // live preview for image URL: attempt to load and display
+    let previewTimer = null;
+    function setPreview(src, status){ projPreview.src = src || 'https://passghost.github.io/OrbiqWebsite/Images/SphereIcon.png'; projPreviewStatus.textContent = status || (src ? 'Preview' : 'Using default icon'); }
+    async function validateImageUrl(url){ if(!url) { setPreview('', 'Using default icon'); return; }
+      // debounce
+      if(previewTimer) clearTimeout(previewTimer);
+      previewTimer = setTimeout(()=>{
+        const img = new Image(); img.onload = ()=>{ setPreview(url, 'Preview loaded'); };
+        img.onerror = ()=>{ setPreview('', 'Could not load image — using default'); };
+        // set a short timeout in case remote host hangs
+        const to = setTimeout(()=>{ img.src = ''; setPreview('', 'Timed out — using default'); }, 4000);
+        img.onload = img.onload && ((ev)=>{ clearTimeout(to); setPreview(url, 'Preview loaded'); });
+        img.onerror = img.onerror && ((ev)=>{ clearTimeout(to); setPreview('', 'Could not load image — using default'); });
+        try{ img.src = url; }catch(e){ setPreview('', 'Invalid URL'); }
+      }, 250);
+    }
+    projImage && projImage.addEventListener('input', (e)=>{ validateImageUrl(e.target.value.trim()); });
+
+    // Expose a small API for index page to read/modify projects
+    window.VibeCodeStore = {
+      list: ()=> loadProjects(),
+      saveList: (l)=>{ saveProjects(l); }
+    };
+
+    // open index (new page in same folder: index.html)
+    const openIndexBtn = document.getElementById('openIndex');
+    if(openIndexBtn){ openIndexBtn.addEventListener('click', ()=>{ window.open('index.html','_blank'); }); }
+  })();
+  </script>
+  <script>
+  // Hit Counter with Supabase (targets the small pill element)
+  (function() {
+    const apiUrl = 'https://omcwjmvdjswkfjkahchm.supabase.co';
+    const headers = {
+      'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
+      'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
+      'Content-Type': 'application/json'
+    };
+    const pagePath = 'Vibe3';
+    const hitCountEl = document.getElementById('hit-count-pill');
+
+    async function recordHit() {
+      try {
+        const getResponse = await fetch(`${apiUrl}/rest/v1/page_hits?page_path=eq.${pagePath}&select=id,hit_count`, {
+          method: 'GET',
+          headers: headers
+        });
+        if (getResponse.ok) {
+          const existingData = await getResponse.json();
+          if (existingData.length > 0) {
+            const record = existingData[0];
+            const newCount = record.hit_count + 1;
+            const updateResponse = await fetch(`${apiUrl}/rest/v1/page_hits?id=eq.${record.id}`, {
+              method: 'PATCH',
+              headers: headers,
+              body: JSON.stringify({ hit_count: newCount, last_hit: new Date().toISOString(), updated_at: new Date().toISOString() })
+            });
+            if (updateResponse.ok) hitCountEl.textContent = newCount.toLocaleString();
+            else hitCountEl.textContent = record.hit_count.toLocaleString();
+          } else {
+            const createResponse = await fetch(`${apiUrl}/rest/v1/page_hits`, {
+              method: 'POST',
+              headers: headers,
+              body: JSON.stringify({ page_path: pagePath, hit_count: 1, first_hit: new Date().toISOString(), last_hit: new Date().toISOString(), last_ip_hash: 'browser-' + Math.random().toString(36).substring(7) })
+            });
+            if (createResponse.ok) hitCountEl.textContent = '1'; else hitCountEl.textContent = '---';
+          }
+        } else {
+          hitCountEl.textContent = '---';
+        }
+      } catch (error) {
+        console.error('Hit counter error:', error);
+        hitCountEl.textContent = '---';
+      }
+    }
+    recordHit();
+  })();
+  </script>
+  <script>
+  // MutationObserver helper: flash panels/search-card when they open to aid debugging
+  (function __VIBE_MUT_OBS(){
+    try{
+      const flash = (el)=>{
+        if(!el || !el.style) return;
+        const prev = el.style.boxShadow || '';
+        el.style.transition = 'box-shadow .22s ease, outline .22s ease';
+        el.style.boxShadow = '0 0 0 6px rgba(0,212,255,.18)';
+        setTimeout(()=>{ el.style.boxShadow = prev; }, 520);
+      };
+
+      const targets = () => Array.from(document.querySelectorAll('.panel, .search-card-outer'));
+      const observer = new MutationObserver((records)=>{
+        for(const r of records){
+          if(r.type === 'attributes' && r.attributeName === 'class'){
+            const el = r.target;
+            if(el.classList.contains('open') || el.classList.contains('show')){
+              console.debug('MutationObserver: opened', el); flash(el);
+            } else {
+              console.debug('MutationObserver: closed', el);
+            }
+          }
+        }
+      });
+
+      // Observe existing known panels
+      targets().forEach(el=>observer.observe(el, { attributes: true, attributeFilter: ['class'] }));
+
+      // Watch for panels added later and attach observer to them
+      const bodyMo = new MutationObserver((mutList)=>{
+        for(const m of mutList){
+          if(m.addedNodes && m.addedNodes.length){
+            m.addedNodes.forEach(n=>{
+              if(n && n.nodeType===1 && (n.classList.contains('panel') || n.classList.contains('search-card-outer'))){
+                observer.observe(n, { attributes: true, attributeFilter: ['class'] });
+              }
+            });
+          }
+        }
+      });
+      bodyMo.observe(document.body, { childList: true, subtree: true });
+      console.debug('Vibe MutationObserver helper installed');
+    }catch(e){ console.warn('Vibe MutationObserver failed', e); }
+  })();
+  </script>
+
+</body>
+</html>

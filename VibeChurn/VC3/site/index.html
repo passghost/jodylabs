@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>VIBECHURN Index — Randomized Showcase</title>
+  <meta name="description" content="Randomized index of VIBECHURN submissions (client-side localStorage prototype).">
+  <style>
+    :root{--bg:#071029;--card:#0b1120;--accent:#00d4ff;--accent-2:#6f6fff;--text:#f2f6f9}
+    body{margin:0;font-family:Inter,Segoe UI,Roboto,Arial;background:linear-gradient(180deg,var(--bg),#071328);color:var(--text);min-height:100vh}
+    header{display:flex;align-items:center;justify-content:space-between;padding:18px 28px}
+    header h1{font-size:20px;margin:0}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;padding:18px}
+    .card{background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01));padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.04)}
+    .card img{width:100%;height:140px;object-fit:cover;border-radius:8px}
+    .meta{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+    .open{background:linear-gradient(90deg,var(--accent),var(--accent-2));padding:8px 10px;border-radius:999px;border:none;color:#041028;font-weight:800;cursor:pointer}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>VIBECHURN — Index</h1>
+    <div>
+  <button id="back">Back</button>
+  <button id="refresh">Refresh</button>
+  <button id="seed">Seed Demo</button>
+    </div>
+  </header>
+  <main>
+    <div class="grid" id="grid"></div>
+  </main>
+
+  <script>
+    const STORAGE_KEY = 'vibecode_projects_v1'
+    function load(){
+      try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]')}
+      catch(e){console.error(e);return[]}
+    }
+    function save(list){localStorage.setItem(STORAGE_KEY,JSON.stringify(list))}
+    function sample(arr,n){let a=arr.slice();for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a.slice(0,n)}
+
+    function render(){
+      const grid=document.getElementById('grid');grid.innerHTML=''
+      const list=load();if(!list.length){grid.innerHTML='<p style="padding:18px;color:#bdbfc6">No projects yet. Use the orb to submit a project (client-side prototype).</p>';return}
+      const items=sample(list,30)
+      for(const p of items){
+        const card=document.createElement('div');card.className='card'
+        const img=document.createElement('img');img.src=p.image||'https://passghost.github.io/jodylabs/screenshots/CardCake.png';card.appendChild(img)
+        const meta=document.createElement('div');meta.className='meta'
+        const h=document.createElement('div');h.innerText=p.title||'Untitled';meta.appendChild(h)
+        const right=document.createElement('div');
+        const score=document.createElement('span');score.innerText=(p.score||0)+' pts';score.style.marginRight='8px';right.appendChild(score)
+        const open=document.createElement('button');open.className='open';open.innerText='Open';open.onclick=()=>{window.open(p.href,'_blank');
+          // bump score in storage
+          const all=load();const found=all.find(x=>x.id===p.id);if(found){found.score=(found.score||0)+1;save(all);render()}
+        }
+        right.appendChild(open);meta.appendChild(right);card.appendChild(meta);grid.appendChild(card)
+      }
+    }
+    document.getElementById('refresh').addEventListener('click',render)
+    document.getElementById('seed').addEventListener('click',()=>{
+      const demo=[{id:'demo-1',title:'Demo Project',href:'https://example.com',image:'https://passghost.github.io/jodylabs/screenshots/CardCake.png',score:0},{id:'demo-2',title:'Orb Test',href:'https://example.com',image:'https://passghost.github.io/jodylabs/Images/Snip/EyeballM3.png',score:0}]
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(demo));render()
+    })
+  document.getElementById('back').addEventListener('click', ()=>{ window.location.href = 'orb.html'; });
+  render()
+  </script>
+</body>
+</html>
