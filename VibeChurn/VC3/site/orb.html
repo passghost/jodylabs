@@ -699,8 +699,9 @@
           });
           nd._preloaded = { ok: true, src };
         }catch(e){
-          console.warn('preloadNodeImages failed for', src, e && e.message);
-          nd._preloaded = { ok: false };
+          const reason = (e && e.message) || 'load_failed';
+          console.warn('preloadNodeImages failed for', src, reason);
+          nd._preloaded = { ok: false, reason };
         }
       }));
     }
@@ -1253,7 +1254,11 @@
         TOTAL_ICONS = Math.max(8, nodes.length);
         // preload the image for the newly added node so the orb updates immediately
         try{ await preloadNodeImages([newNode]); }catch(_){ }
-        buildSpherePoints(); buildRing(); positionNodes();
+          // if the image preload failed, inform the submitter with guidance
+          if(newNode._preloaded && newNode._preloaded.ok === false){
+            submitMsg.textContent = 'Image could not be loaded (blocked or private). Make the file public or host the image on a CORS-enabled host.';
+          }
+          buildSpherePoints(); buildRing(); positionNodes();
       }catch(e){ console.warn('Error updating nodes after submit', e); }
       setTimeout(()=>{ closeAllPanels(); }, 900);
     });
@@ -1267,7 +1272,7 @@
       previewTimer = setTimeout(()=>{
     const normalized = normalizeDriveUrl(url);
     const img = new Image(); img.onload = ()=>{ setPreview(normalized, 'Preview loaded'); };
-    img.onerror = ()=>{ setPreview('', 'Could not load image — using default'); };
+  img.onerror = ()=>{ setPreview('', 'Could not load image — may be blocked/private or not CORS-enabled'); };
         // set a short timeout in case remote host hangs
         const to = setTimeout(()=>{ img.src = ''; setPreview('', 'Timed out — using default'); }, 4000);
     img.onload = img.onload && ((ev)=>{ clearTimeout(to); setPreview(normalized, 'Preview loaded'); });
