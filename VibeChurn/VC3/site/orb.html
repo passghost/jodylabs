@@ -177,6 +177,7 @@
       <span class="pill">Interactive R&D</span>
     </div>
     <div class="controls">
+  <button class="cta" id="backBtn" aria-label="Back to main index">Back</button>
   <button class="cta" id="openIndex" aria-controls="index">Index</button>
   <button class="cta" id="submitOpen" aria-haspopup="dialog" aria-controls="panel-submit">Submit</button>
   <button class="cta" id="contactOpen" aria-haspopup="dialog" aria-controls="panel-contact">Contact</button>
@@ -435,10 +436,10 @@
 
   // default fallback nodes if projects.json can't be loaded
   const DEFAULT_BASE = [
-    {label:'Projects', panel:'#panel-projects'},
-    {label:'Experiments', panel:'#panel-experiments'},
-    {label:'Tools', panel:'#panel-tools'},
-    {label:'Contact', panel:'#panel-contact'},
+    {label:'empty', panel:'#panel-projects'},
+    {label:'empty', panel:'#panel-experiments'},
+    {label:'empty', panel:'#panel-tools'},
+    {label:'empty', panel:'#panel-contact'},
   ];
 
   // Local storage helpers for client-side registry
@@ -1250,9 +1251,13 @@
       saveList: (l)=>{ saveProjects(l); }
     };
 
-    // open index (new page in same folder: index.html)
-    const openIndexBtn = document.getElementById('openIndex');
-    if(openIndexBtn){ openIndexBtn.addEventListener('click', ()=>{ window.open('index.html','_blank'); }); }
+  // open index (new page in same folder: index.html)
+  const openIndexBtn = document.getElementById('openIndex');
+  if(openIndexBtn){ openIndexBtn.addEventListener('click', ()=>{ window.location.href = 'index.html'; }); }
+
+  // back button: navigate to repository root index (three levels up from site/orb.html)
+  const backBtn = document.getElementById('backBtn');
+  if(backBtn){ backBtn.addEventListener('click', ()=>{ window.location.href = '../../../index.html'; }); }
   })();
   </script>
   <script>
