@@ -463,7 +463,7 @@
       const stored = loadProjectsFromStorage();
       if(Array.isArray(stored) && stored.length){
         // normalize entries
-        const normalized = stored.map(s=> ensureIdForNode({ label: s.title || s.label || 'Untitled', href: s.href || s.url || '#', icon: s.image || s.icon || '', screenshot: s.image || (s.screenshots && s.screenshots[0]) || '', desc: s.desc || s.description || '', id: s.id || s._id || null, score: Number(s.score) || 0 }));
+      const normalized = stored.map(s=> ensureIdForNode({ label: s.title || s.label || 'Untitled', href: s.href || s.url || '#', icon: normalizeDriveUrl(s.image || s.icon || ''), screenshot: normalizeDriveUrl(s.image || (s.screenshots && s.screenshots[0]) || ''), desc: s.desc || s.description || '', id: s.id || s._id || null, score: Number(s.score) || 0 }));
         // sort by score desc
         normalized.sort((a,b)=> (b.score || 0) - (a.score || 0));
         // pick main top and some wildcard low-score/random entries so everyone has a chance
@@ -490,7 +490,7 @@
       if(res.ok){
         const projects = await res.json();
         if(Array.isArray(projects) && projects.length){
-          return projects.map(p=> ensureIdForNode({ label: p.title || 'Untitled', href: p.href || '#', icon: p.icon || '', screenshot: (p.screenshots && p.screenshots[0]) || '', desc: p.desc || '' }));
+          return projects.map(p=> ensureIdForNode({ label: p.title || 'Untitled', href: p.href || '#', icon: normalizeDriveUrl(p.icon || ''), screenshot: normalizeDriveUrl((p.screenshots && p.screenshots[0]) || ''), desc: p.desc || '' }));
         }
       }
     }catch(e){ console.warn('projects.json load failed', e); }
@@ -671,17 +671,37 @@
     positionNodes();
   }
 
+    // helper: convert common Google Drive viewer links to direct-access URLs
+    function normalizeDriveUrl(url){
+      try{
+        if(!url) return '';
+        if(typeof url !== 'string') return url;
+        if(url.indexOf('drive.google.com') !== -1){
+          // /file/d/FILEID/ or ?id=FILEID
+          const m = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+          if(m && m[1]){
+            return 'https://drive.google.com/uc?export=view&id=' + m[1];
+          }
+        }
+      }catch(e){}
+      return url;
+    }
+
     // preload images for nodes and attach a small _preloaded object to each node
     async function preloadNodeImages(list){
       await Promise.all(list.map(async (nd, idx)=>{
-        const src = nd.screenshot || nd.icon || '';
+        const srcRaw = nd.screenshot || nd.icon || '';
+        const src = normalizeDriveUrl(srcRaw || '');
         if(!src) return nd._preloaded = { ok: false };
         try{
           await new Promise((resolve, reject)=>{
             const img = new Image(); img.onload = ()=>resolve(img); img.onerror = reject; img.src = src;
           });
           nd._preloaded = { ok: true, src };
-        }catch(e){ nd._preloaded = { ok: false }; }
+        }catch(e){
+          console.warn('preloadNodeImages failed for', src, e && e.message);
+          nd._preloaded = { ok: false };
+        }
       }));
     }
 
@@ -1223,7 +1243,7 @@
       // load existing, append new project with initial score 0 and createdAt
       const list = loadProjects();
       const id = 'proj_' + Date.now() + '_' + Math.floor(Math.random()*9000+1000);
-      const entry = { id, title, href, image: img || '', desc: '', score: 0, createdAt: new Date().toISOString() };
+  const entry = { id, title, href, image: normalizeDriveUrl(img || ''), desc: '', score: 0, createdAt: new Date().toISOString() };
       list.push(entry); saveProjects(list);
       submitMsg.textContent = 'Thanks — project submitted! It may appear in the index.';
       // refresh orb nodes so the newly-submitted project can surface in the sphere
@@ -1241,16 +1261,17 @@
     // live preview for image URL: attempt to load and display
     let previewTimer = null;
     function setPreview(src, status){ projPreview.src = src || 'https://passghost.github.io/OrbiqWebsite/Images/SphereIcon.png'; projPreviewStatus.textContent = status || (src ? 'Preview' : 'Using default icon'); }
-    async function validateImageUrl(url){ if(!url) { setPreview('', 'Using default icon'); return; }
+  async function validateImageUrl(url){ if(!url) { setPreview('', 'Using default icon'); return; }
       // debounce
       if(previewTimer) clearTimeout(previewTimer);
       previewTimer = setTimeout(()=>{
-        const img = new Image(); img.onload = ()=>{ setPreview(url, 'Preview loaded'); };
-        img.onerror = ()=>{ setPreview('', 'Could not load image — using default'); };
+    const normalized = normalizeDriveUrl(url);
+    const img = new Image(); img.onload = ()=>{ setPreview(normalized, 'Preview loaded'); };
+    img.onerror = ()=>{ setPreview('', 'Could not load image — using default'); };
         // set a short timeout in case remote host hangs
         const to = setTimeout(()=>{ img.src = ''; setPreview('', 'Timed out — using default'); }, 4000);
-        img.onload = img.onload && ((ev)=>{ clearTimeout(to); setPreview(url, 'Preview loaded'); });
-        img.onerror = img.onerror && ((ev)=>{ clearTimeout(to); setPreview('', 'Could not load image — using default'); });
+    img.onload = img.onload && ((ev)=>{ clearTimeout(to); setPreview(normalized, 'Preview loaded'); });
+    img.onerror = img.onerror && ((ev)=>{ clearTimeout(to); setPreview('', 'Could not load image — using default'); });
         try{ img.src = url; }catch(e){ setPreview('', 'Invalid URL'); }
       }, 250);
     }
