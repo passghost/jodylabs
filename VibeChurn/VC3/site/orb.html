@@ -35,6 +35,7 @@
       --accent:#00d4ff; /* teal */
       --accent-2:#6f6fff; /* indigo */
   --eraser-lift: 120px; /* distance the eraser lifts and the search bar pushes */
+  --uc-banner-height:44px;
       --text:#f7f7f8;
       --muted:#b1b1b6;
       --panel:#0f1220ee;
@@ -44,8 +45,10 @@
       --shadow:0 12px 28px rgba(0,212,255,.18), inset 0 1px 0 rgba(255,255,255,.04);
     }
 
-  /* Under construction banner */
-  .uc-banner{width:100%;display:block;background:linear-gradient(90deg,#ffcf6b,#ff6b6b);color:#041028;font-weight:800;padding:8px 12px;text-align:center;border-bottom:1px solid rgba(0,0,0,0.12);box-shadow:0 6px 18px rgba(0,0,0,0.18);}
+  /* Under construction banner - fixed above the header */
+  .uc-banner{position:fixed;top:0;left:0;right:0;height:var(--uc-banner-height);display:grid;place-items:center;background:linear-gradient(90deg,#ffcf6b,#ff6b6b);color:#041028;font-weight:800;padding:8px 12px;text-align:center;border-bottom:1px solid rgba(0,0,0,0.12);box-shadow:0 6px 18px rgba(0,0,0,0.18);z-index:100000}
+  /* push the topbar down so it sits under the banner */
+  .topbar{top:calc(var(--uc-banner-height) + 12px);} 
 
     /* --- Background --- */
     #bg {position:fixed;inset:0;z-index:-1;background:
