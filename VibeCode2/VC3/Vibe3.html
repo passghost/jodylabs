@@ -496,6 +496,8 @@
                 if(!s) return '';
                 // If the value is an absolute URL already, return it unchanged
                 if(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(s)) return s;
+                // If the value is a root-relative path (starts with '/'), keep it relative to origin
+                if(s.startsWith('/')) return location.origin + s;
                 // Clean leading ../ or ./ segments
                 const cleaned = s.replace(/^(?:\.\/|\.\.\/)+/, '');
                 // If this looks like a screenshots path, map to the site screenshots root
