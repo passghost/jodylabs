@@ -44,6 +44,9 @@
       --shadow:0 12px 28px rgba(0,212,255,.18), inset 0 1px 0 rgba(255,255,255,.04);
     }
 
+  /* Under construction banner */
+  .uc-banner{width:100%;display:block;background:linear-gradient(90deg,#ffcf6b,#ff6b6b);color:#041028;font-weight:800;padding:8px 12px;text-align:center;border-bottom:1px solid rgba(0,0,0,0.12);box-shadow:0 6px 18px rgba(0,0,0,0.18);}
+
     /* --- Background --- */
     #bg {position:fixed;inset:0;z-index:-1;background:
       radial-gradient(1200px 800px at 80% -10%, rgba(0,212,255,.14), rgba(0,212,255,0) 60%),
@@ -168,6 +171,7 @@
 <body>
   <canvas id="bg"></canvas>
 
+  <div class="uc-banner">Under construction — some features may not work yet</div>
   <nav class="topbar" aria-label="Primary">
     <div class="brand">
       <div class="logo" aria-hidden="true">
@@ -444,8 +448,9 @@
 
   // Local storage helpers for client-side registry
   const STORAGE_KEY = 'vibecode_projects_v1';
-  function loadProjectsFromStorage(){ try{ const raw = localStorage.getItem(STORAGE_KEY); if(!raw) return []; const parsed = JSON.parse(raw); return Array.isArray(parsed) ? parsed : []; }catch(e){ return []; } }
-  function saveProjectsToStorage(list){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(list || [])); }catch(e){} }
+  function loadProjectsFromStorage(){ try{ const raw = localStorage.getItem(STORAGE_KEY); if(!raw) return []; const parsed = JSON.parse(raw); return Array.isArray(parsed) ? parsed : []; }catch(e){ console.warn('loadProjectsFromStorage parse error', e); return []; } }
+  // return true on success, false on failure
+  function saveProjectsToStorage(list){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(list || [])); console.debug('saveProjectsToStorage: saved', (list||[]).length); return true; }catch(e){ console.warn('saveProjectsToStorage failed', e); return false; } }
   function ensureIdForNode(nd){ if(!nd) return nd; if(!nd.id) nd.id = 'p_' + (nd.title || nd.label || 'x').replace(/\W+/g,'_') + '_' + (Date.now()%100000); if(typeof nd.score === 'undefined') nd.score = Number(nd.score) || 0; return nd; }
 
   let nodes = [];
@@ -1193,16 +1198,18 @@
     const captchaLabel = document.getElementById('captchaLabel');
     const captchaInput = document.getElementById('captchaInput');
 
+  // helper to safely render JSON into a textarea in the DOM
+  function encodeHTML(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
     // simple math captcha
     function genCaptcha(){
       const a = Math.floor(Math.random()*9)+1; const b = Math.floor(Math.random()*9)+1; return { q: `${a} + ${b} = ?`, a: a+b };
     }
   let currentCaptcha = genCaptcha(); if(captchaLabel) captchaLabel.textContent = currentCaptcha.q;
 
-    function loadProjects(){
-      try{ const raw = localStorage.getItem(STORAGE_KEY); if(!raw) return []; return JSON.parse(raw); }catch(e){ return []; }
-    }
-    function saveProjects(list){ localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); }
+  // use the global/local helpers above so behaviour is consistent across the file
+  function loadProjects(){ return loadProjectsFromStorage(); }
+  function saveProjects(list){ return saveProjectsToStorage(list); }
 
     // open submit panel
     // ensure submitOpen opens the submit panel; fallback to locating a CTA if id isn't present
@@ -1245,8 +1252,15 @@
       const list = loadProjects();
       const id = 'proj_' + Date.now() + '_' + Math.floor(Math.random()*9000+1000);
   const entry = { id, title, href, image: normalizeDriveUrl(img || ''), desc: '', score: 0, createdAt: new Date().toISOString() };
-      list.push(entry); saveProjects(list);
-      submitMsg.textContent = 'Thanks — project submitted! It may appear in the index.';
+      list.push(entry);
+      const ok = saveProjects(list);
+      if(!ok){
+        // If localStorage failed (for example, in some privacy modes), surface the JSON so the user can copy it.
+        submitMsg.innerHTML = 'Could not save project to local storage. Your browser may be blocking localStorage. Copy the JSON below and save it somewhere safe.' +
+          '<br><textarea id="manualSave" style="width:100%;height:120px;margin-top:8px">' + encodeHTML(JSON.stringify(entry)) + '</textarea>';
+      } else {
+        submitMsg.textContent = 'Thanks — project submitted! It may appear in the index.';
+      }
       // refresh orb nodes so the newly-submitted project can surface in the sphere
       try{
         const newNode = ensureIdForNode({ label: entry.title, href: entry.href, icon: entry.image, screenshot: entry.image, desc: entry.desc });
@@ -1285,7 +1299,7 @@
     // Expose a small API for index page to read/modify projects
     window.VibeCodeStore = {
       list: ()=> loadProjects(),
-      saveList: (l)=>{ saveProjects(l); }
+      saveList: (l)=>{ return saveProjects(l); }
     };
 
   // open index (new page in same folder: index.html)
