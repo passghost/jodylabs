@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<!--
+[PIXEL SPEC - ULTRA UPGRADE]
+Subject: Ultra high-definition top-down pixel China flag tank, double barrels, heavy armor plating
+View: top-down
+Canvas: 256×256 (quadrupled resolution for ultra HD)
+Palette (10):
+  CoreRed #C8102E, DarkRed #660000, BrightRed #FF3333,
+  Gold #FFD700, GoldLight #FFF59D,
+  Gunmetal #212121, Steel #B0BEC5,
+  TrackDark #111111, TrackLight #444444,
+  Shadow #00000066
+Style notes: chunky pixel shading but with way more resolution, layered armor plates, rivets, rim lights, silhouette boldness
+Motion: tread scroll + turret oscillation ±30°, 6 frames @120ms
+Hitbox/anchor: pivot center (128,128)
+Export: single-file HTML only
+Constraints: no external libs
+Format: .html
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Ultra HD Heavy China Tank</title>
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      display: grid;
+      place-items: center;
+      background: #080808;
+    }
+    canvas {
+      width: 512px;
+      height: 512px;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      border: 4px solid #111;
+      box-shadow: 0 0 60px #a00;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="c" width="256" height="256"></canvas>
+  <script>
+    const P = {
+      red:"#C8102E", redD:"#660000", redL:"#FF3333",
+      gold:"#FFD700", goldL:"#FFF59D",
+      gun:"#212121", steel:"#B0BEC5",
+      trackD:"#111111", trackL:"#444444",
+      shadow:"#00000066", outline:"#000"
+    };
+    const cv=document.getElementById("c"),ctx=cv.getContext("2d");
+    ctx.imageSmoothingEnabled=false;
+    function px(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(x,y,w,h);}
+    function rectO(x,y,w,h,c){px(x,y,w,1,c);px(x,y+h-1,w,1,c);px(x,y,1,h,c);px(x+w-1,y,1,h,c);}
+    function rivet(x,y){px(x,y,2,2,P.steel);}
+    function star(x,y,size,col){ctx.fillStyle=col;for(let i=-size;i<=size;i++){for(let j=-size;j<=size;j++){if(Math.abs(i)+Math.abs(j)<=size)ctx.fillRect(x+i,y+j,1,1);}}}
+    function tread(x,y,w,h,t){
+      px(x,y,w,h,P.trackD);
+      let step=6,off=Math.floor(t/8)%step;
+      for(let i=0;i<h/step;i++){px(x+3,y+((i*step+off)%h),w-6,2,P.trackL);}
+      rectO(x,y,w,h,P.outline);
+    }
+    function hull(){
+      // Main hull layers
+      px(64,96,128,64,P.red);
+      px(66,98,124,60,P.redL);
+      // Armor side skirts
+      px(60,100,4,56,P.redD);
+      px(192,100,4,56,P.redD);
+      // Front glacis
+      px(72,84,112,12,P.red);
+      px(74,84,108,4,P.redL);
+      // Rear plate
+      px(72,160,112,8,P.redD);
+      // Rivets along armor edges
+      for(let i=0;i<10;i++){rivet(64+i*12,96,P.steel);}
+      for(let i=0;i<10;i++){rivet(64+i*12,160,P.steel);}
+      rectO(64,96,128,64,P.outline);
+      rectO(72,84,112,12,P.outline);
+      rectO(72,160,112,8,P.outline);
+    }
+    function turret(t){
+      const cx=128,cy=128;
+      ctx.save();ctx.translate(cx,cy);
+      let a=Math.sin(t/100)*0.55;ctx.rotate(a);
+      // Base turret
+      px(-28,-24,56,48,P.red);
+      px(-26,-22,52,44,P.redL);
+      // Armor cheeks
+      px(-32,-12,4,24,P.redD);
+      px(28,-12,4,24,P.redD);
+      // Barrel housing
+      px(-6,-12,12,24,P.redD);
+      // Rivets
+      rivet(-20,-20);rivet(20,-20);rivet(-20,20);rivet(20,20);
+      rectO(-28,-24,56,48,P.outline);
+      // Double barrels
+      px(16,-6,60,6,P.steel);px(16,-6,60,2,P.gun);
+      px(16, 6,60,6,P.steel);px(16,10,60,2,P.gun);
+      px(76,-6,2,6,P.gun);px(76,6,2,6,P.gun);
+      // Flag stars
+      star(-12,-12,3,P.gold);
+      px(8,-20,3,3,P.gold);px(16,-12,3,3,P.gold);
+      px(16,-4,3,3,P.gold);px(12,4,3,3,P.gold);
+      ctx.restore();
+    }
+    function shadow(){ctx.fillStyle=P.shadow;ctx.beginPath();ctx.ellipse(128,176,80,20,0,0,2*Math.PI);ctx.fill();}
+    function frame(t){
+      ctx.fillStyle="#111";ctx.fillRect(0,0,256,256);
+      shadow();
+      tread(48,88,28,96,t);
+      tread(180,88,28,96,t);
+      hull();
+      turret(t);
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  </script>
+</body>
+</html>

@@ -558,8 +558,510 @@ function drawDozerInto(ctx, targetW, targetH, ts){
 }
 try{ if (typeof window !== 'undefined') window.drawDozerInto = drawDozerInto; }catch(_){ }
 
+// Draw Bond-style tank into a canvas by rendering the original 128×128 art and scaling
+function drawBondtankInto(ctx, targetW, targetH, ts){
+  try{
+    const now = ts || performance.now();
+    const G = 128;
+    // create logical 128x128 buffer
+    const tmp = document.createElement('canvas'); tmp.width = G; tmp.height = G; const octx = tmp.getContext('2d');
+    // helpers (port from Bondtank.html)
+    function px(x,y,col){ x|=0; y|=0; if(x<0||y<0||x>=G||y>=G) return; octx.fillStyle=col; octx.fillRect(x,y,1,1); }
+    function line(x0,y0,x1,y1,col){ x0|=0;y0|=0;x1|=0;y1|=0; let dx=Math.abs(x1-x0), sx = x0<x1?1:-1; let dy=-Math.abs(y1-y0), sy = y0<y1?1:-1; let err = dx+dy, e2; for(;;){ px(x0,y0,col); if(x0===x1 && y0===y1) break; e2=2*err; if(e2>=dy){ err+=dy; x0+=sx; } if(e2<=dx){ err+=dx; y0+=sy; } } }
+    function rect(x,y,w,h,col){ for(let j=0;j<h;j++) for(let i=0;i<w;i++) px(x+i,y+j,col); }
+    function circle(xc,yc,r,col,fill=true){ let x=-r,y=0,err=2-2*r; r=1-err; while(x<0){ if(fill){ for(let i=xc+x;i<=xc-x;i++){ px(i,yc+y,col); px(i,yc-y,col); } } else { px(xc-x,yc+y,col); px(xc-y,yc-x,col); px(xc+y,yc-x,col); px(xc+x,yc-y,col); px(xc+x,yc+y,col); px(xc+y,yc+x,col); px(xc-y,yc+x,col); px(xc-x,yc-y,col); } r=err; if(r<=y){ y++; err+=y*2+1; } if(r>x || err>y){ x++; err+=x*2+1; } } }
+    function rot(ax,ay, ang, cx,cy){ const s=Math.sin(ang), c=Math.cos(ang); ax-=cx; ay-=cy; return [ax*c-ay*s+cx, ax*s+ay*c+cy]; }
+    function ditherStripe(x,y,ratio){ return ((x^y)&1) ? ratio>0.5 : ratio<=0.5; }
+
+    const P = {
+      black:'#0a0a0c', iron:'#1b1c22', steel:'#2b2e36', steel2:'#3a3e49', track:'#15161b', track2:'#262933',
+      red_dark:'#3e0005', red:'#6f000a', red_mid:'#990e16', red_bright:'#c91521', red_glint:'#ff2a3a',
+      belt:'#1a1a1f', belt2:'#101014', chain:'#c0c6cf', chain_sh:'#8a8f98', rivet:'#d8dee7', highlight:'#fafbfd', soot:'#3b3b44', smoke1:'#676b74', smoke2:'#8b8f99', smoke3:'#b7bcc6', amber:'#f4b45a', glow:'#ffd38a'
+    };
+
+    // clear
+    octx.clearRect(0,0,G,G);
+
+    // Implement main parts from Bondtank.html
+    // drawTracks
+    (function drawTracks(t){ const treadOffset = Math.floor((t/2) % 6); rect(10,24,12,80,P.track);  rect(11,25,10,78,P.track2); rect(106,24,12,80,P.track); rect(107,25,10,78,P.track2); for(let k=0;k<15;k++){ const y = 26 + ((k*6 + treadOffset) % 78); line(12,y,20,y+2,P.soot); line(12,y+2,20,y,P.soot); line(108,y,116,y+2,P.soot); line(108,y+2,116,y,P.soot); } for(let i=0;i<5;i++){ const wy=36+i*16; circle(16,wy,4,P.steel,false); circle(112,wy,4,P.steel,false); } })(now);
+
+    // drawHull
+    (function drawHull(t){ for(let y=28;y<100;y++){ for(let x=24;x<104;x++){ const col = (y<40?P.red_dark : (y<70?P.red : P.red_mid)); px(x,y,col); } } // rim lines
+      for(let i=0;i<80;i++){ px(24+i,28,P.red_dark); px(24+i,99,P.red); }
+      for(let j=0;j<72;j++){ px(24,28+j,P.red_dark); px(103,28+j,P.red); }
+      for(let y=40;y<88;y+=2){ px(64,y,P.red_bright); if((y&3)===0) px(63,y,P.red_glint); }
+      // shaded top
+      for(let yy=28; yy<28+10; yy++){ for(let xx=28; xx<28+72; xx++){ /* subtle shading already filled */ } }
+    })(now);
+
+    // drawBelts, chains, spikes, turret, top chains, exhaust, lights, handcuffs
+    (function drawBelts(t){ const belts = [ {x0:28,y0:42,x1:100,y1:62,w:2},{x0:100,y0:46,x1:28,y1:82,w:2},{x0:32,y0:60,x1:96,y1:92,w:3},{x0:96,y0:38,x1:32,y1:74,w:3} ]; belts.forEach(b=>{ const steps = Math.max(Math.abs(b.x1-b.x0), Math.abs(b.y1-b.y0)); for(let i=0;i<=steps;i++){ const x = Math.round(b.x0 + (b.x1-b.x0)*i/steps); const y = Math.round(b.y0 + (b.y1-b.y0)*i/steps); for(let w=-b.w; w<=b.w; w++){ px(x, y+w, P.belt2); if((i+w)&1) px(x, y+w, P.belt); } } for(let i=12;i<steps;i+=24){ const x = Math.round(b.x0 + (b.x1-b.x0)*i/steps); const y = Math.round(b.y0 + (b.y1-b.y0)*i/steps); rect(x-2,y-1,5,3,P.steel); px(x-2,y-1,P.highlight); px(x+3,y-2,P.chain); px(x+4,y-3,P.chain_sh); } }); })(now);
+
+    (function drawChainsWrapped(t){ const sway = Math.sin(t/28)*2; const loops = [ {x0:30,y0:34,x1:98,y1:34}, {x0:30,y0:96,x1:98,y1:96}, {x0:26,y0:36,x1:26,y1:94}, {x0:102,y0:36,x1:102,y1:94} ]; loops.forEach((L,idx)=>{ const steps = Math.max(Math.abs(L.x1-L.x0), Math.abs(L.y1-L.y0)); for(let i=0;i<=steps;i+=3){ let x = Math.round(L.x0 + (L.x1-L.x0)*i/steps); let y = Math.round(L.y0 + (L.y1-L.y0)*i/steps); if(L.y0===L.y1) y += Math.round(Math.sin((i/steps)*Math.PI)*2 + sway*(idx&1?1:-1)); px(x,y,P.chain); px(x-1,y,P.chain_sh); px(x+1,y,P.chain_sh); if(((i+idx*7+now)|0)%19===0) px(x,y-1,P.highlight); if((i/3|0)%2===0){ px(x,y+1,P.chain_sh); px(x,y+2,P.chain); px(x,y+3,P.chain_sh); } } }); })(now);
+
+    (function drawHullFrontSpikes(){ for(let x=32; x<=96; x+=6){ px(x,27,P.chain_sh); px(x,26,P.chain); px(x,25,P.chain_sh); } })();
+
+    (function drawTurret(t){
+      // draw turret dome and rivets only; barrel is rendered separately by the dynamic turret renderer
+      circle(64,56,18,P.steel,false);
+      const ang = (t/60) % (Math.PI*2);
+      for(let yy=-12; yy<=12; yy++){
+        for(let xx=-18; xx<=18; xx++){
+          if((xx*xx)/360 + (yy*yy)/144 <= 1){
+            const [rx,ry] = rot(64+xx,56+yy,ang,64,56);
+            const xi = rx|0, yi = ry|0;
+            const shade = yy<-6 ? P.red_bright : yy<0 ? P.red : yy<6 ? P.red_mid : P.red_dark;
+            px(xi,yi,shade);
+          }
+        }
+      }
+      for(let i=0;i<12;i++){
+        const a = i/12*Math.PI*2 + ang*0.5;
+        const [x,y] = rot(64+Math.cos(a)*18,56+Math.sin(a)*18,0,0,0);
+        px(x|0,y|0,P.rivet);
+      }
+      // intentionally omit barrel drawing here — barrel pixels will come from the rotating turret renderer
+    })(now);
+
+    (function drawTopChains(t){ const ang = (t/32); const R = 26; const N = 24; for(let i=0;i<N;i++){ const a = ang + i*(Math.PI*2/N); const x = 64 + Math.cos(a)*R; const y = 56 + Math.sin(a)*R; px(x|0,y|0,P.chain); px((x+1)|0,y|0,P.chain_sh); if((i+now)%3===0) px((x-1)|0,(y-1)|0,P.highlight); const sx = 64 + Math.cos(a)*(R+3); const sy = 56 + Math.sin(a)*(R+3); px(sx|0,sy|0,P.chain_sh); const sx2 = 64 + Math.cos(a)*(R+4); const sy2 = 56 + Math.sin(a)*(R+4); px(sx2|0,sy2|0,P.chain); const sx3 = 64 + Math.cos(a)*(R+5); const sy3 = 56 + Math.sin(a)*(R+5); px(sx3|0,sy3|0,P.chain_sh); } })(now);
+
+    (function drawExhaust(t){ rect(56,96,16,4,P.steel2); for(let i=0;i<8;i++) px(58+i,97,P.black); const seeds = [0,12,24]; seeds.forEach((s,idx)=>{ const life = ((t+s)%120); const y = 96 - Math.floor(life/3); const x = 64 + Math.round(Math.sin((life/10)+(idx*1.7))*4); if(y>20){ px(x,y,P.smoke1); px(x+1,y,P.smoke2); px(x,y-1,P.smoke3); } }); })(now);
+
+    (function drawLights(t){ const on = ((t/6)|0)%2===0; const c = on ? P.glow : P.amber; rect(42,26,4,2,c); rect(84,26,4,2,c); if(((t/8)|0)%6===0){ px(66,30,P.highlight); } })(now);
+
+    (function drawHandcuffs(t){ const anchor = { x:64, y:22 }; const sway = Math.sin(t/26)*0.28; const drop = 6 + Math.abs(Math.sin(t/40))*2; const offset = 14; const baseL = [anchor.x - offset, anchor.y + drop]; const baseR = [anchor.x + offset, anchor.y + drop]; const [cxL, cyL] = rot(baseL[0], baseL[1], sway, anchor.x, anchor.y); const [cxR, cyR] = rot(baseR[0], baseR[1], sway, anchor.x, anchor.y); const steps = 10; for(let i=0;i<=steps;i++){ const x = cxL + (cxR-cxL)*(i/steps); const y = cyL + (cyR-cyL)*(i/steps) + Math.sin(i/2 + t/10)*0.5; px(x|0,y|0,P.chain); if(i%2===0) px((x-1)|0,(y+1)|0,P.chain_sh); } function ring(cx,cy,R,out,inn){ circle(cx|0,cy|0,R,out,true); circle(cx|0,cy|0,R-2,inn,true); circle(cx|0,cy|0,R-4,out,false); } ring(cxL, cyL, 9, P.steel, P.iron); rect((cxL-2)|0,(cyL-10)|0,4,3,P.steel2); rect((cxL-3)|0,(cyL+6)|0,6,3,P.steel2); px((cxL)|0,(cyL+5)|0,P.highlight); ring(cxR, cyR, 9, P.steel, P.iron); rect((cxR-2)|0,(cyR-10)|0,4,3,P.steel2); rect((cxR-3)|0,(cyR+6)|0,6,3,P.steel2); px((cxR)|0,(cyR+5)|0,P.highlight); const midLx = (cxL+anchor.x)/2, midLy = (cyL+anchor.y)/2 + 2; const midRx = (cxR+anchor.x)/2, midRy = (cyR+anchor.y)/2 + 2; line(cxL|0,cyL|0, midLx|0, midLy|0, P.chain); line(cxR|0,cyR|0, midRx|0, midRy|0, P.chain); px(anchor.x, anchor.y, P.chain); })(now);
+
+    // final: draw tmp into target ctx with imageSmoothing disabled so pixels copy exactly
+    try{ if (typeof ctx !== 'undefined' && ctx && ctx.drawImage){ try{ ctx.imageSmoothingEnabled = false; }catch(_){ } ctx.clearRect(0,0,targetW,targetH); ctx.drawImage(tmp, 0,0,G,G, 0,0,targetW,targetH); }
+    }catch(_){ }
+  }catch(_){ }
+}
+try{ if (typeof window !== 'undefined') window.drawBondtankInto = drawBondtankInto; }catch(_){ }
+
+// Draw only the Bond turret artwork (centered, pointing up) into a target canvas/context
+function drawBondTurretInto(ctx, targetW, targetH, ts){
+  try{
+    const now = ts || performance.now();
+    const G = 128; // draw at high detail then scale by target dims
+    const tmp = document.createElement('canvas'); tmp.width = G; tmp.height = G; const octx = tmp.getContext('2d');
+    try{ octx.imageSmoothingEnabled = false; }catch(_){ }
+    // helpers
+    function px(x,y,col){ x|=0; y|=0; if(x<0||y<0||x>=G||y>=G) return; octx.fillStyle=col; octx.fillRect(x,y,1,1); }
+    function rect(x,y,w,h,col){ for(let j=0;j<h;j++) for(let i=0;i<w;i++) px(x+i,y+j,col); }
+    function circle(cx,cy,r,col){ for(let yy=-r; yy<=r; yy++) for(let xx=-r; xx<=r; xx++) if(xx*xx+yy*yy <= r*r) px(cx+xx, cy+yy, col); }
+    function rotPt(x,y,ang,cx,cy){ const s=Math.sin(ang), c=Math.cos(ang); const dx=x-cx, dy=y-cy; return [Math.round(dx*c - dy*s + cx), Math.round(dx*s + dy*c + cy)]; }
+
+    const P = { steel:'#2b2e36', steel2:'#3a3e49', rivet:'#d8dee7', red:'#6f000a', red_bright:'#c91521', chain:'#c0c6cf', soot:'#3b3b44' };
+
+    octx.clearRect(0,0,G,G);
+    // turret base center
+    const cx = 64, cy = 56;
+    // turret circle
+    for(let yy=-18; yy<=18; yy++) for(let xx=-18; xx<=18; xx++){ if((xx*xx)/360 + (yy*yy)/144 <= 1){ const shade = yy<-6 ? P.red_bright : yy<0 ? P.red : yy<6 ? P.red : P.red; px(cx+xx, cy+yy, shade); } }
+    // rivets
+    for(let i=0;i<12;i++){ const a = i/12*Math.PI*2; const rx = Math.round(cx + Math.cos(a)*18); const ry = Math.round(cy + Math.sin(a)*18); px(rx,ry,P.rivet); }
+    // barrel recoil animation
+    const ang = (now/60) % (Math.PI*2);
+    const recoil = Math.max(0, Math.sin(now/18)*2.0);
+    const barrelLen = 44 - recoil; const barrelW = 3;
+    const bx = cx, by = cy - 10;
+    for(let L=0; L<barrelLen; L++){
+      const tx = bx; const ty = by - L;
+      for(let w=-barrelW; w<=barrelW; w++) px(tx+w, ty, (w===0||w===-1)?P.red_bright:P.steel2);
+    }
+    // barrel muzzle
+    circle(bx, by - barrelLen, 3, P.soot);
+
+    // top small chains / decorations
+    for(let i=0;i<8;i++){ const a = i/8*Math.PI*2 + now*0.002; const x = Math.round(cx + Math.cos(a)*26); const y = Math.round(cy + Math.sin(a)*26); px(x,y,P.chain); }
+
+    // draw tmp into target ctx scaled to targetW/targetH with imageSmoothing disabled
+    try{ ctx.save(); try{ ctx.imageSmoothingEnabled = false; }catch(_){ } ctx.drawImage(tmp, 0,0,G,G, 0,0,targetW,targetH); ctx.restore(); }catch(_){ }
+  }catch(_){ }
+}
+try{ if (typeof window !== 'undefined') window.drawBondTurretInto = drawBondTurretInto; }catch(_){ }
+
+// Draw German tank body into a target canvas/context (pixel-accurate from German.html)
+function drawGermanBodyInto(ctx, targetW, targetH, ts){
+  try{
+    const now = ts || performance.now();
+    // native art in German.html is 384x384 with center offset; recreate and scale down
+    const N = 384;
+  const tmp = document.createElement('canvas'); tmp.width = N; tmp.height = N; const o = tmp.getContext('2d'); try{ o.imageSmoothingEnabled = false; }catch(_){ }
+  // clear temporary canvas to avoid any leftover pixels from previous draws
+  try{ o.clearRect(0,0,N,N); }catch(_){ }
+    const OFFSET = 32;
+    // palette (verbatim from German.html)
+    const P = { deB:'#000000', deR:'#DD0000', deG:'#FFCE00', hull:'#6E7B86', hullL:'#8C99A3', hullD:'#3F4750', steel:'#B0BEC5', gun:'#232323', gunD:'#101010', trackD:'#111111', trackL:'#474747', outline:'#000000', shadow:'#00000055' };
+    // helpers adapted from German.html
+    const R = (x,y,w,h,c)=>{ o.fillStyle=c; o.fillRect((x|0)+OFFSET,(y|0)+OFFSET,w|0,h|0); };
+    const O = (x,y,w,h,c)=>{ R(x,y,w,1,c); R(x,y+h-1,w,1,c); R(x,y,1,h,c); R(x+w-1,y,1,h,c); };
+
+    function rr(x,y,w,h,r,fill){ o.save(); o.translate(OFFSET,OFFSET); o.beginPath(); o.moveTo(x+r,y); o.arcTo(x+w,y,x+w,y+h,r); o.arcTo(x+w,y+h,x,y+h,r); o.arcTo(x,y+h,x,y,r); o.arcTo(x,y,x+w,y,r); o.closePath(); o.fillStyle=fill; o.fill(); o.restore(); }
+    function ro(x,y,w,h,r,stroke){ o.save(); o.translate(OFFSET,OFFSET); o.beginPath(); o.moveTo(x+r,y); o.arcTo(x+w,y,x+w,y+h,r); o.arcTo(x+w,y+h,x,y+h,r); o.arcTo(x,y+h,x,y,r); o.arcTo(x,y,x+w,y,r); o.closePath(); o.strokeStyle=stroke; o.lineWidth=1; o.stroke(); o.restore(); }
+    function clipRR(x,y,w,h,r){ o.save(); o.translate(OFFSET,OFFSET); o.beginPath(); o.moveTo(x+r,y); o.arcTo(x+w,y,x+w,y+h,r); o.arcTo(x+w,y+h,x,y+h,r); o.arcTo(x,y+h,x,y,r); o.arcTo(x,y,x+w,y,r); o.closePath(); o.clip(); }
+    function ellipseShadow(cx,cy,rx,ry){ o.save(); o.translate(OFFSET,OFFSET); o.fillStyle=P.shadow; o.beginPath(); o.ellipse(cx,cy,rx,ry,0,0,Math.PI*2); o.fill(); o.restore(); }
+
+    // Fine seam helpers
+    const seamH=(x,y,w)=>R(x,y,w,1,P.hullD);
+    const seamV=(x,y,h)=>R(x,y,1,h,P.hullD);
+
+  // leave background transparent for drivable (divable) tank so body can be composited over world
+
+    // running gear (treads)
+    function tread(x,y,w,h,t){
+      rr(x,y,w,h,8,P.trackD);
+      R(x+1,y+1,w-2,1,P.trackL);
+      R(x+1,y+h-2,w-2,1,P.trackL);
+      for(let i=0;i<6;i++){ R(x+3, y+8+i*((h-16)/5), w-6, 1, P.gun); }
+      const step=6, off=Math.floor(t/7)%step;
+      for(let i=0;i<h/step;i++){ const yy = y + ((i*step + off) % h); R(x+3, yy, w-6, 2, P.trackL); }
+      rr(x+2,y+2,w-4,6,3,P.trackL);
+      rr(x+2,y+h-8,w-4,6,3,P.trackL);
+      ro(x,y,w,h,8,P.outline);
+    }
+
+    // national cross helper
+    function balkenCross(cx,cy){ R(cx-3,cy-1,6,2,"#fff"); R(cx-1,cy-3,2,6,"#fff"); R(cx-2,cy-1,4,2,P.deB); R(cx-1,cy-2,2,4,P.deB); }
+
+    // hull draw (verbatim structure)
+    function hull(){
+      // hull shell
+      rr(70,136,180,92,24,P.hullL); ro(70,136,180,92,24,P.outline);
+  // tricolor wrap for hull area using clipRR (which saves) and a single restore
+  clipRR(70,136,180,92,24);
+      R(70,136,180,30,P.deB);
+      R(70,166,180,30,P.deR);
+      R(70,196,180,32,P.deG);
+  o.restore();
+      R(72,140,176,2,P.hull);
+
+      balkenCross(86,180); balkenCross(226,180);
+      // upper deck: paint tricolor across the deck area so the whole visible body reads as German-themed
+      function paintTricolor(x,y,w,h){
+        clipRR(x,y,w,h,12);
+        const h1 = Math.floor(h/3);
+        R(x, y, w, h1, P.deB);
+        R(x, y + h1, w, h1, P.deR);
+        R(x, y + 2*h1, w, h - 2*h1, P.deG);
+        o.restore();
+      }
+      rr(94,160,132,46,12,P.hull); ro(94,160,132,46,12,P.outline);
+      paintTricolor(94,160,132,46);
+      seamH(96,172,128); seamH(96,184,128); seamV(120,162,40); seamV(204,162,40);
+      for(let i=0;i<7;i++){ R(100+i*18,171,1,1,P.steel); R(100+i*18,183,1,1,P.steel); }
+      for(let i=0;i<14;i++){ R(100+i*9,198,6,2,P.gun); }
+      rr(90,210,16,12,3,P.hullD); ro(90,210,16,12,3,P.outline); R(92,214,12,2,P.gun);
+      rr(218,210,16,12,3,P.hullD); ro(218,210,16,12,3,P.outline); R(220,214,12,2,P.gun);
+      rr(66,150,10,70,8,P.hullD); ro(66,150,10,70,8,P.outline);
+      rr(244,150,10,70,8,P.hullD); ro(244,150,10,70,8,P.outline);
+    }
+
+    // turret draw invoked for preview composition
+    function turret(t){
+      // shift turret slightly left to better center top elements over hull
+      const cx=156, cy=164; o.save(); o.translate(OFFSET+cx,OFFSET+cy); const a=Math.sin(t/120)*0.46; o.rotate(a);
+      function TRR(x,y,w,h,r,fill){ o.beginPath(); o.moveTo(x+r,y); o.arcTo(x+w,y,x+w,y+h,r); o.arcTo(x+w,y+h,x,y+h,r); o.arcTo(x,y+h,x,y,r); o.arcTo(x,y,x+w,y,r); o.closePath(); o.fillStyle=fill; o.fill(); }
+      function TRO(x,y,w,h,r,stroke){ o.beginPath(); o.moveTo(x+r,y); o.arcTo(x+w,y,x+w,y+h,r); o.arcTo(x+w,y+h,x,y+h,r); o.arcTo(x,y+h,x,y,r); o.arcTo(x,y,x+w,y,r); o.closePath(); o.strokeStyle=stroke; o.lineWidth=1; o.stroke(); }
+
+      TRR(-44,-34,88,68,20,P.hull); TRO(-44,-34,88,68,20,P.outline);
+      o.save(); o.beginPath(); o.moveTo(-40+16,-30); o.arcTo(40,-30,40,30,16); o.arcTo(40,30,-40,30,16); o.arcTo(-40,30,-40,-30,16); o.arcTo(-40,-30,40,-30,16); o.closePath(); o.clip();
+      o.fillStyle=P.deB; o.fillRect(-40,-30,80,18);
+      o.fillStyle=P.deR; o.fillRect(-40,-12,80,18);
+      o.fillStyle=P.deG; o.fillRect(-40,  6,80,18);
+      o.restore();
+
+  TRR(14,-10,18,18,8,P.hullL); TRO(14,-10,18,18,8,P.outline);
+  // nudge steel cupola panels left for better centering
+  R(24,-6,3,2,P.steel); R(24,-1,3,2,P.steel); R(11,-12,3,2,P.steel);
+
+      TRR(-12,-12,24,24,6,P.hullD); TRO(-12,-12,24,24,6,P.outline); R(-4,-2,8,1,P.gun);
+
+      balkenCross(-18,0);
+
+      const sway=Math.sin(t/90)*3; o.fillStyle=P.gun; o.fillRect(-26,-42,2,12); for(let i=0;i<14;i++) o.fillRect(-25+Math.sin((i/14)*Math.PI)*(1+sway/6),-42-i,1,1,P.steel);
+
+  // nudge main armor/steel panels left slightly
+  o.fillStyle=P.steel; o.fillRect(12,-6,92,6); o.fillStyle=P.gun; o.fillRect(12,-6,92,2);
+  o.fillStyle=P.steel; o.fillRect(12, 6,92,6); o.fillStyle=P.gun; o.fillRect(12,10,92,2);
+  o.fillStyle=P.gun;   o.fillRect(104,-6,6,6); o.fillRect(104,6,6,6);
+  R(105,-5,1,1,"#888"); R(107,-4,1,1,"#888"); R(109,-5,1,1,"#888");
+  R(105, 7,1,1,"#888"); R(107, 8,1,1,"#888"); R(109, 7,1,1,"#888");
+      TRR(8,-8,6,16,3,P.hullD); TRO(8,-8,6,16,3,P.outline);
+
+      o.restore();
+    }
+
+  // compose frame: treads and hull only (turret rendered separately)
+  tread(56,132,36,112, now);
+  tread(228,132,36,112, now);
+  hull();
+
+    // scale tmp into target ctx while preserving aspect ratio (centered)
+    try{
+      if (ctx && ctx.drawImage){
+        try{ ctx.imageSmoothingEnabled = false; }catch(_){ }
+        ctx.clearRect(0,0,targetW,targetH);
+        const scale = Math.min(targetW / N, targetH / N);
+        const dw = Math.round(N * scale);
+        const dh = Math.round(N * scale);
+        const dx = Math.floor((targetW - dw) / 2);
+        const dy = Math.floor((targetH - dh) / 2);
+        ctx.drawImage(tmp, 0,0,N,N, dx,dy,dw,dh);
+      }
+    }catch(_){ }
+  }catch(_){ }
+}
+
+// Draw German turret only (for rotating turret canvas)
+function drawGermanTurretInto(ctx, targetW, targetH, ts){
+  try{
+    const now = ts || performance.now();
+  const N = 384; const tmp = document.createElement('canvas'); tmp.width = N; tmp.height = N; const o = tmp.getContext('2d'); try{ o.imageSmoothingEnabled = false; }catch(_){ }
+  // clear temporary turret canvas before drawing
+  try{ o.clearRect(0,0,N,N); }catch(_){ }
+    const OFFSET = 32;
+    const P = { deB:'#000000', deR:'#DD0000', deG:'#FFCE00', hull:'#6E7B86', hullL:'#8C99A3', hullD:'#3F4750', steel:'#B0BEC5', gun:'#232323', gunD:'#101010', trackD:'#111111', trackL:'#474747', outline:'#000000', shadow:'#00000055' };
+  function TRR(x,y,w,h,r,fill){ o.save(); o.translate(OFFSET,OFFSET); o.beginPath(); o.moveTo(x+r,y); o.arcTo(x+w,y,x+w,y+h,r); o.arcTo(x+w,y+h,x,y+h,r); o.arcTo(x,y+h,x,y,r); o.arcTo(x,y,x+w,y,r); o.closePath(); o.fillStyle=fill; o.fill(); o.restore(); }
+  function TRO(x,y,w,h,r,stroke){ o.save(); o.translate(OFFSET,OFFSET); o.beginPath(); o.moveTo(x+r,y); o.arcTo(x+w,y,x+w,y+h,r); o.arcTo(x+w,y+h,x,y+h,r); o.arcTo(x,y+h,x,y,r); o.arcTo(x,y,x+w,y,r); o.closePath(); o.strokeStyle=stroke; o.lineWidth=1; o.stroke(); o.restore(); }
+  // small pixel helper used by turret (mirrors drawGermanBodyInto's R)
+  const R = (x,y,w,h,c)=>{ o.fillStyle=c; o.fillRect((x|0)+OFFSET,(y|0)+OFFSET,w|0,h|0); };
+  function balkenCross(cx,cy){ R(cx-3,cy-1,6,2,"#fff"); R(cx-1,cy-3,2,6,"#fff"); R(cx-2,cy-1,4,2,P.deB); R(cx-1,cy-2,2,4,P.deB); }
+    // turret draw (verbatim from German.html turret block)
+  const cx = 160, cy = 160; o.save(); o.translate(OFFSET+cx,OFFSET+cy); const a = Math.sin(now/120)*0.46; const GERMAN_STATIC_ROT = (-26 * Math.PI) / 180; o.rotate(a + GERMAN_STATIC_ROT);
+    function TRR_local(x,y,w,h,r,fill){ o.beginPath(); o.moveTo(x+r,y); o.arcTo(x+w,y,x+w,y+h,r); o.arcTo(x+w,y+h,x,y+h,r); o.arcTo(x,y+h,x,y,r); o.arcTo(x,y,x+w,y,r); o.closePath(); o.fillStyle=fill; o.fill(); }
+    function TRO_local(x,y,w,h,r,stroke){ o.beginPath(); o.moveTo(x+r,y); o.arcTo(x+w,y,x+w,y+h,r); o.arcTo(x+w,y+h,x,y+h,r); o.arcTo(x,y+h,x,y,r); o.arcTo(x,y,x+w,y,r); o.closePath(); o.strokeStyle=stroke; o.lineWidth=1; o.stroke(); }
+    TRR_local(-44,-34,88,68,20,P.hull); TRO_local(-44,-34,88,68,20,P.outline);
+    o.save(); o.beginPath(); o.moveTo(-40+16,-30); o.arcTo(40,-30,40,30,16); o.arcTo(40,30,-40,30,16); o.arcTo(-40,30,-40,-30,16); o.arcTo(-40,-30,40,-30,16); o.closePath(); o.clip();
+    o.fillStyle=P.deB; o.fillRect(-40,-30,80,18);
+    o.fillStyle=P.deR; o.fillRect(-40,-12,80,18);
+    o.fillStyle=P.deG; o.fillRect(-40,6,80,18);
+    o.restore();
+
+    // Cupola ring with periscopes (exact coordinates from German.html)
+    TRR_local(14,-10,18,18,8,P.hullL); TRO_local(14,-10,18,18,8,P.outline);
+    R(28,-6,3,2,P.steel); R(28,-1,3,2,P.steel); R(15,-12,3,2,P.steel);
+
+    // Vision slit on mantlet
+    TRR_local(-12,-12,24,24,6,P.hullD); TRO_local(-12,-12,24,24,6,P.outline); R(-4,-2,8,1,P.gun);
+
+    // Marking
+    balkenCross(-18,0);
+
+    // Antenna sway
+    const sway=Math.sin(now/90)*3; o.fillStyle=P.gun; o.fillRect(-26,-42,2,12); for(let i=0;i<14;i++) o.fillRect(-25+Math.sin((i/14)*Math.PI)*(1+sway/6),-42-i,1,1,P.steel);
+
+    // Twin barrels with perforated muzzle brakes
+    o.fillStyle=P.steel; o.fillRect(16,-6,92,6); o.fillStyle=P.gun; o.fillRect(16,-6,92,2);
+    o.fillStyle=P.steel; o.fillRect(16,6,92,6); o.fillStyle=P.gun; o.fillRect(16,10,92,2);
+    o.fillStyle=P.gun; o.fillRect(108,-6,6,6); o.fillRect(108,6,6,6);
+    R(109,-5,1,1,"#888"); R(111,-4,1,1,"#888"); R(113,-5,1,1,"#888");
+    R(109,7,1,1,"#888"); R(111,8,1,1,"#888"); R(113,7,1,1,"#888");
+
+    // Barrel brace
+    TRR_local(8,-8,6,16,3,P.hullD); TRO_local(8,-8,6,16,3,P.outline);
+    o.restore();
+    try{
+      if (ctx && ctx.drawImage){
+        try{ ctx.imageSmoothingEnabled = false; }catch(_){ }
+        ctx.clearRect(0,0,targetW,targetH);
+        const scale = Math.min(targetW / N, targetH / N);
+        const dw = Math.round(N * scale);
+        const dh = Math.round(N * scale);
+        const dx = Math.floor((targetW - dw) / 2);
+        const dy = Math.floor((targetH - dh) / 2);
+        ctx.drawImage(tmp, 0,0,N,N, dx,dy,dw,dh);
+      }
+    }catch(_){ }
+  }catch(_){ }
+}
+
+// Draw Mexican tank body into a target canvas/context (pixel-accurate from Mexico.html)
+function drawMexicoBodyInto(ctx, targetW, targetH, ts){
+  try{
+    const now = ts || performance.now();
+    // native art in Mexico.html is 320x320
+    const N = 320;
+    const tmp = document.createElement('canvas'); tmp.width = N; tmp.height = N; const o = tmp.getContext('2d'); try{ o.imageSmoothingEnabled = false; }catch(_){ }
+    try{ o.clearRect(0,0,N,N); }catch(_){ }
+    // Palette and helpers (ported from Mexico.html)
+    const P = { mxG:'#006847', mxW:'#FFFFFF', mxR:'#CE1126', hullD:'#074D36', hullL:'#1E7F5C', steel:'#B0BEC5', gun:'#232323', gunD:'#101010', trackD:'#111111', trackL:'#474747', gold:'#C8A200', brown:'#7B4B2A', bean:'#9C5B3A', bean2:'#8B4B33', outline:'#000000', shadow:'#00000055' };
+    const R = (x,y,w,h,c)=>{ o.fillStyle=c; o.fillRect(x|0, y|0, w|0, h|0); };
+    const O = (x,y,w,h,c)=>{ R(x,y,w,1,c); R(x,y+h-1,w,1,c); R(x,y,1,h,c); R(x+w-1,y,1,h,c); };
+    function rivet(x,y){ R(x,y,2,2,P.steel); }
+    function bolt(x,y){ R(x,y,1,1,P.gunD); }
+    function ellipseShadow(cx,cy,rx,ry){ o.save(); o.fillStyle=P.shadow; o.beginPath(); o.ellipse(cx,cy,rx,ry,0,0,Math.PI*2); o.fill(); o.restore(); }
+    function beanPixel(x,y){ R(x, y, 1, 1, Math.random() < 0.5 ? P.bean : P.bean2); if(Math.random()<0.6) R(x+1, y, 1, 1, P.bean2); if(Math.random()<0.4) R(x, y+1, 1, 1, P.bean); }
+    function beanSack(x,y,w=14,h=10,seed=0){ R(x, y, w, h, P.brown); R(x + (w>>1) - 1, y-2, 2, 2, P.gun); R(x, y, w, 1, P.hullL); O(x, y, w, h, P.outline); for(let i=0;i<4;i++){ beanPixel(x + 2 + ((i*3 + seed)% (w-3)), y + 2 + (i%2)); } }
+    function beanCrate(x,y,w=22,h=12,open=true,seed=0){ R(x, y, w, h, "#6b4a2f"); O(x, y, w, h, P.outline); for(let i=0;i<Math.floor(w/5);i++){ R(x + i*5, y, 1, h, "#5c3f29"); } R(x-2, y-2, w+4, 2, P.steel); R(x-2, y+h, w+4, 2, P.steel); if(open){ for(let i=0;i<30;i++){ const bx = x + 2 + ((i*3 + seed)% (w-4)); const by = y + 2 + (i% (h-4)); beanPixel(bx, by); } R(x, y-1, w, 1, "#7a5a3a"); } }
+
+    function tread(x,y,w,h,t){ R(x,y,w,h,P.trackD); for(let i=0;i<5;i++){ R(x+2, y+6+i*((h-12)/4), w-4, 2, P.trackL); } const step = 6, off = Math.floor(t/7)%step; for(let i=0;i<h/step;i++){ const yy = y + ((i*step + off) % h); R(x+3, yy, w-6, 2, P.trackL); } O(x,y,w,h,P.outline); }
+
+    function hull(){ R(76,140,168,80,P.hullL); R(78,142,164,76,P.hullL); R(68,146,8,72,P.hullD); R(244,146,8,72,P.hullD); R(88,120,144,20,P.hullL); R(90,120,140,6,P.mxG); O(88,120,144,20,P.outline); R(90,220,140,12,P.hullD); O(90,220,140,12,P.outline); for(let i=0;i<9;i++){ for(let j=0;j<2;j++){ const tx = 94 + i*15, ty = 126 + j*9; R(tx,ty,11,7,P.hullL); O(tx,ty,11,7,P.outline); bolt(tx+5,ty+3); } } R(92,156,136,48,P.hullL); R(94,158,132,44,P.hullL); O(92,156,136,48,P.outline); R(108,164,24,14,P.hullD); O(108,164,24,14,P.outline); rivet(114,168); rivet(122,168); R(188,164,24,14,P.hullD); O(188,164,24,14,P.outline); rivet(194,168); rivet(202,168); for(let i=0;i<10;i++){ R(112+i*10,196,6,2,P.gun); } for(let i=0;i<14;i++){ rivet(70,148+i*5); rivet(250,148+i*5); } O(76,140,168,80,P.outline); }
+
+    function mexicanEmblemTiny(cx,cy){ R(cx-2, cy-1, 4, 3, P.gold); R(cx-4, cy+2, 8, 1, P.bean); R(cx-3, cy+1, 6, 1, P.brown); }
+
+    function turret(t){ const cx=160, cy=164; o.save(); o.translate(cx,cy); const a = Math.sin(t/120)*0.46; o.rotate(a); R(-40,-30,80,60,P.hullL); R(-38,-28,76,56,P.hullL); O(-40,-30,80,60,P.outline); R(-46,-14,6,28,P.hullD); R(40,-14,6,28,P.hullD); O(-46,-14,6,28,P.outline); O(40,-14,6,28,P.outline); R(-10,-12,20,24,P.hullD); O(-10,-12,20,24,P.outline); R(-38,-28,24,56,P.mxG); R(-14,-28,24,56,P.mxW); R(10,-28,24,56,P.mxR); mexicanEmblemTiny(-2,-4); R(-22,-8,12,12,P.hullD); O(-22,-8,12,12,P.outline); rivet(-18,-4); rivet(-12,-4); const sway = Math.sin(t/90)*3; R(-26,-30,2, -12, P.gun); for(let i=0;i<14;i++){ R(-25 + Math.sin((i/14)*Math.PI)*(1+sway/6), -42 - i, 1, 1, P.steel); } R(16,-6,90,6,P.steel);  R(16,-6,90,2,P.gun); R(106,-6,2,6,P.gun); R(16, 6,90,6,P.steel);  R(16,10,90,2,P.gun); R(106,6,2,6,P.gun); R(8,-8,6,16,P.hullD); O(8,-8,6,16,P.outline); for(let i=0;i<6;i++){ bolt(-36+i*12,-28); bolt(-36+i*12,28); } o.restore(); }
+
+    function beanRack(side="left", jiggle=0, tier=0){ const baseY = 146 - tier*18; const height = 64; const xBar = (side==="left") ? 66 : 246; R(xBar, baseY, 2, height, P.gun); R(xBar + ((side==="left")?6:-6), baseY, 2, height, P.gun); R(xBar-1, baseY, 10, 2, P.gun); R(xBar-1, baseY+height-2, 10, 2, P.gun); const xSack = (side==="left") ? xBar-12 : xBar- (14-2); for(let i=0;i<5;i++){ const yS = baseY + 4 + i* ((height-10)/5) + (i%2 ? jiggle : -jiggle); beanSack(xSack, yS, 14, 10, i + (tier*7)); } }
+
+    function deckBeans(t){ R(92,156,136,2,P.steel); R(92,202,136,2,P.steel); const j = Math.round(Math.sin(t/150)); beanSack(96,160 + j, 14, 10, 1); beanSack(112,160 - j, 14, 10, 2); beanSack(202,160 - j, 14, 10, 3); beanSack(218,160 + j, 14, 10, 4); beanCrate(110,206,22,12,true, 11); beanCrate(188,206,22,12,true, 17); for(let i=0;i<10;i++){ beanPixel(110 + 2 + (i%20), 219 + (i%2)); beanPixel(188 + 2 + ((i+5)%20), 219 + (i%2)); } }
+
+  // keep background transparent (no solid fill) so tank body composes over world
+  function drawBG(){ ellipseShadow(160,210,105,26); }
+
+  // don't draw turret into the body canvas; turret is rendered from the separate turret canvas
+  function frame(t){ drawBG(); tread(56,132,36,112,t); tread(228,132,36,112,t); hull(); const jiggle = Math.round(Math.sin(t/140)); beanRack("left",  jiggle, 0); beanRack("left", -jiggle, 1); beanRack("right", -jiggle, 0); beanRack("right",  jiggle, 1); deckBeans(t); }
+
+    // compose once into tmp
+    try{ frame(now); }catch(_){ }
+
+    // scale tmp into target ctx
+    try{ if (ctx && ctx.drawImage){ try{ ctx.imageSmoothingEnabled = false; }catch(_){ } ctx.clearRect(0,0,targetW,targetH); const scale = Math.min(targetW / N, targetH / N); const dw = Math.round(N * scale); const dh = Math.round(N * scale); const dx = Math.floor((targetW - dw) / 2); const dy = Math.floor((targetH - dh) / 2); ctx.drawImage(tmp, 0,0,N,N, dx,dy,dw,dh); } }catch(_){ }
+  }catch(_){ }
+}
+
+// Draw Mexican turret only (for rotating turret canvas)
+function drawMexicoTurretInto(ctx, targetW, targetH, ts){
+  try{
+    const now = ts || performance.now();
+    const N = 320; const tmp = document.createElement('canvas'); tmp.width = N; tmp.height = N; const o = tmp.getContext('2d'); try{ o.imageSmoothingEnabled = false; }catch(_){ }
+    try{ o.clearRect(0,0,N,N); }catch(_){ }
+    // Reuse helpers/palette from body draw
+    const P = { mxG:'#006847', mxW:'#FFFFFF', mxR:'#CE1126', hullD:'#074D36', hullL:'#1E7F5C', steel:'#B0BEC5', gun:'#232323', gunD:'#101010', trackD:'#111111', trackL:'#474747', gold:'#C8A200', brown:'#7B4B2A', bean:'#9C5B3A', bean2:'#8B4B33', outline:'#000000', shadow:'#00000055' };
+    const R = (x,y,w,h,c)=>{ o.fillStyle=c; o.fillRect(x|0, y|0, w|0, h|0); };
+    const O = (x,y,w,h,c)=>{ R(x,y,w,1,c); R(x,y+h-1,w,1,c); R(x,y,1,h,c); R(x+w-1,y,1,h,c); };
+    function mexicanEmblemTiny(cx,cy){ R(cx-2, cy-1, 4, 3, P.gold); R(cx-4, cy+2, 8, 1, P.bean); R(cx-3, cy+1, 6, 1, P.brown); }
+  // turret (same pivot as in Mexico.html)
+  const cx=160, cy=160; o.save(); o.translate(cx,cy); const a = Math.sin(now/120)*0.46; o.rotate(a);
+    // turret body
+    R(-40,-30,80,60,P.hullL); R(-38,-28,76,56,P.hullL); O(-40,-30,80,60,P.outline);
+    R(-38,-28,24,56,P.mxG); R(-14,-28,24,56,P.mxW); R(10,-28,24,56,P.mxR);
+    mexicanEmblemTiny(-2,-4);
+    // cupola and periscopes
+    R(-22,-8,12,12,P.hullD); O(-22,-8,12,12,P.outline);
+    const sway = Math.sin(now/90)*3; R(-26,-30,2, -12, P.gun); for(let i=0;i<14;i++){ R(-25 + Math.sin((i/14)*Math.PI)*(1+sway/6), -42 - i, 1, 1, P.steel); }
+    // heavy twin barrels
+    R(16,-6,90,6,P.steel);  R(16,-6,90,2,P.gun); R(106,-6,2,6,P.gun);
+    R(16, 6,90,6,P.steel);  R(16,10,90,2,P.gun); R(106,6,2,6,P.gun);
+    o.restore();
+
+    // draw into target
+    try{ if (ctx && ctx.drawImage){ try{ ctx.imageSmoothingEnabled = false; }catch(_){ } ctx.clearRect(0,0,targetW,targetH); const scale = Math.min(targetW / N, targetH / N); const dw = Math.round(N * scale); const dh = Math.round(N * scale); const dx = Math.floor((targetW - dw) / 2); const dy = Math.floor((targetH - dh) / 2); ctx.drawImage(tmp, 0,0,N,N, dx,dy,dw,dh); } }catch(_){ }
+  }catch(_){ }
+}
+
+// Draw China tank body (256x256 native) into target canvas
+function drawChinaBodyInto(ctx, targetW, targetH, ts){
+  try{
+    const now = ts || performance.now();
+    const N = 256;
+    const tmp = document.createElement('canvas'); tmp.width = N; tmp.height = N; const o = tmp.getContext('2d'); try{ o.imageSmoothingEnabled = false; }catch(_){ }
+    try{ o.clearRect(0,0,N,N); }catch(_){ }
+    const P = { red:'#C8102E', redD:'#660000', redL:'#FF3333', gold:'#FFD700', goldL:'#FFF59D', gun:'#212121', steel:'#B0BEC5', trackD:'#111111', trackL:'#444444', shadow:'#00000066', outline:'#000' };
+    const px = (x,y,w,h,c)=>{ o.fillStyle=c; o.fillRect(x|0,y|0,w|0,h|0); };
+    const rectO = (x,y,w,h,c)=>{ px(x,y,w,1,c); px(x,y+h-1,w,1,c); px(x,y,1,h,c); px(x+w-1,y,1,h,c); };
+    const rivet = (x,y)=>{ px(x,y,2,2,P.steel); };
+    function star(x,y,size,col){ o.fillStyle=col; for(let i=-size;i<=size;i++){ for(let j=-size;j<=size;j++){ if(Math.abs(i)+Math.abs(j)<=size) o.fillRect(x+i,y+j,1,1); } } }
+    function tread(x,y,w,h,t){ px(x,y,w,h,P.trackD); let step=6,off=Math.floor(t/8)%step; for(let i=0;i<h/step;i++){ px(x+3,y+((i*step+off)%h),w-6,2,P.trackL); } rectO(x,y,w,h,P.outline); }
+    function hull(){ px(64,96,128,64,P.red); px(66,98,124,60,P.redL); px(60,100,4,56,P.redD); px(192,100,4,56,P.redD); px(72,84,112,12,P.red); px(74,84,108,4,P.redL); px(72,160,112,8,P.redD); for(let i=0;i<10;i++){ rivet(64+i*12,96); } for(let i=0;i<10;i++){ rivet(64+i*12,160); } rectO(64,96,128,64,P.outline); rectO(72,84,112,12,P.outline); rectO(72,160,112,8,P.outline); }
+    function turretBody(t){ const cx=128,cy=128; o.save(); o.translate(cx,cy); let a=Math.sin(t/100)*0.55; o.rotate(a); px(-28,-24,56,48,P.red); px(-26,-22,52,44,P.redL); px(-32,-12,4,24,P.redD); px(28,-12,4,24,P.redD); px(-6,-12,12,24,P.redD); rivet(-20,-20); rivet(20,-20); rivet(-20,20); rivet(20,20); rectO(-28,-24,56,48,P.outline); px(16,-6,60,6,P.steel);px(16,-6,60,2,P.gun); px(16,6,60,6,P.steel);px(16,10,60,2,P.gun); px(76,-6,2,6,P.gun);px(76,6,2,6,P.gun); star(-12,-12,3,P.gold); px(8,-20,3,3,P.gold); px(16,-12,3,3,P.gold); px(16,-4,3,3,P.gold); px(12,4,3,3,P.gold); o.restore(); }
+    function shadow(){ o.fillStyle=P.shadow; o.beginPath(); o.ellipse(128,176,80,20,0,0,Math.PI*2); o.fill(); }
+
+    // keep background transparent and render hull/treads; turret drawn only in turret canvas
+    shadow();
+    tread(48,88,28,96, now);
+    tread(180,88,28,96, now);
+    hull();
+
+    // draw into target
+    try{ if (ctx && ctx.drawImage){ try{ ctx.imageSmoothingEnabled = false; }catch(_){ } ctx.clearRect(0,0,targetW,targetH); const scale = Math.min(targetW / N, targetH / N); const dw = Math.round(N * scale); const dh = Math.round(N * scale); const dx = Math.floor((targetW - dw) / 2); const dy = Math.floor((targetH - dh) / 2); ctx.drawImage(tmp, 0,0,N,N, dx,dy,dw,dh); } }catch(_){ }
+  }catch(_){ }
+}
+
+// Draw China turret only (for rotating turret canvas)
+function drawChinaTurretInto(ctx, targetW, targetH, ts){
+  try{
+    const now = ts || performance.now();
+    const N = 256; const tmp = document.createElement('canvas'); tmp.width = N; tmp.height = N; const o = tmp.getContext('2d'); try{ o.imageSmoothingEnabled = false; }catch(_){ }
+    try{ o.clearRect(0,0,N,N); }catch(_){ }
+    const P = { red:'#C8102E', redD:'#660000', redL:'#FF3333', gold:'#FFD700', goldL:'#FFF59D', gun:'#212121', steel:'#B0BEC5', trackD:'#111111', trackL:'#444444', shadow:'#00000066', outline:'#000' };
+    const px = (x,y,w,h,c)=>{ o.fillStyle=c; o.fillRect(x|0,y|0,w|0,h|0); };
+    const rectO = (x,y,w,h,c)=>{ px(x,y,w,1,c); px(x,y+h-1,w,1,c); px(x,y,1,h,c); px(x+w-1,y,1,h,c); };
+    const rivet = (x,y)=>{ px(x,y,2,2,P.steel); };
+    const star = (x,y,size,col)=>{ o.fillStyle=col; for(let i=-size;i<=size;i++){ for(let j=-size;j<=size;j++){ if(Math.abs(i)+Math.abs(j)<=size) o.fillRect(x+i,y+j,1,1); } } };
+    const cx=128,cy=128; o.save(); o.translate(cx,cy); const a = Math.sin(now/100)*0.55; o.rotate(a);
+    px(-28,-24,56,48,P.red); px(-26,-22,52,44,P.redL); px(-32,-12,4,24,P.redD); px(28,-12,4,24,P.redD); px(-6,-12,12,24,P.redD); rivet(-20,-20); rivet(20,-20); rivet(-20,20); rivet(20,20); rectO(-28,-24,56,48,P.outline); px(16,-6,60,6,P.steel);px(16,-6,60,2,P.gun); px(16,6,60,6,P.steel);px(16,10,60,2,P.gun); px(76,-6,2,6,P.gun);px(76,6,2,6,P.gun); star(-12,-12,3,P.gold); px(8,-20,3,3,P.gold); px(16,-12,3,3,P.gold); px(16,-4,3,3,P.gold); px(12,4,3,3,P.gold);
+    o.restore();
+
+    try{ if (ctx && ctx.drawImage){ try{ ctx.imageSmoothingEnabled = false; }catch(_){ } ctx.clearRect(0,0,targetW,targetH); const scale = Math.min(targetW / N, targetH / N); const dw = Math.round(N * scale); const dh = Math.round(N * scale); const dx = Math.floor((targetW - dw) / 2); const dy = Math.floor((targetH - dh) / 2); ctx.drawImage(tmp, 0,0,N,N, dx,dy,dw,dh); } }catch(_){ }
+  }catch(_){ }
+}
+
+// McD's tank (64x64 native) body + turret
+function drawMcdsBodyInto(ctx, targetW, targetH, ts){
+  try{
+    const now = ts || performance.now();
+    const N = 64; const tmp = document.createElement('canvas'); tmp.width = N; tmp.height = N; const o = tmp.getContext('2d'); try{ o.imageSmoothingEnabled = false; }catch(_){ }
+    try{ o.clearRect(0,0,N,N); }catch(_){ }
+    const P = { bg:'#22252a', trackDark:'#2b2b2b', trackLite:'#777777', hullRed:'#c1121f', hullDeep:'#7a0e14', archGold:'#ffd100', roof:'#6b3e2e', roofLite:'#8a543c', window:'#7cc7ff', shadow:'#141414', white:'#ffffff', black:'#000000', green:'#2f6c3f', bun:'#d8a55a', bunDark:'#b27e39', lettuce:'#4aa54a', cheese:'#f9d65a', patty:'#5a2f1d', tomato:'#c44a3a' };
+    const rect = (x,y,w,h,c)=>{ o.fillStyle=c; o.fillRect(x|0,y|0,w|0,h|0); };
+    const px = (x,y,c)=>{ o.fillStyle=c; o.fillRect(x|0,y|0,1,1); };
+  // keep background transparent for McD's body
+  function drawGround(){ /* intentionally empty to preserve transparency */ }
+    function tread(x,y,offset){ rect(x,y,8,48,P.trackDark); rect(x,y,1,48,P.trackLite); rect(x+7,y,1,48,P.shadow); for(let i=y+(offset%4); i<y+48; i+=4){ rect(x+1,i,6,2,P.black); rect(x+1,i+1,6,1,P.trackLite); } }
+    function drawHull(){ rect(13,44,38,8,P.hullDeep); rect(13,12,38,40,P.hullRed); rect(14,16,36,2,P.archGold); rect(14,20,36,1,P.archGold); const wx=[18,26,34,42]; wx.forEach(x=>{ rect(x,23,4,4,P.window); px(x,23,P.white); }); wx.forEach(x=>{ rect(x,29,4,4,P.window); px(x+1,29,P.white); }); rect(30,36,6,8,P.black); rect(31,37,4,6,P.window); px(34,39,P.white); [16,22,40,46].forEach(x=>{ rect(x,43,3,2,P.green); px(x+1,42,P.green); }); facadeM(30,33); }
+    function facadeM(fx,fy){ rect(fx-7,fy-8,3,9,P.archGold); rect(fx+5,fy-8,3,9,P.archGold); rect(fx-2,fy-5,2,2,P.archGold); rect(fx,fy-3,2,2,P.archGold); rect(fx+2,fy-5,2,2,P.archGold); rect(fx-7,fy-8,15,1,P.archGold); rect(fx-4,fy-6,2,1,P.hullDeep); rect(fx+2,fy-6,2,1,P.hullDeep); }
+    function drawRoof(){ rect(18,10,28,6,P.roof); rect(18,10,28,1,P.roofLite); rect(21,11,2,2,P.shadow); rect(41,11,2,2,P.shadow); }
+    function turret(angleRad){ o.save(); o.translate(32,32); o.rotate(angleRad); rect(-8,5,16,2,P.bunDark); rect(-8,3,16,2,P.patty); rect(-9,1,18,2,P.cheese); rect(-8,-1,16,2,P.lettuce); rect(-8,-3,16,2,P.tomato); rect(-8,-7,16,4,P.bun); if (Math.floor(now/120) % 2 === 0){ px(-5,-7,P.white); px(0,-7,P.white); px(5,-7,P.white); } // turret M
+      // M
+      rect(-5,-7,2,6,P.archGold); rect(3,-7,2,6,P.archGold); rect(-2,-5,2,2,P.archGold); rect(0,-4,2,2,P.archGold); rect(2,-5,2,2,P.archGold); rect(-5,-8,10,1,P.archGold); rect(-3,-6,1,1,P.hullDeep); rect(2,-6,1,1,P.hullDeep);
+      rect(8,-1,12,2,P.archGold); px(19,-1,P.white); if (Math.floor(now/120) % 3 === 0) px(20,-1,'#ff4d4d'); o.restore(); }
+
+  // compose (no background fill here; turret is rendered from turret canvas)
+  // scale the McD body art down so the body is 75% of the native 64px canvas
+  try{ o.save(); o.translate(32,32); o.scale(0.75,0.75); o.translate(-32,-32);
+    tread(6,8, Math.floor(now/120)); tread(64-14,8, Math.floor(now/120)); drawHull(); drawRoof();
+  }catch(_){ }
+  try{ o.restore(); }catch(_){ }
+  const angle = ((Math.floor(now/120) % 6) * (Math.PI*2/6));
+
+    // draw into target
+    try{ if (ctx && ctx.drawImage){ try{ ctx.imageSmoothingEnabled = false; }catch(_){ } ctx.clearRect(0,0,targetW,targetH); const scale = Math.min(targetW / N, targetH / N); const dw = Math.round(N * scale); const dh = Math.round(N * scale); const dx = Math.floor((targetW - dw) / 2); const dy = Math.floor((targetH - dh) / 2); ctx.drawImage(tmp, 0,0,N,N, dx,dy,dw,dh); } }catch(_){ }
+  }catch(_){ }
+}
+
+function drawMcdsTurretInto(ctx, targetW, targetH, ts){
+  try{
+    const now = ts || performance.now(); const N = 64; const tmp = document.createElement('canvas'); tmp.width=N; tmp.height=N; const o=tmp.getContext('2d'); try{o.imageSmoothingEnabled=false;}catch(_){ }
+    try{o.clearRect(0,0,N,N);}catch(_){ }
+    const P = { bun:'#d8a55a', bunDark:'#b27e39', patty:'#5a2f1d', cheese:'#f9d65a', lettuce:'#4aa54a', tomato:'#c44a3a', archGold:'#ffd100', white:'#ffffff' };
+    const rect=(x,y,w,h,c)=>{ o.fillStyle=c; o.fillRect(x|0,y|0,w|0,h|0); };
+    const px=(x,y,c)=>{ o.fillStyle=c; o.fillRect(x|0,y|0,1,1); };
+  const angle = ((Math.floor(now/120) % 6) * (Math.PI*2/6));
+  o.save(); o.translate(32,32); // pivot
+  o.rotate(angle); // use base animation angle (remove extra 180deg rotation)
+  o.scale(0.75, 0.75); // reduce turret size by 25%
+    rect(-8,5,16,2,P.bunDark); rect(-8,3,16,2,P.patty); rect(-9,1,18,2,P.cheese); rect(-8,-1,16,2,P.lettuce); rect(-8,-3,16,2,P.tomato); rect(-8,-7,16,4,P.bun); rect(-5,-7,2,6,P.archGold); rect(3,-7,2,6,P.archGold); rect(-2,-5,2,2,P.archGold); rect(0,-4,2,2,P.archGold); rect(2,-5,2,2,P.archGold); rect(-5,-8,10,1,P.archGold); rect(-3,-6,1,1,P.patty); rect(2,-6,1,1,P.patty); rect(8,-1,12,2,P.archGold); px(19,-1,P.white); if (Math.floor(now/120) % 3 === 0) px(20,-1,'#ff4d4d'); o.restore();
+    try{ if (ctx && ctx.drawImage){ try{ ctx.imageSmoothingEnabled = false; }catch(_){ } ctx.clearRect(0,0,targetW,targetH); const scale = Math.min(targetW / N, targetH / N); const dw = Math.round(N * scale); const dh = Math.round(N * scale); const dx = Math.floor((targetW - dw) / 2); const dy = Math.floor((targetH - dh) / 2); ctx.drawImage(tmp, 0,0,N,N, dx,dy,dw,dh); } }catch(_){ }
+  }catch(_){ }
+}
+
 // helper: compute scale to draw an arbitrary sprite canvas so it matches game display size
-function getCanvasDrawScale(spriteCanvas){ try{ const nativeW = (spriteCanvas && spriteCanvas.width) ? spriteCanvas.width : SPR_W; const effScale = effectiveTankScale(); return ((SPR_W * effScale) / nativeW) * camera.zoom; }catch(_){ return effectiveTankScale() * camera.zoom; } }
+function getCanvasDrawScale(spriteCanvas){
+  try{
+    // nativeW: actual pixels in provided canvas
+    const nativeW = (spriteCanvas && spriteCanvas.width) ? spriteCanvas.width : SPR_W;
+    // logicalSPR: the expected logical sprite width in game units (defaults to SPR_W)
+    const logicalSPR = (spriteCanvas && spriteCanvas._logicalSPR) ? spriteCanvas._logicalSPR : SPR_W;
+    const effScale = effectiveTankScale();
+    // scale so that logicalSPR * effScale maps to nativeW pixels, then apply camera.zoom
+    return ((logicalSPR * effScale) / nativeW) * camera.zoom;
+  }catch(_){
+    return effectiveTankScale() * camera.zoom;
+  }
+}
 
 
 
@@ -849,6 +1351,22 @@ function processRespawns(nowt){ try{
         }
     }
   }catch(_){ }
+}
+
+// Helper: check if a world-space object at (wx,wy) is within the camera view plus optional pad (in screen pixels)
+function worldObjectVisible(wx, wy, padScreen = 64){
+  try{
+    // Compute world-space delta to camera, accounting for vertical wrap
+    let dy = wy - camera.y;
+    if (dy > WORLD_H/2) dy -= WORLD_H;
+    if (dy < -WORLD_H/2) dy += WORLD_H;
+    const dx = wx - camera.x;
+    // Project to screen space (camera.zoom already included)
+    const sx = dx * camera.zoom + W/2;
+    const sy = dy * camera.zoom + H/2;
+    if (sx < -padScreen || sx > W + padScreen || sy < -padScreen || sy > H + padScreen) return false;
+    return true;
+  }catch(_){ return true; }
 }
 
 // Billboards moved to js/billboard.js (makeBillboardFrames, animation frames,
@@ -1408,7 +1926,7 @@ function spawnHeartPowerup(x,y, variant, key){ try{ spawnPowerup(x,y,'journal');
 function spawnJournalPowerup(x,y, key){ spawnPowerup(x,y,'journal'); try{ const p = powerups[powerups.length-1]; if (p){ p.hue = 280; p.iconIdx = _p_icons.length - 1; p.heartVariant = 'mend'; p.journalKey = key || 'collect-saw'; } }catch(_){ } }
 
   // helper: 20% chance to drop a heal powerup at billboard location
-function spawnBillboardDrop(bb){ try{ if (!bb) return; const r = Math.random(); if (r < 0.2) spawnHealPowerup(bb.x, bb.y); else if (r < 0.3) spawnJournalPowerup(bb.x, bb.y, 'collect-saw'); }catch(_){ } }
+function spawnBillboardDrop(bb){ try{ if (!bb) return; const r = Math.random(); if (r < 0.25) spawnHealPowerup(bb.x, bb.y); else if (r < 0.35) spawnJournalPowerup(bb.x, bb.y, 'collect-saw'); }catch(_){ } }
 
 function _p_drawSplitPill(cx,cy,hue,t,iconFn){
   // clear
@@ -1707,14 +2225,21 @@ let selectedVehicleVariant = 'default'; // 'default' or 'fordfiesta'
 // Murkia (AMERICA) should be visually larger only when selected
 // Increase this multiplier to make the playable Murkia noticeably bigger than other tanks
 const BLACKSTAR_SCALE = 2.0; // reuse name for multiplier (history)
-function effectiveTankScale(){ try{ return SPRITE_SCALE * ((selectedVehicleVariant === 'murkia') ? BLACKSTAR_SCALE : 1); }catch(_){ return SPRITE_SCALE; } }
+function effectiveTankScale(){ try{ 
+    if (selectedVehicleVariant === 'murkia') return SPRITE_SCALE * BLACKSTAR_SCALE;
+    if (selectedVehicleVariant === 'bondtank') return SPRITE_SCALE * 3; // Bondtank is 3x larger
+    return SPRITE_SCALE;
+  }catch(_){ return SPRITE_SCALE; } }
 // start with tank selected and hide center UI
 selectedVehicle = 'tank';
 center.style.display = 'none';
 // Vehicle menu state: first slot is the default tank (unlocked), others may be locked/placeholders
-// Slot mapping: 0=default, 1=Fiesta, 2=Murkia, 3=Dozer
-const VEHICLE_SLOTS = ['tank', 'fordfiesta', 'murkia', 'dozer'];
-const VEHICLE_UNLOCKED = [true, true, true, true];
+// Slot mapping: 0=default, 1=Fiesta, 2=Murkia, 3=Dozer, 4=Bondtank
+// core vehicle slots; add extra placeholder slots ("emptyX") for future vehicles
+// ensure the German art preview is placed into the 6th slot (index 5)
+const VEHICLE_SLOTS = ['tank', 'fordfiesta', 'murkia', 'dozer', 'bondtank', 'empty6', 'empty7', 'empty8', 'empty9', 'empty4', 'empty5', 'empty1', 'empty2'];
+// unlock all slots now so they are clickable for testing
+const VEHICLE_UNLOCKED = VEHICLE_SLOTS.map(()=> true);
 // NOTE: Fiesta remains locked until the player claims/unlocks it via the Journal.
 // Use the debug helper `window.debugUnlockFiesta()` from the console to unlock for testing.
 // Helper to select a vehicle by slot index (only if unlocked)
@@ -1731,39 +2256,112 @@ function selectVehicleSlot(idx){
     } else if (v === 'heli'){
       selectedVehicle = 'heli';
     } else if (v === 'fordfiesta'){
-    // switch to Fiesta: create small SPR-sized canvases and configure tank assets to use them
-    try{
-      // create body canvas sized to SPR_W x SPR_H
-      if (typeof window !== 'undefined'){
-        if (!window.__fiesta_body) {
-          const fb = document.createElement('canvas'); fb.width = SPR_W; fb.height = SPR_H; const fbg = fb.getContext('2d'); try{ fbg.imageSmoothingEnabled = false; }catch(_){ }
-          try{ drawFordFiestaInto(fbg, SPR_W, SPR_H, performance.now()); }catch(_){ }
-          window.__fiesta_body = fb;
+      // switch to Fiesta: create small SPR-sized canvases and configure tank assets to use them
+      try{
+        // create body canvas sized to SPR_W x SPR_H
+        if (typeof window !== 'undefined'){
+          if (!window.__fiesta_body) {
+            const fb = document.createElement('canvas'); fb.width = SPR_W; fb.height = SPR_H; const fbg = fb.getContext('2d'); try{ fbg.imageSmoothingEnabled = false; }catch(_){ }
+            try{ drawFordFiestaInto(fbg, SPR_W, SPR_H, performance.now()); }catch(_){ }
+            window.__fiesta_body = fb;
+          }
+          if (!window.__fiesta_turret){
+            const ft = document.createElement('canvas'); ft.width = SPR_W; ft.height = SPR_H; const ftg = ft.getContext('2d'); try{ ftg.imageSmoothingEnabled = false; }catch(_){ }
+            // draw a little gray turret matching tank.js style
+            try{
+              // draw an 'X' turret to match tank.js pixel turret
+              ftg.clearRect(0,0,SPR_W,SPR_H);
+              const cx = Math.floor(SPR_W/2), cy = Math.floor(SPR_H/2);
+              ftg.fillStyle = '#9aa8b2';
+              const offs = [-3,-2,-1,0,1,2,3];
+              for (const o of offs){
+                const x1 = cx + o, y1 = cy + o;
+                const x2 = cx + o, y2 = cy - o;
+                if (x1 >= 0 && x1 < SPR_W && y1 >= 0 && y1 < SPR_H) ftg.fillRect(x1, y1, 1, 1);
+                if (x2 >= 0 && x2 < SPR_W && y2 >= 0 && y2 < SPR_H) ftg.fillRect(x2, y2, 1, 1);
+              }
+              ftg.fillStyle = '#dfe8ea'; ftg.fillRect(cx, cy, 1, 1);
+            }catch(_){ }
+            window.__fiesta_turret = ft;
+          }
+          // apply assets to tank module
+          try{ configureTankAssets({ bodyCanvas: window.__fiesta_body, turretCanvas: window.__fiesta_turret }); try{ redrawSprites && typeof redrawSprites === 'function' && redrawSprites(); }catch(_){ } }catch(_){ }
         }
-        if (!window.__fiesta_turret){
-          const ft = document.createElement('canvas'); ft.width = SPR_W; ft.height = SPR_H; const ftg = ft.getContext('2d'); try{ ftg.imageSmoothingEnabled = false; }catch(_){ }
-          // draw a little gray turret matching tank.js style
-          try{
-            // draw an 'X' turret to match tank.js pixel turret
-            ftg.clearRect(0,0,SPR_W,SPR_H);
-            const cx = Math.floor(SPR_W/2), cy = Math.floor(SPR_H/2);
-            ftg.fillStyle = '#9aa8b2';
-            const offs = [-3,-2,-1,0,1,2,3];
-            for (const o of offs){
-              const x1 = cx + o, y1 = cy + o;
-              const x2 = cx + o, y2 = cy - o;
-              if (x1 >= 0 && x1 < SPR_W && y1 >= 0 && y1 < SPR_H) ftg.fillRect(x1, y1, 1, 1);
-              if (x2 >= 0 && x2 < SPR_W && y2 >= 0 && y2 < SPR_H) ftg.fillRect(x2, y2, 1, 1);
-            }
-            ftg.fillStyle = '#dfe8ea'; ftg.fillRect(cx, cy, 1, 1);
-          }catch(_){ }
-          window.__fiesta_turret = ft;
-        }
-        // apply assets to tank module
-        try{ configureTankAssets({ bodyCanvas: window.__fiesta_body, turretCanvas: window.__fiesta_turret }); try{ redrawSprites && typeof redrawSprites === 'function' && redrawSprites(); }catch(_){ } }catch(_){ }
-      }
-    }catch(_){ }
+      }catch(_){ }
       selectedVehicle = 'tank'; selectedVehicleVariant = 'fordfiesta';
+    } else if (v === 'empty6'){
+      // populate slot 6 with the German tank art from German.html (pixel-perfect bake)
+      try{
+        if (typeof window !== 'undefined'){
+          // create body canvas at SPR_W x SPR_H
+            // always recreate native-size German canvases to pick up the latest drawing code
+            const NATIVE = 384;
+            const gb = document.createElement('canvas'); gb.width = NATIVE; gb.height = NATIVE; const gbg = gb.getContext('2d'); try{ gbg.imageSmoothingEnabled = false; }catch(_){ }
+            try{ gbg.clearRect(0,0,NATIVE,NATIVE); drawGermanBodyInto(gbg, NATIVE, NATIVE, performance.now()); }catch(_){ }
+            try{ gb._logicalSPR = 64; }catch(_){ }
+            window.__german_body = gb;
+            // recreate turret canvas at native size
+            const gt = document.createElement('canvas'); gt.width = NATIVE; gt.height = NATIVE; const gtg = gt.getContext('2d'); try{ gtg.imageSmoothingEnabled = false; }catch(_){ }
+            try{ gtg.clearRect(0,0,NATIVE,NATIVE); drawGermanTurretInto(gtg, NATIVE, NATIVE, performance.now()); }catch(_){ }
+            try{ gt._logicalSPR = 64; }catch(_){ }
+            window.__german_turret = gt;
+            // apply assets and mark selected variant; set SPR_W/SPR_H to native so no scaling is applied
+            try{ selectedVehicle = 'tank'; selectedVehicleVariant = 'german'; configureTankAssets({ SPR_W:384, SPR_H:384, bodyCanvas: window.__german_body, turretCanvas: window.__german_turret }); try{ redrawSprites && typeof redrawSprites === 'function' && redrawSprites(); }catch(_){ } }catch(_){ }
+        }
+      }catch(_){ }
+    }
+    else if (v === 'empty7'){
+      // populate slot 7 with the Mexican heavy tank art from Mexico.html (pixel-perfect bake)
+      try{
+        if (typeof window !== 'undefined'){
+          // always recreate native-size Mexico canvases to pick up the latest drawing code
+          const NATIVE_MX = 320;
+          const mb = document.createElement('canvas'); mb.width = NATIVE_MX; mb.height = NATIVE_MX; const mbg = mb.getContext('2d'); try{ mbg.imageSmoothingEnabled = false; }catch(_){ }
+          try{ mbg.clearRect(0,0,NATIVE_MX,NATIVE_MX); drawMexicoBodyInto(mbg, NATIVE_MX, NATIVE_MX, performance.now()); }catch(_){ }
+          try{ mb._logicalSPR = 64; }catch(_){ }
+          window.__mexico_body = mb;
+          const mt = document.createElement('canvas'); mt.width = NATIVE_MX; mt.height = NATIVE_MX; const mtg = mt.getContext('2d'); try{ mtg.imageSmoothingEnabled = false; }catch(_){ }
+          try{ mtg.clearRect(0,0,NATIVE_MX,NATIVE_MX); drawMexicoTurretInto(mtg, NATIVE_MX, NATIVE_MX, performance.now()); }catch(_){ }
+          try{ mt._logicalSPR = 64; }catch(_){ }
+          window.__mexico_turret = mt;
+          // apply assets to tank module
+          try{ selectedVehicle = 'tank'; selectedVehicleVariant = 'mexico'; configureTankAssets({ SPR_W:NATIVE_MX, SPR_H:NATIVE_MX, bodyCanvas: window.__mexico_body, turretCanvas: window.__mexico_turret }); try{ redrawSprites && typeof redrawSprites === 'function' && redrawSprites(); }catch(_){ } }catch(_){ }
+        }
+      }catch(_){ }
+    }
+    else if (v === 'empty8'){
+      // populate slot 8 with the China tank art from China.html (pixel-perfect bake)
+      try{
+        if (typeof window !== 'undefined'){
+          const NATIVE_CH = 256;
+          const cb = document.createElement('canvas'); cb.width = NATIVE_CH; cb.height = NATIVE_CH; const cbg = cb.getContext('2d'); try{ cbg.imageSmoothingEnabled = false; }catch(_){ }
+          try{ cbg.clearRect(0,0,NATIVE_CH,NATIVE_CH); drawChinaBodyInto(cbg, NATIVE_CH, NATIVE_CH, performance.now()); }catch(_){ }
+          try{ cb._logicalSPR = 64; }catch(_){ }
+          window.__china_body = cb;
+          const ct = document.createElement('canvas'); ct.width = NATIVE_CH; ct.height = NATIVE_CH; const ctg = ct.getContext('2d'); try{ ctg.imageSmoothingEnabled = false; }catch(_){ }
+          try{ ctg.clearRect(0,0,NATIVE_CH,NATIVE_CH); drawChinaTurretInto(ctg, NATIVE_CH, NATIVE_CH, performance.now()); }catch(_){ }
+          try{ ct._logicalSPR = 64; }catch(_){ }
+          window.__china_turret = ct;
+          try{ selectedVehicle = 'tank'; selectedVehicleVariant = 'china'; configureTankAssets({ SPR_W:NATIVE_CH, SPR_H:NATIVE_CH, bodyCanvas: window.__china_body, turretCanvas: window.__china_turret }); try{ redrawSprites && typeof redrawSprites === 'function' && redrawSprites(); }catch(_){ } }catch(_){ }
+        }
+      }catch(_){ }
+    }
+    else if (v === 'empty9'){
+      // populate slot 9 with McD's tank (pixel-perfect 64x64)
+      try{
+        if (typeof window !== 'undefined'){
+          const NATIVE_MCD = 64;
+          const mb = document.createElement('canvas'); mb.width = NATIVE_MCD; mb.height = NATIVE_MCD; const mbg = mb.getContext('2d'); try{ mbg.imageSmoothingEnabled = false; }catch(_){ }
+          try{ mbg.clearRect(0,0,NATIVE_MCD,NATIVE_MCD); drawMcdsBodyInto(mbg, NATIVE_MCD, NATIVE_MCD, performance.now()); }catch(_){ }
+          try{ mb._logicalSPR = 64; }catch(_){ }
+          window.__mcds_body = mb;
+          const mt = document.createElement('canvas'); mt.width = NATIVE_MCD; mt.height = NATIVE_MCD; const mtg = mt.getContext('2d'); try{ mtg.imageSmoothingEnabled = false; }catch(_){ }
+          try{ mtg.clearRect(0,0,NATIVE_MCD,NATIVE_MCD); drawMcdsTurretInto(mtg, NATIVE_MCD, NATIVE_MCD, performance.now()); }catch(_){ }
+          try{ mt._logicalSPR = 64; }catch(_){ }
+          window.__mcds_turret = mt;
+          try{ selectedVehicle = 'tank'; selectedVehicleVariant = 'mcds'; configureTankAssets({ SPR_W:NATIVE_MCD, SPR_H:NATIVE_MCD, bodyCanvas: window.__mcds_body, turretCanvas: window.__mcds_turret }); try{ redrawSprites && typeof redrawSprites === 'function' && redrawSprites(); }catch(_){ } }catch(_){ }
+        }
+      }catch(_){ }
     }
     else if (v === 'murkia'){
     // switch to Murkia (AMERICA tank): create small SPR-sized canvases and configure tank assets to use them
@@ -1804,6 +2402,25 @@ function selectVehicleSlot(idx){
       }
     }catch(_){ }
       selectedVehicle = 'tank'; selectedVehicleVariant = 'dozer';
+    }
+    else if (v === 'bondtank'){
+    try{
+      if (typeof window !== 'undefined'){
+        if (!window.__bondtank_body){
+          const off = document.createElement('canvas'); off.width = 64; off.height = 64; const og = off.getContext('2d'); try{ og.imageSmoothingEnabled = false; }catch(_){ }
+          try{ drawBondtankInto(og, 64, 64, performance.now()); }catch(_){ }
+          window.__bondtank_body = off;
+        }
+        if (!window.__bondtank_turret){
+          const off2 = document.createElement('canvas'); off2.width = 64; off2.height = 64; const og2 = off2.getContext('2d'); try{ og2.imageSmoothingEnabled = false; }catch(_){ }
+          // turret baked into body for this art; keep a transparent turret canvas
+          og2.clearRect(0,0,64,64);
+          window.__bondtank_turret = off2;
+        }
+        try{ configureTankAssets({ SPR_W:64, SPR_H:64, bodyCanvas: window.__bondtank_body, turretCanvas: window.__bondtank_turret }); try{ redrawSprites && typeof redrawSprites === 'function' && redrawSprites(); }catch(_){ } }catch(_){ }
+      }
+    }catch(_){ }
+      selectedVehicle = 'tank'; selectedVehicleVariant = 'bondtank';
     }
 
     try{ updateHud(); }catch(_){ }
@@ -1886,6 +2503,161 @@ let __lastCritterDrawLog = 0;
 // debug: visual markers for critters/animals (toggle with G)
 let showEntityMarkers = false;
 let lastShot = 0; const SHOT_COOLDOWN = 500; const BULLET_SPEED = 360;
+// Safe-start area: player is immune to enemy projectiles while inside this radius
+// for the first START_SAFE_DURATION seconds after spawn/restart.
+const START_SAFE_RADIUS = 120; // world pixels
+// Previously this was a timed window; set to Infinity so the safe area is permanent
+const START_SAFE_DURATION = Infinity; // unused when permanent
+let startSafeUntil = Infinity;
+// flower patch canvas for visualizing the safe area
+let startPatchCanvas = null;
+
+function createFlowerPatchCanvas(radius){
+  try{
+    const size = Math.max(48, Math.round(radius*2));
+    const c = document.createElement('canvas'); c.width = size; c.height = size;
+    const g = c.getContext('2d'); g.imageSmoothingEnabled = true;
+    // simple palette (adapted from flowerpatch.html)
+    const palette = {
+      grassA: '#183b1f', grassB: '#24512c', grassC: '#2c6a36',
+      leafA: '#2d7a37', leafB: '#2a6d33',
+      centers: ['#f2c84b', '#f4a83a', '#ffc95e'],
+      petals: [ ['#ff9eb6','#ffd4e0'], ['#ffd166','#ffeaa3'], ['#8ecae6','#d6efff'], ['#b794f4','#e8d9ff'], ['#ff9f6e','#ffd0b7'] ]
+    };
+  // transparent background — keep canvas clear so the patch can be drawn under the tank
+  const W = size, H = size;
+  g.clearRect(0,0,W,H);
+  // define an interior margin and clip to it so flowers never draw outside the square
+  // increase margin to move flowers away from edges (keeps visual breathing room)
+  const margin = Math.max(6, Math.round(size * 0.12));
+  g.save(); g.beginPath(); g.rect(margin, margin, W - margin*2, H - margin*2); g.clip();
+
+    // helper draw functions (simplified)
+  function drawLeaf(ctx,x,y,rMajor,rMinor,rot){ ctx.save(); ctx.translate(x,y); ctx.rotate(rot); const grad=ctx.createLinearGradient(-rMajor,0,rMajor,0); grad.addColorStop(0,palette.leafB); grad.addColorStop(1,palette.leafA); ctx.fillStyle=grad; ctx.beginPath(); ctx.moveTo(-rMajor*0.7,0); ctx.quadraticCurveTo(0,-rMinor*0.9,rMajor*0.7,0); ctx.quadraticCurveTo(0,rMinor*0.8,-rMajor*0.7,0); ctx.closePath(); ctx.fill(); ctx.restore(); }
+
+    function drawFlower(ctx,fx,fy,sizeF,petals,colors,centerCol,rot){ ctx.save(); ctx.translate(fx,fy); ctx.rotate(rot); // leaves
+      for(let i=0;i<3;i++){ const ang = (i/3)*Math.PI*2 + (Math.random()-0.5)*0.4; drawLeaf(ctx,0,0,sizeF*0.35,sizeF*0.12,ang); }
+      const [petalBase,petalTip] = colors;
+  for(let i=0;i<petals;i++){ const a=(i/petals)*Math.PI*2; const dist=sizeF*0.48; const px=Math.cos(a)*dist, py=Math.sin(a)*dist; ctx.save(); ctx.translate(px,py); ctx.rotate(a); const rx=sizeF*1.15, ry=sizeF*0.85; const grad=ctx.createLinearGradient(-rx*0.2,0,rx*1.05,0); grad.addColorStop(0,petalBase); grad.addColorStop(1,petalTip); ctx.fillStyle=grad; ctx.beginPath(); ctx.moveTo(-rx*0.18,0); ctx.bezierCurveTo(rx*0.18,-ry,rx*0.95,-ry*0.6,rx,0); ctx.bezierCurveTo(rx*0.95,ry*0.6,rx*0.18,ry,-rx*0.18,0); ctx.closePath(); ctx.fill(); ctx.restore(); }
+      const cg = ctx.createRadialGradient(0,0,sizeF*0.04,0,0,sizeF*0.36); cg.addColorStop(0,'#fff6c9'); cg.addColorStop(0.55,centerCol); cg.addColorStop(1,'#8a5a1f'); ctx.fillStyle = cg; ctx.beginPath(); ctx.arc(0,0,sizeF*0.36,0,Math.PI*2); ctx.fill(); ctx.restore(); }
+
+  // dense packed grid placement: step is small to create overlap and no gaps
+  const innerW = W - margin*2, innerH = H - margin*2;
+  // reduce step so cells are smaller (denser packing). Keep a modest minimum.
+  const step = Math.max(4, Math.round(size * 0.04));
+    const cols = Math.ceil(innerW / step);
+    const rows = Math.ceil(innerH / step);
+    // loop grid and place a flower in each cell, clamping to avoid edge clipping
+    // to avoid a uniform filled edge, create an "edge band" where placement is randomized
+    const edgeBand = Math.max(step * 3, Math.round(Math.min(innerW, innerH) * 0.18));
+    for (let ry = 0; ry < rows; ry++){
+      for (let cx = 0; cx < cols; cx++){
+        // base center for this cell
+        const baseX = margin + cx * step + Math.floor(step * 0.5);
+        const baseY = margin + ry * step + Math.floor(step * 0.5);
+
+        // compute distance to nearest inner-rect edge for this cell center
+        const distLeft = baseX - margin;
+        const distRight = margin + innerW - baseX;
+        const distTop = baseY - margin;
+        const distBottom = margin + innerH - baseY;
+        const distToEdge = Math.min(distLeft, distRight, distTop, distBottom);
+
+        // if inside the main inner area (outside edgeBand) always draw; otherwise
+        // use a distance-based probability so flowers near the edge appear as patches
+        if (distToEdge < edgeBand){
+          const p = Math.max(0.08, Math.min(1, distToEdge / edgeBand));
+          // square the prob to bias against very-outer cells (sparser at extreme edges)
+          const prob = p * p;
+          if (Math.random() > prob) continue; // skip this cell to create patchy edges
+        }
+
+        // pick a smaller varied size so each flower is much smaller
+        const fs = Math.max(3, Math.round(step * (0.42 + (Math.random()*0.2 - 0.1))));
+        const petals = Math.floor(Math.random()*3) + 5;
+        const maxExtent = Math.ceil(fs * 1.25);
+        // clamp center so full extent remains inside inner rect
+        // reduce jitter so flowers stay nicely inside grid cells and away from edges
+        const jitter = Math.round(step * 0.18);
+        const x = Math.min(margin + innerW - maxExtent, Math.max(margin + maxExtent, baseX + (Math.random()* (jitter*2) - jitter)));
+        const y = Math.min(margin + innerH - maxExtent, Math.max(margin + maxExtent, baseY + (Math.random()* (jitter*2) - jitter)));
+        const colors = palette.petals[Math.floor(Math.random()*palette.petals.length)];
+        const centerCol = palette.centers[Math.floor(Math.random()*palette.centers.length)];
+        const rot = (Math.random()-0.5)*0.6;
+        drawFlower(g, x, y, fs, petals, colors, centerCol, rot);
+      }
+    }
+    // restore clipping
+    g.restore();
+    return c;
+  }catch(_){ return null; }
+}
+// static safe area center (world coords). Mutable so we can set it to the player's start position.
+// safe patch centers (world coords). We'll create multiple fixed patches around the map.
+let START_SAFE_CENTERS = [];
+// populate four sample centers spaced around the world (tweak as desired)
+try{
+  START_SAFE_CENTERS = [
+    { x: Math.round(WORLD_W * 0.2), y: Math.round(WORLD_H * 0.25) },
+    { x: Math.round(WORLD_W * 0.8), y: Math.round(WORLD_H * 0.25) },
+    { x: Math.round(WORLD_W * 0.2), y: Math.round(WORLD_H * 0.75) },
+    { x: Math.round(WORLD_W * 0.8), y: Math.round(WORLD_H * 0.75) }
+  ];
+}catch(_){ START_SAFE_CENTERS = []; }
+// hide-while-in-patch relocation: if player accumulates this much hide time (while
+// inside any patch) then randomize the other patches' locations. The timer is shared
+// across all patches and pauses when the player leaves flowers (it does not reset).
+const SAFE_RELOCATE_ON_HIDE_MS = 20000; // 20 seconds
+let hideAccumMs = 0;       // accumulated hide time (ms) while player is inside flowers
+let hideActive = false;    // whether player is currently inside any flower patch
+let hideLastMs = 0;        // last timestamp used to increment accumulator
+// relocation flash/debug state
+let relocateFlashUntil = 0;
+let relocateFlashCenters = [];
+
+function randomizeOtherSafeCenters(excludeIndex){
+  try{
+    if (!START_SAFE_CENTERS || !START_SAFE_CENTERS.length) return;
+    const minMarginX = Math.max(32, Math.round(WORLD_W * 0.08));
+    const minMarginY = Math.max(32, Math.round(WORLD_H * 0.08));
+    const minDist = Math.max(START_SAFE_RADIUS * 2 + 48, 120);
+    const newCenters = START_SAFE_CENTERS.map((c,i) => ({ x: c.x, y: c.y }));
+    for (let i = 0; i < newCenters.length; i++){
+      // randomize every center (including the one player is hiding in) so hiding cannot be indefinite
+      let attempts = 0;
+      let chosen = null;
+      while (attempts++ < 128){
+        const rx = Math.round(minMarginX + Math.random() * (WORLD_W - minMarginX*2));
+        const ry = Math.round(minMarginY + Math.random() * (WORLD_H - minMarginY*2));
+        // ensure not too close to any already-chosen new center
+        // ensure not too close to any already-chosen new center
+        let ok = true;
+        for (let j = 0; j < newCenters.length; j++){
+          if (j === i) continue;
+          const nc = newCenters[j]; if (!nc) continue;
+          const d2 = Math.hypot(rx - nc.x, ry - nc.y); if (d2 < minDist) { ok = false; break; }
+        }
+        if (!ok) continue;
+        chosen = { x: rx, y: ry }; break;
+      }
+      // fallback: if not found, pick a somewhat distant point anyway
+      if (!chosen){
+        chosen = { x: Math.round(minMarginX + Math.random() * (WORLD_W - minMarginX*2)), y: Math.round(minMarginY + Math.random() * (WORLD_H - minMarginY*2)) };
+      }
+      newCenters[i] = chosen;
+    }
+  // commit new centers
+  START_SAFE_CENTERS = newCenters;
+  // debug/log so we can confirm relocation happened in runtime
+  try{ if (typeof console !== 'undefined' && console.info) console.info('safe-centers randomized', START_SAFE_CENTERS); }catch(_){ }
+  // set a brief visual flash window and remember centers
+  try{ const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now(); relocateFlashUntil = now + 900; relocateFlashCenters = newCenters.map(n=>({x:n.x,y:n.y})); }catch(_){ }
+  // reset shared hide accumulator so player must hide again at new locations
+  hideAccumMs = 0; hideActive = false; hideLastMs = 0;
+  }catch(_){ }
+}
+// prepare initial flower patch canvas sized to START_SAFE_RADIUS (if DOM available)
+try{ if (typeof document !== 'undefined' && document.createElement){ startPatchCanvas = createFlowerPatchCanvas(START_SAFE_RADIUS); } }catch(_){ startPatchCanvas = null; }
 let lastSpawn = 0;
 let score = 0; let health = 3; let gameOver = false;
 let paused = false; // when true, main game updates pause but explosion pieces still animate
@@ -1905,7 +2677,18 @@ try {
 try{
   if (typeof window !== 'undefined'){
     window.debugUnlockFiesta = function(){ try{ VEHICLE_SLOTS[1] = 'fordfiesta'; VEHICLE_UNLOCKED[1] = true; try{ updateHud(); }catch(_){ } }catch(_){ } };
+  window.debugUnlockBond = function(){ try{ VEHICLE_SLOTS[4] = 'bondtank'; VEHICLE_UNLOCKED[4] = true; try{ updateHud(); }catch(_){ } }catch(_){ } };
+    window.debugUnlockAndSelectBond = function(){ try{ VEHICLE_SLOTS[4] = 'bondtank'; VEHICLE_UNLOCKED[4] = true; try{ updateHud(); }catch(_){ } try{ selectVehicleSlot(4); }catch(_){ } }catch(_){ } };
+    window.debugSelectGerman = function(){ try{ VEHICLE_SLOTS[5] = 'empty6'; VEHICLE_UNLOCKED[5] = true; try{ updateHud(); }catch(_){ } try{ selectVehicleSlot(5); }catch(_){ } }catch(_){ } };
+
+  window.debugSelectMexico = function(){ try{ VEHICLE_SLOTS[6] = 'empty7'; VEHICLE_UNLOCKED[6] = true; try{ updateHud(); }catch(_){ } try{ selectVehicleSlot(6); }catch(_){ } }catch(_){ } };
+
+  window.debugSelectChina = function(){ try{ VEHICLE_SLOTS[7] = 'empty8'; VEHICLE_UNLOCKED[7] = true; try{ updateHud(); }catch(_){ } try{ selectVehicleSlot(7); }catch(_){ } }catch(_){ } };
+
+  window.debugSelectMcds = function(){ try{ VEHICLE_SLOTS[8] = 'empty9'; VEHICLE_UNLOCKED[8] = true; try{ updateHud(); }catch(_){ } try{ selectVehicleSlot(8); }catch(_){ } }catch(_){ } };
+    window.debugUnlockAndSelectGerman = window.debugSelectGerman;
     try{ if (localStorage && localStorage.getItem && localStorage.getItem('tn_debug_unlock_fiesta') === '1'){ window.debugUnlockFiesta(); } }catch(_){ }
+  try{ if (localStorage && localStorage.getItem && localStorage.getItem('tn_debug_unlock_bond') === '1'){ window.debugUnlockBond(); } }catch(_){ }
   }
 }catch(_){ }
 
@@ -2064,6 +2847,31 @@ function spawnInitialKraken(){
   }catch(err){ /* fail silently */ }
 }
 
+// spawn a small group of jungle NPCs near the player's starting position
+function spawnInitialJungleGroup(count = 3){
+  try{
+    const px = (tank && typeof tank.x === 'number') ? tank.x : WORLD_W/2;
+    const py = (tank && typeof tank.y === 'number') ? tank.y : WORLD_H/2;
+    const hpMap = { commando:3, scout:2, heavy:4, medic:2, villager1:1, villager2:1, guide:3, radioop:2, squidrobot:2, fatsammich:1 };
+    const spdMap = { commando:45, scout:65, heavy:35, medic:50, villager1:40, villager2:40, guide:55, radioop:40, squidrobot:18 };
+    for (let i = 0; i < Math.max(0, Math.min(6, count)); i++){
+      const ang = (i / Math.max(1, count)) * Math.PI * 2 + (Math.random() * 0.5 - 0.25);
+      const dist = 48 + Math.random() * 64;
+      const x = px + Math.cos(ang) * dist;
+      const y = py + Math.sin(ang) * dist;
+      const kind = (Array.isArray(JUNGLE_KINDS) && JUNGLE_KINDS.length) ? JUNGLE_KINDS[Math.floor(Math.random()*JUNGLE_KINDS.length)] : 'commando';
+      // sometimes replace heavy with chained tank for variety
+      if (kind === 'heavy' && Math.random() < 0.5){ try{ const alt = spawnChainedTank(x, y, {}); enemies.push(alt); continue; }catch(_){ } }
+      const { c: tileC, g: tileG } = charTileCanvas();
+      const idle = (idleMakers && idleMakers[kind]) ? idleMakers[kind](tileG) : (()=>{});
+      const run = (runMakers && runMakers[kind]) ? runMakers[kind](tileG) : (()=>{});
+      const baseSpd = (spdMap[kind] || 40) + Math.random()*8;
+      const ent = { x, y, spd: baseSpd, r: 14, type: 'jungle', kind, hp: (hpMap[kind] || 2), tileC, tileG, idle, run, angle: 0, turretAngle: 0, lastAttack: 0, attackCD: 500 + Math.random()*300, dashUntil:0, moving: false, harmless: false };
+      enemies.push(ent);
+    }
+  }catch(_){ }
+}
+
 
 function spawnEnemy(){
   // spawn at random edge
@@ -2079,8 +2887,9 @@ else { x = Math.random()*WORLD_W; y = WORLD_H+60; }
   // 40% chance to spawn a jungle NPC (uses jungleSprites) — these will replace the red-dot enemies
   const roll = Math.random();
   if (roll < 0.4){
-  // small chance to call in an osprey that drops combatants (increased frequency)
-  if (Math.random() < 0.28){ spawnOsprey(x,y); return; }
+  // small chance to call in an osprey that drops combatants (disabled here to avoid overload)
+  // previously: if (Math.random() < 0.28){ spawnOsprey(x,y); return; }
+  // Use periodic spawner (maybeSpawnPeriodicOsprey) which ensures visibility and rate-limits.
     // sometimes spawn a small group of jungle NPCs (some standing, some combatants)
     const GROUP_CHANCE = 0.5;
     // hp and speed maps
@@ -2289,12 +3098,63 @@ function fireBullet(){
   }
   // default muzzle origin in world coords (may be overridden for variant-specific behavior)
   let muzzleX = sx, muzzleY = sy;
+  try{
+    // Prefer precise barrel-tip coordinates derived from tank piece definitions when available.
+    // This aligns muzzle flash and shell ejection to the actual sprite barrel end.
+    if (selectedVehicle === 'tank'){
+      const defs = (typeof tankPieceDefs === 'function') ? tankPieceDefs() : null;
+      let barrelDef = null;
+      if (Array.isArray(defs)) barrelDef = defs.find(d => d.base === 'turret' && d.barrel);
+      if (barrelDef && typeof tankLocalToWorld === 'function'){
+        // compute top-center of the barrel piece (muzzle tip)
+        const cx = barrelDef.sx + (barrelDef.sw / 2);
+        const cy = barrelDef.sy; // top edge = muzzle
+        const lx = cx - SPR_W / 2;
+        const ly = cy - SPR_H / 2;
+        const baseAng = tank.turretAngle + Math.PI/2;
+        try{ const p = tankLocalToWorld(lx, ly, baseAng); if (p && typeof p.x === 'number'){ muzzleX = p.x; muzzleY = p.y; } }catch(_){ }
+      } else if (selectedVehicleVariant === 'bondtank' && typeof turretCanvas !== 'undefined' && turretCanvas && turretCanvas.width){
+        // Bond turret artwork tends to place the muzzle near the top-center of its turret canvas.
+        // Use a normalized guess and inset slightly forward so the flash appears at the barrel tip.
+        const tx = turretCanvas.width * 0.5;
+        const ty = Math.max(1, Math.round(turretCanvas.height * 0.05));
+        // Tunable inset (pixels) to nudge muzzle closer to barrel tip in the turret local coords
+  const bondMuzzleInset = 0; // tuned: 0 places muzzle at top-center of turret canvas (closer to barrel tip)
+        const lx = tx - SPR_W / 2;
+        const ly = Math.max(0, ty - bondMuzzleInset) - SPR_H / 2;
+        const baseAng = tank.turretAngle + Math.PI/2;
+        try{ const p = tankLocalToWorld(lx, ly, baseAng); if (p && typeof p.x === 'number'){ muzzleX = p.x; muzzleY = p.y; } }catch(_){ }
+      }
+    }
+  }catch(_){ /* fallback to earlier computed sx/sy */ }
+  // Bond-specific fine-tune: nudge muzzle in world-space toward turret base (negative = closer)
+  try{
+    if (selectedVehicle === 'tank' && selectedVehicleVariant === 'bondtank'){
+  const bondMuzzleWorldShift = 56; // nudged outward additional 10px
+      muzzleX += Math.cos(a) * bondMuzzleWorldShift;
+      muzzleY += Math.sin(a) * bondMuzzleWorldShift;
+    }
+  }catch(_){ }
+  // Default tank small outward nudge so projectiles appear slightly in front of the barrel
+  try{
+    if (selectedVehicle === 'tank' && selectedVehicleVariant === 'default'){
+  const defaultMuzzleWorldShift = 20; // 20px outward (moved 10px closer to barrel tip)
+      muzzleX += Math.cos(a) * defaultMuzzleWorldShift;
+      muzzleY += Math.sin(a) * defaultMuzzleWorldShift;
+    }
+  }catch(_){ }
   // Murkia special behaviour: the Murkia tank fires 4 projectiles that rotate with the turret
   if (selectedVehicle === 'tank' && selectedVehicleVariant === 'murkia'){
     // For Murkia, spawn all projectiles from the turret center so they line up
     // visually with the rotating turret. Override the muzzle origin to tank center.
     muzzleX = tank.x;
     muzzleY = tank.y;
+    try{
+      // nudge Murkia muzzle forward a small amount so shots appear from the barrel
+  const murkiaMuzzleWorldShift = 40; // positive moves outward along turret dir (moved +10px)
+      muzzleX += Math.cos(a) * murkiaMuzzleWorldShift;
+      muzzleY += Math.sin(a) * murkiaMuzzleWorldShift;
+    }catch(_){ }
     const offsets = [0, Math.PI/2, Math.PI, -Math.PI/2];
     for (const off of offsets){
       const ai = a + off;
@@ -2313,26 +3173,26 @@ function fireBullet(){
     function colorFor(i, total){ const center = (total-1)/2; const spreadStep = 6; const offset = (i - center) * spreadStep; const h = BASE_HUE + offset; const s = Math.max(60, 92 - Math.abs(i-center)*8); const l = Math.max(44, 60 - Math.abs(i-center)*3); return `hsl(${Math.round(h)} ${s}% ${l}%)`; }
     if (selectedVehicle === 'tank' && activeShots === 2){
       const spread = 6; const ox = Math.cos(a + Math.PI/2) * spread; const oy = Math.sin(a + Math.PI/2) * spread;
-      bullets.push({ x: sx - ox, y: sy - oy, dx, dy, life: 2.0, color: colorFor(0,2) });
-      bullets.push({ x: sx + ox, y: sy + oy, dx, dy, life: 2.0, color: colorFor(1,2) });
+      bullets.push({ x: muzzleX - ox, y: muzzleY - oy, dx, dy, life: 2.0, color: colorFor(0,2) });
+      bullets.push({ x: muzzleX + ox, y: muzzleY + oy, dx, dy, life: 2.0, color: colorFor(1,2) });
     } else if (selectedVehicle === 'tank' && activeShots === 3){
-      bullets.push({ x: sx, y: sy, dx, dy, life: 2.0, color: colorFor(1,3) });
+      bullets.push({ x: muzzleX, y: muzzleY, dx, dy, life: 2.0, color: colorFor(1,3) });
       const angleSpread = 0.18; const a1 = a - angleSpread; const a2 = a + angleSpread;
-      bullets.push({ x: sx + Math.cos(a1)*4, y: sy + Math.sin(a1)*4, dx: Math.cos(a1)*BULLET_SPEED, dy: Math.sin(a1)*BULLET_SPEED, life: 2.0, color: colorFor(0,3) });
-      bullets.push({ x: sx + Math.cos(a2)*4, y: sy + Math.sin(a2)*4, dx: Math.cos(a2)*BULLET_SPEED, dy: Math.sin(a2)*BULLET_SPEED, life: 2.0, color: colorFor(2,3) });
+      bullets.push({ x: muzzleX + Math.cos(a1)*4, y: muzzleY + Math.sin(a1)*4, dx: Math.cos(a1)*BULLET_SPEED, dy: Math.sin(a1)*BULLET_SPEED, life: 2.0, color: colorFor(0,3) });
+      bullets.push({ x: muzzleX + Math.cos(a2)*4, y: muzzleY + Math.sin(a2)*4, dx: Math.cos(a2)*BULLET_SPEED, dy: Math.sin(a2)*BULLET_SPEED, life: 2.0, color: colorFor(2,3) });
     } else if (selectedVehicle === 'tank' && activeShots === 4){
-      const total = 5; bullets.push({ x: sx, y: sy, dx, dy, life: 2.5, color: colorFor(2,total) });
+      const total = 5; bullets.push({ x: muzzleX, y: muzzleY, dx, dy, life: 2.5, color: colorFor(2,total) });
       const innerSpread = 0.12; const outerSpread = 0.28;
       const a_in_l = a - innerSpread, a_in_r = a + innerSpread;
       const a_out_l = a - outerSpread, a_out_r = a + outerSpread;
-      bullets.push({ x: sx + Math.cos(a_in_l)*3, y: sy + Math.sin(a_in_l)*3, dx: Math.cos(a_in_l)*BULLET_SPEED, dy: Math.sin(a_in_l)*BULLET_SPEED, life: 2.0, color: colorFor(1,total) });
-      bullets.push({ x: sx + Math.cos(a_in_r)*3, y: sy + Math.sin(a_in_r)*3, dx: Math.cos(a_in_r)*BULLET_SPEED, dy: Math.sin(a_in_r)*BULLET_SPEED, life: 2.0, color: colorFor(3,total) });
-      bullets.push({ x: sx + Math.cos(a_out_l)*6, y: sy + Math.sin(a_out_l)*6, dx: Math.cos(a_out_l)*BULLET_SPEED, dy: Math.sin(a_out_l)*BULLET_SPEED, life: 2.0, color: colorFor(0,total) });
-      bullets.push({ x: sx + Math.cos(a_out_r)*6, y: sy + Math.sin(a_out_r)*6, dx: Math.cos(a_out_r)*BULLET_SPEED, dy: Math.sin(a_out_r)*BULLET_SPEED, life: 2.0, color: colorFor(4,total) });
+      bullets.push({ x: muzzleX + Math.cos(a_in_l)*3, y: muzzleY + Math.sin(a_in_l)*3, dx: Math.cos(a_in_l)*BULLET_SPEED, dy: Math.sin(a_in_l)*BULLET_SPEED, life: 2.0, color: colorFor(1,total) });
+      bullets.push({ x: muzzleX + Math.cos(a_in_r)*3, y: muzzleY + Math.sin(a_in_r)*3, dx: Math.cos(a_in_r)*BULLET_SPEED, dy: Math.sin(a_in_r)*BULLET_SPEED, life: 2.0, color: colorFor(3,total) });
+      bullets.push({ x: muzzleX + Math.cos(a_out_l)*6, y: muzzleY + Math.sin(a_out_l)*6, dx: Math.cos(a_out_l)*BULLET_SPEED, dy: Math.sin(a_out_l)*BULLET_SPEED, life: 2.0, color: colorFor(0,total) });
+      bullets.push({ x: muzzleX + Math.cos(a_out_r)*6, y: muzzleY + Math.sin(a_out_r)*6, dx: Math.cos(a_out_r)*BULLET_SPEED, dy: Math.sin(a_out_r)*BULLET_SPEED, life: 2.0, color: colorFor(4,total) });
     } else {
-      bullets.push({ x: sx, y: sy, dx, dy, life: 2.0, color: 'hsl(18 95% 58%)' });
+      bullets.push({ x: muzzleX, y: muzzleY, dx, dy, life: 2.0, color: 'hsl(18 95% 58%)' });
     }
-    try{ spawnMuzzleFlash(sx, sy, a); }catch(_){ }
+  try{ spawnMuzzleFlash(muzzleX, muzzleY, a); }catch(_){ }
   }
 
   try{ if (SFX && typeof SFX.playShoot === 'function') SFX.playShoot(); }catch(_){ }
@@ -2374,10 +3234,16 @@ function collideEnemyTank(e){ const dx = e.x - tank.x, dy = e.y - tank.y; const 
 function restart(){ bullets.length = 0; enemies.length = 0; score = 0; health = 3; gameOver = false; paused = false; selectedVehicle = 'tank'; center.style.display = 'none'; updateHud(); tank.x = WORLD_W/2; tank.y = WORLD_H/2; heli.x = WORLD_W/2; heli.y = WORLD_H/2; tank.alive = true; tankPieces.length = 0; 
   casings.length = 0;
   // spawn an initial osprey just off-screen relative to the current camera so you can immediately see it drop troops
-  // spawn an initial kraken near the player for preview
-  spawnInitialKraken();
+  // spawn a single jungle NPC near the player for a minimal preview
+  try{ spawnInitialJungleGroup(1); }catch(_){ }
   // spawn a test double-shot powerup near the tank so it can be picked up immediately
   spawnPowerup(tank.x + 40, tank.y, 'double');
+  // set the static safe-area center to the player's spawn and grant a brief safe window
+  try{ START_SAFE_CENTER_X = Math.round(tank.x); START_SAFE_CENTER_Y = Math.round(tank.y); }catch(_){ START_SAFE_CENTER_X = Math.round(WORLD_W * 0.5); START_SAFE_CENTER_Y = Math.round(WORLD_H * 0.85); }
+  // Safe area is permanent
+  try{ startSafeUntil = Infinity; }catch(_){ startSafeUntil = Infinity; }
+  // regenerate the flower patch canvas to match configured radius
+  try{ startPatchCanvas = createFlowerPatchCanvas(START_SAFE_RADIUS); }catch(_){ startPatchCanvas = null; }
 }
 
 // Spawn an osprey positioned to be visible in the current camera view (comes in from left)
@@ -2393,12 +3259,15 @@ function maybeSpawnPeriodicOsprey(now){
   try{
     if (now - _lastOspreyTick < 10000) return; // check at most every 10s
     _lastOspreyTick = now + Math.random() * 8000; // next earliest check window randomized
-    // small probability per check to spawn one (makes average ~1 every 12-30s)
-    if (Math.random() < 0.45){
+  // small probability per check to spawn one (reduced to avoid overload)
+  // also skip spawning if more than 1 osprey already present
+  const existingOspreys = enemies.filter(e=>e && e.type === 'osprey').length;
+  if (existingOspreys > 1) return;
+  if (Math.random() < 0.18){
       // pick a target near camera so it is visible
       const targetX = camera.x + (Math.random()*0.5 - 0.25) * W;
       const targetY = camera.y + (Math.random()*0.5 - 0.25) * H;
-      try{ spawnOsprey(mod(targetX, WORLD_W), mod(targetY, WORLD_H)); }catch(_){ }
+  try{ spawnOsprey(mod(targetX, WORLD_W), mod(targetY, WORLD_H)); }catch(_){ }
     }
   }catch(_){ }
 }
@@ -2440,11 +3309,13 @@ function updateHud(){
   hud.appendChild(right);
   // create or update vehicle menu (lower-left)
   try{
+    if (typeof window !== 'undefined' && window.__debugVehicleSlots) try{ console.log('DEBUG: updateHud vehicle slots before rebuild', VEHICLE_SLOTS, VEHICLE_UNLOCKED); }catch(_){ }
     let vmenu = document.getElementById('tn-vehicle-menu');
   if (!vmenu){ vmenu = document.createElement('div'); vmenu.id = 'tn-vehicle-menu'; vmenu.className = 'tn-vehicle-menu'; document.body.appendChild(vmenu); }
     // rebuild slots
     vmenu.innerHTML = '';
     for (let i=0;i<VEHICLE_SLOTS.length;i++){
+      if (typeof window !== 'undefined' && window.__debugVehicleSlots) try{ console.log('DEBUG: building slot', i, VEHICLE_SLOTS[i], VEHICLE_UNLOCKED[i]); }catch(_){ }
       const slot = document.createElement('div');
       slot.className = 'vehicle-slot' + (VEHICLE_UNLOCKED[i] ? '' : ' locked') + ( ( (VEHICLE_SLOTS[i] === 'tank' && selectedVehicle === 'tank') || (VEHICLE_SLOTS[i] === 'heli' && selectedVehicle === 'heli') ) ? ' selected' : '');
       slot.dataset.idx = i;
@@ -2475,7 +3346,7 @@ function updateHud(){
           slot.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;gap:4px"><div style="font-size:18px">HELI</div><div class="slot-label" style="font-size:11px">Unlocked</div></div>';
           vmenu.appendChild(slot);
         }
-        else if (VEHICLE_SLOTS[i] === 'fordfiesta'){
+  else if (VEHICLE_SLOTS[i] === 'fordfiesta'){
           try{
             if (typeof drawFordFiestaInto === 'function'){
               const c = document.createElement('canvas'); c.style.display = 'block'; c.style.width = '100%';
@@ -2485,6 +3356,66 @@ function updateHud(){
               c.width = cw; c.height = ch; const g = c.getContext('2d'); try{ g.imageSmoothingEnabled = false; }catch(_){ }
               try{ drawFordFiestaInto(g, cw, ch, performance.now()); }catch(_){ }
             } else { slot.innerHTML = '<div style="font-size:18px">?</div>'; vmenu.appendChild(slot); }
+          }catch(_){ slot.innerHTML = '<div style="font-size:18px">?</div>'; vmenu.appendChild(slot); }
+        }
+        else if (VEHICLE_SLOTS[i] === 'empty6'){
+          try{
+            const c = document.createElement('canvas'); c.style.display = 'block'; c.style.width = '100%';
+            const label = document.createElement('div'); label.className = 'slot-label'; label.style.fontSize = '11px'; label.style.marginTop = '6px'; label.textContent = 'German';
+            slot.appendChild(c); slot.appendChild(label); vmenu.appendChild(slot);
+            const cw = Math.max(32, Math.floor(slot.clientWidth)); const ch = Math.max(24, Math.floor(slot.clientHeight - label.offsetHeight - 6));
+            c.width = cw; c.height = ch; const g = c.getContext('2d'); try{ g.imageSmoothingEnabled = false; }catch(_){ }
+            try{
+              if (typeof window !== 'undefined' && window.__german_body){ const bw = window.__german_body.width, bh = window.__german_body.height; const scale = Math.min((cw-8)/bw, (ch-6)/bh, 1); const dx = Math.round((cw - bw*scale)/2); const dy = Math.round((ch - bh*scale)/2); try{ g.drawImage(window.__german_body, 0,0,bw,bh, dx,dy, Math.round(bw*scale), Math.round(bh*scale)); }catch(_){ }
+              } else if (typeof drawGermanBodyInto === 'function'){
+                try{ drawGermanBodyInto(g, cw, ch, performance.now()); }catch(_){ }
+              }
+            }catch(_){ }
+          }catch(_){ slot.innerHTML = '<div style="font-size:18px">?</div>'; vmenu.appendChild(slot); }
+        }
+        else if (VEHICLE_SLOTS[i] === 'empty7'){
+          try{
+            const c = document.createElement('canvas'); c.style.display = 'block'; c.style.width = '100%';
+            const label = document.createElement('div'); label.className = 'slot-label'; label.style.fontSize = '11px'; label.style.marginTop = '6px'; label.textContent = 'Mexico';
+            slot.appendChild(c); slot.appendChild(label); vmenu.appendChild(slot);
+            const cw = Math.max(32, Math.floor(slot.clientWidth)); const ch = Math.max(24, Math.floor(slot.clientHeight - label.offsetHeight - 6));
+            c.width = cw; c.height = ch; const g = c.getContext('2d'); try{ g.imageSmoothingEnabled = false; }catch(_){ }
+            try{
+              if (typeof window !== 'undefined' && window.__mexico_body){ const bw = window.__mexico_body.width, bh = window.__mexico_body.height; const scale = Math.min((cw-8)/bw, (ch-6)/bh, 1); const dx = Math.round((cw - bw*scale)/2); const dy = Math.round((ch - bh*scale)/2); try{ g.drawImage(window.__mexico_body, 0,0,bw,bh, dx,dy, Math.round(bw*scale), Math.round(bh*scale)); }catch(_){ }
+              } else if (typeof drawMexicoBodyInto === 'function'){
+                try{ drawMexicoBodyInto(g, cw, ch, performance.now()); }catch(_){ }
+              }
+            }catch(_){ }
+          }catch(_){ slot.innerHTML = '<div style="font-size:18px">?</div>'; vmenu.appendChild(slot); }
+        }
+        else if (VEHICLE_SLOTS[i] === 'empty8'){
+          try{
+            const c = document.createElement('canvas'); c.style.display = 'block'; c.style.width = '100%';
+            const label = document.createElement('div'); label.className = 'slot-label'; label.style.fontSize = '11px'; label.style.marginTop = '6px'; label.textContent = 'China';
+            slot.appendChild(c); slot.appendChild(label); vmenu.appendChild(slot);
+            const cw = Math.max(32, Math.floor(slot.clientWidth)); const ch = Math.max(24, Math.floor(slot.clientHeight - label.offsetHeight - 6));
+            c.width = cw; c.height = ch; const g = c.getContext('2d'); try{ g.imageSmoothingEnabled = false; }catch(_){ }
+            try{
+              if (typeof window !== 'undefined' && window.__china_body){ const bw = window.__china_body.width, bh = window.__china_body.height; const scale = Math.min((cw-8)/bw, (ch-6)/bh, 1); const dx = Math.round((cw - bw*scale)/2); const dy = Math.round((ch - bh*scale)/2); try{ g.drawImage(window.__china_body, 0,0,bw,bh, dx,dy, Math.round(bw*scale), Math.round(bh*scale)); }catch(_){ }
+              } else if (typeof drawChinaBodyInto === 'function'){
+                try{ drawChinaBodyInto(g, cw, ch, performance.now()); }catch(_){ }
+              }
+            }catch(_){ }
+          }catch(_){ slot.innerHTML = '<div style="font-size:18px">?</div>'; vmenu.appendChild(slot); }
+        }
+        else if (VEHICLE_SLOTS[i] === 'empty9'){
+          try{
+            const c = document.createElement('canvas'); c.style.display = 'block'; c.style.width = '100%';
+            const label = document.createElement('div'); label.className = 'slot-label'; label.style.fontSize = '11px'; label.style.marginTop = '6px'; label.textContent = "McD's";
+            slot.appendChild(c); slot.appendChild(label); vmenu.appendChild(slot);
+            const cw = Math.max(32, Math.floor(slot.clientWidth)); const ch = Math.max(24, Math.floor(slot.clientHeight - label.offsetHeight - 6));
+            c.width = cw; c.height = ch; const g = c.getContext('2d'); try{ g.imageSmoothingEnabled = false; }catch(_){ }
+            try{
+              if (typeof window !== 'undefined' && window.__mcds_body){ const bw = window.__mcds_body.width, bh = window.__mcds_body.height; const scale = Math.min((cw-8)/bw, (ch-6)/bh, 1); const dx = Math.round((cw - bw*scale)/2); const dy = Math.round((ch - bh*scale)/2); try{ g.drawImage(window.__mcds_body, 0,0,bw,bh, dx,dy, Math.round(bw*scale), Math.round(bh*scale)); }catch(_){ }
+              } else if (typeof drawMcdsBodyInto === 'function'){
+                try{ drawMcdsBodyInto(g, cw, ch, performance.now()); }catch(_){ }
+              }
+            }catch(_){ }
           }catch(_){ slot.innerHTML = '<div style="font-size:18px">?</div>'; vmenu.appendChild(slot); }
         }
         else if (VEHICLE_SLOTS[i] === 'murkia'){
@@ -2511,10 +3442,117 @@ function updateHud(){
             } else { slot.innerHTML = '<div style="font-size:18px">?</div>'; vmenu.appendChild(slot); }
           }catch(_){ slot.innerHTML = '<div style="font-size:18px">?</div>'; vmenu.appendChild(slot); }
         }
+        else if (VEHICLE_SLOTS[i] === 'bondtank'){
+          try{
+            // Always create a small preview canvas and label like other slots
+            const c = document.createElement('canvas'); c.style.display = 'block'; c.style.width = '100%';
+            const label = document.createElement('div'); label.className = 'slot-label'; label.style.fontSize = '11px'; label.style.marginTop = '6px'; label.textContent = 'Bond';
+            slot.appendChild(c); slot.appendChild(label); vmenu.appendChild(slot);
+            const cw = Math.max(32, Math.floor(slot.clientWidth)); const ch = Math.max(24, Math.floor(slot.clientHeight - label.offsetHeight - 6));
+            c.width = cw; c.height = ch; const g = c.getContext('2d'); try{ g.imageSmoothingEnabled = false; }catch(_){ }
+
+            // If we don't yet have a baked 64x64 body canvas, create one so we can copy pixels
+            try{
+              if (typeof window !== 'undefined' && !window.__bondtank_body && typeof drawBondtankInto === 'function'){
+                const off = document.createElement('canvas'); off.width = 64; off.height = 64; const og = off.getContext('2d'); try{ og.imageSmoothingEnabled = false; }catch(_){ }
+                try{ drawBondtankInto(og, 64, 64, performance.now()); }catch(_){ }
+                window.__bondtank_body = off;
+                // turret canvas is left transparent (Bond art baked into body)
+                const off2 = document.createElement('canvas'); off2.width = 64; off2.height = 64; const og2 = off2.getContext('2d'); try{ og2.imageSmoothingEnabled = false; }catch(_){ }
+                og2.clearRect(0,0,64,64); window.__bondtank_turret = off2;
+              }
+            }catch(_){ }
+
+            // If we have a baked body canvas, draw it pixel-perfect scaled into the preview
+            if (typeof window !== 'undefined' && window.__bondtank_body){
+              try{
+                const bw = window.__bondtank_body.width || SPR_W * SPRITE_SCALE; const bh = window.__bondtank_body.height || SPR_H * SPRITE_SCALE;
+                const scale = Math.min((cw-8)/bw, (ch-6)/bh, 1);
+                const dx = Math.round((cw - bw*scale)/2); const dy = Math.round((ch - bh*scale)/2);
+                try{ g.drawImage(window.__bondtank_body, 0,0,bw,bh, dx,dy, Math.round(bw*scale), Math.round(bh*scale)); }catch(_){ }
+                try{ if (typeof window.__bondtank_turret !== 'undefined' && window.__bondtank_turret){ const tw = window.__bondtank_turret.width, th = window.__bondtank_turret.height; g.drawImage(window.__bondtank_turret, 0,0,tw,th, dx,dy, Math.round(tw*scale), Math.round(th*scale)); } }catch(_){ }
+              }catch(_){ /* ignore preview draw errors */ }
+            } else {
+              // fallback: draw directly into the preview using the renderer
+              try{ if (typeof drawBondtankInto === 'function') drawBondtankInto(g, cw, ch, performance.now()); }catch(_){ }
+            }
+
+            }catch(_){ slot.innerHTML = '<div style="font-size:18px">?</div>'; vmenu.appendChild(slot); }
+        }
+        else if (VEHICLE_SLOTS[i] && VEHICLE_SLOTS[i].startsWith && VEHICLE_SLOTS[i].startsWith('empty')){
+          try{
+            const c = document.createElement('canvas'); c.style.display = 'block'; c.style.width = '100%';
+            const label = document.createElement('div'); label.className = 'slot-label'; label.style.fontSize = '11px'; label.style.marginTop = '6px';
+            const idx = i + 1; label.textContent = 'Empty ' + idx;
+            slot.appendChild(c); slot.appendChild(label); vmenu.appendChild(slot);
+            const cw = Math.max(32, Math.floor(slot.clientWidth)); const ch = Math.max(24, Math.floor(slot.clientHeight - label.offsetHeight - 6));
+            c.width = cw; c.height = ch; const g = c.getContext('2d'); try{ g.imageSmoothingEnabled = false; }catch(_){ }
+            try{
+              // simple neutral placeholder preview
+              g.fillStyle = '#1f1f1f'; g.fillRect(0,0,cw,ch);
+              g.fillStyle = '#2f2f2f'; g.fillRect(6,6, Math.max(8,cw-12), Math.max(8,ch-12));
+              g.fillStyle = '#cfcfcf'; g.font = Math.max(10, Math.floor(ch/5)) + 'px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+              g.fillText('Empty', cw/2, ch/2);
+            }catch(_){ }
+          }catch(_){ slot.innerHTML = '<div style="font-size:18px">?</div>'; vmenu.appendChild(slot); }
+        }
       } else {
-        // locked slot
-        slot.innerHTML = '<div style="font-size:22px">?</div>';
-        vmenu.appendChild(slot);
+        // locked slot - show a preview for bond if we have the baked asset or renderer so testers see the art
+        if (VEHICLE_SLOTS[i] === 'bondtank'){
+          try{
+            const c = document.createElement('canvas'); c.style.display = 'block'; c.style.width = '100%';
+            const label = document.createElement('div'); label.className = 'slot-label'; label.style.fontSize = '11px'; label.style.marginTop = '6px'; label.textContent = 'Bond (locked)';
+            slot.appendChild(c); slot.appendChild(label); vmenu.appendChild(slot);
+            const cw = Math.max(32, Math.floor(slot.clientWidth)); const ch = Math.max(24, Math.floor(slot.clientHeight - label.offsetHeight - 6));
+            c.width = cw; c.height = ch; const g = c.getContext('2d'); try{ g.imageSmoothingEnabled = false; }catch(_){ }
+
+            if (typeof window !== 'undefined' && window.__bondtank_body){
+              try{
+                const bw = window.__bondtank_body.width || SPR_W * SPRITE_SCALE; const bh = window.__bondtank_body.height || SPR_H * SPRITE_SCALE;
+                const scale = Math.min((cw-8)/bw, (ch-6)/bh, 1);
+                const dx = Math.round((cw - bw*scale)/2); const dy = Math.round((ch - bh*scale)/2);
+                try{ g.drawImage(window.__bondtank_body, 0,0,bw,bh, dx,dy, Math.round(bw*scale), Math.round(bh*scale)); }catch(_){ }
+              }catch(_){ }
+            } else if (typeof drawBondtankInto === 'function'){
+              try{ drawBondtankInto(g, cw, ch, performance.now()); }catch(_){ }
+            } else {
+              slot.innerHTML = '<div style="font-size:22px">?</div>';
+              vmenu.appendChild(slot);
+            }
+          }catch(_){ slot.innerHTML = '<div style="font-size:22px">?</div>'; vmenu.appendChild(slot); }
+        } else if (VEHICLE_SLOTS[i] === 'empty6'){
+          try{
+            const c = document.createElement('canvas'); c.style.display = 'block'; c.style.width = '100%';
+            const label = document.createElement('div'); label.className = 'slot-label'; label.style.fontSize = '11px'; label.style.marginTop = '6px'; label.textContent = 'German (locked)';
+            slot.appendChild(c); slot.appendChild(label); vmenu.appendChild(slot);
+            const cw = Math.max(32, Math.floor(slot.clientWidth)); const ch = Math.max(24, Math.floor(slot.clientHeight - label.offsetHeight - 6));
+            c.width = cw; c.height = ch; const g = c.getContext('2d'); try{ g.imageSmoothingEnabled = false; }catch(_){ }
+            try{
+              if (typeof window !== 'undefined' && window.__german_body){ const bw = window.__german_body.width, bh = window.__german_body.height; const scale = Math.min((cw-8)/bw, (ch-6)/bh, 1); const dx = Math.round((cw - bw*scale)/2); const dy = Math.round((ch - bh*scale)/2); try{ g.drawImage(window.__german_body, 0,0,bw,bh, dx,dy, Math.round(bw*scale), Math.round(bh*scale)); }catch(_){ }
+              } else if (typeof drawGermanBodyInto === 'function'){
+                try{ drawGermanBodyInto(g, cw, ch, performance.now()); }catch(_){ }
+              }
+            }catch(_){ }
+          }catch(_){ slot.innerHTML = '<div style="font-size:22px">?</div>'; vmenu.appendChild(slot); }
+        } else if (VEHICLE_SLOTS[i] && VEHICLE_SLOTS[i].startsWith && VEHICLE_SLOTS[i].startsWith('empty')){
+          try{
+            const c = document.createElement('canvas'); c.style.display = 'block'; c.style.width = '100%';
+            const label = document.createElement('div'); label.className = 'slot-label'; label.style.fontSize = '11px'; label.style.marginTop = '6px';
+            const idx = i + 1; label.textContent = 'Empty ' + idx + ' (locked)';
+            slot.appendChild(c); slot.appendChild(label); vmenu.appendChild(slot);
+            const cw = Math.max(32, Math.floor(slot.clientWidth)); const ch = Math.max(24, Math.floor(slot.clientHeight - label.offsetHeight - 6));
+            c.width = cw; c.height = ch; const g = c.getContext('2d'); try{ g.imageSmoothingEnabled = false; }catch(_){ }
+            try{
+              g.fillStyle = '#111'; g.fillRect(0,0,cw,ch);
+              g.fillStyle = '#262626'; g.fillRect(6,6, Math.max(8,cw-12), Math.max(8,ch-12));
+              g.fillStyle = '#999'; g.font = Math.max(10, Math.floor(ch/6)) + 'px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+              g.fillText('Locked', cw/2, ch/2);
+            }catch(_){ }
+          }catch(_){ slot.innerHTML = '<div style="font-size:22px">?</div>'; vmenu.appendChild(slot); }
+        } else {
+          slot.innerHTML = '<div style="font-size:22px">?</div>';
+          vmenu.appendChild(slot);
+        }
       }
     }
   }catch(_){ }
@@ -2968,25 +4006,25 @@ const dx = mouseWorldX - heli.x, dy = mouseWorldY - heli.y; heli.turretAngle = M
   bullets.splice(i,1);
   try{ callSpawnGibs(b.x, b.y, '#ffd1e8', 6, 'projectile-hit'); }catch(_){ }
       removed = true;
-  if (e.harmless){ enemies.splice(ei,1); recordDeath(e.kind || '<harmless>', e); try{ recordKill(e.kind || (typeof e.spriteIdx === 'number' ? ('animal-' + e.spriteIdx) : '<harmless>'), e); }catch(_){ } score += 1; updateHud(); callSpawnGibs(e.x, e.y, '#ff8b6b', 8, 'enemy-hit-harmless'); try{ doEnemyHeartDrops(e,e.x,e.y); }catch(_){ } if (Math.random() < 0.2) spawnPowerup(e.x, e.y, 'double'); }
+  if (e.harmless){ enemies.splice(ei,1); recordDeath(e.kind || '<harmless>', e); try{ recordKill(e.kind || (typeof e.spriteIdx === 'number' ? ('animal-' + e.spriteIdx) : '<harmless>'), e); }catch(_){ } score += 1; updateHud(); callSpawnGibs(e.x, e.y, '#ff8b6b', 8, 'enemy-hit-harmless'); try{ enemyDropChance(e,e.x,e.y); }catch(_){ } }
       else if (e.type === 'jungle' || e.type === 'animal'){
         e.hp = (e.hp||1) - 1;
-  if (e.hp <= 0){ enemies.splice(ei,1); score += 1; updateHud(); callSpawnGibs(e.x, e.y, '#ff8b6b', 12, 'enemy-killed-by-bullet'); try{ doEnemyHeartDrops(e,e.x,e.y); }catch(_){ } if (Math.random() < 0.2) spawnPowerup(e.x, e.y, 'double'); }
+  if (e.hp <= 0){ enemies.splice(ei,1); score += 1; updateHud(); callSpawnGibs(e.x, e.y, '#ff8b6b', 12, 'enemy-killed-by-bullet'); try{ enemyDropChance(e,e.x,e.y); }catch(_){ } }
   if (e.hp <= 0){ try{ recordDeath(e.kind || (typeof e.spriteIdx === 'number' ? ('animal-' + e.spriteIdx) : '<killed>'), e); }catch(_){ } try{ recordKill(e.kind || (typeof e.spriteIdx === 'number' ? ('animal-' + e.spriteIdx) : '<killed>'), e); }catch(_){ } }
   } else {
           // osprey: spawn logical osprey gibs
           if (e.type === 'osprey'){
             enemies.splice(ei,1);
-            try{ doEnemyHeartDrops(e,e.x,e.y); }catch(_){ }
+            try{ enemyDropChance(e,e.x,e.y); }catch(_){ }
             try{ recordDeath(e.kind || '<osprey-killed>', e); }catch(_){}
             try{ recordKill(e.kind || '<osprey-killed>', e); }catch(_){}
             score += 1; updateHud();
             try{ spawnOspreyGibs(e.x, e.y, e); }catch(_){ callSpawnGibs(e.x, e.y, '#b0c7cf', 18, 'osprey-fallback'); }
             // Always drop the journal powerup on osprey death to make it reliable
             try{ spawnJournalPowerup(e.x, e.y, 'collect-peanut'); }catch(_){ }
-            if (Math.random() < 0.2) spawnPowerup(e.x, e.y, 'double');
+            try{ enemyDropChance(e,e.x,e.y); }catch(_){ }
           } else {
-            enemies.splice(ei,1); try{ recordDeath(e.kind || '<default-killed>', e); }catch(_){ } try{ recordKill(e.kind || (typeof e.spriteIdx === 'number' ? ('animal-' + e.spriteIdx) : '<default-killed>'), e); }catch(_){ } score += 1; updateHud(); callSpawnGibs(e.x, e.y, '#ff8b6b', 10, 'enemy-default-killed'); try{ doEnemyHeartDrops(e,e.x,e.y); }catch(_){ } if (Math.random() < 0.2) spawnPowerup(e.x, e.y, 'double');
+            enemies.splice(ei,1); try{ recordDeath(e.kind || '<default-killed>', e); }catch(_){ } try{ recordKill(e.kind || (typeof e.spriteIdx === 'number' ? ('animal-' + e.spriteIdx) : '<default-killed>'), e); }catch(_){ } score += 1; updateHud(); callSpawnGibs(e.x, e.y, '#ff8b6b', 10, 'enemy-default-killed'); try{ enemyDropChance(e,e.x,e.y); }catch(_){ }
           }
         }
       break;
@@ -3027,8 +4065,28 @@ const dx = mouseWorldX - heli.x, dy = mouseWorldY - heli.y; heli.turretAngle = M
 
     // update enemy bullets
     for (let i = enemyBullets.length-1; i >= 0; i--){ const eb = enemyBullets[i]; eb.x += eb.dx * dt; eb.y += eb.dy * dt; eb.life -= dt; if (eb.life <= 0 || eb.x < -200 || eb.x > WORLD_W+200 || eb.y < -200 || eb.y > WORLD_H+200) { enemyBullets.splice(i,1); continue; }
-      // collision with player vehicle
-  if (selectedVehicle){ const px = (selectedVehicle === 'heli') ? heli.x : tank.x; const py = (selectedVehicle === 'heli') ? heli.y : tank.y; const dist = Math.hypot(eb.x - px, eb.y - py); if (dist < (eb.hitR || 8)) { enemyBullets.splice(i,1); try{ callSpawnGibs(eb.x, eb.y, '#ffd1e8', 6, 'projectile-hit'); }catch(_){ } health -= 1; try{ setHealth(health); }catch(_){ } updateHud(); if (health <= 0){ if (selectedVehicle === 'tank'){ explodeTank(updateHud, center, score); paused = true; gameOver = true; selectedVehicle = null; } else { gameOver = true; showGameOverModal(score); } } } }
+      // collision with player vehicle (respect start-safe immunity)
+    if (selectedVehicle){ const px = (selectedVehicle === 'heli') ? heli.x : tank.x; const py = (selectedVehicle === 'heli') ? heli.y : tank.y; const dist = Math.hypot(eb.x - px, eb.y - py);
+        // if within initial safe window and inside safe radius, ignore damage
+        const nowMs = (typeof performance !== 'undefined' && performance.now) ? performance.now() : 0;
+  let inStartSafe = false;
+  if (startSafeUntil && nowMs < startSafeUntil && START_SAFE_CENTERS && START_SAFE_CENTERS.length){
+    for (let si = 0; si < START_SAFE_CENTERS.length; si++){
+      const sc = START_SAFE_CENTERS[si];
+      if (Math.hypot(px - sc.x, py - sc.y) <= START_SAFE_RADIUS){ inStartSafe = true; break; }
+    }
+  }
+        if (dist < (eb.hitR || 8)) {
+          enemyBullets.splice(i,1);
+          try{ callSpawnGibs(eb.x, eb.y, '#ffd1e8', 6, 'projectile-hit'); }catch(_){ }
+          if (!inStartSafe) {
+            health -= 1; try{ setHealth(health); }catch(_){ } updateHud(); if (health <= 0){ if (selectedVehicle === 'tank'){ explodeTank(updateHud, center, score); paused = true; gameOver = true; selectedVehicle = null; } else { gameOver = true; showGameOverModal(score); } }
+          } else {
+            // visual feedback: small spark but no damage
+            try{ callSpawnGibs(eb.x, eb.y, '#fff', 4, 'projectile-absorbed-safe'); }catch(_){ }
+          }
+        }
+      }
       // Enemy bullets: deflect off animals, buildings, and trees; smaller foliage still takes damage
   try{
     let handled = false;
@@ -3168,7 +4226,25 @@ const dx = mouseWorldX - heli.x, dy = mouseWorldY - heli.y; heli.turretAngle = M
 
     // update kitten-specific bullets separately so they can use unique animation and not affect other projectiles
     for (let i = kittenBullets.length-1; i >= 0; i--){ const kb = kittenBullets[i]; kb.x += kb.dx * dt; kb.y += kb.dy * dt; kb.life -= dt; if (kb.life <= 0 || kb.x < -200 || kb.x > WORLD_W+200 || kb.y < -200 || kb.y > WORLD_H+200) { kittenBullets.splice(i,1); continue; }
-  if (selectedVehicle){ const px = (selectedVehicle === 'heli') ? heli.x : tank.x; const py = (selectedVehicle === 'heli') ? heli.y : tank.y; const dist = Math.hypot(kb.x - px, kb.y - py); if (dist < (kb.hitR || 6)) { kittenBullets.splice(i,1); try{ callSpawnGibs(kb.x, kb.y, '#ffd1e8', 6, 'projectile-hit'); }catch(_){ } health -= 1; try{ setHealth(health); }catch(_){ } updateHud(); if (health <= 0){ if (selectedVehicle === 'tank'){ explodeTank(updateHud, center, score); paused = true; gameOver = true; selectedVehicle = null; } else { gameOver = true; showGameOverModal(score); } } } }
+  if (selectedVehicle){ const px = (selectedVehicle === 'heli') ? heli.x : tank.x; const py = (selectedVehicle === 'heli') ? heli.y : tank.y; const dist = Math.hypot(kb.x - px, kb.y - py);
+  const nowMs = (typeof performance !== 'undefined' && performance.now) ? performance.now() : 0;
+  let inStartSafe = false;
+  if (startSafeUntil && nowMs < startSafeUntil && START_SAFE_CENTERS && START_SAFE_CENTERS.length){
+    for (let si = 0; si < START_SAFE_CENTERS.length; si++){
+      const sc = START_SAFE_CENTERS[si];
+      if (Math.hypot(px - sc.x, py - sc.y) <= START_SAFE_RADIUS){ inStartSafe = true; break; }
+    }
+  }
+      if (dist < (kb.hitR || 6)) {
+        kittenBullets.splice(i,1);
+        try{ callSpawnGibs(kb.x, kb.y, '#ffd1e8', 6, 'projectile-hit'); }catch(_){ }
+        if (!inStartSafe) {
+          health -= 1; try{ setHealth(health); }catch(_){ } updateHud(); if (health <= 0){ if (selectedVehicle === 'tank'){ explodeTank(updateHud, center, score); paused = true; gameOver = true; selectedVehicle = null; } else { gameOver = true; showGameOverModal(score); } }
+        } else {
+          try{ callSpawnGibs(kb.x, kb.y, '#fff', 4, 'projectile-absorbed-safe'); }catch(_){ }
+        }
+      }
+    }
   // kitten bullets can hit foliage too
   if (typeof foliageInstances !== 'undefined' && foliageInstances && foliageInstances.length){
   for (let fi = foliageInstances.length - 1; fi >= 0; fi--){ const f = foliageInstances[fi]; if (!f.destructible) continue; const r = (f.isTree) ? ((64 * Math.max(1, f.scale || 1)) * 0.42) : ((96 * Math.max(1, f.scale || 1)) * 0.46); let dy = f.y - kb.y; if (dy > WORLD_H/2) dy -= WORLD_H; if (dy < -WORLD_H/2) dy += WORLD_H; const dx = f.x - kb.x; if (Math.hypot(dx,dy) < r){ kittenBullets.splice(i,1); try{ handleFoliageHit(fi, kb.x, kb.y, '#8adf76'); }catch(_){ } break; } }
@@ -3203,6 +4279,12 @@ const dx = mouseWorldX - heli.x, dy = mouseWorldY - heli.y; heli.turretAngle = M
         try{ spawnHeartPowerup(x || e.x, y || e.y, 'collect', pick); }catch(_){ }
       }
     }catch(_){ }
+  }
+  // Centralized enemy drop helper: preserves existing heart/collect drops and
+  // adds a 1-in-5 chance to drop a weapon-upgrade powerup ('double').
+  function enemyDropChance(e, x, y){
+    try{ doEnemyHeartDrops(e, x, y); }catch(_){ }
+  try{ if (Math.random() < 0.2) spawnPowerup(x || e.x, y || e.y, 'double'); }catch(_){ }
   }
     const targetX = (selectedVehicle === 'heli') ? heli.x : tank.x;
     const targetY = (selectedVehicle === 'heli') ? heli.y : tank.y;
@@ -3595,6 +4677,74 @@ const dx = mouseWorldX - heli.x, dy = mouseWorldY - heli.y; heli.turretAngle = M
   // update/draw additional small animals distributed like critters
   updateAnimals(now, dt);
   drawAnimals(now);
+  // draw start-safe visual area near the beginning while the safe timer is active
+  try{
+    const nowMs = (typeof performance !== 'undefined' && performance.now) ? performance.now() : 0;
+    if (startSafeUntil && nowMs < startSafeUntil){
+      // draw the pre-rendered flower patch under the tank at the start center
+      try{
+        if (!startPatchCanvas) startPatchCanvas = createFlowerPatchCanvas(START_SAFE_RADIUS);
+        if (startPatchCanvas && START_SAFE_CENTERS && START_SAFE_CENTERS.length){
+          const desiredPx = START_SAFE_RADIUS * 2;
+          const baseW = startPatchCanvas.width;
+          const visualScale = 0.5;
+          const scaleForWorldBase = desiredPx / baseW * camera.zoom * visualScale;
+          for (let i = 0; i < START_SAFE_CENTERS.length; i++){
+            try{
+              const c = START_SAFE_CENTERS[i];
+              const ss = worldToScreen(c.x, c.y);
+              const scaleForWorld = scaleForWorldBase; // same visual scale for all
+              ctx.save();
+              ctx.globalAlpha = 0.98;
+              ctx.imageSmoothingEnabled = true;
+              ctx.translate(ss.x - (baseW*0.5*scaleForWorld), ss.y - (startPatchCanvas.height*0.5*scaleForWorld));
+              ctx.scale(scaleForWorld, scaleForWorld);
+              ctx.drawImage(startPatchCanvas, 0, 0);
+              ctx.restore();
+              // faint circular overlay (keeps the previous ring but faded)
+              ctx.save();
+              ctx.globalCompositeOperation = 'lighter';
+              ctx.globalAlpha = 0.12;
+              const ringRadius = desiredPx * 0.5 * visualScale * camera.zoom;
+              ctx.beginPath(); ctx.arc(ss.x, ss.y, ringRadius, 0, Math.PI*2); ctx.fillStyle = 'rgba(160,220,255,0.06)'; ctx.fill();
+              ctx.lineWidth = Math.max(1, 2 * camera.zoom * visualScale);
+              ctx.strokeStyle = 'rgba(160,220,255,0.12)'; ctx.beginPath(); ctx.arc(ss.x, ss.y, ringRadius, 0, Math.PI*2); ctx.stroke();
+              ctx.restore();
+
+              // timer ring: show shared hide accumulator depletion across all patches
+              try{
+                const remaining = Math.max(0, SAFE_RELOCATE_ON_HIDE_MS - hideAccumMs);
+                const frac = Math.max(0, Math.min(1, remaining / SAFE_RELOCATE_ON_HIDE_MS));
+                // stroke arc: from -90deg clockwise to represent depletion
+                const startA = -Math.PI/2; const endA = startA + frac * Math.PI * 2;
+                ctx.save();
+                ctx.lineWidth = Math.max(2, 3 * camera.zoom * visualScale);
+                // color varies when accumulator active
+                const ringCol = (hideActive && hideAccumMs > 0) ? 'rgba(255,180,70,0.95)' : 'rgba(160,220,255,0.6)';
+                ctx.strokeStyle = ringCol;
+                ctx.beginPath(); ctx.arc(ss.x, ss.y, ringRadius + 6 * camera.zoom * visualScale, startA, endA, false); ctx.stroke();
+                ctx.restore();
+                // relocation flash: if recent randomize occurred, highlight new centers briefly
+                try{
+                  const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+                  if (relocateFlashUntil && now < relocateFlashUntil && relocateFlashCenters && relocateFlashCenters.length){
+                    // if this center was among relocated ones, draw a glow pulse
+                    for (let rf = 0; rf < relocateFlashCenters.length; rf++){
+                      const rc = relocateFlashCenters[rf];
+                      if (rc.x === c.x && rc.y === c.y){
+                        ctx.save(); ctx.globalAlpha = 0.85; ctx.fillStyle = 'rgba(255,220,140,0.14)'; ctx.beginPath(); ctx.arc(ss.x, ss.y, ringRadius + 18 * camera.zoom * visualScale, 0, Math.PI*2); ctx.fill(); ctx.restore();
+                        break;
+                      }
+                    }
+                  }
+                }catch(_){ }
+              }catch(_){ }
+            }catch(_){ }
+          }
+        }
+      }catch(_){ }
+    }
+  }catch(_){ }
   // draw tank pieces (explosion) on top of gibs
   if (tankPieces.length) drawTankPieces(ctx, worldToScreen, camera);
   // update/draw sparks and smoke for tank explosion
@@ -3656,7 +4806,11 @@ const dx = mouseWorldX - heli.x, dy = mouseWorldY - heli.y; heli.turretAngle = M
   // draw powerups (under vehicles so they sit on the world)
   if (powerups.length) drawPowerups();
   // draw buildings (world -> screen) so they sit underneath vehicles
-  for (const b of buildingInstances){ const bs = worldToScreen(b.x, b.y); const bx = bs.x, by = bs.y; const pad = 64 * b.scale * camera.zoom; if (bx < -pad || bx > W+pad || by < -pad || by > H+pad) continue; const tile = buildingTiles[b.idx]; ctx.save(); ctx.translate(bx, by); ctx.scale(b.scale * camera.zoom, b.scale * camera.zoom); ctx.translate(-32, -32); ctx.drawImage(tile.c,0,0); ctx.restore(); }
+  for (const b of buildingInstances){
+    // fast cull: skip offscreen buildings
+    if (!worldObjectVisible(b.x, b.y, Math.max(32, 64 * (b.scale || 1) * camera.zoom))) continue;
+    const bs = worldToScreen(b.x, b.y); const bx = bs.x, by = bs.y; const tile = buildingTiles[b.idx]; ctx.save(); ctx.translate(bx, by); ctx.scale(b.scale * camera.zoom, b.scale * camera.zoom); ctx.translate(-32, -32); ctx.drawImage(tile.c,0,0); ctx.restore();
+  }
   // draw billboards (pixel-accurate canvases)
   for (const bb of billboardInstances){
   // If fragments were spawned around a focus (player/bullet/heli), use that focus
@@ -3664,7 +4818,8 @@ const dx = mouseWorldX - heli.x, dy = mouseWorldY - heli.y; heli.turretAngle = M
   let bx, by;
   if (bb._worldFragments && bb._fragFocus){ const fs = worldToScreen(bb._fragFocus.x, bb._fragFocus.y); bx = fs.x; by = fs.y; }
   else { const bs = worldToScreen(bb.x, bb.y); bx = bs.x; by = bs.y; }
-  const pad = 64 * Math.max(bb.scaleX, bb.scaleY) * camera.zoom; if (bx < -pad || bx > W+pad || by < -pad || by > H+pad) continue;
+  const padFor = Math.max(32, 64 * Math.max(bb.scaleX || 1, bb.scaleY || 1) * camera.zoom);
+  if (!worldObjectVisible((bb._fragFocus && bb._fragFocus.x) ? bb._fragFocus.x : bb.x, (bb._fragFocus && bb._fragFocus.y) ? bb._fragFocus.y : bb.y, padFor)) continue;
     if (bb.broken){
       // update broken physics using real dt (seconds)
       const squished = updateBillboardBroken(bb, dt, WORLD_H, mod);
@@ -3720,8 +4875,8 @@ const dx = mouseWorldX - heli.x, dy = mouseWorldY - heli.y; heli.turretAngle = M
   }
   if (selectedVehicle === 'tank'){
     const ts = worldToScreen(tank.x, tank.y); const sx = ts.x, sy = ts.y;
-    // only draw the tank (and its shadow) when it's alive; hide entirely while exploded
-    if (tank.alive){
+  // only draw the tank (and its shadow) when it's alive; hide entirely while exploded
+  if (tank.alive){
       // apply bump offset: when bumpTime > 0 interpolate a small vertical and tilt effect
       let bumpOffsetY = 0, bumpRot = 0;
       try{
@@ -3736,25 +4891,127 @@ const dx = mouseWorldX - heli.x, dy = mouseWorldY - heli.y; heli.turretAngle = M
       // draw shadow slightly offset by bump so it reads as lift
   const effScale = effectiveTankScale();
   drawShadow(sx, sy + Math.max(0, -bumpOffsetY)*0.6, SPR_W * effScale, effScale * camera.zoom);
+
+  // If the tank is inside the start-safe flower patch, hide the body (so it looks
+  // like the tank is hiding in the flowers) but leave the turret exposed.
+  let hideTankBase = false;
   try{
-    // draw body using its native canvas size so 64x64 sprites remain pixel-perfect
-    const bodyScale = getCanvasDrawScale(bodyCanvas);
-    ctx.save(); ctx.translate(sx, sy + bumpOffsetY); ctx.rotate(tank.bodyAngle + Math.PI/2 + bumpRot); ctx.scale(bodyScale, bodyScale); ctx.translate(-bodyCanvas.width/2, -bodyCanvas.height/2); ctx.imageSmoothingEnabled = false; ctx.drawImage(bodyCanvas, 0, 0); ctx.restore();
-  }catch(_){ drawImageCentered(bodyCanvas, sx, sy + bumpOffsetY, tank.bodyAngle + Math.PI/2 + bumpRot, effScale * camera.zoom); }
-  // draw Dozer shield on top of body/turret
-  try{ drawDozerShield(ctx, worldToScreen, camera); }catch(_){ }
+    const nowMs = (typeof performance !== 'undefined' && performance.now) ? performance.now() : 0;
+    const safeActive = (typeof startSafeUntil !== 'undefined' && startSafeUntil !== null) && (startSafeUntil === Infinity || nowMs < startSafeUntil);
+    if (safeActive && START_SAFE_CENTERS && START_SAFE_CENTERS.length){
+      const visualScale = 0.5;
+      const effectiveHideRadius = (START_SAFE_RADIUS || 0) * visualScale;
+      // determine if tank is inside any patch and track continuous hide time for relocations
+      let foundIndex = -1;
+      for (let si = 0; si < START_SAFE_CENTERS.length; si++){
+        const sc = START_SAFE_CENTERS[si];
+        const dx = tank.x - sc.x;
+        const dy = wrapDeltaY(tank.y, sc.y);
+        if (Math.hypot(dx, dy) <= effectiveHideRadius){ foundIndex = si; hideTankBase = true; break; }
+      }
+        if (foundIndex >= 0){
+          // player is inside a patch -> accumulate hide time
+          if (!hideActive){
+            hideActive = true; hideLastMs = nowMs;
+          }
+          // increment accumulator
+          if (hideLastMs) { hideAccumMs += Math.max(0, nowMs - hideLastMs); hideLastMs = nowMs; }
+          // check threshold using the current patch as excludeIndex
+          if (hideAccumMs >= SAFE_RELOCATE_ON_HIDE_MS){
+            randomizeOtherSafeCenters(foundIndex);
+            hideAccumMs = 0; // reset accumulator after relocation
+            hideLastMs = nowMs; // continue timing if player remains inside
+          }
+        } else {
+          // player is outside all patches -> pause accumulator but do not reset
+          hideActive = false; hideLastMs = 0;
+        }
+    }
+  }catch(_){ hideTankBase = false; }
+
+  // draw body only when not hidden by flowers
+  if (!hideTankBase){
+    try{
+      // draw body using its native canvas size so 64x64 sprites remain pixel-perfect
+      const bodyScale = getCanvasDrawScale(bodyCanvas);
+      ctx.save(); ctx.translate(sx, sy + bumpOffsetY); ctx.rotate(tank.bodyAngle + Math.PI/2 + bumpRot); ctx.scale(bodyScale, bodyScale); ctx.translate(-bodyCanvas.width/2, -bodyCanvas.height/2); ctx.imageSmoothingEnabled = false; ctx.drawImage(bodyCanvas, 0, 0); ctx.restore();
+    }catch(_){ drawImageCentered(bodyCanvas, sx, sy + bumpOffsetY, tank.bodyAngle + Math.PI/2 + bumpRot, effScale * camera.zoom); }
+    // draw Dozer shield on top of body/turret
+    try{ drawDozerShield(ctx, worldToScreen, camera); }catch(_){ }
+  }
     try{
   const turretScale = getCanvasDrawScale(turretCanvas);
-  // apply a per-variant turret artwork offset: default tank artwork was drawn pointing up,
-  // so add PI/2 (90° clockwise) so turretAngle (atan2) maps correctly; other variants
-  // (murkia/dozer/fiesta) use neutral artwork and require no offset.
-    // Per-variant artwork offset: apply +90deg (clockwise) only for the default tank
+    // apply a per-variant turret artwork offset using an explicit lookup table so
+    // each variant's artwork orientation is independent and can't leak between variants.
     let turretArtworkOffset = 0;
     try{
-      if (selectedVehicle === 'tank' && selectedVehicleVariant === 'default') turretArtworkOffset = Math.PI/2;
+      if (selectedVehicle === 'tank'){
+        // explicit per-variant map: key -> artwork rotation to add so turretAngle maps to image
+        const VARIANT_TURRET_OFFSETS = {
+          // artworks authored pointing up (need +90deg)
+          'default': Math.PI/2,
+          'bondtank': Math.PI/2,
+          'mcds': Math.PI/2,
+          // artworks authored pointing right (no offset)
+          'german': 0,
+          'mexico': 0,
+          'china': 0,
+          // other known variants keep default +90deg mapping for safety
+          'murkia': Math.PI/2,
+          'dozer': Math.PI/2,
+          'fordfiesta': Math.PI/2
+        };
+        turretArtworkOffset = (typeof selectedVehicleVariant === 'string' && selectedVehicleVariant in VARIANT_TURRET_OFFSETS) ? VARIANT_TURRET_OFFSETS[selectedVehicleVariant] : Math.PI/2;
+      }
     }catch(_){ turretArtworkOffset = 0; }
+  // If Bondtank is active, render animated turret artwork into the turret canvas first
+  try{
+    if (selectedVehicle === 'tank' && selectedVehicleVariant === 'bondtank' && typeof drawBondTurretInto === 'function'){
+      try{ drawBondTurretInto(turretCanvas.getContext('2d'), turretCanvas.width, turretCanvas.height, performance.now()); }catch(_){ }
+    }
+  }catch(_){ }
   ctx.save(); ctx.translate(sx, sy + bumpOffsetY); ctx.rotate(tank.turretAngle + bumpRot + turretArtworkOffset); ctx.scale(turretScale, turretScale); ctx.translate(-turretCanvas.width/2, -turretCanvas.height/2); ctx.imageSmoothingEnabled = false; ctx.drawImage(turretCanvas, 0, 0); ctx.restore();
   }catch(_){ drawImageCentered(turretCanvas, sx, sy + bumpOffsetY, tank.turretAngle + bumpRot + turretArtworkOffset, effScale * camera.zoom); }
+  // Debug visuals: draw pivot and forward muzzle vector for player tank when enabled
+  try{
+    if (typeof window !== 'undefined' && window.DEBUG_TURRET_VISUALS){
+      const pivotX = sx; const pivotY = sy + bumpOffsetY;
+      // draw pivot
+      ctx.save(); ctx.fillStyle = 'rgba(255,0,0,0.9)'; ctx.beginPath(); ctx.arc(pivotX, pivotY, 3 * Math.max(1, camera.zoom), 0, Math.PI*2); ctx.fill(); ctx.restore();
+      // draw forward muzzle vector (length 24 world px)
+      const len = 24 * camera.zoom;
+      const ang = tank.turretAngle + turretArtworkOffset;
+      const mx = pivotX + Math.cos(ang) * len;
+      const my = pivotY + Math.sin(ang) * len;
+      ctx.save(); ctx.strokeStyle = 'rgba(0,255,0,0.9)'; ctx.lineWidth = Math.max(1, 2 * camera.zoom); ctx.beginPath(); ctx.moveTo(pivotX, pivotY); ctx.lineTo(mx, my); ctx.stroke(); ctx.restore();
+    }
+  }catch(_){ }
+  // draw a small faded forward arrow on the tank body to indicate forward direction
+  try{
+  const arrowAlpha = 0.28; // keep subtle
+  const arrowLen = 16 * camera.zoom * effScale; // doubled length (was 8)
+  const arrowW = Math.max(1, Math.round(6 * camera.zoom)); // doubled width (was 3)
+  // forward direction is tank.bodyAngle (use bodyAngle directly so guide arrow aligns for all tanks)
+  const forwardAngle = tank.bodyAngle;
+    // place the arrow farther ahead of the tank
+    const ahead = arrowLen * 1.0;
+    const ax = sx + Math.cos(forwardAngle) * ahead;
+    const ay = sy + bumpOffsetY + Math.sin(forwardAngle) * ahead;
+    ctx.save();
+    ctx.translate(ax, ay);
+    ctx.rotate(forwardAngle);
+    ctx.globalAlpha = arrowAlpha;
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.beginPath();
+    ctx.moveTo(0, -arrowW);
+    ctx.lineTo(arrowLen * 0.5, 0);
+    ctx.lineTo(0, arrowW);
+    ctx.closePath();
+    ctx.fill();
+    // thin stem (scaled with arrowLen/arrowW)
+  ctx.fillRect(-Math.round(arrowLen*0.22), -Math.round(arrowW*0.45), Math.round(arrowLen*0.38), Math.max(1, Math.round(arrowW*0.9)));
+    ctx.restore();
+  }catch(_){ }
     }
   } else if (selectedVehicle === 'heli'){
   const wobble = Math.sin(now * 0.006) * 1.2;
@@ -4041,6 +5298,8 @@ const dx = mouseWorldX - heli.x, dy = mouseWorldY - heli.y; heli.turretAngle = M
 }
 // initialize foliage (bake large offscreen grass canvas and tiles) so drawFoliage can run on first frame
 try{ initFoliage(WORLD_W, WORLD_H); }catch(e){ console.warn('initFoliage failed or not available yet', e); }
+// Ensure game state is initialized and initial spawns occur on load
+try{ restart(); }catch(_){ }
 requestAnimationFrame(loop);
 
 // key shortcuts

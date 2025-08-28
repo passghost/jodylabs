@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<!--
+[PIXEL SPEC - MEXICAN HEAVY TANK • EVEN MORE BEANS]
+Subject: Ultra high-def top-down pixel MEXICAN heavy tank with MANY beans (side racks, top crates, deck sacks)
+View: top-down
+Canvas: 320×320
+Palette (15):
+  MexGreen #006847, MexWhite #FFFFFF, MexRed #CE1126,
+  HullGreenD #074D36, HullGreenL #1E7F5C,
+  Steel #B0BEC5, Gunmetal #232323, GunShade #101010,
+  TrackDark #111111, TrackLight #474747,
+  Gold #C8A200, Brown #7B4B2A, Bean #9C5B3A, Bean2 #8B4B33,
+  Shadow #00000055
+Style notes: layered armor, ERA tiles, bolts; turret tricolor with tiny emblem; MASSIVE bean payload—double side racks each side + two top crates + deck sacks; subtle jiggle, nothing floats (all attached to racks/straps)
+Motion: tread scroll + turret oscillation ±26°, antenna sway, bean-jiggle (subtle)
+Hitbox/anchor: pivot center (160,160)
+Export: single-file HTML only
+Constraints: no external libs, cohesive single element, no floating parts
+Format: .html
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Mexican Heavy Tank (With EVEN MORE Beans)</title>
+  <style>
+    :root { color-scheme: dark; }
+    body{
+      margin:0;height:100vh;display:grid;place-items:center;background:#0a0c10;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+    }
+    canvas{
+      width:640px;height:640px;
+      image-rendering: pixelated; image-rendering: crisp-edges;
+      border:4px solid #0b0b0b; box-shadow:0 0 70px rgba(0,0,0,.75), inset 0 0 20px rgba(255,255,255,.05);
+      background:#0b0b0b;
+    }
+    .note{margin-top:8px;opacity:.7;font-size:12px}
+  </style>
+</head>
+<body>
+  <div>
+    <canvas id="c" width="320" height="320"></canvas>
+    <div class="note">320×320 • Mexican tricolor turret • heavy armor • DOUBLE side bean racks, top bean crates, deck bean sacks</div>
+  </div>
+
+  <script>
+    // ===== Palette =====
+    const P = {
+      mxG:"#006847", mxW:"#FFFFFF", mxR:"#CE1126",
+      hullD:"#074D36", hullL:"#1E7F5C",
+      steel:"#B0BEC5", gun:"#232323", gunD:"#101010",
+      trackD:"#111111", trackL:"#474747",
+      gold:"#C8A200", brown:"#7B4B2A", bean:"#9C5B3A", bean2:"#8B4B33",
+      outline:"#000000", shadow:"#00000055"
+    };
+
+    // ===== Setup =====
+    const cv = document.getElementById("c");
+    const ctx = cv.getContext("2d");
+    ctx.imageSmoothingEnabled = false;
+
+    const R = (x,y,w,h,c)=>{ ctx.fillStyle=c; ctx.fillRect(x|0, y|0, w|0, h|0); };
+    const O = (x,y,w,h,c)=>{ R(x,y,w,1,c); R(x,y+h-1,w,1,c); R(x,y,1,h,c); R(x+w-1,y,1,h,c); };
+
+    function rivet(x,y){ R(x,y,2,2,P.steel); }
+    function bolt(x,y){ R(x,y,1,1,P.gunD); }
+    function ellipseShadow(cx,cy,rx,ry){
+      ctx.save();
+      ctx.fillStyle=P.shadow;
+      ctx.beginPath();
+      ctx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // ===== Beans (helpers) =====
+    function beanPixel(x,y){
+      // little kidney beans as 2–3 px clusters
+      R(x, y, 1, 1, Math.random() < 0.5 ? P.bean : P.bean2);
+      if(Math.random()<0.6) R(x+1, y, 1, 1, P.bean2);
+      if(Math.random()<0.4) R(x, y+1, 1, 1, P.bean);
+    }
+
+    function beanSack(x,y,w=14,h=10,seed=0){
+      // Sack body
+      R(x, y, w, h, P.brown);
+      // Tie/knot
+      R(x + (w>>1) - 1, y-2, 2, 2, P.gun);
+      // Sack rim and outline
+      R(x, y, w, 1, P.hullL);
+      O(x, y, w, h, P.outline);
+      // Beans peeking
+      for(let i=0;i<4;i++){
+        beanPixel(x + 2 + ((i*3 + seed)% (w-3)), y + 2 + (i%2));
+      }
+    }
+
+    function beanCrate(x,y,w=22,h=12,open=true,seed=0){
+      // Wooden crate attached with steel strap
+      R(x, y, w, h, "#6b4a2f");
+      O(x, y, w, h, P.outline);
+      // Planks
+      for(let i=0;i<Math.floor(w/5);i++){
+        R(x + i*5, y, 1, h, "#5c3f29");
+      }
+      // Steel strap (attachment)
+      R(x-2, y-2, w+4, 2, P.steel);
+      R(x-2, y+h, w+4, 2, P.steel);
+
+      if(open){
+        // Beans fill inside top
+        for(let i=0;i<30;i++){
+          const bx = x + 2 + ((i*3 + seed)% (w-4));
+          const by = y + 2 + (i% (h-4));
+          beanPixel(bx, by);
+        }
+        // A tiny lip
+        R(x, y-1, w, 1, "#7a5a3a");
+      }
+    }
+
+    // ===== Components =====
+    function tread(x,y,w,h,t){
+      R(x,y,w,h,P.trackD);
+      // rollers
+      for(let i=0;i<5;i++){ R(x+2, y+6+i*((h-12)/4), w-4, 2, P.trackL); }
+      // moving lugs
+      const step = 6, off = Math.floor(t/7)%step;
+      for(let i=0;i<h/step;i++){
+        const yy = y + ((i*step + off) % h);
+        R(x+3, yy, w-6, 2, P.trackL);
+      }
+      O(x,y,w,h,P.outline);
+    }
+
+    function hull(){
+      // Lower hull slab (green tone)
+      R(76,140,168,80,P.hullL);
+      R(78,142,164,76,P.hullL);
+      // Side skirts / spaced armor
+      R(68,146,8,72,P.hullD);
+      R(244,146,8,72,P.hullD);
+
+      // Front glacis
+      R(88,120,144,20,P.hullL);
+      R(90,120,140,6,P.mxG);
+      O(88,120,144,20,P.outline);
+
+      // Rear plate
+      R(90,220,140,12,P.hullD);
+      O(90,220,140,12,P.outline);
+
+      // ERA tiles on glacis
+      for(let i=0;i<9;i++){
+        for(let j=0;j<2;j++){
+          const tx = 94 + i*15, ty = 126 + j*9;
+          R(tx,ty,11,7,P.hullL);
+          O(tx,ty,11,7,P.outline);
+          bolt(tx+5,ty+3);
+        }
+      }
+
+      // Upper hull deck
+      R(92,156,136,48,P.hullL);
+      R(94,158,132,44,P.hullL);
+      O(92,156,136,48,P.outline);
+
+      // Hatches & vents
+      R(108,164,24,14,P.hullD); O(108,164,24,14,P.outline); rivet(114,168); rivet(122,168);
+      R(188,164,24,14,P.hullD); O(188,164,24,14,P.outline); rivet(194,168); rivet(202,168);
+      for(let i=0;i<10;i++){ R(112+i*10,196,6,2,P.gun); }
+
+      // Edge rivets along skirts
+      for(let i=0;i<14;i++){ rivet(70,148+i*5); rivet(250,148+i*5); }
+
+      // Hull outline
+      O(76,140,168,80,P.outline);
+    }
+
+    function mexicanEmblemTiny(cx,cy){
+      R(cx-2, cy-1, 4, 3, P.gold);
+      R(cx-4, cy+2, 8, 1, P.bean);
+      R(cx-3, cy+1, 6, 1, P.brown);
+    }
+
+    function turret(t){
+      const cx=160, cy=164;
+      ctx.save();
+      ctx.translate(cx,cy);
+      const a = Math.sin(t/120)*0.46; // ±26°
+      ctx.rotate(a);
+
+      // Turret base
+      R(-40,-30,80,60,P.hullL);
+      R(-38,-28,76,56,P.hullL);
+      O(-40,-30,80,60,P.outline);
+
+      // Cheek armor
+      R(-46,-14,6,28,P.hullD);
+      R(40,-14,6,28,P.hullD);
+      O(-46,-14,6,28,P.outline);
+      O(40,-14,6,28,P.outline);
+
+      // Mantlet
+      R(-10,-12,20,24,P.hullD);
+      O(-10,-12,20,24,P.outline);
+
+      // Mexican tricolor across turret top
+      R(-38,-28,24,56,P.mxG);
+      R(-14,-28,24,56,P.mxW);
+      R(10,-28,24,56,P.mxR);
+      mexicanEmblemTiny(-2,-4);
+
+      // Commander's hatch
+      R(-22,-8,12,12,P.hullD); O(-22,-8,12,12,P.outline); rivet(-18,-4); rivet(-12,-4);
+
+      // Antenna (sway)
+      const sway = Math.sin(t/90)*3;
+      R(-26,-30,2, -12, P.gun);
+      for(let i=0;i<14;i++){
+        R(-25 + Math.sin((i/14)*Math.PI)*(1+sway/6), -42 - i, 1, 1, P.steel);
+      }
+
+      // Dual barrels (heavier, long)
+      R(16,-6,90,6,P.steel);  R(16,-6,90,2,P.gun);
+      R(106,-6,2,6,P.gun);
+      R(16, 6,90,6,P.steel);  R(16,10,90,2,P.gun);
+      R(106,6,2,6,P.gun);
+
+      // Barrel brace
+      R(8,-8,6,16,P.hullD); O(8,-8,6,16,P.outline);
+
+      // Turret bolts
+      for(let i=0;i<6;i++){ bolt(-36+i*12,-28); bolt(-36+i*12,28); }
+
+      ctx.restore();
+    }
+
+    // ===== Massive Bean Cargo (attached) =====
+    function beanRack(side="left", jiggle=0, tier=0){
+      // Two racks per side (tier 0 = lower, tier 1 = upper)
+      const baseY = 146 - tier*18;  // upper rack sits slightly higher
+      const height = 64;
+      const xBar = (side==="left") ? 66 : 246;
+
+      // vertical bars
+      R(xBar, baseY, 2, height, P.gun);
+      R(xBar + ((side==="left")?6:-6), baseY, 2, height, P.gun);
+      // horizontal bars
+      R(xBar-1, baseY, 10, 2, P.gun);
+      R(xBar-1, baseY+height-2, 10, 2, P.gun);
+
+      // Sacks inside rack (5 per rack) with slight jiggle
+      const xSack = (side==="left") ? xBar-12 : xBar- (14-2);
+      for(let i=0;i<5;i++){
+        const yS = baseY + 4 + i* ((height-10)/5) + (i%2 ? jiggle : -jiggle);
+        beanSack(xSack, yS, 14, 10, i + (tier*7));
+      }
+    }
+
+    function deckBeans(t){
+      // Top deck strapped sacks (front corners) + rear crates
+      // Straps
+      R(92,156,136,2,P.steel);
+      R(92,202,136,2,P.steel);
+      // Front-left sack cluster
+      const j = Math.round(Math.sin(t/150)); // -1..1 small
+      beanSack(96,160 + j, 14, 10, 1);
+      beanSack(112,160 - j, 14, 10, 2);
+      // Front-right sack cluster
+      beanSack(202,160 - j, 14, 10, 3);
+      beanSack(218,160 + j, 14, 10, 4);
+
+      // Rear crates (open, overflowing beans)
+      beanCrate(110,206,22,12,true, 11);
+      beanCrate(188,206,22,12,true, 17);
+      // Tiny overflow on deck (still touching crates via pixels—no floating)
+      for(let i=0;i<10;i++){
+        beanPixel(110 + 2 + (i%20), 219 + (i%2)); // just below left crate
+        beanPixel(188 + 2 + ((i+5)%20), 219 + (i%2)); // just below right crate
+      }
+    }
+
+    // ===== Frame =====
+    function drawBG(){
+      R(0,0,320,320,"#0b0b0b");
+      ellipseShadow(160,210,105,26);
+    }
+
+    function frame(t){
+      drawBG();
+      // Treads
+      tread(56,132,36,112,t);
+      tread(228,132,36,112,t);
+
+      // Hull
+      hull();
+
+      // SIDE RACKS: double per side (upper+lower), lots of sacks
+      const jiggle = Math.round(Math.sin(t/140)); // -1,0,1
+      beanRack("left",  jiggle, 0);
+      beanRack("left", -jiggle, 1);
+      beanRack("right", -jiggle, 0);
+      beanRack("right",  jiggle, 1);
+
+      // Deck beans (strapped)
+      deckBeans(t);
+
+      // Turret last (on top)
+      turret(t);
+
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  </script>
+</body>
+</html>

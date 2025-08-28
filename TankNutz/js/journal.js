@@ -1,7 +1,7 @@
 // Journal module: manages the on-screen journal UI and kill tallies
 export const killCounts = {};
 let hudRef = null;
-let MAX_HEALTH_REF = 5;
+let MAX_HEALTH_REF = null;
 let healthRef = 0;
 const JOURNAL_KEY = 'tn_journal_v1';
 const SET1_PROGRESS_KEY = 'tn_set1_progress_v1';
@@ -15,6 +15,22 @@ const COMBO_SET_SIZE = 3;
 // persistent claimed upgrades set (store by id string = kinds.join('|'))
 let claimedUpgrades = new Set();
 const CLAIM_KEY = 'tn_unlocked_upgrades';
+
+// Translation helper: route visible text through available translation hooks
+function tr(text){
+  try{
+    if (!text && text !== 0) return text;
+    if (typeof window !== 'undefined'){
+      if (typeof window.translateSwap === 'function') return window.translateSwap(text);
+      if (typeof window.t === 'function') return window.t(text);
+      if (typeof window.translate === 'function') return window.translate(text);
+      if (typeof window._t === 'function') return window._t(text);
+      if (typeof window.T === 'function') return window.T(text);
+      if (window.TRANSLATIONS && typeof window.TRANSLATIONS === 'object' && window.TRANSLATIONS[text]) return window.TRANSLATIONS[text];
+    }
+  }catch(_){ }
+  return text;
+}
 
 function loadClaimedUpgrades(){
   try{ const raw = localStorage.getItem(CLAIM_KEY); if (!raw) return; const arr = JSON.parse(raw); if (Array.isArray(arr)) arr.forEach(x=>claimedUpgrades.add(x)); }catch(_){ }
@@ -104,9 +120,9 @@ function ensureJournal(){
       .journal-score{ font-weight:700; margin-bottom:4px; }
       .journal-hull{ font-size:12px; color:#cfcfcf; }
     `; document.head.appendChild(s); }
-  const t = document.createElement('div'); t.id = 'journalToggle'; t.className = 'journal-toggle'; t.innerText = 'Journal';
+  const t = document.createElement('div'); t.id = 'journalToggle'; t.className = 'journal-toggle'; t.innerText = tr('Journal');
   const j = document.createElement('div'); j.id = 'journal'; j.className = 'journal open';
-  const resetBtn = document.createElement('button'); resetBtn.id = 'journalReset'; resetBtn.innerText = 'Reset Journal'; resetBtn.style.marginLeft = '8px'; resetBtn.style.padding = '6px'; resetBtn.style.fontSize = '12px'; resetBtn.style.cursor = 'pointer';
+  const resetBtn = document.createElement('button'); resetBtn.id = 'journalReset'; resetBtn.innerText = tr('Reset Journal'); resetBtn.style.marginLeft = '8px'; resetBtn.style.padding = '6px'; resetBtn.style.fontSize = '12px'; resetBtn.style.cursor = 'pointer';
   const jl = document.createElement('div'); jl.id = 'journalLeft'; jl.className = 'journal-left';
   const jh = document.createElement('div'); jh.id = 'journalHealth'; jh.className = 'journal-health';
   const je = document.createElement('div'); je.id = 'journalEntries'; je.className = 'journal-entries grid'; je.setAttribute('role','list');
@@ -116,11 +132,11 @@ function ensureJournal(){
   j.appendChild(jh); j.appendChild(je);
   document.body.appendChild(t); document.body.appendChild(j);
   // ensure initial state label is consistent (open by default so combos are visible)
-  t.innerText = 'Journal';
+  t.innerText = tr('Journal');
   t.addEventListener('click', ()=>{
     const isOpen = j.classList.toggle('open');
-    if (isOpen){ j.classList.remove('closed'); t.innerText = 'Journal'; }
-    else { j.classList.add('closed'); t.innerText = 'Journal off'; }
+    if (isOpen){ j.classList.remove('closed'); t.innerText = tr('Journal'); }
+    else { j.classList.add('closed'); t.innerText = tr('Journal off'); }
   });
   // If HUD is tank-themed, position journal below it to avoid overlap
   try{
@@ -131,7 +147,7 @@ function ensureJournal(){
   // attach reset handler
   try{
     resetBtn.addEventListener('click', ()=>{
-      try{ if (confirm && !confirm('Reset Journal and claimed upgrades? This cannot be undone.')) return; }catch(_){ }
+      try{ if (confirm && !confirm(tr('Reset Journal and claimed upgrades? This cannot be undone.'))) return; }catch(_){ }
       // clear storage (include Set1 combined progress so slot 1 truly resets)
       try{ localStorage.removeItem(JOURNAL_KEY); }catch(_){ }
       try{ localStorage.removeItem(CLAIM_KEY); }catch(_){ }
@@ -246,10 +262,12 @@ function renderCombos(){
     const jl = document.getElementById('journalLeft'); if (!jl) return;
     jl.innerHTML = '';
   loadClaimedUpgrades();
-    const title = document.createElement('div'); title.className = 'combo-title'; title.innerText = 'COMBOS'; jl.appendChild(title);
+  const title = document.createElement('div'); title.className = 'combo-title'; title.innerText = tr('COMBOS'); jl.appendChild(title);
     combos.forEach((c,ci)=>{
       const box = document.createElement('div'); box.className = 'combo-box';
-      const hdr = document.createElement('div'); hdr.className = 'combo-hdr'; hdr.innerText = `Set ${ci+1}`; if (c.done) hdr.innerText += ' (UNLOCKED)'; box.appendChild(hdr);
+  const hdr = document.createElement('div'); hdr.className = 'combo-hdr';
+  try{ hdr.innerText = `${tr('Set')} ${ci+1}`; if (c.done) hdr.innerText += ` (${tr('UNLOCKED')})`; }catch(_){ hdr.innerText = `Set ${ci+1}`; if (c.done) hdr.innerText += ' (UNLOCKED)'; }
+  box.appendChild(hdr);
       const line = document.createElement('div'); line.className = 'combo-line';
       const icons = document.createElement('div'); icons.className = 'combo-icons';
       // three icons for the kinds
@@ -286,8 +304,8 @@ function renderCombos(){
       const eq = document.createElement('div'); eq.className = 'combo-equals'; eq.innerText = '='; line.appendChild(eq);
       const up = document.createElement('div'); up.className = 'combo-upgrade';
       const id = c.kinds.join('|');
-      const already = claimedUpgrades.has(id);
-      up.innerText = c.done ? (already ? 'CLAIMED' : 'CLAIM') : '???';
+  const already = claimedUpgrades.has(id);
+  up.innerText = c.done ? (already ? tr('CLAIMED') : tr('CLAIM')) : tr('???');
       if (c.done) up.classList.add('combo-unlocked');
       // If this is Set 1, show a tiny animated reward preview (Ford Fiesta) when available
       try{
@@ -328,9 +346,9 @@ function renderCombos(){
           }
         }
       }catch(_){ }
-      if (c.done && !already){ up.style.cursor = 'pointer'; up.title = 'Click to claim upgrade'; up.addEventListener('click', ()=>{
+      if (c.done && !already){ up.style.cursor = 'pointer'; up.title = tr('Click to claim upgrade'); up.addEventListener('click', ()=>{
         // mark claimed, persist, and dispatch event so game can apply unlock
-        claimedUpgrades.add(id); saveClaimedUpgrades(); up.innerText = 'CLAIMED'; up.style.cursor = 'default';
+        claimedUpgrades.add(id); saveClaimedUpgrades(); up.innerText = tr('CLAIMED'); up.style.cursor = 'default';
         try{ window.dispatchEvent(new CustomEvent('upgradeClaimed', { detail: { setIndex: ci, combo: c, id } })); }catch(_){ }
       }); }
       line.appendChild(up);

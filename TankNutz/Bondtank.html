@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>128×128 Red & Black Bondage Tank — Big Barrel, More Spikes, Handcuffs</title>
+<style>
+  :root { color-scheme: dark; }
+  html,body { height:100%; margin:0; background:#0b0b0e; display:grid; place-items:center; }
+  canvas { image-rendering: pixelated; image-rendering: crisp-edges; box-shadow: 0 10px 40px rgba(0,0,0,.6); }
+  .ui { position:fixed; inset:auto 12px 12px auto; display:flex; gap:8px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .ui button { background:#17171b; color:#e7e7ea; border:1px solid #2a2a30; padding:6px 10px; border-radius:8px; cursor:pointer; }
+  .ui button:active { transform: translateY(1px); }
+</style>
+</head>
+<body>
+<canvas id="c" width="512" height="512" aria-label="Red & Black Bondage Tank"></canvas>
+<div class="ui">
+  <button id="btnPlay">⏸ Pause</button>
+  <button id="btnReplay">↺ Replay</button>
+  <button id="btnOverlay">⌗ Overlay</button>
+</div>
+<script>
+/* ======= PIXEL ENGINE (128×128 logical, 4× scale) ======= */
+const SCALE = 4, G = 128;
+const cvs = document.getElementById('c');
+const ctx = cvs.getContext('2d', { alpha:false });
+function px(x,y, col){ x|=0; y|=0; if(x<0||y<0||x>=G||y>=G) return; ctx.fillStyle=col; ctx.fillRect(x*SCALE,y*SCALE,SCALE,SCALE); }
+function line(x0,y0,x1,y1,col){
+  x0|=0; y0|=0; x1|=0; y1|=0;
+  let dx=Math.abs(x1-x0), sx = x0<x1?1:-1;
+  let dy=-Math.abs(y1-y0), sy = y0<y1?1:-1;
+  let err = dx+dy, e2;
+  for(;;){ px(x0,y0,col); if(x0===x1 && y0===y1) break; e2=2*err; if(e2>=dy){ err+=dy; x0+=sx; } if(e2<=dx){ err+=dx; y0+=sy; } }
+}
+function rect(x,y,w,h,col){ for(let j=0;j<h;j++) for(let i=0;i<w;i++) px(x+i,y+j,col); }
+function circle(xc,yc,r,col,fill=true){
+  let x=-r,y=0,err=2-2*r; r=1-err;
+  while(x<0){
+    if(fill){
+      for(let i=xc+x;i<=xc-x;i++){ px(i,yc+y,col); px(i,yc-y,col); }
+    } else {
+      px(xc-x,yc+y,col); px(xc-y,yc-x,col); px(xc+y,yc-x,col); px(xc+x,yc-y,col);
+      px(xc+x,yc+y,col); px(xc+y,yc+x,col); px(xc-y,yc+x,col); px(xc-x,yc-y,col);
+    }
+    r=err; if(r<=y){ y++; err+=y*2+1; } if(r>x || err>y){ x++; err+=x*2+1; }
+  }
+}
+function rot(ax,ay, ang, cx,cy){ const s=Math.sin(ang), c=Math.cos(ang); ax-=cx; ay-=cy; return [ax*c-ay*s+cx, ax*s+ay*c+cy]; }
+function ditherStripe(x,y,ratio){ return ((x^y)&1) ? ratio>0.5 : ratio<=0.5; }
+
+/* ======= PALETTE ======= */
+const P = {
+  black:"#0a0a0c",
+  iron:"#1b1c22",
+  steel:"#2b2e36",
+  steel2:"#3a3e49",
+  track:"#15161b",
+  track2:"#262933",
+  red_dark:"#3e0005",
+  red:"#6f000a",
+  red_mid:"#990e16",
+  red_bright:"#c91521",
+  red_glint:"#ff2a3a",
+  belt:"#1a1a1f",
+  belt2:"#101014",
+  chain:"#c0c6cf",
+  chain_sh:"#8a8f98",
+  rivet:"#d8dee7",
+  highlight:"#fafbfd",
+  soot:"#3b3b44",
+  smoke1:"#676b74",
+  smoke2:"#8b8f99",
+  smoke3:"#b7bcc6",
+  amber:"#f4b45a",
+  glow:"#ffd38a"
+};
+
+/* ======= STATE ======= */
+const state = { t:0, play:true, overlay:false };
+const CENTER = { x:64, y:64 };
+
+/* ======= HELPERS ======= */
+function shadedFillRect(x0,y0,w,h,cMain,cA,cB){
+  for(let y=y0;y<y0+h;y++){
+    for(let x=x0;x<x0+w;x++){
+      const rr = (y-y0)/(h-1);
+      const col = rr<0.15?cA : rr>0.85?cB : cMain;
+      px(x,y,col);
+      if(ditherStripe(x,y,rr)) px(x,y,cMain);
+    }
+  }
+}
+function boltGrid(x0,y0,w,h,step,col,sh){
+  for(let y=y0+step/2|0; y<y0+h; y+=step){
+    for(let x=x0+step/2|0; x<x0+w; x+=step){
+      px(x,y,sh); px(x-1,y,sh);
+      px(x,y-1,col); px(x,y,col);
+    }
+  }
+}
+
+/* ======= PARTS ======= */
+function drawTracks(t) {
+  const treadOffset = Math.floor((t/2) % 6);
+  rect(10,24,12,80,P.track);  rect(11,25,10,78,P.track2);
+  rect(106,24,12,80,P.track); rect(107,25,10,78,P.track2);
+  for(let k=0;k<15;k++){
+    const y = 26 + ((k*6 + treadOffset) % 78);
+    line(12,y,20,y+2,P.soot); line(12,y+2,20,y,P.soot);
+    line(108,y,116,y+2,P.soot); line(108,y+2,116,y,P.soot);
+  }
+  for(let i=0;i<5;i++){ const wy=36+i*16; circle(16,wy,4,P.steel,false); circle(112,wy,4,P.steel,false); }
+}
+
+function drawHull(t){
+  shadedFillRect(24,28,80,72,P.red, P.red_dark, P.red_mid);
+  for(let i=0;i<80;i++){ px(24+i,28,P.red_dark); px(24+i,99,P.red); }
+  for(let j=0;j<72;j++){ px(24,28+j,P.red_dark); px(103,28+j,P.red); }
+  for(let y=40;y<88;y+=2){ px(64,y,P.red_bright); if((y&3)===0) px(63,y,P.red_glint); }
+  shadedFillRect(28,28,72,10,P.red_dark,P.black,P.red_dark);
+  rect(28,44,72,2,P.red_mid); rect(28,70,72,2,P.red_mid);
+  boltGrid(28,32,72,60,8,P.rivet,P.chain_sh);
+}
+
+function drawBelts(t){
+  const belts = [
+    {x0:28,y0:42,x1:100,y1:62,w:2},
+    {x0:100,y0:46,x1:28,y1:82,w:2},
+    {x0:32,y0:60,x1:96,y1:92,w:3},
+    {x0:96,y0:38,x1:32,y1:74,w:3},
+  ];
+  belts.forEach(b=>{
+    const steps = Math.max(Math.abs(b.x1-b.x0), Math.abs(b.y1-b.y0));
+    for(let i=0;i<=steps;i++){
+      const x = Math.round(b.x0 + (b.x1-b.x0)*i/steps);
+      const y = Math.round(b.y0 + (b.y1-b.y0)*i/steps);
+      for(let w=-b.w; w<=b.w; w++){
+        px(x, y+w, P.belt2);
+        if((i+w)&1) px(x, y+w, P.belt);
+      }
+    }
+    for(let i=12;i<steps;i+=24){
+      const x = Math.round(b.x0 + (b.x1-b.x0)*i/steps);
+      const y = Math.round(b.y0 + (b.y1-b.y0)*i/steps);
+      rect(x-2,y-1,5,3,P.steel); px(x-2,y-1,P.highlight);
+      // spike on buckle
+      px(x+3,y-2,P.chain); px(x+4,y-3,P.chain_sh);
+    }
+  });
+}
+
+function drawChainsWrapped(t){
+  const sway = Math.sin(t/28)*2;
+  const loops = [
+    {x0:30, y0:34, x1:98, y1:34},
+    {x0:30, y0:96, x1:98, y1:96},
+    {x0:26, y0:36, x1:26, y1:94},
+    {x0:102,y0:36, x1:102,y1:94},
+  ];
+  loops.forEach((L,idx)=>{
+    const steps = Math.max(Math.abs(L.x1-L.x0), Math.abs(L.y1-L.y0));
+    for(let i=0;i<=steps;i+=3){
+      let x = Math.round(L.x0 + (L.x1-L.x0)*i/steps);
+      let y = Math.round(L.y0 + (L.y1-L.y0)*i/steps);
+      if(L.y0===L.y1) y += Math.round(Math.sin((i/steps)*Math.PI)*2 + sway*(idx&1?1:-1));
+      px(x,y,P.chain); px(x-1,y,P.chain_sh); px(x+1,y,P.chain_sh);
+      if(((i+idx*7+t)|0)%19===0) px(x,y-1,P.highlight);
+      // extra spikes hanging from every other link
+      if((i/3|0)%2===0){
+        px(x,y+1,P.chain_sh); px(x,y+2,P.chain); px(x,y+3,P.chain_sh);
+      }
+    }
+  });
+}
+
+function drawHullFrontSpikes(){
+  // a comb of spikes along the glacis
+  for(let x=32; x<=96; x+=6){
+    px(x,27,P.chain_sh);
+    px(x,26,P.chain);
+    px(x,25,P.chain_sh);
+  }
+}
+
+function drawTurret(t){
+  circle(64,56,18,P.steel,false);
+  const ang = (t/60) % (Math.PI*2);
+  for(let yy=-12; yy<=12; yy++){
+    for(let xx=-18; xx<=18; xx++){
+      if((xx*xx)/360 + (yy*yy)/144 <= 1){
+        const [rx,ry] = rot(64+xx,56+yy,ang,64,56);
+        const xi=rx|0, yi=ry|0;
+        const shade = yy<-6 ? P.red_bright : yy<0 ? P.red : yy<6 ? P.red_mid : P.red_dark;
+        px(xi,yi,shade);
+      }
+    }
+  }
+  for(let i=0;i<12;i++){
+    const a = i/12*Math.PI*2 + ang*0.5;
+    const [x,y] = rot(64+Math.cos(a)*18,56+Math.sin(a)*18,0,0,0);
+    px(x|0,y|0,P.rivet);
+  }
+
+  // >>> BIGGER BARREL (thicker + longer) with recoil
+  const recoil = Math.max(0, Math.sin(t/18)*2.0);
+  const baseLen = 44;                   // increased base length
+  const barrelLen = baseLen - recoil;   // animated recoil
+  const barrelHalfW = 3;                // thicker barrel
+  const [bx0,by0] = rot(64,56-10,ang,64,56);
+  for(let L=0; L<barrelLen; L++){
+    const [tx,ty] = rot(bx0,by0-L,ang,64,56);
+    for(let w=-barrelHalfW; w<=barrelHalfW; w++){
+      const col = (w===0 || w===-1) ? P.red_glint : P.steel2;
+      px((tx+w)|0,(ty)|0,col);
+    }
+    // a slight top/bottom line for depth
+    if(L%4===0){ const [tx2,ty2] = rot(bx0+barrelHalfW+1,by0-L,ang,64,56); px(tx2|0,ty2|0,P.steel); }
+  }
+  const [mx,my] = rot(64, 56-10-barrelLen, ang,64,56);
+  circle(mx|0,my|0,3,P.soot,false);
+  const [hx,hy] = rot(64,56-2,ang,64,56);
+  circle(hx|0,hy|0,3,P.steel,false); px(hx|0,(hy-1)|0,P.highlight);
+}
+
+function drawTopChains(t){
+  // >>> MORE SPIKES: denser halo + outward star spikes
+  const ang = (t/32);
+  const R = 26;
+  const N = 24; // increased from 16
+  for(let i=0;i<N;i++){
+    const a = ang + i*(Math.PI*2/N);
+    const x = 64 + Math.cos(a)*R;
+    const y = 56 + Math.sin(a)*R;
+    px(x|0,y|0,P.chain); px((x+1)|0,y|0,P.chain_sh);
+    if((i+t)%3===0) px((x-1)|0,(y-1)|0,P.highlight);
+    // outward 3-pixel spike
+    const sx = 64 + Math.cos(a)*(R+3);
+    const sy = 56 + Math.sin(a)*(R+3);
+    px(sx|0,sy|0,P.chain_sh);
+    const sx2 = 64 + Math.cos(a)*(R+4);
+    const sy2 = 56 + Math.sin(a)*(R+4);
+    px(sx2|0,sy2|0,P.chain);
+    const sx3 = 64 + Math.cos(a)*(R+5);
+    const sy3 = 56 + Math.sin(a)*(R+5);
+    px(sx3|0,sy3|0,P.chain_sh);
+  }
+}
+
+function drawExhaust(t){
+  rect(56,96,16,4,P.steel2);
+  for(let i=0;i<8;i++) px(58+i,97,P.black);
+  const seeds = [0,12,24];
+  seeds.forEach((s,idx)=>{
+    const life = ((t+s)%120);
+    const y = 96 - Math.floor(life/3);
+    const x = 64 + Math.round(Math.sin((life/10)+(idx*1.7))*4);
+    if(y>20){ px(x,y,P.smoke1); px(x+1,y,P.smoke2); px(x,y-1,P.smoke3); }
+  });
+}
+
+function drawLights(t){
+  const on = ((t/6)|0)%2===0;
+  const c = on ? P.glow : P.amber;
+  rect(42,26,4,2,c); rect(84,26,4,2,c);
+  if(((t/8)|0)%6===0){ px(66,30,P.highlight); }
+}
+
+function drawHandcuffs(t){
+  // >>> BIG OLD SET OF HANDCUFFS dangling on the front
+  // anchor near front glacis
+  const anchor = { x:64, y:22 };
+  const sway = Math.sin(t/26)*0.28;         // gentle sway angle
+  const drop = 6 + Math.abs(Math.sin(t/40))*2;
+  const offset = 14;
+
+  // compute centers for left/right cuffs with sway and drop
+  const baseL = [anchor.x - offset, anchor.y + drop];
+  const baseR = [anchor.x + offset, anchor.y + drop];
+  const [cxL, cyL] = rot(baseL[0], baseL[1], sway, anchor.x, anchor.y);
+  const [cxR, cyR] = rot(baseR[0], baseR[1], sway, anchor.x, anchor.y);
+
+  // connecting chain between cuffs
+  const steps = 10;
+  for(let i=0;i<=steps;i++){
+    const x = cxL + (cxR-cxL)*(i/steps);
+    const y = cyL + (cyR-cyL)*(i/steps) + Math.sin(i/2 + t/10)*0.5; // a little sag
+    px(x|0,y|0,P.chain);
+    if(i%2===0) px((x-1)|0,(y+1)|0,P.chain_sh);
+  }
+
+  // helper to draw a thick ring
+  function ring(cx,cy,R,out,inn){
+    circle(cx|0,cy|0,R,out,true);
+    circle(cx|0,cy|0,R-2,inn,true);
+    circle(cx|0,cy|0,R-4,out,false); // outer crispness
+  }
+
+  // draw left cuff
+  ring(cxL, cyL, 9, P.steel, P.iron);
+  // hinge/jaw & lock housing
+  rect((cxL-2)|0,(cyL-10)|0,4,3,P.steel2);       // jaw
+  rect((cxL-3)|0,(cyL+6)|0,6,3,P.steel2);        // lock housing
+  px((cxL)|0,(cyL+5)|0,P.highlight);
+
+  // right cuff
+  ring(cxR, cyR, 9, P.steel, P.iron);
+  rect((cxR-2)|0,(cyR-10)|0,4,3,P.steel2);
+  rect((cxR-3)|0,(cyR+6)|0,6,3,P.steel2);
+  px((cxR)|0,(cyR+5)|0,P.highlight);
+
+  // small links up to anchor
+  const midLx = (cxL+anchor.x)/2, midLy = (cyL+anchor.y)/2 + 2;
+  const midRx = (cxR+anchor.x)/2, midRy = (cyR+anchor.y)/2 + 2;
+  line(cxL|0,cyL|0, midLx|0, midLy|0, P.chain);
+  line(cxR|0,cyR|0, midRx|0, midRy|0, P.chain);
+  px(anchor.x, anchor.y, P.chain);
+}
+
+function drawOverlay(){
+  for(let i=52;i<=76;i++){ px(24,i,"#00ff00"); px(103,i,"#00ff00"); }
+  for(let i=24;i<=103;i++){ px(i,28,"#00ff00"); px(i,99,"#00ff00"); }
+  for(let i=-4;i<=4;i++){ px(CENTER.x+i,CENTER.y,"#00ffaa"); px(CENTER.x,CENTER.y+i,"#00ffaa"); }
+}
+
+/* ======= MAIN RENDER ======= */
+function render(){
+  ctx.fillStyle = "#0b0b0e";
+  ctx.fillRect(0,0,cvs.width,cvs.height);
+
+  // subtle ground rings
+  for(let r=64;r>0;r--){
+    const tone = 14 + (64-r)/2|0;
+    const col = `rgb(${tone},${tone},${tone+2})`;
+    circle(64,64,r,col,false);
+  }
+
+  const t = state.t;
+  const bob = Math.sin(t/30)>0 ? 0 : 1;
+  ctx.save();
+  ctx.translate(0,bob*SCALE);
+
+  drawTracks(t);
+  drawHull(t);
+  drawBelts(t);
+  drawChainsWrapped(t);
+  drawHullFrontSpikes();
+  drawTurret(t);
+  drawTopChains(t);
+  drawExhaust(t);
+  drawLights(t);
+  drawHandcuffs(t); // on top layer
+
+  if(state.overlay) drawOverlay();
+
+  ctx.restore();
+}
+
+/* ======= LOOP & CONTROLS ======= */
+function loop(){ if(state.play){ state.t++; render(); } requestAnimationFrame(loop); }
+loop();
+
+const btnPlay = document.getElementById('btnPlay');
+const btnReplay = document.getElementById('btnReplay');
+const btnOverlay = document.getElementById('btnOverlay');
+btnPlay.onclick = ()=>{ state.play = !state.play; btnPlay.textContent = state.play ? "⏸ Pause" : "▶ Play"; };
+btnReplay.onclick = ()=>{ state.t = 0; if(!state.play){ state.play = true; btnPlay.textContent="⏸ Pause"; } };
+btnOverlay.onclick = ()=>{ state.overlay = !state.overlay; btnOverlay.textContent = state.overlay ? "⌗ Overlay ✓" : "⌗ Overlay"; };
+</script>
+</body>
+</html>

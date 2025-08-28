@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Top-Down Pixel McDonald's Restaurant Tank — Burger Turret + Bold “M”</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    html, body {
+      height: 100%; margin: 0;
+      background:#111; color:#ddd;
+      display:grid; place-items:center;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell, "Noto Sans", sans-serif;
+    }
+    .wrap { text-align:center; }
+    canvas {
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      width: 512px;  /* upscale preview */
+      height: 512px; /* upscale preview */
+      outline: 1px solid #222;
+      background:#1a1a1a;
+    }
+    .caption { font-size: 12px; opacity: .75; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <canvas id="c" width="64" height="64" aria-label="Top-down pixel McDonald's Restaurant tank with burger turret"></canvas>
+    <div class="caption">
+      View: top-down • Canvas: 64×64 • Style: chunky shading, rim light • Motion: 6 frames @120ms • Hitbox: pivot center
+    </div>
+  </div>
+
+  <script>
+  (() => {
+    const canvas = document.getElementById('c');
+    const ctx = canvas.getContext('2d', { alpha:false });
+
+    // --- Palette ---
+    const P = {
+      bg:        '#22252a',
+      trackDark: '#2b2b2b',
+      trackLite: '#777777',
+      hullRed:   '#c1121f',
+      hullDeep:  '#7a0e14',
+      archGold:  '#ffd100',
+      roof:      '#6b3e2e',
+      roofLite:  '#8a543c',
+      window:    '#7cc7ff',
+      shadow:    '#141414',
+      white:     '#ffffff',
+      black:     '#000000',
+      green:     '#2f6c3f',
+      bun:       '#d8a55a',
+      bunDark:   '#b27e39',
+      lettuce:   '#4aa54a',
+      cheese:    '#f9d65a',
+      patty:     '#5a2f1d',
+      tomato:    '#c44a3a'
+    };
+
+    // --- Animation ---
+    const FPS_MS = 120;
+    const FRAMES = 6;
+    let frame = 0, lastT = 0, trackOffset = 0;
+
+    // --- Utils ---
+    function px(x,y,c){ ctx.fillStyle=c; ctx.fillRect(x|0,y|0,1,1); }
+    function rect(x,y,w,h,c){ ctx.fillStyle=c; ctx.fillRect(x|0,y|0,w|0,h|0); }
+
+    // --- Ground ---
+    function drawGround(){
+      rect(0,0,64,64,P.bg);
+      for(let y=6;y<64;y+=8){ for(let x=6;x<64;x+=8){ px(x,y,'#1e2024'); } }
+    }
+
+    // --- Treads ---
+    function drawTreads(offset){
+      tread(6,8,offset);
+      tread(64-14,8,offset);
+    }
+    function tread(x,y,offset){
+      rect(x,y,8,48,P.trackDark);
+      rect(x,y,1,48,P.trackLite);
+      rect(x+7,y,1,48,P.shadow);
+      for(let i=y+(offset%4); i<y+48; i+=4){
+        rect(x+1,i,6,2,P.black);
+        rect(x+1,i+1,6,1,P.trackLite);
+      }
+    }
+
+    // --- Hull (kept as-is / “perfect”) ---
+    function drawHull(){
+      rect(13,12+32,38,2,P.shadow);        // drop shadow
+      rect(13,12,38,40,P.hullRed);         // main body
+      rect(13,44,38,8,P.hullDeep);         // base belt
+      rect(14,16,36,2,P.archGold);         // stripes
+      rect(14,20,36,1,P.archGold);
+
+      // windows
+      const wx=[18,26,34,42];
+      wx.forEach(x=>{ rect(x,23,4,4,P.window); px(x,23,P.white); });
+      wx.forEach(x=>{ rect(x,29,4,4,P.window); px(x+1,29,P.white); });
+
+      // door
+      rect(30,36,6,8,P.black);
+      rect(31,37,4,6,P.window); px(34,39,P.white);
+
+      // shrubs
+      [16,22,40,46].forEach(x=>{ rect(x,43,3,2,P.green); px(x+1,42,P.green); });
+
+      // façade “M”
+      facadeM(30,33);
+    }
+    function facadeM(fx,fy){
+      rect(fx-7,fy-8,3,9,P.archGold); // left leg
+      rect(fx+5,fy-8,3,9,P.archGold); // right leg
+      rect(fx-2,fy-5,2,2,P.archGold);
+      rect(fx,  fy-3,2,2,P.archGold);
+      rect(fx+2,fy-5,2,2,P.archGold);
+      rect(fx-7,fy-8,15,1,P.archGold); // cap
+      rect(fx-4,fy-6,2,1,P.hullDeep);  // inner shaping
+      rect(fx+2,fy-6,2,1,P.hullDeep);
+    }
+
+    // --- Roof (minor details kept) ---
+    function drawRoof(){
+      rect(18,10,28,6,P.roof);
+      rect(18,10,28,1,P.roofLite);
+      rect(21,11,2,2,P.shadow);
+      rect(41,11,2,2,P.shadow);
+    }
+
+    // --- NEW: Burger Turret with clear “M” on top ---
+    function drawTurret(angleRad){
+      ctx.save();
+      ctx.translate(32,32);
+      ctx.rotate(angleRad);
+
+      // Burger stack as the turret body (diameter ~16px)
+      // Bottom bun ring
+      rect(-8, 5, 16, 2, P.bunDark);
+
+      // Patty ring
+      rect(-8, 3, 16, 2, P.patty);
+
+      // Cheese ring (slightly wider drape)
+      rect(-9, 1, 18, 2, P.cheese);
+
+      // Lettuce ring
+      rect(-8, -1, 16, 2, P.lettuce);
+
+      // Tomato ring
+      rect(-8, -3, 16, 2, P.tomato);
+
+      // Top bun dome (with sesame “sparkle”)
+      rect(-8, -7, 16, 4, P.bun);
+      if ((frame % 2) === 0) { px(-5,-7,P.white); px(0,-7,P.white); px(5,-7,P.white); }
+
+      // Embossed “M” centered on the top bun (very clear)
+      turretM();
+
+      // Cannon = french fry barrel
+      rect(8, -1, 12, 2, P.archGold);
+      px(19,-1,P.white); // tiny spec
+
+      // Tiny ketchup muzzle glint (subtle, stays attached)
+      if ((frame % 3) === 0) px(20,-1,'#ff4d4d');
+
+      ctx.restore();
+    }
+
+    function turretM(){
+      // Draw an 8px wide bold M centered at (0,-5) area
+      // legs
+      rect(-5,-7,2,6,P.archGold); // left
+      rect( 3,-7,2,6,P.archGold); // right
+      // middle V (two pixels wide steps)
+      rect(-2,-5,2,2,P.archGold);
+      rect( 0,-4,2,2,P.archGold);
+      // cap
+      rect(-5,-8,10,1,P.archGold);
+      // inner shading to accent arches
+      rect(-3,-6,1,1,P.hullDeep);
+      rect( 2,-6,1,1,P.hullDeep);
+    }
+
+    // --- Rim light ---
+    function drawRimLight(){
+      rect(6,8,1,48,'#505050');         // left tread rim
+      rect(13,12,38,1,'#ffb1b7');       // hull top rim
+      rect(13,12,1,40,'#ffb1b7');       // hull left rim
+    }
+
+    // --- Compose ---
+    function draw(){
+      drawGround();
+      drawTreads(trackOffset);
+      drawHull();
+      drawRoof();
+
+      const angle = (frame % FRAMES) * (Math.PI * 2 / FRAMES); // 6-step rotation
+      drawTurret(angle);
+
+      drawRimLight();
+    }
+
+    function loop(t){
+      if (t - lastT >= FPS_MS){
+        frame = (frame + 1) % FRAMES;
+        trackOffset = (trackOffset + 1) % 4;
+        lastT = t;
+      }
+      draw();
+      requestAnimationFrame(loop);
+    }
+
+    // Start
+    draw();
+    requestAnimationFrame(loop);
+
+    // Note: Pivot is at (32,32) for engine integration.
+  })();
+  </script>
+</body>
+</html>

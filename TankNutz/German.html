@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>German Heavy Tank — Full Body Themed (Detailed)</title>
+  <style>
+    :root { color-scheme: dark; }
+    body{ margin:0;height:100vh;display:grid;place-items:center;background:#0a0c10; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; }
+    canvas{ width:768px;height:768px; image-rendering: pixelated; image-rendering: crisp-edges; border:4px solid #0b0b0b; box-shadow:0 0 70px rgba(0,0,0,.75), inset 0 0 20px rgba(255,255,255,.05); background:#0b0b0b; }
+  </style>
+</head>
+<body>
+  <canvas id="c" width="384" height="384"></canvas>
+
+  <script>
+    // ===== Palette =====
+    const P = {
+      deB:"#000000", deR:"#DD0000", deG:"#FFCE00",
+      hull:"#6E7B86", hullL:"#8C99A3", hullD:"#3F4750",
+      steel:"#B0BEC5", gun:"#232323", gunD:"#101010",
+      trackD:"#111111", trackL:"#474747",
+      outline:"#000000", shadow:"#00000055"
+    };
+
+    // ===== Setup =====
+    const cv=document.getElementById("c");
+    const ctx=cv.getContext("2d");
+    ctx.imageSmoothingEnabled=false;
+    const OFFSET=32; // 320×320 draw space centered in 384×384
+
+    // ===== Helpers =====
+    const R=(x,y,w,h,c)=>{ ctx.fillStyle=c; ctx.fillRect((x|0)+OFFSET,(y|0)+OFFSET,w|0,h|0); };
+    const O=(x,y,w,h,c)=>{ R(x,y,w,1,c); R(x,y+h-1,w,1,c); R(x,y,1,h,c); R(x+w-1,y,1,h,c); };
+
+    function rr(x,y,w,h,r,fill){ ctx.save(); ctx.translate(OFFSET,OFFSET); ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); ctx.fillStyle=fill; ctx.fill(); ctx.restore(); }
+    function ro(x,y,w,h,r,stroke){ ctx.save(); ctx.translate(OFFSET,OFFSET); ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); ctx.strokeStyle=stroke; ctx.lineWidth=1; ctx.stroke(); ctx.restore(); }
+    function clipRR(x,y,w,h,r){ ctx.save(); ctx.translate(OFFSET,OFFSET); ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); ctx.clip(); }
+    function ellipseShadow(cx,cy,rx,ry){ ctx.save(); ctx.translate(OFFSET,OFFSET); ctx.fillStyle=P.shadow; ctx.beginPath(); ctx.ellipse(cx,cy,rx,ry,0,0,Math.PI*2); ctx.fill(); ctx.restore(); }
+
+    // Fine seam helpers
+    const seamH=(x,y,w)=>R(x,y,w,1,P.hullD);
+    const seamV=(x,y,h)=>R(x,y,1,h,P.hullD);
+
+    // ===== Running gear (more detail) =====
+    function tread(x,y,w,h,t){
+      rr(x,y,w,h,8,P.trackD); // rounded track housing
+      // Inner bevels
+      R(x+1,y+1,w-2,1,P.trackL);
+      R(x+1,y+h-2,w-2,1,P.trackL);
+      // Roadwheel hints (hub lines)
+      for(let i=0;i<6;i++){ R(x+3, y+8+i*((h-16)/5), w-6, 1, P.gun); }
+      // Moving lugs
+      const step=6, off=Math.floor(t/7)%step;
+      for(let i=0;i<h/step;i++){
+        const yy = y + ((i*step + off) % h);
+        R(x+3, yy, w-6, 2, P.trackL);
+      }
+      // Sprocket/Idler caps
+      rr(x+2,y+2,w-4,6,3,P.trackL);
+      rr(x+2,y+h-8,w-4,6,3,P.trackL);
+      ro(x,y,w,h,8,P.outline);
+    }
+
+    // ===== National cross (stylized) =====
+    function balkenCross(cx,cy){ R(cx-3,cy-1,6,2,"#fff"); R(cx-1,cy-3,2,6,"#fff"); R(cx-2,cy-1,4,2,P.deB); R(cx-1,cy-2,2,4,P.deB); }
+
+    // ===== Hull (curved, fully themed, extra greebles) =====
+    function hull(){
+      // Curved shell
+      rr(70,136,180,92,24,P.hullL); ro(70,136,180,92,24,P.outline);
+      // Tricolor wrap using clip
+      clipRR(70,136,180,92,24);
+      R(70,136,180,30,P.deB);
+      R(70,166,180,30,P.deR);
+      R(70,196,180,32,P.deG);
+      // Subtle highlight
+      R(72,140,176,2,P.hull);
+      ctx.restore();
+
+      // Side stylized crosses
+      balkenCross(86,180); balkenCross(226,180);
+
+      // Upper deck (rounded) with detailed panels
+      rr(94,160,132,46,12,P.hull); ro(94,160,132,46,12,P.outline);
+      seamH(96,172,128); seamH(96,184,128); seamV(120,162,40); seamV(204,162,40);
+      for(let i=0;i<7;i++){ R(100+i*18,171,1,1,P.steel); R(100+i*18,183,1,1,P.steel); }
+
+      // Engine grilles (dense)
+      for(let i=0;i<14;i++){ R(100+i*9,198,6,2,P.gun); }
+
+      // Exhaust boxes
+      rr(90,210,16,12,3,P.hullD); ro(90,210,16,12,3,P.outline); R(92,214,12,2,P.gun);
+      rr(218,210,16,12,3,P.hullD); ro(218,210,16,12,3,P.outline); R(220,214,12,2,P.gun);
+
+      // Rounded skirts
+      rr(66,150,10,70,8,P.hullD); ro(66,150,10,70,8,P.outline);
+      rr(244,150,10,70,8,P.hullD); ro(244,150,10,70,8,P.outline);
+    }
+
+    // ===== Turret (rounded, more detail) =====
+    function turret(t){
+      const cx=160, cy=164; ctx.save(); ctx.translate(OFFSET+cx,OFFSET+cy); const a=Math.sin(t/120)*0.46; ctx.rotate(a);
+      function TRR(x,y,w,h,r,fill){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); ctx.fillStyle=fill; ctx.fill(); }
+      function TRO(x,y,w,h,r,stroke){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); ctx.strokeStyle=stroke; ctx.lineWidth=1; ctx.stroke(); }
+
+      // Shell + roof paint
+      TRR(-44,-34,88,68,20,P.hull); TRO(-44,-34,88,68,20,P.outline);
+      ctx.save(); ctx.beginPath(); ctx.moveTo(-40+16,-30); ctx.arcTo(40,-30,40,30,16); ctx.arcTo(40,30,-40,30,16); ctx.arcTo(-40,30,-40,-30,16); ctx.arcTo(-40,-30,40,-30,16); ctx.closePath(); ctx.clip();
+      ctx.fillStyle=P.deB; ctx.fillRect(-40,-30,80,18);
+      ctx.fillStyle=P.deR; ctx.fillRect(-40,-12,80,18);
+      ctx.fillStyle=P.deG; ctx.fillRect(-40,  6,80,18);
+      ctx.restore();
+
+      // Cupola ring with periscopes
+      TRR(14,-10,18,18,8,P.hullL); TRO(14,-10,18,18,8,P.outline);
+      R(28,-6,3,2,P.steel); R(28,-1,3,2,P.steel); R(15,-12,3,2,P.steel);
+
+      // Vision slit on mantlet
+      TRR(-12,-12,24,24,6,P.hullD); TRO(-12,-12,24,24,6,P.outline); R(-4,-2,8,1,P.gun);
+
+      // Marking
+      balkenCross(-18,0);
+
+      // Antenna sway
+      const sway=Math.sin(t/90)*3; ctx.fillStyle=P.gun; ctx.fillRect(-26,-42,2,12); for(let i=0;i<14;i++) ctx.fillRect(-25+Math.sin((i/14)*Math.PI)*(1+sway/6),-42-i,1,1,P.steel);
+
+      // Twin barrels with perforated muzzle brakes
+      ctx.fillStyle=P.steel; ctx.fillRect(16,-6,92,6); ctx.fillStyle=P.gun; ctx.fillRect(16,-6,92,2);
+      ctx.fillStyle=P.steel; ctx.fillRect(16, 6,92,6); ctx.fillStyle=P.gun; ctx.fillRect(16,10,92,2);
+      ctx.fillStyle=P.gun;   ctx.fillRect(108,-6,6,6); ctx.fillRect(108,6,6,6);
+      R(109,-5,1,1,"#888"); R(111,-4,1,1,"#888"); R(113,-5,1,1,"#888");
+      R(109, 7,1,1,"#888"); R(111, 8,1,1,"#888"); R(113, 7,1,1,"#888");
+      // Barrel brace
+      TRR(8,-8,6,16,3,P.hullD); TRO(8,-8,6,16,3,P.outline);
+
+      ctx.restore();
+    }
+
+    // ===== Frame =====
+    function drawBG(){ ctx.fillStyle="#0b0b0b"; ctx.fillRect(0,0,384,384); ellipseShadow(160,210,110,28); }
+    function frame(t){ drawBG(); tread(56,132,36,112,t); tread(228,132,36,112,t); hull(); turret(t); requestAnimationFrame(frame); }
+    requestAnimationFrame(frame);
+  </script>
+</body>
+</html>
