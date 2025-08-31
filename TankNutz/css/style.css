@@ -19,6 +19,8 @@ canvas {
 .hud .heart.full{ color:#ff3b30; filter: drop-shadow(0 2px 6px rgba(255,59,48,0.25)); }
 .hud .heart.empty{ color:rgba(255,255,255,0.12); }
 .hud .powerup{ background: linear-gradient(180deg,#fff6c8,#ffd54f); color:#4b2c00; padding:4px 8px; border-radius:8px; font-weight:700; box-shadow: 0 2px 6px rgba(0,0,0,0.25); }
+.hud .shield{ background: linear-gradient(180deg,#00ffff,#0080ff); color:#001a33; padding:4px 8px; border-radius:8px; font-weight:700; box-shadow: 0 2px 6px rgba(0,0,0,0.25); }
+.hud .shield-cooldown{ background: linear-gradient(180deg,#666666,#444444); color:#cccccc; padding:4px 8px; border-radius:8px; font-weight:700; box-shadow: 0 2px 6px rgba(0,0,0,0.25); }
 .center-msg { position: fixed; left:50%; top:50%; transform:translate(-50%,-50%); color:#fff; font-size:20px; text-align:center; }
 
 /* Journal (left side) */

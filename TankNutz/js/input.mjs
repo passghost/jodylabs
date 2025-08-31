@@ -7,7 +7,7 @@ export const keys = new Set();
 // sensible defaults (can be overridden via init)
 export let W = 3200, H = 2400;
 export let WORLD_W = 4000, WORLD_H = 3000;
-export const MIN_ZOOM = 0.5, MAX_ZOOM = 5.0;
+export const MIN_ZOOM = 0.818, MAX_ZOOM = 5.0;
 
 export const camera = { x: WORLD_W/2, y: WORLD_H/2, zoom: MAX_ZOOM };
 

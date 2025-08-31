@@ -189,7 +189,9 @@ export function initBillboards(WORLD_W, WORLD_H){
   // asynchronously load ad images and replace placeholders with actual images when available
   loadAdImages().then((list)=>{
     if (!list || list.length === 0) return;
-    for (const bb of billboardInstances){ bb._adCanvas = list[Math.floor(Math.random()*list.length)]; }
+    for (let i = 0; i < billboardInstances.length; i++) {
+      billboardInstances[i]._adCanvas = list[i % list.length];
+    }
   }).catch(()=>{});
   try{
     // expose for quick runtime inspection and one-time log

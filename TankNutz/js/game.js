@@ -1,5 +1,5 @@
 // --- Canvas + helpers ---
-import { initJournal, updateJournal, recordKill, setHealth, initCombos } from './journal.js';
+import { initJournal, updateJournal, recordKill, setHealth } from './journal.js';
 // Toggle verbose debug logging without removing calls during development
 const DEBUG = false;
 const canvas = document.getElementById('game');
@@ -41,6 +41,8 @@ let palette = randPalette();
 const ASSETS = { fatsammich: null, osprey: null, kraken: null };
 // allow humans makers to reference runtime assets
 initHumansAssets(ASSETS);
+// initialize critters system
+initCritters();
 // --- Runtime asset loader -------------------------------------------------
 // Load selected external PNG assets into the ASSETS map. For fatsammich we
 // process the bitmap and convert the flat background color to transparent so
@@ -153,6 +155,7 @@ import { billboardFrames, billboardInstances, initBillboards, startBillboardExpl
 import { JUNGLE_KINDS, idleMakers as humansIdleMakers, runMakers as humansRunMakers, initHumansAssets } from './humans.js';
 import { gibs as moduleGibs, spawnGibs, updateGibs, drawGibs } from './gibs.js';
 import { spawnChainedTank } from './alternativetanks.js';
+import { initCritters, critters, animals, spawnCritters, spawnAnimals, updateCritters, drawCritters, updateAnimals, drawAnimals, critterSprites, CRITTER_SPR_SCALE, CRITTER_DRAW_BASE, ANIMAL_DRAW_BASE } from './critters.js';
 
 // wrapper to probe spawnGibs calls (logs caller site then forwards to module)
 function callSpawnGibs(x, y, color = '#fff', count = 8, site = ''){
@@ -344,6 +347,116 @@ function drawBlackstarInto(ctx, targetW, targetH, ts){
   }catch(_){ }
 }
 try{ if (typeof window !== 'undefined') window.drawBlackstarInto = drawBlackstarInto; }catch(_){ }
+
+// Draw Blackstar body only (tracks and hull, no background)
+function drawBlackstarBodyInto(ctx, targetW, targetH, ts){
+  try{
+    const S = 64, FRAMES = 6, FRAME_MS = 120;
+    const now = ts || performance.now(); const frame = Math.floor(now / FRAME_MS) % FRAMES;
+    const off = document.createElement('canvas'); off.width = S; off.height = S; const o = off.getContext('2d'); try{ o.imageSmoothingEnabled = false; }catch(_){ }
+    const C = { clear:'rgba(0,0,0,0)', hull:'#0b0b0f', hull2:'#15151a', rim:'#2f3242', mid:'#232531', steel:'#9ea2a9', red:'#d4002a', redHi:'#ff4554', flash:'#ffc744', tread:'#0a0b10', tread2:'#000000' };
+    o.fillStyle = C.clear; o.fillRect(0,0,S,S);
+    // No background pattern
+
+    const anchor = { x:32, y:32 };
+
+    // small helpers (pixel draw)
+    const px = (x,y,w=1,h=1,col)=>{ o.fillStyle = col; o.fillRect(x|0,y|0,w|0,h|0); };
+    const rect = (x,y,w,h,col)=> px(x,y,w,h,col);
+    const rectOutline = (x,y,w,h,col)=>{ px(x,y,w,1,col); px(x,y+h-1,w,1,col); px(x,y,1,h,col); px(x+w-1,y,1,h,col); };
+    const disc = (cx,cy,r,col)=>{ for(let yy=-r; yy<=r; yy++){ const s=Math.floor(Math.sqrt(r*r - yy*yy)); o.fillStyle=col; o.fillRect(cx-s, cy+yy, 2*s+1, 1); } };
+    const line = (x0,y0,x1,y1,col)=>{
+      x0|=0;y0|=0;x1|=0;y1|=0;
+      let dx=Math.abs(x1-x0), sx=x0<x1?1:-1;
+      let dy=-Math.abs(y1-y0), sy=y0<y1?1:-1;
+      let err=dx+dy;
+      for(;;){ px(x0,y0,1,1,col); if(x0===x1 && y0===y1) break; const e2=2*err; if(e2>=dy){ err+=dy; x0+=sx; } if(e2<=dx){ err+=dx; y0+=sy; } }
+    };
+    const thickLine = (x0,y0,x1,y1,col,th=2)=>{ for(let i=-Math.floor(th/2); i<Math.ceil(th/2); i++){ for(let j=-Math.floor(th/2); j<Math.ceil(th/2); j++){ line(x0+i,y0+j,x1+i,y1+j,col); } } };
+
+    // Tracks
+    const trackW=8, trackH=44, trackY=10, lX=6, rX=S-6-trackW;
+    rect(lX,trackY,trackW,trackH,C.tread); rect(rX,trackY,trackW,trackH,C.tread);
+    for(let y=trackY; y<trackY+trackH; y+=4){ const phase = ((y>>2)+frame)%2; const col = phase? C.tread2 : C.mid; rect(lX+1,y,trackW-2,1,col); rect(rX+1,y,trackW-2,1,col); }
+
+    // Hull
+    const hullX=14, hullY=14, hullW=36, hullH=36;
+    rect(hullX,hullY,hullW,hullH,C.hull);
+    px(hullX, hullY, 2,2, C.mid);
+    px(hullX+hullW-2, hullY, 2,2, C.mid);
+    px(hullX, hullY+hullH-2, 2,2, C.mid);
+    px(hullX+hullW-2, hullY+hullH-2, 2,2, C.mid);
+    rect(hullX+3, hullY+3, hullW-6, 1, C.rim);
+    rect(hullX+3, hullY+4, hullW-6, 1, C.hull2);
+    rect(hullX+4, hullY+8,      hullW-8, 2, C.red);
+    rect(hullX+4, hullY+hullH-10, hullW-8, 2, C.red);
+    rect(hullX+6, hullY+8,      hullW-12, 1, C.redHi);
+
+    // Rim lights
+    rect(hullX+hullW-2, hullY+2, 1, hullH-4, C.rim);
+    rect(hullX+2, hullY+2, hullW-4, 1, C.rim);
+
+    try{ ctx.imageSmoothingEnabled = false; ctx.clearRect(0,0,targetW,targetH); ctx.drawImage(off, 0,0,S,S, 0,0,targetW,targetH); }catch(_){ }
+  }catch(_){ }
+}
+try{ if (typeof window !== 'undefined') window.drawBlackstarBodyInto = drawBlackstarBodyInto; }catch(_){ }
+
+// Draw Blackstar turret only (grey star and barrel, pointing up)
+function drawBlackstarTurretInto(ctx, targetW, targetH, ts){
+  try{
+    const S = 64, FRAMES = 6, FRAME_MS = 120;
+    const now = ts || performance.now(); const frame = Math.floor(now / FRAME_MS) % FRAMES;
+    const off = document.createElement('canvas'); off.width = S; off.height = S; const o = off.getContext('2d'); try{ o.imageSmoothingEnabled = false; }catch(_){ }
+    const C = { clear:'rgba(0,0,0,0)', hull:'#0b0b0f', hull2:'#15151a', rim:'#2f3242', mid:'#232531', steel:'#9ea2a9', red:'#d4002a', redHi:'#ff4554', flash:'#ffc744', tread:'#0a0b10', tread2:'#000000' };
+    o.fillStyle = C.clear; o.fillRect(0,0,S,S);
+    const anchor = { x:32, y:32 };
+
+    // small helpers (pixel draw)
+    const px = (x,y,w=1,h=1,col)=>{ o.fillStyle = col; o.fillRect(x|0,y|0,w|0,h|0); };
+    const rect = (x,y,w,h,col)=> px(x,y,w,h,col);
+    const rectOutline = (x,y,w,h,col)=>{ px(x,y,w,1,col); px(x,y+h-1,w,1,col); px(x,y,1,h,col); px(x+w-1,y,1,h,col); };
+    const disc = (cx,cy,r,col)=>{ for(let yy=-r; yy<=r; yy++){ const s=Math.floor(Math.sqrt(r*r - yy*yy)); o.fillStyle=col; o.fillRect(cx-s, cy+yy, 2*s+1, 1); } };
+    const line = (x0,y0,x1,y1,col)=>{
+      x0|=0;y0|=0;x1|=0;y1|=0;
+      let dx=Math.abs(x1-x0), sx=x0<x1?1:-1;
+      let dy=-Math.abs(y1-y0), sy=y0<y1?1:-1;
+      let err=dx+dy;
+      for(;;){ px(x0,y0,1,1,col); if(x0===x1 && y0===y1) break; const e2=2*err; if(e2>=dy){ err+=dy; x0+=sx; } if(e2<=dx){ err+=dx; y0+=sy; } }
+    };
+    const thickLine = (x0,y0,x1,y1,col,th=2)=>{ for(let i=-Math.floor(th/2); i<Math.ceil(th/2); i++){ for(let j=-Math.floor(th/2); j<Math.ceil(th/2); j++){ line(x0+i,y0+j,x1+i,y1+j,col); } } };
+
+    const tx = anchor.x, ty = anchor.y;
+    const rot = 0; // static, pointing up
+    const recoil = 0; // no recoil for turret
+
+    // Turret base and cap
+    disc(tx, ty, 10, C.hull2);
+    rectOutline(tx-11, ty-11, 22, 22, C.mid);
+    disc(tx, ty - recoil, 7, C.mid);
+    disc(tx, ty - recoil, 6, C.hull2);
+    rect(tx-6, ty-1-recoil, 12, 2, C.red);
+    rect(tx-5, ty-1-recoil, 10, 1, C.redHi);
+
+    // Neck + hub
+    thickLine(tx, ty-2-recoil, tx, ty-10-recoil, C.hull2, 3);
+    disc(tx, ty-12-recoil, 3, C.mid);
+
+    // Barrels (pointing up)
+    const baseR=6, tipR=14;
+    for(let i=0;i<6;i++){
+      const a = rot + i*(Math.PI*2/6);
+      const sx = Math.round(tx + Math.cos(a)*baseR);
+      const sy = Math.round(ty - recoil + Math.sin(a)*baseR);
+      const ex = Math.round(tx + Math.cos(a)*tipR);
+      const ey = Math.round(ty - recoil + Math.sin(a)*tipR);
+      thickLine(sx, sy, ex, ey, C.steel, 2);
+      disc(ex, ey, 1, C.steel);
+    }
+
+    try{ ctx.imageSmoothingEnabled = false; ctx.clearRect(0,0,targetW,targetH); ctx.drawImage(off, 0,0,S,S, 0,0,targetW,targetH); }catch(_){ }
+  }catch(_){ }
+}
+try{ if (typeof window !== 'undefined') window.drawBlackstarTurretInto = drawBlackstarTurretInto; }catch(_){ }
 
 // Draw Murkia (AMERICA) tank preview into a canvas context (64x64 source, scaled to targetW/targetH)
 function drawMurkiaInto(ctx, targetW, targetH, ts){
@@ -829,7 +942,7 @@ function drawGermanTurretInto(ctx, targetW, targetH, ts){
   const R = (x,y,w,h,c)=>{ o.fillStyle=c; o.fillRect((x|0)+OFFSET,(y|0)+OFFSET,w|0,h|0); };
   function balkenCross(cx,cy){ R(cx-3,cy-1,6,2,"#fff"); R(cx-1,cy-3,2,6,"#fff"); R(cx-2,cy-1,4,2,P.deB); R(cx-1,cy-2,2,4,P.deB); }
     // turret draw (verbatim from German.html turret block)
-  const cx = 160, cy = 160; o.save(); o.translate(OFFSET+cx,OFFSET+cy); const a = Math.sin(now/120)*0.46; const GERMAN_STATIC_ROT = (-26 * Math.PI) / 180; o.rotate(a + GERMAN_STATIC_ROT);
+  const cx = 160, cy = 160; o.save(); o.translate(OFFSET+cx,OFFSET+cy);
     function TRR_local(x,y,w,h,r,fill){ o.beginPath(); o.moveTo(x+r,y); o.arcTo(x+w,y,x+w,y+h,r); o.arcTo(x+w,y+h,x,y+h,r); o.arcTo(x,y+h,x,y,r); o.arcTo(x,y,x+w,y,r); o.closePath(); o.fillStyle=fill; o.fill(); }
     function TRO_local(x,y,w,h,r,stroke){ o.beginPath(); o.moveTo(x+r,y); o.arcTo(x+w,y,x+w,y+h,r); o.arcTo(x+w,y+h,x,y+h,r); o.arcTo(x,y+h,x,y,r); o.arcTo(x,y,x+w,y,r); o.closePath(); o.strokeStyle=stroke; o.lineWidth=1; o.stroke(); }
     TRR_local(-44,-34,88,68,20,P.hull); TRO_local(-44,-34,88,68,20,P.outline);
@@ -849,8 +962,8 @@ function drawGermanTurretInto(ctx, targetW, targetH, ts){
     // Marking
     balkenCross(-18,0);
 
-    // Antenna sway
-    const sway=Math.sin(now/90)*3; o.fillStyle=P.gun; o.fillRect(-26,-42,2,12); for(let i=0;i<14;i++) o.fillRect(-25+Math.sin((i/14)*Math.PI)*(1+sway/6),-42-i,1,1,P.steel);
+    // Antenna (static, no sway)
+    o.fillStyle=P.gun; o.fillRect(-26,-42,2,12); for(let i=0;i<14;i++) o.fillRect(-25+Math.sin((i/14)*Math.PI)*(1),-42-i,1,1,P.steel);
 
     // Twin barrels with perforated muzzle brakes
     o.fillStyle=P.steel; o.fillRect(16,-6,92,6); o.fillStyle=P.gun; o.fillRect(16,-6,92,2);
@@ -934,14 +1047,15 @@ function drawMexicoTurretInto(ctx, targetW, targetH, ts){
     const O = (x,y,w,h,c)=>{ R(x,y,w,1,c); R(x,y+h-1,w,1,c); R(x,y,1,h,c); R(x+w-1,y,1,h,c); };
     function mexicanEmblemTiny(cx,cy){ R(cx-2, cy-1, 4, 3, P.gold); R(cx-4, cy+2, 8, 1, P.bean); R(cx-3, cy+1, 6, 1, P.brown); }
   // turret (same pivot as in Mexico.html)
-  const cx=160, cy=160; o.save(); o.translate(cx,cy); const a = Math.sin(now/120)*0.46; o.rotate(a);
+  const cx=160, cy=160; o.save(); o.translate(cx,cy);
     // turret body
     R(-40,-30,80,60,P.hullL); R(-38,-28,76,56,P.hullL); O(-40,-30,80,60,P.outline);
     R(-38,-28,24,56,P.mxG); R(-14,-28,24,56,P.mxW); R(10,-28,24,56,P.mxR);
     mexicanEmblemTiny(-2,-4);
     // cupola and periscopes
     R(-22,-8,12,12,P.hullD); O(-22,-8,12,12,P.outline);
-    const sway = Math.sin(now/90)*3; R(-26,-30,2, -12, P.gun); for(let i=0;i<14;i++){ R(-25 + Math.sin((i/14)*Math.PI)*(1+sway/6), -42 - i, 1, 1, P.steel); }
+    // antenna (static, no sway)
+    R(-26,-30,2, -12, P.gun); for(let i=0;i<14;i++){ R(-25 + Math.sin((i/14)*Math.PI)*(1), -42 - i, 1, 1, P.steel); }
     // heavy twin barrels
     R(16,-6,90,6,P.steel);  R(16,-6,90,2,P.gun); R(106,-6,2,6,P.gun);
     R(16, 6,90,6,P.steel);  R(16,10,90,2,P.gun); R(106,6,2,6,P.gun);
@@ -991,7 +1105,7 @@ function drawChinaTurretInto(ctx, targetW, targetH, ts){
     const rectO = (x,y,w,h,c)=>{ px(x,y,w,1,c); px(x,y+h-1,w,1,c); px(x,y,1,h,c); px(x+w-1,y,1,h,c); };
     const rivet = (x,y)=>{ px(x,y,2,2,P.steel); };
     const star = (x,y,size,col)=>{ o.fillStyle=col; for(let i=-size;i<=size;i++){ for(let j=-size;j<=size;j++){ if(Math.abs(i)+Math.abs(j)<=size) o.fillRect(x+i,y+j,1,1); } } };
-    const cx=128,cy=128; o.save(); o.translate(cx,cy); const a = Math.sin(now/100)*0.55; o.rotate(a);
+    const cx=128,cy=128; o.save(); o.translate(cx,cy);
     px(-28,-24,56,48,P.red); px(-26,-22,52,44,P.redL); px(-32,-12,4,24,P.redD); px(28,-12,4,24,P.redD); px(-6,-12,12,24,P.redD); rivet(-20,-20); rivet(20,-20); rivet(-20,20); rivet(20,20); rectO(-28,-24,56,48,P.outline); px(16,-6,60,6,P.steel);px(16,-6,60,2,P.gun); px(16,6,60,6,P.steel);px(16,10,60,2,P.gun); px(76,-6,2,6,P.gun);px(76,6,2,6,P.gun); star(-12,-12,3,P.gold); px(8,-20,3,3,P.gold); px(16,-12,3,3,P.gold); px(16,-4,3,3,P.gold); px(12,4,3,3,P.gold);
     o.restore();
 
@@ -1039,11 +1153,11 @@ function drawMcdsTurretInto(ctx, targetW, targetH, ts){
     const P = { bun:'#d8a55a', bunDark:'#b27e39', patty:'#5a2f1d', cheese:'#f9d65a', lettuce:'#4aa54a', tomato:'#c44a3a', archGold:'#ffd100', white:'#ffffff' };
     const rect=(x,y,w,h,c)=>{ o.fillStyle=c; o.fillRect(x|0,y|0,w|0,h|0); };
     const px=(x,y,c)=>{ o.fillStyle=c; o.fillRect(x|0,y|0,1,1); };
-  const angle = ((Math.floor(now/120) % 6) * (Math.PI*2/6));
+  const angle = -Math.PI/2; // -90-degree rotation to flip backwards turret
   o.save(); o.translate(32,32); // pivot
   o.rotate(angle); // use base animation angle (remove extra 180deg rotation)
   o.scale(0.75, 0.75); // reduce turret size by 25%
-    rect(-8,5,16,2,P.bunDark); rect(-8,3,16,2,P.patty); rect(-9,1,18,2,P.cheese); rect(-8,-1,16,2,P.lettuce); rect(-8,-3,16,2,P.tomato); rect(-8,-7,16,4,P.bun); rect(-5,-7,2,6,P.archGold); rect(3,-7,2,6,P.archGold); rect(-2,-5,2,2,P.archGold); rect(0,-4,2,2,P.archGold); rect(2,-5,2,2,P.archGold); rect(-5,-8,10,1,P.archGold); rect(-3,-6,1,1,P.patty); rect(2,-6,1,1,P.patty); rect(8,-1,12,2,P.archGold); px(19,-1,P.white); if (Math.floor(now/120) % 3 === 0) px(20,-1,'#ff4d4d'); o.restore();
+    rect(-8,5,16,2,P.bunDark); rect(-8,3,16,2,P.patty); rect(-9,1,18,2,P.cheese); rect(-8,-1,16,2,P.lettuce); rect(-8,-3,16,2,P.tomato); rect(-8,-7,16,4,P.bun); rect(-5,-7,2,6,P.archGold); rect(3,-7,2,6,P.archGold); rect(-2,-5,2,2,P.archGold); rect(0,-4,2,2,P.archGold); rect(2,-5,2,2,P.archGold); rect(-5,-8,10,1,P.archGold); rect(-3,-6,1,1,P.patty); rect(2,-6,1,1,P.patty); rect(8,-1,12,2,P.archGold); px(19,-1,P.white); px(20,-1,P.white); o.restore();
     try{ if (ctx && ctx.drawImage){ try{ ctx.imageSmoothingEnabled = false; }catch(_){ } ctx.clearRect(0,0,targetW,targetH); const scale = Math.min(targetW / N, targetH / N); const dw = Math.round(N * scale); const dh = Math.round(N * scale); const dx = Math.floor((targetW - dw) / 2); const dy = Math.floor((targetH - dh) / 2); ctx.drawImage(tmp, 0,0,N,N, dx,dy,dw,dh); } }catch(_){ }
   }catch(_){ }
 }
@@ -1098,6 +1212,493 @@ function handleFoliageHit(fiIndex, projX, projY, color = '#8adf76'){
   }catch(_){ }
 }
 
+// Draw French tank body into a target canvas/context (pixel-accurate from French.html)
+function drawFrenchBodyInto(ctx, targetW, targetH, ts){
+  try{
+    const now = ts || performance.now();
+    // native art in French.html is 320x320
+    const N = 320;
+    const tmp = document.createElement('canvas'); tmp.width = N; tmp.height = N; const o = tmp.getContext('2d'); try{ o.imageSmoothingEnabled = false; }catch(_){ }
+    try{ o.clearRect(0,0,N,N); }catch(_){ }
+    // Palette and helpers (ported from French.html)
+    const P = { frB:'#0055A4', frW:'#FFFFFF', frR:'#EF4135', hullB:'#0A3F7A', hullBL:'#1E6BC1', hullBD:'#062846', steel:'#B0BEC5', gun:'#232323', gunD:'#101010', trackD:'#111111', trackL:'#464646', outline:'#000000', shadow:'#00000055' };
+    const R = (x,y,w,h,c)=>{ o.fillStyle=c; o.fillRect(x|0, y|0, w|0, h|0); };
+    const O = (x,y,w,h,c)=>{ R(x,y,w,1,c); R(x,y+h-1,w,1,c); R(x,y,1,h,c); R(x+w-1,y,1,h,c); };
+    function rivet(x,y){ R(x,y,2,2,P.steel); }
+    function bolt(x,y){ R(x,y,1,1,P.gunD); }
+    function ellipseShadow(cx,cy,rx,ry){ o.save(); o.fillStyle=P.shadow; o.beginPath(); o.ellipse(cx,cy,rx,ry,0,0,Math.PI*2); o.fill(); o.restore(); }
+
+    // Treads
+    function tread(x,y,w,h,t){
+      R(x,y,w,h,P.trackD);
+      for (let i=0;i<5;i++){ R(x+2, y+6+i*((h-12)/4), w-4, 2, P.trackL); }
+      const step = 6, off = Math.floor(t/7)%step;
+      for (let i=0;i<h/step;i++){ const yy = y + ((i*step + off) % h); R(x+3, yy, w-6, 2, P.trackL); }
+      O(x,y,w,h,P.outline);
+    }
+
+    // Hull
+    function hull(){
+      R(76,140,168,80,P.hullB);
+      R(78,142,164,76,P.hullBL);
+      R(68,146,8,72,P.hullBD);
+      R(244,146,8,72,P.hullBD);
+      R(88,120,144,20,P.hullB);
+      R(90,120,140,6,P.hullBL);
+      O(88,120,144,20,P.outline);
+      R(90,220,140,12,P.hullBD);
+      O(90,220,140,12,P.outline);
+      for (let i=0;i<9;i++){
+        for (let j=0;j<2;j++){
+          const tx = 94 + i*15, ty = 126 + j*9;
+          R(tx,ty,11,7,P.hullB);
+          O(tx,ty,11,7,P.outline);
+          bolt(tx+5,ty+3);
+        }
+      }
+      R(92,156,136,48,P.hullB);
+      R(94,158,132,44,P.hullBL);
+      O(92,156,136,48,P.outline);
+      R(108,164,24,14,P.hullBD); O(108,164,24,14,P.outline); rivet(114,168); rivet(122,168);
+      R(188,164,24,14,P.hullBD); O(188,164,24,14,P.outline); rivet(194,168); rivet(202,168);
+      for (let i=0;i<10;i++){ R(112+i*10,196,6,2,P.gun); }
+      for (let i=0;i<14;i++){ rivet(70,148+i*5); rivet(250,148+i*5); }
+      O(76,140,168,80,P.outline);
+    }
+
+    // Shadow
+    ellipseShadow(160,210,105,26);
+
+    // Render treads and hull
+    tread(56,132,36,112,now);
+    tread(228,132,36,112,now);
+    hull();
+
+    // draw into target
+    try{ if (ctx && ctx.drawImage){ try{ ctx.imageSmoothingEnabled = false; }catch(_){ } ctx.clearRect(0,0,targetW,targetH); const scale = Math.min(targetW / N, targetH / N); const dw = Math.round(N * scale); const dh = Math.round(N * scale); const dx = Math.floor((targetW - dw) / 2); const dy = Math.floor((targetH - dh) / 2); ctx.drawImage(tmp, 0,0,N,N, dx,dy,dw,dh); } }catch(_){ }
+  }catch(_){ }
+}
+
+// Draw French turret only (for rotating turret canvas)
+function drawFrenchTurretInto(ctx, targetW, targetH, ts, angle){
+  try{
+    const now = ts || performance.now();
+    const N = 320; const tmp = document.createElement('canvas'); tmp.width = N; tmp.height = N; const o = tmp.getContext('2d'); try{ o.imageSmoothingEnabled = false; }catch(_){ }
+    try{ o.clearRect(0,0,N,N); }catch(_){ }
+    const P = { frB:'#0055A4', frW:'#FFFFFF', frR:'#EF4135', hullB:'#0A3F7A', hullBL:'#1E6BC1', hullBD:'#062846', steel:'#B0BEC5', gun:'#232323', gunD:'#101010', trackD:'#111111', trackL:'#464646', outline:'#000000', shadow:'#00000055' };
+    const R = (x,y,w,h,c)=>{ o.fillStyle=c; o.fillRect(x|0, y|0, w|0, h|0); };
+    const O = (x,y,w,h,c)=>{ R(x,y,w,1,c); R(x,y+h-1,w,1,c); R(x,y,1,h,c); R(x+w-1,y,1,h,c); };
+    function rivet(x,y){ R(x,y,2,2,P.steel); }
+    function frenchRoundel(cx,cy){ R(cx-6,cy-6,12,12,P.frB); R(cx-4,cy-4,8,8,P.frW); R(cx-2,cy-2,4,4,P.frR); }
+
+    const cx=160, cy=164; o.save(); o.translate(cx,cy);
+    // Draw turret pointing to the right (forward direction) by default
+    // The game engine will rotate this canvas to point toward the cursor
+    const defaultAngle = angle !== undefined ? angle : Math.PI/2; // 90 degrees (right) by default
+    o.rotate(defaultAngle);
+
+    R(-40,-30,80,60,P.hullB);
+    R(-38,-28,76,56,P.hullBL);
+    O(-40,-30,80,60,P.outline);
+    R(-46,-14,6,28,P.hullBD);
+    R(40,-14,6,28,P.hullBD);
+    O(-46,-14,6,28,P.outline);
+    O(40,-14,6,28,P.outline);
+    R(-10,-12,20,24,P.hullBD);
+    O(-10,-12,20,24,P.outline);
+    R(-38,-28,24,56,P.frB);
+    R(-14,-28,24,56,P.frW);
+    R(10,-28,24,56,P.frR);
+    R(-36,-28,72,2,P.hullBL);
+    frenchRoundel(18,-10);
+    R(-22,-8,12,12,P.hullBD); O(-22,-8,12,12,P.outline); rivet(-18,-4); rivet(-12,-4);
+    // Fixed gun position pointing forward (right)
+    R(30,-2,2, 4, P.gun); // Main gun barrel pointing right
+    for(let i=0;i<16;i++){ R(32 + i, -1, 1, 1, P.steel); } // Long barrel extension
+    // Side guns
+    R(16,-6,60,6,P.steel); R(16,-6,60,2,P.gun); // Top side gun
+    R(76,-6,2,6,P.gun);
+    R(16, 6,60,6,P.steel); R(16,10,60,2,P.gun); // Bottom side gun
+    R(76,6,2,6,P.gun);
+    R(8,-8,6,16,P.hullBD); O(8,-8,6,16,P.outline);
+    for(let i=0;i<6;i++){ R(-36+i*12,-28,1,1,P.gunD); R(-36+i*12,28,1,1,P.gunD); }
+    o.restore();
+
+    try{ if (ctx && ctx.drawImage){ try{ ctx.imageSmoothingEnabled = false; }catch(_){ } ctx.clearRect(0,0,targetW,targetH); const scale = Math.min(targetW / N, targetH / N); const dw = Math.round(N * scale); const dh = Math.round(N * scale); const dx = Math.floor((targetW - dw) / 2); const dy = Math.floor((targetH - dh) / 2); ctx.drawImage(tmp, 0,0,N,N, dx,dy,dw,dh); } }catch(_){ }
+  }catch(_){ }
+}
+try{ if (typeof window !== 'undefined') window.drawFrenchBodyInto = drawFrenchBodyInto; }catch(_){ }
+try{ if (typeof window !== 'undefined') window.drawFrenchTurretInto = drawFrenchTurretInto; }catch(_){ }
+
+// Draw Waffle tank body into a target canvas/context (pixel-accurate from Waffel.html)
+function drawWaffleBodyInto(ctx, targetW, targetH, ts){
+  try{
+    const now = ts || performance.now();
+    // Original 64x64 resolution
+    const N = 64;
+    const tmp = document.createElement('canvas'); tmp.width = N; tmp.height = N; const o = tmp.getContext('2d'); try{ o.imageSmoothingEnabled = false; }catch(_){ }
+    try{ o.clearRect(0,0,N,N); }catch(_){ }
+
+    // Color palette from Waffel.html
+    const COL = {
+      waffleL: '#F4CC7A', waffle: '#E3AF52', waffleD: '#C88D35', waffleX: '#9F6B23',
+      waffleEdgeD: '#7F531B', syrup: '#7B3A14', syrupD: '#5E2B0F', syrupL: '#9C4B1B',
+      syrupHL: '#C76934', butter: '#FFF2AC', butterD: '#E5D07C', steelL: '#9AA0A8',
+      steel: '#6F7781', steelD: '#3D4249', tread: '#1B1C1F', treadL: '#2A2C31',
+      treadHL: '#3A3D45', shadow: 'rgba(0,0,0,0.25)', rim: 'rgba(255,255,255,0.06)',
+      bolt: '#A18F64'
+    };
+
+    // Helper functions
+    const px = (x, y, c) => { o.fillStyle = c; o.fillRect(x|0, y|0, 1, 1); };
+    const rect = (x, y, w, h, c) => { o.fillStyle = c; o.fillRect(x|0, y|0, w|0, h|0); };
+    const hline = (x, y, w, c) => { rect(x, y, w, 1, c); };
+    const vline = (x, y, h, c) => { rect(x, y, 1, h, c); };
+    const fillCircle = (cx, cy, r, c) => {
+      o.fillStyle = c; o.beginPath(); o.arc(cx+0.5, cy+0.5, r, 0, Math.PI*2); o.closePath(); o.fill();
+    };
+    function roundRect(x, y, w, h, r, c) {
+      o.fillStyle = c; o.beginPath();
+      o.moveTo(x+r, y); o.lineTo(x+w-r, y); o.lineTo(x+w, y+r); o.lineTo(x+w, y+h-r);
+      o.lineTo(x+w-r, y+h); o.lineTo(x+r, y+h); o.lineTo(x, y+h-r); o.lineTo(x, y+r);
+      o.closePath(); o.fill();
+    }
+
+    // Tank geometry - scaled down to 75% size
+    const scale = 0.75;
+    const cx = 32, cy = 32;
+    const hull = { x: cx - 15*scale, y: cy - 15*scale, w: 30*scale, h: 30*scale, r: 4.5*scale };
+    const treadL = { x: cx - 20*scale, y: cy - 14*scale, w: 6*scale, h: 33*scale };
+    const treadR = { x: cx + 14*scale, y: cy - 14*scale, w: 6*scale, h: 33*scale };
+
+    // Draw treads
+    roundRect(treadL.x, treadL.y, treadL.w, treadL.h, 3, COL.tread);
+    rect(treadL.x+1, treadL.y+1, treadL.w-2, treadL.h-2, COL.treadL);
+    roundRect(treadR.x, treadR.y, treadR.w, treadR.h, 3, COL.tread);
+    rect(treadR.x+1, treadR.y+1, treadR.w-2, treadR.h-2, COL.treadL);
+
+    // Lug pattern on treads
+    const step = 4.5 * scale;
+    for (let y=treadL.y+1.5*scale; y<treadL.y+treadL.h-1.5*scale; y+=step) {
+      rect(treadL.x+1.5*scale, y, 3*scale, 1.5*scale, COL.treadHL);
+    }
+    for (let y=treadR.y+1.5*scale; y<treadR.y+treadR.h-1.5*scale; y+=step) {
+      rect(treadR.x+1.5*scale, y, 3*scale, 1.5*scale, COL.treadHL);
+    }
+
+    // Tiny steel rollers
+    for (let y=treadL.y+4.5*scale; y<treadL.y+treadL.h-4.5*scale; y+=7.5*scale) {
+      fillCircle(treadL.x+3*scale, y, 0.9*scale, COL.steel);
+      fillCircle(treadR.x+3*scale, y, 0.9*scale, COL.steel);
+    }
+
+    // Draw hull (waffle body)
+    roundRect(hull.x, hull.y, hull.w, hull.h, hull.r, COL.waffle);
+
+    // Edge shading
+    rect(hull.x, hull.y+hull.h-4, hull.w, 4, COL.waffleD);
+    rect(hull.x+hull.w-4, hull.y, 4, hull.h, COL.waffleD);
+    rect(hull.x+hull.w-1, hull.y+2, 1, hull.h-4, COL.waffleEdgeD);
+    rect(hull.x+2, hull.y+hull.h-1, hull.w-4, 1, COL.waffleEdgeD);
+
+    // Top-left rim light
+    rect(hull.x, hull.y, hull.w-6, 1, COL.waffleL);
+    rect(hull.x, hull.y+1, 1, hull.h-6, COL.waffleL);
+
+    // Waffle grid pattern
+    const gridStep = 4.5 * scale; // Scaled grid spacing
+    const gx0 = hull.x + 2.25*scale, gx1 = hull.x + hull.w - 2.25*scale;
+    const gy0 = hull.y + 2.25*scale, gy1 = hull.y + hull.h - 2.25*scale;
+    for (let x = gx0; x <= gx1; x += gridStep) vline(x, gy0, gy1-gy0, COL.waffleX);
+    for (let y = gy0; y <= gy1; y += gridStep) hline(gx0, y, gx1-gx0, COL.waffleX);
+
+    // Intersection nubs
+    for (let x = gx0; x <= gx1; x += gridStep) {
+      for (let y = gy0; y <= gy1; y += gridStep) {
+        px(x, y, COL.waffleD);
+      }
+    }
+
+    // Hull bolts
+    const bolts = [
+      [hull.x + 4.5*scale, hull.y + 4.5*scale], 
+      [hull.x + hull.w - 5.25*scale, hull.y + 4.5*scale],
+      [hull.x + 4.5*scale, hull.y + hull.h - 5.25*scale], 
+      [hull.x + hull.w - 5.25*scale, hull.y + hull.h - 5.25*scale]
+    ];
+    bolts.forEach(([x,y]) => { fillCircle(x, y, 0.75*scale, COL.bolt); });
+
+    // Inner vignette for depth
+    o.fillStyle = 'rgba(0,0,0,0.12)';
+    roundRect(hull.x + 1.5*scale, hull.y + 1.5*scale, hull.w - 3*scale, hull.h - 3*scale, hull.r - 1.5*scale, o.fillStyle);
+
+    // Syrup blob - scaled
+    o.fillStyle = COL.syrup;
+    o.beginPath();
+    o.moveTo(cx - 4.5*scale, cy - 7.5*scale); 
+    o.lineTo(cx + 5.25*scale, cy - 6.75*scale); 
+    o.lineTo(cx + 8.25*scale, cy - 3*scale);
+    o.lineTo(cx + 6*scale, cy + 3*scale); 
+    o.lineTo(cx + 1.5*scale, cy + 6*scale); 
+    o.lineTo(cx - 6*scale, cy + 4.5*scale);
+    o.lineTo(cx - 8.25*scale, cy - 0.75*scale); 
+    o.lineTo(cx - 6*scale, cy - 5.25*scale); 
+    o.closePath();
+    o.fill();
+
+    // Syrup shading & highlight
+    roundRect(cx - 3.75*scale, cy - 3*scale, 9*scale, 4.5*scale, 1.5*scale, COL.syrupD);
+    roundRect(cx - 1.5*scale, cy - 5.25*scale, 4.5*scale, 2.25*scale, 0.75*scale, COL.syrupHL);
+
+    // Butter pat
+    o.save();
+    o.translate(cx + 3.75*scale, cy - 1.5*scale);
+    o.rotate(-0.15);
+    rect(-2.25*scale, -2.25*scale, 5.25*scale, 5.25*scale, COL.butter);
+    rect(-2.25*scale, 0.75*scale, 5.25*scale, 2.25*scale, COL.butterD);
+    o.restore();
+
+    // Rim light
+    o.fillStyle = COL.rim;
+    roundRect(hull.x - 1.5*scale, hull.y - 1.5*scale, hull.w - 4.5*scale, 1.5*scale, 1.5*scale, o.fillStyle);
+    roundRect(hull.x - 1.5*scale, hull.y - 1.5*scale, 1.5*scale, hull.h - 4.5*scale, 1.5*scale, o.fillStyle);
+
+    try{ if (ctx && ctx.drawImage){ try{ ctx.imageSmoothingEnabled = false; }catch(_){ } ctx.clearRect(0,0,targetW,targetH); const scale = Math.min(targetW / N, targetH / N); const dw = Math.round(N * scale); const dh = Math.round(N * scale); const dx = Math.floor((targetW - dw) / 2); const dy = Math.floor((targetH - dh) / 2); ctx.drawImage(tmp, 0,0,N,N, dx,dy,dw,dh); } }catch(_){ }
+  }catch(_){ }
+}
+
+// Draw Waffle tank turret into a target canvas/context (pixel-accurate from Waffel.html)
+function drawWaffleTurretInto(ctx, targetW, targetH, ts, angle){
+  try{
+    const now = ts || performance.now();
+    // Original 64x64 resolution
+    const N = 64;
+    const tmp = document.createElement('canvas'); tmp.width = N; tmp.height = N; const o = tmp.getContext('2d'); try{ o.imageSmoothingEnabled = false; }catch(_){ }
+    try{ o.clearRect(0,0,N,N); }catch(_){ }
+
+    // Color palette from Waffel.html
+    const COL = {
+      waffleL: '#F4CC7A', waffle: '#E3AF52', waffleD: '#C88D35', waffleX: '#9F6B23',
+      waffleEdgeD: '#7F531B', syrup: '#7B3A14', syrupD: '#5E2B0F', syrupL: '#9C4B1B',
+      syrupHL: '#C76934', butter: '#FFF2AC', butterD: '#E5D07C', steelL: '#9AA0A8',
+      steel: '#6F7781', steelD: '#3D4249', tread: '#1B1C1F', treadL: '#2A2C31',
+      treadHL: '#3A3D45', shadow: 'rgba(0,0,0,0.25)', rim: 'rgba(255,255,255,0.06)',
+      bolt: '#A18F64'
+    };
+
+    // Helper functions
+    const rect = (x, y, w, h, c) => { o.fillStyle = c; o.fillRect(x|0, y|0, w|0, h|0); };
+    const fillCircle = (cx, cy, r, c) => {
+      o.fillStyle = c; o.beginPath(); o.arc(cx+0.5, cy+0.5, r, 0, Math.PI*2); o.closePath(); o.fill();
+    };
+
+    // Tank geometry - scaled down to 75% size
+    const scale = 0.75;
+    const cx = 32, cy = 32;
+
+    // Save/rotate around center
+    o.save();
+    o.translate(cx, cy);
+    const defaultAngle = angle !== undefined ? angle : 0;
+    o.rotate(defaultAngle);
+    o.translate(-cx, -cy);
+
+    // Turret ring (steel)
+    fillCircle(cx, cy, 6*scale, COL.steelD);
+    fillCircle(cx, cy, 5.25*scale, COL.steel);
+
+    // Rotate pitcher-style turret around center
+    o.save();
+    o.translate(cx, cy);
+    o.rotate(0); // No additional rotation for static turret
+    o.translate(-cx, -cy);
+
+    // Base dome
+    fillCircle(cx, cy, 4.5*scale, COL.steelL);
+
+    // Spout/barrel (wide → narrow)
+    o.fillStyle = COL.steel;
+    o.beginPath();
+    o.moveTo(cx + 1.5*scale, cy - 1.5*scale); 
+    o.lineTo(cx + 8.25*scale, cy - 1.25*scale); 
+    o.lineTo(cx + 10.5*scale, cy + 0*scale);
+    o.lineTo(cx + 8.25*scale, cy + 1.25*scale); 
+    o.lineTo(cx + 1.5*scale, cy + 1.5*scale); 
+    o.closePath();
+    o.fill();
+
+    // Spout lip highlight
+    rect(cx + 8.25*scale, cy - 1.25*scale, 1.5*scale, 0.75*scale, '#B8C0CA');
+
+    // Top hatch highlight & rim
+    rect(cx - 2.25*scale, cy - 3*scale, 4.5*scale, 0.75*scale, 'rgba(255,255,255,0.2)');
+    rect(cx - 3*scale, cy + 2.25*scale, 6*scale, 0.75*scale, 'rgba(0,0,0,0.2)');
+
+    o.restore();
+    o.restore();
+
+    try{ if (ctx && ctx.drawImage){ try{ ctx.imageSmoothingEnabled = false; }catch(_){ } ctx.clearRect(0,0,targetW,targetH); const scale = Math.min(targetW / N, targetH / N); const dw = Math.round(N * scale); const dh = Math.round(N * scale); const dx = Math.floor((targetW - dw) / 2); const dy = Math.floor((targetH - dh) / 2); ctx.drawImage(tmp, 0,0,N,N, dx,dy,dw,dh); } }catch(_){ }
+  }catch(_){ }
+}
+try{ if (typeof window !== 'undefined') window.drawWaffleBodyInto = drawWaffleBodyInto; }catch(_){ }
+try{ if (typeof window !== 'undefined') window.drawWaffleTurretInto = drawWaffleTurretInto; }catch(_){ }
+
+// Draw Facebook tank body into a target canvas/context (pixel-accurate from facebook.html)
+function drawFacebookBodyInto(ctx, targetW, targetH, ts){
+  try{
+    const now = ts || performance.now();
+    // Keep original 64x64 resolution but scale down for smaller appearance
+    const N = 64;
+    const tmp = document.createElement('canvas'); tmp.width = N; tmp.height = N; const o = tmp.getContext('2d'); try{ o.imageSmoothingEnabled = false; }catch(_){ }
+    try{ o.clearRect(0,0,N,N); }catch(_){ }
+    // Palette and helpers (ported from facebook.html)
+    const P = { blue:'#1877F2', blueDark:'#0E5AAB', blueLite:'#7FB3FF', steelDark:'#2C3E50', steelMid:'#3C556B', steelLite:'#8EA1B2', night:'#12233A', white:'#FFFFFF' };
+    const px = (x,y,w,h,c)=>{ o.fillStyle=c; o.fillRect(x|0,y|0,w|0,h|0); };
+    const lineH = (x,y,w,c)=>px(x,y,w,1,c);
+    const lineV = (x,y,h,c)=>px(x,y,1,h,c);
+
+    function chunkyRect(x,y,w,h,fill,edge){
+      px(x,y+1,1,h-2,edge);
+      px(x+w-1,y+1,1,h-2,edge);
+      px(x+1,y,w-2,1,edge);
+      px(x+1,y+h-1,w-2,1,edge);
+      px(x,y,2,1,edge); px(x,y,1,2,edge);
+      px(x+w-2,y,2,1,edge); px(x+w-1,y,1,2,edge);
+      px(x,y+h-1,1,2,edge); px(x,y+h-2,2,1,edge);
+      px(x+w-2,y+h-1,2,1,edge); px(x+w-1,y+h-2,1,2,edge);
+      px(x+1,y+1,w-2,h-2,fill);
+    }
+
+    const CX = 32, CY = 32;
+    const bodyW = 36, bodyH = 24;
+    const bodyX = CX - (bodyW>>1), bodyY = CY - (bodyH>>1);
+    const treadW = 6;
+    const treadTop = bodyY - 4;
+    const treadBot = bodyY + bodyH + 4;
+    // Move treads closer to the body (reduced gap from 8 to 4 pixels)
+    const leftTreadX = bodyX - (treadW + 1);
+    const rightTreadX = bodyX + bodyW + 1;
+
+    function drawTracks(offset){
+      chunkyRect(leftTreadX, treadTop, treadW, (treadBot - treadTop), P.steelMid, P.steelDark);
+      chunkyRect(rightTreadX, treadTop, treadW, (treadBot - treadTop), P.steelMid, P.steelDark);
+
+      // Create rolling animation by using time-based offset
+      const treadHeight = treadBot - treadTop;
+      const patternHeight = 8; // Match the offset range for smoother animation
+
+      for (let y = treadTop + 2; y < treadBot - 2; y++){
+        // Calculate rolling position based on time and vertical position
+        const rollingPhase = ((y - treadTop + offset) % patternHeight) / patternHeight;
+        const col = (rollingPhase < 0.5) ? P.steelDark : P.steelLite;
+        lineH(leftTreadX+1, y, treadW-2, col);
+        lineH(rightTreadX+1, y, treadW-2, col);
+      }
+
+      // Animate studs with rolling motion
+      const numStuds = 5;
+      const studSpacing = (treadBot - treadTop - 8) / (numStuds - 1);
+      for (let i = 0; i < numStuds; i++) {
+        const baseY = treadTop + 4 + (i * studSpacing);
+        // Add rolling offset to stud position with consistent timing
+        const rollingY = baseY + Math.sin((now * 0.008) + (i * 0.8)) * 1.5;
+        if (rollingY >= treadTop + 2 && rollingY <= treadBot - 4) {
+          px(leftTreadX + 2, Math.round(rollingY), 2, 2, P.steelDark);
+          px(leftTreadX + 2, Math.round(rollingY), 1, 1, P.steelLite);
+          px(rightTreadX + 2, Math.round(rollingY), 2, 2, P.steelDark);
+          px(rightTreadX + 2, Math.round(rollingY), 1, 1, P.steelLite);
+        }
+      }
+    }
+
+    function drawBody(){
+      chunkyRect(bodyX, bodyY+1, bodyW, bodyH, P.night, P.night);
+      chunkyRect(bodyX, bodyY, bodyW, bodyH, P.blue, P.steelDark);
+      px(bodyX+1, bodyY+1, 3, bodyH-2, P.blueDark);
+      px(bodyX+1, bodyY+bodyH-4, bodyW-2, 3, P.blueDark);
+      px(bodyX+2, bodyY+1, bodyW-4, 1, P.blueLite);
+      px(bodyX+bodyW-3, bodyY+2, 1, bodyH-4, P.blueLite);
+      for (let i = 0; i < 6; i++) {
+        lineH(bodyX+5, bodyY+4 + i*3, bodyW-10, P.steelMid);
+      }
+      px(bodyX+3, bodyY+3, 1,1, P.steelLite);
+      px(bodyX+bodyW-4, bodyY+3, 1,1, P.steelLite);
+      px(bodyX+3, bodyY+bodyH-4, 1,1, P.steelLite);
+      px(bodyX+bodyW-4, bodyY+bodyH-4, 1,1, P.steelLite);
+    }
+
+    // Removed blue background - now transparent
+    // px(0, 0, 64, 64, '#0b1522');
+
+    // Render tracks and body with enhanced rolling animation
+    const treadOffset = Math.floor(now * 0.008) % 8; // Faster, smoother rolling
+    drawTracks(treadOffset);
+    drawBody();
+
+    // draw into target with scaling to make it appear smaller
+    try{ if (ctx && ctx.drawImage){ try{ ctx.imageSmoothingEnabled = false; }catch(_){ } ctx.clearRect(0,0,targetW,targetH); const scale = Math.min(targetW / N, targetH / N) * 0.5; const dw = Math.round(N * scale); const dh = Math.round(N * scale); const dx = Math.floor((targetW - dw) / 2); const dy = Math.floor((targetH - dh) / 2); ctx.drawImage(tmp, 0,0,N,N, dx,dy,dw,dh); } }catch(_){ }
+  }catch(_){ }
+}
+try{ if (typeof window !== 'undefined') window.drawFacebookBodyInto = drawFacebookBodyInto; }catch(_){ }
+
+// Draw Facebook turret only (for rotating turret canvas)
+function drawFacebookTurretInto(ctx, targetW, targetH, ts){
+  try{
+    const now = ts || performance.now();
+    const N = 64; const tmp = document.createElement('canvas'); tmp.width = N; tmp.height = N; const o = tmp.getContext('2d'); try{ o.imageSmoothingEnabled = false; }catch(_){ }
+    try{ o.clearRect(0,0,N,N); }catch(_){ }
+    const P = { blue:'#1877F2', blueDark:'#0E5AAB', blueLite:'#7FB3FF', steelDark:'#2C3E50', steelMid:'#3C556B', steelLite:'#8EA1B2', night:'#12233A', white:'#FFFFFF' };
+    const px = (x,y,w,h,c)=>{ o.fillStyle=c; o.fillRect(x|0,y|0,w|0,h|0); };
+    const lineH = (x,y,w,c)=>px(x,y,w,1,c);
+    const lineV = (x,y,h,c)=>px(x,y,1,h,c);
+
+    function chunkyRect(x,y,w,h,fill,edge){
+      px(x,y+1,1,h-2,edge);
+      px(x+w-1,y+1,1,h-2,edge);
+      px(x+1,y,w-2,1,edge);
+      px(x+1,y+h-1,w-2,1,edge);
+      px(x,y,2,1,edge); px(x,y,1,2,edge);
+      px(x+w-2,y,2,1,edge); px(x+w-1,y,1,2,edge);
+      px(x,y+h-1,1,2,edge); px(x,y+h-2,2,1,edge);
+      px(x+w-2,y+h-1,2,1,edge); px(x+w-1,y+h-2,1,2,edge);
+      px(x+1,y+1,w-2,h-2,fill);
+    }
+
+    function glyphF(gx,gy,color){
+      lineH(gx+1, gy+0, 4, color);
+      lineV(gx+2, gy+0, 7, color);
+      lineH(gx+2, gy+3, 2, color);
+    }
+
+    const CX = 32, CY = 32;
+    const barrelLen = 14;
+    const barrelW = 3;
+
+    function drawTurret(statusBlink){
+      const tW = 18, tH = 14;
+      const tx = CX - (tW>>1), ty = CY - (tH>>1);
+      chunkyRect(tx, ty, tW, tH, P.blue, P.steelDark);
+      px(tx+1, ty+1, 3, tH-2, P.blueDark);
+      px(tx+2, ty+1, tW-4, 1, P.blueLite);
+      const bx = CX - ((barrelW)>>1);
+      const by = ty - 1;
+      px(bx, by - barrelLen + 2, barrelW, barrelLen, P.steelDark);
+      px(bx, by - barrelLen, barrelW, 2, P.steelLite);
+      px(tx + tW - 4, ty + 3, 2, 2, P.steelLite);
+      glyphF(CX - 3, CY - 3, P.white);
+      const ledCol = statusBlink ? P.white : P.blueLite;
+      px(tx + 2, ty + 2, 1, 1, ledCol);
+    }
+
+    // Render turret
+    const statusBlink = (Math.floor(now/120) % 2) === 0;
+    drawTurret(statusBlink);
+
+    try{ if (ctx && ctx.drawImage){ try{ ctx.imageSmoothingEnabled = false; }catch(_){ } ctx.clearRect(0,0,targetW,targetH); const scale = Math.min(targetW / N, targetH / N) * 0.5; const dw = Math.round(N * scale); const dh = Math.round(N * scale); const dx = Math.floor((targetW - dw) / 2); const dy = Math.floor((targetH - dh) / 2); ctx.drawImage(tmp, 0,0,N,N, dx,dy,dw,dh); } }catch(_){ }
+  }catch(_){ }
+}
+try{ if (typeof window !== 'undefined') window.drawFacebookTurretInto = drawFacebookTurretInto; }catch(_){ }
+
 // initialize tank module runtime config
 initTankPosition(WORLD_W, WORLD_H);
 
@@ -1132,7 +1733,7 @@ if (!(window.__game_modules && window.__game_modules.input && typeof window.__ga
   window.addEventListener('keyup', e=>{ keys.delete(e.key.toLowerCase()); });
   canvas.focus();
   // zoom constants and initial zoom
-  const MIN_ZOOM = 0.5, MAX_ZOOM = 5.0;
+  const MIN_ZOOM = 0.818, MAX_ZOOM = 5.0;
   camera.zoom = MAX_ZOOM;
   camera.x = clamp(camera.x, W/(2*camera.zoom), WORLD_W - W/(2*camera.zoom));
   camera.y = clamp(camera.y, H/(2*camera.zoom), WORLD_H - H/(2*camera.zoom));
@@ -1372,129 +1973,6 @@ function worldObjectVisible(wx, wy, padScreen = 64){
 // Billboards moved to js/billboard.js (makeBillboardFrames, animation frames,
 // instances and broken/gibbing code now live in that module)
 
-// --- Critter sprites (from 8_pixel_jungle_critters.html) ---
-function makeSpriteCanvas(specs, scale=3){
-  const c = document.createElement('canvas');
-  c.width = 8*scale; c.height = 8*scale;
-  const g = c.getContext('2d');
-  // ensure a predictable composite mode so fills always write opaque pixels
-  g.globalCompositeOperation = 'source-over';
-  g.imageSmoothingEnabled = false;
-  for (const r of specs){ g.fillStyle = r.fill; g.fillRect(r.x*scale, r.y*scale, r.w*scale, r.h*scale); }
-  // defensive check: if the sprite canvas is completely transparent (some envs
-  // can produce empty canvases), stamp a tiny visible probe pixel so the sprite
-  // remains visible and easier to diagnose. This is non-destructive for normal
-  // sprites because we only write a single 1x1 pixel when the canvas is empty.
-  try{
-    const data = g.getImageData(0,0,c.width,c.height).data;
-    let hasOpaque = false;
-    for (let i = 3; i < data.length; i += 4){ if (data[i] !== 0){ hasOpaque = true; break; } }
-  if (!hasOpaque){ console.warn('makeSpriteCanvas: produced empty sprite (no probe stamped)'); }
-  }catch(e){ /* reading imageData may throw in some contexts; ignore */ }
-  return c;
-}
-
-const critterSpecs = [];
-// Frog
-critterSpecs.push([
-  {x:1,y:2,w:6,h:4,fill:'#3bb273'}, {x:0,y:4,w:2,h:2,fill:'#2a8956'}, {x:6,y:4,w:2,h:2,fill:'#2a8956'}, {x:2,y:1,w:1,h:1,fill:'#ffffff'}, {x:5,y:1,w:1,h:1,fill:'#ffffff'}, {x:3,y:4,w:2,h:2,fill:'#a5e67c'}, {x:2,y:6,w:4,h:1,fill:'#0b442b'}
-]);
-// Snake
-critterSpecs.push([
-  {x:1,y:3,w:5,h:1,fill:'#43b581'}, {x:1,y:2,w:1,h:2,fill:'#2e9d6d'}, {x:5,y:4,w:1,h:2,fill:'#2e9d6d'}, {x:2,y:5,w:4,h:1,fill:'#43b581'}, {x:6,y:4,w:1,h:1,fill:'#43b581'}, {x:7,y:4,w:1,h:1,fill:'#ff3b30'}
-]);
-// Parrot
-critterSpecs.push([
-  {x:2,y:2,w:3,h:3,fill:'#ef4444'}, {x:4,y:1,w:2,h:2,fill:'#ef4444'}, {x:2,y:3,w:2,h:1,fill:'#3b82f6'}, {x:1,y:4,w:1,h:2,fill:'#16a34a'}, {x:6,y:2,w:1,h:1,fill:'#f59e0b'}
-]);
-// Monkey
-critterSpecs.push([
-  {x:2,y:3,w:4,h:3,fill:'#8b5e3c'}, {x:3,y:1,w:2,h:2,fill:'#8b5e3c'}, {x:3,y:2,w:2,h:1,fill:'#d7b899'}
-]);
-// Jaguar
-critterSpecs.push([
-  {x:2,y:3,w:4,h:3,fill:'#f59e0b'}, {x:5,y:2,w:2,h:2,fill:'#f59e0b'}, {x:3,y:3,w:1,h:1,fill:'#222'}
-]);
-// Chameleon
-critterSpecs.push([
-  {x:1,y:3,w:5,h:2,fill:'#84cc16'}, {x:6,y:3,w:1,h:2,fill:'#84cc16'}, {x:2,y:2,w:3,h:1,fill:'#65a30d'}
-]);
-// Toucan
-critterSpecs.push([
-  {x:2,y:3,w:3,h:3,fill:'#0b0b0b'}, {x:4,y:2,w:2,h:2,fill:'#0b0b0b'}, {x:6,y:2,w:2,h:1,fill:'#facc15'}, {x:6,y:3,w:2,h:1,fill:'#fb923c'}
-]);
-// Beetle
-critterSpecs.push([
-  {x:3,y:2,w:2,h:4,fill:'#3b82f6'}, {x:2,y:3,w:1,h:3,fill:'#2563eb'}, {x:5,y:3,w:1,h:3,fill:'#2563eb'}
-]);
-
-const CRITTER_SPR_SCALE = 3; // how many canvas pixels per SVG pixel
-// how much to scale critter/animal sprites on top of camera.zoom
-// make them a tad smaller overall; critters are smaller than animals
-// make critters and animals a bit smaller overall
-// visual size multipliers (relative to camera.zoom)
-// make critters visibly smaller and animals larger so they read differently in-world
-const CRITTER_DRAW_BASE = 0.7; // was 0.9
-const ANIMAL_DRAW_BASE = 0.6;  // reduced so animals render smaller (was 1.35)
-const critterSprites = critterSpecs.map(s=>makeSpriteCanvas(s, CRITTER_SPR_SCALE));
-// Validate critter sprite canvases and rebuild any that are invalid/empty.
-// Some environments may create 0x0 canvases if document isn't ready or if
-// the canvas context failed; proactively repair those entries.
-for (let i = 0; i < critterSprites.length; i++){
-  const spr = critterSprites[i];
-  if (!spr || !spr.width || !spr.height){
-  try{ critterSprites[i] = makeSpriteCanvas(critterSpecs[i], CRITTER_SPR_SCALE); if (DEBUG && console && console.log) console.log('Rebuilt missing critter sprite at idx', i); }catch(e){ console.warn('Failed to rebuild critter sprite', i, e); }
-  }
-}
-// expose critterSprites globally so other modules (journal) can reference them for fallbacks
-try{ window.critterSprites = critterSprites; }catch(err){ console.warn('expose critterSprites failed', err); }
-
-// --- Larger animal sprites (from 8_pixel_jungle_critters(2).html) -----------------
-function makeLargeSpriteCanvas(specs, scale = 4){
-  const TILE = 12; // source tile is 12x12 in the HTML
-  const c = document.createElement('canvas'); c.width = TILE * scale; c.height = TILE * scale;
-  const g = c.getContext('2d'); g.imageSmoothingEnabled = false;
-  for (const r of specs){ g.fillStyle = r.fill; g.fillRect(r.x*scale, r.y*scale, r.w*scale, r.h*scale); }
-  return c;
-}
-
-const largeAnimalSpecs = [];
-// Elephant
-largeAnimalSpecs.push([
-  {x:2,y:5,w:7,h:4,fill:'#8f9da6'}, {x:8,y:4,w:2,h:2,fill:'#8f9da6'}, {x:10,y:5,w:1,h:2,fill:'#8f9da6'}, {x:11,y:6,w:1,h:1,fill:'#8f9da6'}, {x:7,y:3,w:2,h:2,fill:'#aab6be'}, {x:3,y:9,w:1,h:2,fill:'#6f7a83'}, {x:6,y:9,w:1,h:2,fill:'#6f7a83'}, {x:9,y:4,w:1,h:1,fill:'#111'}
-]);
-// Tiger
-largeAnimalSpecs.push([
-  {x:2,y:6,w:7,h:3,fill:'#f59e0b'}, {x:8,y:5,w:2,h:2,fill:'#f59e0b'}, {x:3,y:6,w:1,h:1,fill:'#221'}, {x:5,y:7,w:1,h:1,fill:'#221'}, {x:7,y:6,w:1,h:1,fill:'#221'}, {x:1,y:6,w:1,h:1,fill:'#f59e0b'}, {x:0,y:6,w:1,h:1,fill:'#f59e0b'}, {x:0,y:5,w:1,h:1,fill:'#221'}, {x:9,y:5,w:1,h:1,fill:'#111'}
-]);
-// Gorilla
-largeAnimalSpecs.push([
-  {x:3,y:6,w:6,h:3,fill:'#3a3a3a'}, {x:2,y:7,w:1,h:2,fill:'#2a2a2a'}, {x:9,y:7,w:1,h:2,fill:'#2a2a2a'}, {x:5,y:4,w:3,h:2,fill:'#3a3a3a'}, {x:6,y:5,w:2,h:1,fill:'#9e9e9e'}, {x:7,y:4,w:1,h:1,fill:'#111'}
-]);
-// Crocodile
-largeAnimalSpecs.push([
-  {x:2,y:7,w:7,h:2,fill:'#3b9d5a'}, {x:9,y:6,w:2,h:2,fill:'#3b9d5a'}, {x:10,y:7,w:2,h:1,fill:'#2a7a44'}, {x:3,y:6,w:1,h:1,fill:'#2a7a44'}, {x:5,y:6,w:1,h:1,fill:'#2a7a44'}, {x:7,y:6,w:1,h:1,fill:'#2a7a44'}, {x:10,y:6,w:1,h:1,fill:'#fff'}
-]);
-// Hippo
-largeAnimalSpecs.push([
-  {x:3,y:6,w:6,h:3,fill:'#8b7aa8'}, {x:8,y:5,w:2,h:2,fill:'#8b7aa8'}, {x:9,y:5,w:1,h:1,fill:'#111'}, {x:4,y:9,w:1,h:2,fill:'#6e5f87'}, {x:6,y:9,w:1,h:2,fill:'#6e5f87'}, {x:9,y:6,w:1,h:1,fill:'#333'}
-]);
-// Rhino
-largeAnimalSpecs.push([
-  {x:3,y:6,w:6,h:3,fill:'#9aa2a7'}, {x:8,y:5,w:2,h:2,fill:'#9aa2a7'}, {x:10,y:5,w:1,h:1,fill:'#cfd6da'}, {x:4,y:9,w:1,h:2,fill:'#7f8a90'}, {x:6,y:9,w:1,h:2,fill:'#7f8a90'}, {x:9,y:5,w:1,h:1,fill:'#111'}
-]);
-// Orangutan
-largeAnimalSpecs.push([
-  {x:3,y:6,w:5,h:3,fill:'#b45309'}, {x:2,y:7,w:1,h:2,fill:'#8a3f06'}, {x:8,y:7,w:1,h:2,fill:'#8a3f06'}, {x:6,y:4,w:2,h:2,fill:'#b45309'}, {x:7,y:4,w:1,h:1,fill:'#111'}
-]);
-// Panther
-largeAnimalSpecs.push([
-  {x:2,y:6,w:7,h:3,fill:'#0a0a0a'}, {x:8,y:5,w:2,h:2,fill:'#0a0a0a'}, {x:3,y:7,w:1,h:1,fill:'#1a1a1a'}, {x:6,y:7,w:1,h:1,fill:'#1a1a1a'}, {x:9,y:5,w:1,h:1,fill:'#fff'}
-]);
-
-const largeAnimalSprites = largeAnimalSpecs.map(s => makeLargeSpriteCanvas(s, 4));
-try{ window.largeAnimalSprites = largeAnimalSprites; }catch(err){ console.warn('expose largeAnimalSprites failed', err); }
-
 // ------------------
 // Animated jungle character makers (idle + running) — adapted from the two demo files
 // Each character will render into an offscreen 72×72 tile; we call the idle/run maker per-frame
@@ -1653,113 +2131,6 @@ function makeKrakenIdle(g){
 function makeKrakenRun(g){ return makeKrakenIdle(g); }
 idleMakers.kraken = makeKrakenIdle; runMakers.kraken = makeKrakenRun;
 
-// Osprey maker: adapted pixel-perfect from Osprey.html, draws into CHAR_TILE_PX
-function makeOspreyIdle(g){
-  // Prefer the osprey maker from the characters module when available so all
-  // osprey tiles are generated by the single canonical implementation.
-  try{ if (charsIdleMakers && typeof charsIdleMakers.osprey === 'function') return charsIdleMakers.osprey(g); }catch(_){ }
-  // Render the original 64x64 Osprey art pixel-for-pixel into the CHAR_TILE_PX tile.
-  return (t, lookA) => {
-    g.clearRect(0,0,CHAR_TILE_PX,CHAR_TILE_PX);
-    // If external osprey asset is present, draw it centered and scaled
-    if (ASSETS.osprey){
-      const img = ASSETS.osprey;
-      const srcW = img.width, srcH = img.height;
-      const scale = Math.floor((CHAR_TILE_PX * 0.92) / srcW);
-      const dw = srcW * scale, dh = srcH * scale;
-      const dx = Math.round((CHAR_TILE_PX - dw)/2);
-      const dy = Math.round((CHAR_TILE_PX - dh)/2);
-      g.imageSmoothingEnabled = false;
-      g.drawImage(img, 0,0, srcW, srcH, dx, dy, dw, dh);
-      return;
-    }
-    // fallback: bake 12 rotor frames (64x64) and play them based on time; keep bob applied at draw-time
-    if (!makeOspreyIdle._cachedFrames){
-      const frames = [];
-      const COL = { outline: '#1b1e27', steelMid: '#596273', steelLight: '#8f98ab', rim: '#c9d1e4', rotorDark: '#2b303b', rotorBlur: 'rgba(154,163,180,0.35)', glass: '#3a74a6', warn: '#d26b1e' };
-      for (let step=0; step<12; step++){
-        const spr = document.createElement('canvas'); spr.width = 64; spr.height = 64; const s = spr.getContext('2d'); s.imageSmoothingEnabled = false;
-        function pxLocal(x,y,col){ s.fillStyle = col; s.fillRect(x|0,y|0,1,1); }
-        function rectLocal(x,y,w,h,col){ s.fillStyle = col; s.fillRect(x|0,y|0,w|0,h|0); }
-        function discLocal(cx,cy,r,col){ for (let yy=-r; yy<=r; yy++){ for (let xx=-r; xx<=r; xx++){ if (xx*xx + yy*yy <= r*r) pxLocal(cx+xx, cy+yy, col); } } }
-        function lineLocal(x0,y0,x1,y1,col){ x0|=0; y0|=0; x1|=0; y1|=0; let dx=Math.abs(x1-x0), sx = x0<x1?1:-1; let dy=-Math.abs(y1-y0), sy = y0<y1?1:-1; let err = dx+dy; while(true){ pxLocal(x0,y0,col); if (x0===x1 && y0===y1) break; const e2 = 2*err; if (e2>=dy){ err += dy; x0 += sx; } if (e2<=dx){ err += dx; y0 += sy; } } }
-        const cx = 32, cy = 32; const bob = 0; const wingY = cy - 2 + bob;
-        for (let i=0;i<5;i++){ const alpha = 0.06 - i*0.01; if (alpha <= 0) break; const w = 36 - i*6, h = 8 - i*1; rectLocal(cx - (w>>1), cy + 12 + bob - (h>>1) + i, w, h, `rgba(0,0,0,${alpha})`); }
-        rectLocal(cx - 22, wingY, 44, 4, COL.steelMid);
-        rectLocal(cx - 22, wingY, 44, 1, COL.rim);
-        rectLocal(cx - 4, cy - 12 + bob, 8, 24, COL.steelMid);
-        rectLocal(cx - 3, cy - 16 + bob, 6, 4, COL.steelLight);
-        rectLocal(cx - 2, cy - 15 + bob, 4, 2, COL.glass);
-        rectLocal(cx - 3, cy + 13 + bob, 6, 6, COL.steelMid);
-        rectLocal(cx - 14, cy + 15 + bob, 28, 2, COL.steelMid);
-        rectLocal(cx - 4, cy - 12 + bob, 8, 1, COL.rim);
-        rectLocal(cx - 22, wingY - 1, 44, 1, COL.outline);
-        rectLocal(cx - 22, wingY + 4, 44, 1, COL.outline);
-        rectLocal(cx - 5, cy - 13 + bob, 1, 24, COL.outline);
-        rectLocal(cx + 4, cy - 13 + bob, 1, 24, COL.outline);
-        const nxL = cx - 22, nxR = cx + 22; const ny = wingY + 2 + bob;
-        rectLocal(nxL - 4, ny - 4, 8, 8, COL.steelMid);
-        rectLocal(nxR - 4, ny - 4, 8, 8, COL.steelMid);
-        rectLocal(nxL - 4, ny - 4, 8, 1, COL.rim);
-        rectLocal(nxR - 4, ny - 4, 8, 1, COL.rim);
-        rectLocal(nxL - 4, ny + 4, 3, 1, COL.warn);
-        rectLocal(nxR + 1, ny + 4, 3, 1, COL.warn);
-        rectLocal(nxL - 5, ny - 5, 10, 1, COL.outline);
-        rectLocal(nxL - 5, ny + 4, 10, 1, COL.outline);
-        rectLocal(nxR - 5, ny - 5, 10, 1, COL.outline);
-        rectLocal(nxR - 5, ny + 4, 10, 1, COL.outline);
-        discLocal(nxL, ny, 1, COL.warn);
-        discLocal(nxR, ny, 1, COL.warn);
-        // rotors for this step
-        const ang = (step % 12) * (Math.PI * 2 / 12);
-        (function drawRotorAt(cxR, cyR, angR, r){
-          for (let i=0;i<3;i++){
-            const a = angR + i * (Math.PI*2/3);
-            const ex = Math.round(cxR + Math.cos(a) * r);
-            const ey = Math.round(cyR + Math.sin(a) * r);
-            lineLocal(cxR, cyR, ex, ey, COL.rotorDark);
-            const ox = Math.round(-Math.sin(a)), oy = Math.round(Math.cos(a));
-            lineLocal(cxR + ox, cyR + oy, ex + ox, ey + oy, COL.rotorDark);
-            lineLocal(cxR - ox, cyR - oy, ex - ox, ey - oy, COL.rotorBlur);
-          }
-          discLocal(cxR, cyR, 2, COL.rotorBlur);
-        })(nxL, ny, ang, 10);
-        (function drawRotorAt(cxR, cyR, angR, r){
-          for (let i=0;i<3;i++){
-            const a = angR + i * (Math.PI*2/3);
-            const ex = Math.round(cxR + Math.cos(a) * r);
-            const ey = Math.round(cyR + Math.sin(a) * r);
-            lineLocal(cxR, cyR, ex, ey, COL.rotorDark);
-            const ox = Math.round(-Math.sin(a)), oy = Math.round(Math.cos(a));
-            lineLocal(cxR + ox, cyR + oy, ex + ox, ey + oy, COL.rotorDark);
-            lineLocal(cxR - ox, cyR - oy, ex - ox, ey - oy, COL.rotorBlur);
-          }
-          discLocal(cxR, cyR, 2, COL.rotorBlur);
-        })(nxR, ny, ang, 10);
-        frames.push(spr);
-      }
-      makeOspreyIdle._cachedFrames = frames;
-    }
-    const frames = makeOspreyIdle._cachedFrames;
-    if (frames && frames.length){
-      const steps = frames.length;
-      const idx = Math.floor((t/60)) % steps;
-      const frame = frames[idx];
-      const bob = Math.round(Math.sin(t/1200) * 1.5);
-      const srcW = frame.width, srcH = frame.height;
-      const scaleOut = Math.floor((CHAR_TILE_PX * 0.92) / srcW);
-      const dw = srcW * scaleOut, dh = srcH * scaleOut;
-      const dx = Math.round((CHAR_TILE_PX - dw)/2);
-      // apply bob in destination space (scale proportionally)
-      const dy = Math.round((CHAR_TILE_PX - dh)/2 + (bob * (dh / srcH)));
-      g.imageSmoothingEnabled = false;
-      g.drawImage(frame, 0,0, srcW, srcH, dx, dy, dw, dh);
-    }
-  };
-}
-function makeOspreyRun(g){ return makeOspreyIdle(g); }
-
-
 // fatsammich makers live in `js/humans.js` and are merged into the local makers map above.
 
 // enemy projectiles (fired by jungle characters)
@@ -1772,6 +2143,9 @@ const muzzleFlashes = []; // {x,y,angle,life}
 // expose enemyBullets to other modules that may push into it (e.g., alternativetanks)
 try{ window.enemyBullets = enemyBullets; }catch(err){ console.warn('expose enemyBullets failed', err); }
 try{ window.kittenBullets = kittenBullets; }catch(err){ console.warn('expose kittenBullets failed', err); }
+
+// throttled debug logging (enable by setting window.__DEBUG_KITTEN = true in the browser)
+let __lastKittenDbg = 0;
 
 // screen shake state
 const screenShake = { time: 0, duration: 0, magnitude: 0 };
@@ -1846,10 +2220,210 @@ try{ window.spawnOspreyGibs = spawnOspreyGibs; }catch(err){ console.warn('expose
 // small dust cloud particles emitted by the tank during speed boost
 // ...existing code...
 
+// --- Mini Tank Ally System ---
+function spawnMiniTankAlly(x, y) {
+  // Spawn a mini tank ally based on the player's current tank variant
+  const miniScale = 0.6; // Make it smaller than the player tank
+  const offsetX = (Math.random() - 0.5) * 80; // Random offset around player
+  const offsetY = (Math.random() - 0.5) * 80;
+
+  const ally = {
+    x: x + offsetX,
+    y: y + offsetY,
+    vx: 0,
+    vy: 0,
+    spd: 25, // Slightly slower than player
+    r: 12, // Smaller hit radius
+    type: 'miniTank',
+    hp: 2,
+    lastAttack: 0,
+    attackCD: 800 + Math.random() * 400, // Similar to jungle enemies
+    turretAngle: 0,
+    angle: 0,
+    scale: miniScale,
+    tankVariant: selectedVehicleVariant || 'default',
+    // Visual properties
+    treadPhase: 0,
+    dust: 0
+  };
+
+  // Limit to 3 allies max
+  if (allies.length < 3) {
+    allies.push(ally);
+  }
+}
+
+function updateAllies(dt) {
+  for (let i = allies.length - 1; i >= 0; i--) {
+    const ally = allies[i];
+
+    // Find nearest enemy
+    let nearestEnemy = null;
+    let nearestDist = Infinity;
+    for (const enemy of enemies) {
+      if (enemy.harmless) continue; // Skip harmless enemies
+      const dx = enemy.x - ally.x;
+      const dy = enemy.y - ally.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist < nearestDist) {
+        nearestDist = dist;
+        nearestEnemy = enemy;
+      }
+    }
+
+    // Move towards nearest enemy or follow player
+    if (nearestEnemy && nearestDist < 200) {
+      // Move towards enemy
+      const dx = nearestEnemy.x - ally.x;
+      const dy = nearestEnemy.y - ally.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist > 0) {
+        ally.vx = (dx / dist) * ally.spd;
+        ally.vy = (dy / dist) * ally.spd;
+        ally.angle = Math.atan2(dy, dx);
+        ally.turretAngle = ally.angle;
+      }
+    } else {
+      // Follow player loosely
+      const playerX = selectedVehicle === 'heli' ? heli.x : tank.x;
+      const playerY = selectedVehicle === 'heli' ? heli.y : tank.y;
+      const dx = playerX - ally.x;
+      const dy = playerY - ally.y;
+      const dist = Math.hypot(dx, dy);
+
+      if (dist > 60) { // Keep some distance from player
+        ally.vx = (dx / dist) * ally.spd * 0.5;
+        ally.vy = (dy / dist) * ally.spd * 0.5;
+        ally.angle = Math.atan2(dy, dx);
+        ally.turretAngle = ally.angle;
+      } else {
+        ally.vx *= 0.9; // Slow down when close to player
+        ally.vy *= 0.9;
+      }
+    }
+
+    // Update position
+    ally.x += ally.vx * dt;
+    ally.y += ally.vy * dt;
+
+    // Update tread animation
+    ally.treadPhase += dt * 4;
+
+    // Update dust effect
+    const speed = Math.hypot(ally.vx, ally.vy);
+    ally.dust = Math.max(0, ally.dust - dt * 2);
+    if (speed > 10) {
+      ally.dust = Math.min(1, ally.dust + dt * 0.5);
+    }
+
+    // Shooting logic
+    const now = performance.now();
+    if (nearestEnemy && nearestDist < 150 && now - ally.lastAttack > ally.attackCD) {
+      // Shoot at enemy
+      const dx = nearestEnemy.x - ally.x;
+      const dy = nearestEnemy.y - ally.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist > 0) {
+        const bulletSpeed = 200;
+        const bulletDx = (dx / dist) * bulletSpeed;
+        const bulletDy = (dy / dist) * bulletSpeed;
+
+        // Spawn bullet from turret position
+        const turretOffset = 8 * ally.scale;
+        const bulletX = ally.x + Math.cos(ally.turretAngle) * turretOffset;
+        const bulletY = ally.y + Math.sin(ally.turretAngle) * turretOffset;
+
+        bullets.push({
+          x: bulletX,
+          y: bulletY,
+          dx: bulletDx,
+          dy: bulletDy,
+          life: 2.0,
+          color: 'hsl(45 100% 60%)' // Yellow bullets for allies
+        });
+
+        ally.lastAttack = now;
+        spawnMuzzleFlash(bulletX, bulletY, ally.turretAngle);
+      }
+    }
+
+    // Remove if too far from player or dead
+    const playerX = selectedVehicle === 'heli' ? heli.x : tank.x;
+    const playerY = selectedVehicle === 'heli' ? heli.y : tank.y;
+    const distFromPlayer = Math.hypot(ally.x - playerX, ally.y - playerY);
+
+    if (distFromPlayer > 400 || ally.hp <= 0) {
+      allies.splice(i, 1);
+    }
+  }
+}
+
+function drawAllies() {
+  for (const ally of allies) {
+    // Draw mini tank using simple shapes
+    const effectiveScale = (effectiveTankScale ? effectiveTankScale() : 1) * ally.scale;
+
+    // Save context
+    ctx.save();
+    ctx.translate(ally.x - camera.x, ally.y - camera.y);
+
+    // Apply camera zoom
+    if (camera.zoom !== 1) {
+      ctx.scale(camera.zoom, camera.zoom);
+    }
+
+    // Draw tank body and turret using simple shapes
+    ctx.save();
+    ctx.rotate(ally.angle);
+    ctx.scale(effectiveScale, effectiveScale);
+
+    // Draw body (simple rectangle)
+    ctx.fillStyle = '#666';
+    ctx.fillRect(-12, -8, 24, 16);
+
+    // Draw turret (simple circle)
+    ctx.save();
+    ctx.rotate(ally.turretAngle - ally.angle);
+    ctx.fillStyle = '#888';
+    ctx.beginPath();
+    ctx.arc(0, 0, 6, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Draw barrel
+    ctx.fillStyle = '#444';
+    ctx.fillRect(6, -2, 8, 4);
+    ctx.restore();
+
+    ctx.restore();
+
+    // Draw dust effect
+    if (ally.dust > 0.1) {
+      const dustCount = Math.floor(ally.dust * 6);
+      ctx.fillStyle = 'rgba(150, 150, 150, 0.6)';
+      for (let i = 0; i < dustCount; i++) {
+        const rx = (Math.random() - 0.5) * 20;
+        const ry = (Math.random() - 0.5) * 20 + 10;
+        ctx.fillRect(rx, ry, 2, 2);
+      }
+    }
+
+    ctx.restore();
+  }
+}
+
 // --- Powerups (test double-shot) ---
 const powerups = []; // {x,y,type,life,phase,hue,iconIdx}
 function spawnPowerup(x,y,type='double'){ powerups.push({ x: mod(x, WORLD_W), y: mod(y, WORLD_H), type, life: 40.0, phase: Math.random()*Math.PI*2, hue: Math.floor(Math.random()*360), iconIdx: Math.floor(Math.random()*6) }); }
 function updatePowerups(dt){ for (let i=powerups.length-1;i>=0;i--){ const p = powerups[i]; p.phase += dt * 3.0; p.life -= dt; if (p.life <= 0) powerups.splice(i,1); } }
+
+// --- Shield System ---
+let shieldActive = false;
+let shieldUntil = 0;
+let shieldCooldownUntil = 0;
+const SHIELD_DURATION = 60000; // 60 seconds
+const SHIELD_COOLDOWN = 120000; // 2 minutes cooldown
+
+function spawnShieldPowerup(x,y){ spawnPowerup(x,y,'shield'); try{ const p = powerups[powerups.length-1]; if (p){ p.hue = 180; p.iconIdx = 0; } }catch(_){ } }
 
 // powerup pixel painter (ported from neon_pixel_pills_grid.html)
 const POWERUP_TILE_PX = 64;
@@ -1908,10 +2482,201 @@ function _p_iconHeart(cx,cy,h,t){
   _pctx.restore();
 }
 
-const _p_icons = [_p_iconMaw, _p_iconTentacles, _p_iconEyes, _p_iconSigil, _p_iconWorm, _p_iconCore, _p_iconHeart];
+// Tech card powerup painter (adapted from techcard.html)
+function _p_drawTechCard(cx, cy, hue, t) {
+  // Clear the area
+  _pctx.clearRect(0, 0, POWERUP_TILE_PX, POWERUP_TILE_PX);
+  
+  // Scale factor for 64x64 canvas (techcard is designed for 64x64)
+  const SCALE = 1;
+  const W = 64, H = 64;
+  
+  // Palette (adapted from techcard)
+  const C = {
+    bg: '#0b0f1a', 
+    edge: '#0e2847', 
+    edge2: '#153a66', 
+    base: '#1b2f4d',
+    neon: '#00a2ff', 
+    aqua: '#0eead6', 
+    glow: '#8dfcf0', 
+    white: '#ffffff'
+  };
+  
+  // Helpers
+  function px(x, y, c) { _pctx.fillStyle = c; _pctx.fillRect(x, y, 1, 1); }
+  function rect(x, y, w, h, c) { _pctx.fillStyle = c; _pctx.fillRect(x, y, w, h); }
+  
+  // Animation frame (6 frames, 120ms each)
+  const frame = Math.floor((t / 120) % 6);
+  const bounce = [0, 2, 4, 2, 0, -2][frame];
+  
+  // Card metrics (scaled for powerup size) - made smaller
+  const PIVOT = { x: cx, y: cy };
+  const CARD = { w: 28, h: 38, cut: 6 }; // Reduced from 38x52 to 28x38, cut from 8 to 6
+  const CARD_POS = () => ({ x: PIVOT.x - (CARD.w >> 1), y: PIVOT.y - (CARD.h >> 1) + bounce });
+  
+  // Shape helpers for clipped rectangle
+  function cutCornerFill(x, y, w, h, cut, fillColor) {
+    rect(x, y, w, h, fillColor);
+    for (let i = 0; i < cut; i++) {
+      rect(x + w - cut + i, y + i, cut - i, 1, C.bg);
+    }
+  }
+  
+  function outlineWithCut(x, y, w, h, cut, color) {
+    for (let i = 0; i < w - cut; i++) px(x + i, y, color);
+    for (let j = cut; j < h; j++) px(x + w - 1, y + j, color);
+    for (let i = 0; i < w; i++) px(x + i, y + h - 1, color);
+    for (let j = 0; j < h; j++) px(x, y + j, color);
+    // Diagonal cut line
+    let dx = x + w - cut, dy = y;
+    let ex = x + w - 1, ey = y + cut - 1;
+    let ddx = Math.abs(ex - dx), sdx = dx < ex ? 1 : -1;
+    let ddy = -Math.abs(ey - dy), sdy = dy < ey ? 1 : -1;
+    let err = ddx + ddy;
+    for (;;) {
+      px(dx, dy, color);
+      if (dx === ex && dy === ey) break;
+      const e2 = 2 * err;
+      if (e2 >= ddy) { err += ddy; dx += sdx; }
+      if (e2 <= ddx) { err += ddx; dy += sdy; }
+    }
+  }
+  
+  const pos = CARD_POS();
+  const x = pos.x, y = pos.y, w = CARD.w, h = CARD.h, cut = CARD.cut;
+  
+  // Ground shadow - scaled down proportionally
+  rect(PIVOT.x - 12, PIVOT.y + (h >> 1) - 2 + bounce, 24, 3, '#07101c');
+  rect(PIVOT.x - 10, PIVOT.y + (h >> 1) - 1 + bounce, 20, 1, '#060c16');
+  
+  // Base card
+  cutCornerFill(x, y, w, h, cut, C.base);
+  
+  // Bevels
+  rect(x + w - 1, y + cut, 1, h - cut, C.edge);
+  rect(x + w - 2, y + cut, 1, h - cut, C.edge2);
+  rect(x + 1, y + h - 1, w - 2, 1, C.edge);
+  rect(x + 1, y + h - 2, w - 2, 1, C.edge2);
+  rect(x + 1, y, w - cut - 1, 1, C.glow);
+  rect(x, y + 1, 1, h - 2, C.aqua);
+  
+  // Diagonal cut bevel
+  let dx = x + w - cut, dy = y;
+  let ex = x + w - 1, ey = y + cut - 1;
+  let ddx = Math.abs(ex - dx), sdx = dx < ex ? 1 : -1;
+  let ddy = -Math.abs(ey - dy), sdy = dy < ey ? 1 : -1;
+  let err = ddx + ddy;
+  for (;;) {
+    px(dx, dy, C.glow);
+    if (dx === ex && dy === ey) break;
+    const e2 = 2 * err;
+    if (e2 >= ddy) { err += ddy; dx += sdx; }
+    if (e2 <= ddx) { err += ddx; dy += sdy; }
+  }
+  
+  dx = x + w - cut; dy = y + 1;
+  ex = x + w - 2; ey = y + cut - 1;
+  ddx = Math.abs(ex - dx); sdx = dx < ex ? 1 : -1;
+  ddy = -Math.abs(ey - dy); sdy = dy < ey ? 1 : -1;
+  err = ddx + ddy;
+  for (;;) {
+    px(dx, dy, C.aqua);
+    if (dx === ex && dy === ey) break;
+    const e2 = 2 * err;
+    if (e2 >= ddy) { err += ddy; dx += sdx; }
+    if (e2 <= ddx) { err += ddx; dy += sdy; }
+  }
+  
+  // Inner frame - adjusted inset for smaller card
+  const inset = 2; // Reduced from 3 to 2 for smaller card
+  const ix = x + inset, iy = y + inset, iw = w - 2 * inset, ih = h - 2 * inset, icut = Math.max(1, cut - 2); // Adjusted icut calculation
+  outlineWithCut(ix, iy, iw, ih, icut, C.edge2);
+  
+  // Central chip
+  rect(PIVOT.x - 4, PIVOT.y + bounce - 5, 8, 8, '#142a47');
+  outlineWithCut(PIVOT.x - 4, PIVOT.y + bounce - 5, 8, 8, 0, C.neon);
+  
+  // Chip pins
+  for (let i = -3; i <= 3; i += 2) {
+    px(PIVOT.x - 5, PIVOT.y + bounce - 5 + i, C.glow);
+    px(PIVOT.x + 4, PIVOT.y + bounce - 5 + i, C.glow);
+  }
+  
+  // Lightning bolt
+  px(PIVOT.x - 1, PIVOT.y + bounce - 4, C.white);
+  px(PIVOT.x + 1, PIVOT.y + bounce - 2, C.white);
+  px(PIVOT.x, PIVOT.y + bounce, C.white);
+  px(PIVOT.x + 2, PIVOT.y + bounce + 2, C.white);
+  px(PIVOT.x - 1, PIVOT.y + bounce + 1, C.aqua);
+  px(PIVOT.x + 1, PIVOT.y + bounce - 1, C.aqua);
+  
+  // PCB traces - adjusted for smaller card
+  const topSpineY = Math.max(iy + 1, y + cut + 1);
+  for (let i = 0; i <= 5; i++) px(PIVOT.x, topSpineY + i, C.neon); // Reduced spine length from 6 to 5
+  for (let i = 0; i < 5; i++) px(ix + 4 + i, topSpineY, C.neon); // Moved from 6 to 4, reduced length from 6 to 5
+  for (let i = 0; i < 6; i++) px(ix + iw - 6 + i, topSpineY, C.neon); // Adjusted for smaller width
+  
+  // NFC arcs - adjusted for smaller inner frame
+  for (let r = 4; r <= 8; r += 2) { // Reduced radius range from 6-10 to 4-8
+    for (let tt = 0; tt <= r; tt++) {
+      px(ix + 4 + tt, iy + 4, C.aqua);         // small horizontal - moved from 6 to 4
+      px(ix + 4,   iy + 4 + tt, C.aqua);       // small vertical - moved from 6 to 4
+    }
+  }
+  
+  // Gold contact pads - adjusted spacing for smaller card
+  const padY = y + h - 10; // Moved up slightly for smaller card
+  for (let i = 0; i < 5; i++) {
+    rect(x + 5 + i * 4, padY, 3, 5, '#d4c37a'); // Reduced spacing from 5 to 4, height from 6 to 5
+    px(x + 5 + i * 4, padY - 1, '#fff6b0');
+  }
+  
+  // Serial micro-text
+  for (let j = 0; j < 10; j += 2) {
+    if (y + cut + 2 + j < y + h - 2) px(x + w - 3, y + cut + 2 + j, C.glow);
+  }
+  
+  // Scanline
+  const scanY = iy + 1 + ((frame * 4) % (ih - 2));
+  for (let xx = ix + 1; xx < ix + iw - 1; xx++) {
+    px(xx, scanY, C.glow);
+    if (scanY + 1 < iy + ih - 1) px(xx, scanY + 1, C.aqua);
+  }
+  
+  // Pulse overlay
+  const pulse = (frame % 2) === 0 ? 0.10 : 0.04;
+  for (let yy = iy + 1; yy < iy + ih - 1; yy++) {
+    for (let xx = ix + 1; xx < ix + iw - 1; xx++) {
+      if (((xx + yy) & 1) === 0) {
+        _pctx.fillStyle = `rgba(141,252,240,${pulse})`;
+        _pctx.fillRect(xx, yy, 1, 1);
+      }
+    }
+  }
+  
+  // Outer silhouette
+  outlineWithCut(x, y, w, h, cut, C.edge);
+  
+  // Corner indicator
+  dx = x + w - cut + 1; dy = y + 2;
+  ex = x + w - 3; ey = y + cut - 2;
+  ddx = Math.abs(ex - dx); sdx = dx < ex ? 1 : -1;
+  ddy = -Math.abs(ey - dy); sdy = dy < ey ? 1 : -1;
+  err = ddx + ddy;
+  for (;;) {
+    px(dx, dy, C.white);
+    if (dx === ex && dy === ey) break;
+    const e2 = 2 * err;
+    if (e2 >= ddy) { err += ddy; dx += sdx; }
+    if (e2 <= ddx) { err += ddx; dy += sdy; }
+  }
+}
 
 // spawn a heal powerup with consistent visual (green + heal icon)
 function spawnHealPowerup(x,y){ spawnPowerup(x,y,'heal'); try{ const p = powerups[powerups.length-1]; if (p){ p.hue = 140; p.iconIdx = _p_icons.length - 1; p.heartVariant = 'classic'; } }catch(_){ } }
+function spawnMiniPowerup(x,y){ spawnPowerup(x,y,'mini'); try{ const p = powerups[powerups.length-1]; if (p){ p.hue = 200; p.iconIdx = Math.floor(Math.random()*6); } }catch(_){ } }
 // Generic helper to spawn a specific heart variant powerup and associate it with a journal key
 function spawnHeartPowerup(x,y, variant, key){ try{ spawnPowerup(x,y,'journal'); const p = powerups[powerups.length-1]; if (!p) return; p.hue = (variant==='medic')? 10 : (variant==='vital'? 120 : 280); p.heartVariant = variant; // used to draw
   // attach a journalKey so pickup logic can call recordKill with specific key
@@ -1972,8 +2737,25 @@ function drawPowerups(){ const nowt = performance.now(); for (const p of powerup
         // draw heart into the shared powerup canvas at center 32,32
         drawHeartLowResIntoPowerup(_pctx, 32, 32, nowt + (p.phase*60), p.heartVariant || 'classic');
       }
+    } else if (p.type === 'mini'){
+      // Draw mini tank icon
+      _pctx.clearRect(0, 0, POWERUP_TILE_PX, POWERUP_TILE_PX);
+      const cx = 32, cy = 32;
+      // Draw a simple tank silhouette
+      _pctx.fillStyle = _p_hsv(p.hue, 0.8, 0.7);
+      // Body
+      _pctx.fillRect(cx - 8, cy - 6, 16, 12);
+      // Turret
+      _pctx.fillRect(cx - 4, cy - 8, 8, 6);
+      // Tracks
+      _pctx.fillStyle = _p_hsv(p.hue, 0.6, 0.4);
+      _pctx.fillRect(cx - 10, cy - 8, 2, 16);
+      _pctx.fillRect(cx + 8, cy - 8, 2, 16);
+      // Barrel
+      _pctx.fillStyle = _p_hsv(p.hue, 0.9, 0.5);
+      _pctx.fillRect(cx + 4, cy - 9, 6, 2);
     } else {
-      _p_drawSplitPill(32,32,p.hue, nowt + (p.phase*60), _p_icons[p.iconIdx % _p_icons.length]);
+      _p_drawTechCard(32, 32, p.hue, nowt + (p.phase * 60));
     }
     // draw with bobbing and special heal effects
   const isHeal = (p.type === 'heal' || p.type === 'journal');
@@ -2208,7 +2990,7 @@ function drawCollectLowResIntoPowerup(ctx, cx, cy, t, key){
     }
   }catch(_){ }
 }
-// expose the collect drawing helper to other modules (journal) so combos can animate
+// expose the collect drawing helper to other modules
 try{ if (typeof window !== 'undefined') window.drawCollectLowResIntoPowerup = drawCollectLowResIntoPowerup; }catch(_){ }
 rebuildHeliSprites();
 
@@ -2228,6 +3010,7 @@ const BLACKSTAR_SCALE = 2.0; // reuse name for multiplier (history)
 function effectiveTankScale(){ try{ 
     if (selectedVehicleVariant === 'murkia') return SPRITE_SCALE * BLACKSTAR_SCALE;
     if (selectedVehicleVariant === 'bondtank') return SPRITE_SCALE * 3; // Bondtank is 3x larger
+    if (selectedVehicleVariant === 'blackstar') return SPRITE_SCALE * 0.4;
     return SPRITE_SCALE;
   }catch(_){ return SPRITE_SCALE; } }
 // start with tank selected and hide center UI
@@ -2237,7 +3020,7 @@ center.style.display = 'none';
 // Slot mapping: 0=default, 1=Fiesta, 2=Murkia, 3=Dozer, 4=Bondtank
 // core vehicle slots; add extra placeholder slots ("emptyX") for future vehicles
 // ensure the German art preview is placed into the 6th slot (index 5)
-const VEHICLE_SLOTS = ['tank', 'fordfiesta', 'murkia', 'dozer', 'bondtank', 'empty6', 'empty7', 'empty8', 'empty9', 'empty4', 'empty5', 'empty1', 'empty2'];
+const VEHICLE_SLOTS = ['tank', 'fordfiesta', 'murkia', 'dozer', 'bondtank', 'empty6', 'empty7', 'empty8', 'empty9', 'french', 'facebook', 'waffle', 'blackstar'];
 // unlock all slots now so they are clickable for testing
 const VEHICLE_UNLOCKED = VEHICLE_SLOTS.map(()=> true);
 // NOTE: Fiesta remains locked until the player claims/unlocks it via the Journal.
@@ -2422,11 +3205,79 @@ function selectVehicleSlot(idx){
     }catch(_){ }
       selectedVehicle = 'tank'; selectedVehicleVariant = 'bondtank';
     }
+    else if (v === 'french'){
+      // populate slot 9 with the French tank art from French.html (pixel-perfect bake)
+      try{
+        if (typeof window !== 'undefined'){
+          const NATIVE_FR = 320;
+          const fb = document.createElement('canvas'); fb.width = NATIVE_FR; fb.height = NATIVE_FR; const fbg = fb.getContext('2d'); try{ fbg.imageSmoothingEnabled = false; }catch(_){ }
+          try{ fbg.clearRect(0,0,NATIVE_FR,NATIVE_FR); drawFrenchBodyInto(fbg, NATIVE_FR, NATIVE_FR, performance.now()); }catch(_){ }
+          try{ fb._logicalSPR = 64; }catch(_){ }
+          window.__french_body = fb;
+          const ft = document.createElement('canvas'); ft.width = NATIVE_FR; ft.height = NATIVE_FR; const ftg = ft.getContext('2d'); try{ ftg.imageSmoothingEnabled = false; }catch(_){ }
+          try{ ftg.clearRect(0,0,NATIVE_FR,NATIVE_FR); drawFrenchTurretInto(ftg, NATIVE_FR, NATIVE_FR, performance.now(), Math.PI/2); }catch(_){ }
+          try{ ft._logicalSPR = 64; }catch(_){ }
+          window.__french_turret = ft;
+          try{ selectedVehicle = 'tank'; selectedVehicleVariant = 'french'; configureTankAssets({ SPR_W:NATIVE_FR, SPR_H:NATIVE_FR, bodyCanvas: window.__french_body, turretCanvas: window.__french_turret }); try{ redrawSprites && typeof redrawSprites === 'function' && redrawSprites(); }catch(_){ } }catch(_){ }
+        }
+      }catch(_){ }
+    }
+    else if (v === 'facebook'){
+      // populate slot 10 with the Facebook tank art from facebook.html (pixel-perfect bake)
+      try{
+        if (typeof window !== 'undefined'){
+          const NATIVE_FB = 64;
+          const fbb = document.createElement('canvas'); fbb.width = NATIVE_FB; fbb.height = NATIVE_FB; const fbbg = fbb.getContext('2d'); try{ fbbg.imageSmoothingEnabled = false; }catch(_){ }
+          try{ fbbg.clearRect(0,0,NATIVE_FB,NATIVE_FB); drawFacebookBodyInto(fbbg, NATIVE_FB, NATIVE_FB, performance.now()); }catch(_){ }
+          try{ fbb._logicalSPR = 64; }catch(_){ }
+          window.__facebook_body = fbb;
+          const fbt = document.createElement('canvas'); fbt.width = NATIVE_FB; fbt.height = NATIVE_FB; const fbtg = fbt.getContext('2d'); try{ fbtg.imageSmoothingEnabled = false; }catch(_){ }
+          try{ fbtg.clearRect(0,0,NATIVE_FB,NATIVE_FB); drawFacebookTurretInto(fbtg, NATIVE_FB, NATIVE_FB, performance.now()); }catch(_){ }
+          try{ fbt._logicalSPR = 64; }catch(_){ }
+          window.__facebook_turret = fbt;
+          try{ selectedVehicle = 'tank'; selectedVehicleVariant = 'facebook'; configureTankAssets({ SPR_W:NATIVE_FB, SPR_H:NATIVE_FB, bodyCanvas: window.__facebook_body, turretCanvas: window.__facebook_turret }); try{ redrawSprites && typeof redrawSprites === 'function' && redrawSprites(); }catch(_){ } }catch(_){ }
+        }
+      }catch(_){ }
+    }
+    else if (v === 'waffle'){
+      // populate slot 12 with the Waffle tank art from Waffel.html (pixel-perfect bake)
+      try{
+        if (typeof window !== 'undefined'){
+          const NATIVE_WF = 64;
+          const wb = document.createElement('canvas'); wb.width = NATIVE_WF; wb.height = NATIVE_WF; const wbg = wb.getContext('2d'); try{ wbg.imageSmoothingEnabled = false; }catch(_){ }
+          try{ wbg.clearRect(0,0,NATIVE_WF,NATIVE_WF); drawWaffleBodyInto(wbg, NATIVE_WF, NATIVE_WF, performance.now()); }catch(_){ }
+          try{ wb._logicalSPR = 64; }catch(_){ }
+          window.__waffle_body = wb;
+          const wt = document.createElement('canvas'); wt.width = NATIVE_WF; wt.height = NATIVE_WF; const wtg = wt.getContext('2d'); try{ wtg.imageSmoothingEnabled = false; }catch(_){ }
+          try{ wtg.clearRect(0,0,NATIVE_WF,NATIVE_WF); drawWaffleTurretInto(wtg, NATIVE_WF, NATIVE_WF, performance.now()); }catch(_){ }
+          try{ wt._logicalSPR = 64; }catch(_){ }
+          window.__waffle_turret = wt;
+          try{ selectedVehicle = 'tank'; selectedVehicleVariant = 'waffle'; configureTankAssets({ SPR_W:NATIVE_WF, SPR_H:NATIVE_WF, bodyCanvas: window.__waffle_body, turretCanvas: window.__waffle_turret }); try{ redrawSprites && typeof redrawSprites === 'function' && redrawSprites(); }catch(_){ } }catch(_){ }
+        }
+      }catch(_){ }
+    }
+    else if (v === 'blackstar'){
+      // populate slot 13 with the Blackstar tank art (pixel-perfect 64x64)
+      try{
+        if (typeof window !== 'undefined'){
+          const NATIVE_BS = 64;
+          const bb = document.createElement('canvas'); bb.width = NATIVE_BS; bb.height = NATIVE_BS; const bbg = bb.getContext('2d'); try{ bbg.imageSmoothingEnabled = false; }catch(_){ }
+          try{ bbg.clearRect(0,0,NATIVE_BS,NATIVE_BS); drawBlackstarBodyInto(bbg, NATIVE_BS, NATIVE_BS, performance.now()); }catch(_){ }
+          try{ bb._logicalSPR = 64; }catch(_){ }
+          window.__blackstar_body = bb;
+          const bt = document.createElement('canvas'); bt.width = NATIVE_BS; bt.height = NATIVE_BS; const btg = bt.getContext('2d'); try{ btg.imageSmoothingEnabled = false; }catch(_){ }
+          try{ btg.clearRect(0,0,NATIVE_BS,NATIVE_BS); drawBlackstarTurretInto(btg, NATIVE_BS, NATIVE_BS, performance.now()); }catch(_){ }
+          try{ bt._logicalSPR = 64; }catch(_){ }
+          window.__blackstar_turret = bt;
+          try{ selectedVehicle = 'tank'; selectedVehicleVariant = 'blackstar'; configureTankAssets({ SPR_W:NATIVE_BS, SPR_H:NATIVE_BS, bodyCanvas: window.__blackstar_body, turretCanvas: window.__blackstar_turret }); try{ redrawSprites && typeof redrawSprites === 'function' && redrawSprites(); }catch(_){ } }catch(_){ }
+        }
+      }catch(_){ }
+    }
 
     try{ updateHud(); }catch(_){ }
   }catch(_){ }
 }
-// initJournal/initCombos moved down to after MAX_HEALTH/health are declared
+// initJournal moved down to after MAX_HEALTH/health are declared
 function selectVehicle(v){ /* selection disabled at runtime */ }
 
 // Install lightweight metal HUD styles once
@@ -2457,8 +3308,11 @@ function installHudStyles(){
   .tn-controls-panel{ position:fixed; left:12px; top:80px; display:flex; flex-direction:column; gap:8px; z-index:10000; pointer-events:auto; }
   .tn-big-btn{ padding:10px 14px; font-weight:900; border-radius:6px; background:#2b2b2b; color:#fff; border:2px solid #111; cursor:pointer; font-size:14px; min-width:110px; text-align:left; }
   .tn-controls-hint{ font-size:12px; color:#ddd; background:rgba(20,20,20,0.8); padding:6px 8px; border-radius:6px; border:1px solid rgba(255,255,255,0.04); }
-  /* vehicle menu: fixed, centered vertically on the left side; 3 columns wide */
-  .tn-vehicle-menu{ position:fixed; left:12px; top:50%; transform:translateY(-50%); display:grid; grid-template-columns: repeat(3, 64px); grid-auto-rows: 84px; gap:8px; justify-content:center; align-items:start; z-index:10000; pointer-events:auto; padding:8px; box-sizing:border-box; }
+  /* vehicle menu: fixed on right side, expandable like journal */
+  .tn-vehicle-menu{ position:fixed; right:20px; display:grid; grid-template-columns: repeat(3, 64px); grid-auto-rows: 84px; gap:8px; justify-content:center; align-items:start; z-index:9998; pointer-events:auto; padding:8px; box-sizing:border-box; background:linear-gradient(180deg,#151719,#0f1113); border:2px solid #0b0b0b; border-radius:8px; box-shadow:0 6px 18px rgba(0,0,0,0.6); max-height:60vh; overflow:hidden; transition: transform 0.3s ease; }
+  .tn-vehicle-menu.closed{ transform: translateX(120%); }
+  .tn-vehicle-toggle{ position:fixed; right:20px; background:linear-gradient(180deg,#111,#0b0b0b); color:#e6e6e6; padding:6px 8px; border-radius:6px; cursor:pointer; z-index:9999; border:1px solid #222; font-family:monospace; font-size:12px; transition: transform 0.3s ease; }
+  .tn-vehicle-toggle.closed{ /* No transform - keep button visible */ }
   .vehicle-slot{ width:64px; height:84px; background:linear-gradient(180deg,#222,#111); border:2px solid #000; border-radius:8px; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#d7d7db; font-weight:800; cursor:pointer; box-shadow:0 6px 18px rgba(0,0,0,0.6); padding:6px; box-sizing:border-box; }
   .vehicle-slot canvas{ width:100%; height:auto; image-rendering: pixelated; display:block; border-radius:4px; }
   .vehicle-slot.locked{ background:linear-gradient(180deg,#111,#0b0b0b); color:rgba(255,255,255,0.35); cursor:default; }
@@ -2485,15 +3339,12 @@ function installHudStyles(){
 const bullets = []; // {x,y,dx,dy,life,color,glow}
 const casings = []; // {x,y,vx,vy,life,spin,t0}
 const enemies = []; // {x,y,spd,r}
+const allies = []; // {x,y,spd,r,type,hp,lastAttack,attackCD}
 // recent-deaths feature removed: make recordDeath a no-op so existing call sites remain safe
 function recordDeath(kind, e) { /* removed recent-deaths logging */ }
 // wire recordDeath to also update the journal module
 // after journal.js is imported, we'll call recordKill inside recordDeath where deaths are recorded
 // (recordDeath remains defined above and is used throughout the code)
-const critters = []; // sprite-based wandering critters (decorative)
-const animals = []; // additional small animals distributed like critters
-let __nextCritterId = 1; // unique id per critter instance for individual journal entries
-const CRITTER_COUNT = 84; // more critters for jungle life
 configureTankAssets({ gibs: moduleGibs });
 
 // debug: throttle enemy-draw logs so we can see if enemies are being processed
@@ -2662,13 +3513,10 @@ let lastSpawn = 0;
 let score = 0; let health = 3; let gameOver = false;
 let paused = false; // when true, main game updates pause but explosion pieces still animate
 const MAX_HEALTH = 5;
-// initialize journal and combos now that MAX_HEALTH and health exist
+// initialize journal now that MAX_HEALTH and health exist
 try {
   initJournal({ hud: hud, maxHealth: MAX_HEALTH, health: health });
 } catch (err) { console.warn('initJournal failed', err); }
-try {
-  initCombos(100);
-} catch (err) { console.warn('initCombos failed', err); }
 
 // Debug helper: call `window.debugUnlockFiesta()` from the browser console to
 // force-unlock the Ford Fiesta into HUD slot index 1 for testing. To enable
@@ -2691,14 +3539,6 @@ try{
   try{ if (localStorage && localStorage.getItem && localStorage.getItem('tn_debug_unlock_bond') === '1'){ window.debugUnlockBond(); } }catch(_){ }
   }
 }catch(_){ }
-
-// listen for combo unlocks to trigger progression (unlock next tank)
-try {
-  window.addEventListener('comboUnlocked', (ev) => {
-    const d = ev && ev.detail;
-    try { console.log('Combo unlocked', d); /* TODO: trigger unlock animation / progression */ } catch (e) { console.warn('comboUnlocked handler failed', e); }
-  });
-} catch (err) { console.warn('Failed to register comboUnlocked listener', err); }
 
 // Listen for journal reset so we can re-lock vehicle slots and reset HUD without reload
 try{
@@ -2749,84 +3589,6 @@ try {
     } catch (e) { console.warn('upgradeClaimed handler failed', e); }
   });
 } catch (err) { console.warn('Failed to register upgradeClaimed listener', err); }
-// spawn tiny critters
-function spawnCritters(){
-  // Ensure critter sprite canvases are valid before spawning critters. Rebuild any invalid ones.
-  for (let i = 0; i < critterSprites.length; i++){
-    const s = critterSprites[i];
-    if (!s || !s.width || !s.height){
-      try{ critterSprites[i] = makeSpriteCanvas(critterSpecs[i], CRITTER_SPR_SCALE); if (DEBUG && console && console.log) console.log('spawnCritters: rebuilt missing critter sprite', i); }catch(e){ console.warn('spawnCritters: failed to rebuild sprite', i, e); }
-    }
-  }
-
-  critters.length = 0;
-  for (let i=0;i<CRITTER_COUNT;i++){
-    const ang = Math.random()*Math.PI*2;
-    const sidx = Math.floor(Math.random()*critterSprites.length);
-    // create a per-instance tile canvas so the journal can display a unique image per critter
-    let tileC = null;
-    try{
-      const spr = critterSprites[sidx];
-      if (spr && spr.width && spr.height){
-        tileC = document.createElement('canvas');
-        tileC.width = spr.width; tileC.height = spr.height;
-        const tctx = tileC.getContext('2d');
-        tctx.drawImage(spr, 0, 0);
-      }
-    }catch(_){ tileC = null; }
-    const uid = __nextCritterId++;
-    critters.push({
-      x: Math.random()*WORLD_W,
-      y: Math.random()*WORLD_H,
-      speed: 8 + Math.random()*22,
-      angle: ang,
-      targetAngle: ang,
-      changeAt: performance.now() + 400 + Math.random()*1800,
-      spriteIdx: sidx,
-      kind: 'critter-' + uid,
-      tileC: tileC,
-      phase: Math.random()*Math.PI*2,
-      bobAmp: 1 + Math.random()*3.0,
-      alive: true
-    });
-  }
-}
-spawnCritters();
-
-// spawn decorative animals distributed the same way as critters
-function spawnAnimals(){
-  animals.length = 0;
-  const ANIMAL_COUNT = CRITTER_COUNT; // same distribution/count as critters
-  for (let i=0;i<ANIMAL_COUNT;i++){
-    const ang = Math.random()*Math.PI*2;
-    let sidx = Math.floor(Math.random()*critterSprites.length);
-    if (sidx < 0 || sidx >= critterSprites.length) sidx = 0;
-    // ensure sprite canvas is valid
-    if (!critterSprites[sidx] || !critterSprites[sidx].width || !critterSprites[sidx].height){ try{ critterSprites[sidx] = makeSpriteCanvas(critterSpecs[sidx], CRITTER_SPR_SCALE); }catch(_){ sidx = 0; } }
-    // create per-instance tile canvas for journal/icon if needed
-    let tileC = null;
-    try{
-      const spr = critterSprites[sidx];
-      if (spr && spr.width && spr.height){ tileC = document.createElement('canvas'); tileC.width = spr.width; tileC.height = spr.height; const tctx = tileC.getContext('2d'); tctx.drawImage(spr,0,0); }
-    }catch(_){ tileC = null; }
-    animals.push({
-      x: Math.random()*WORLD_W,
-      y: Math.random()*WORLD_H,
-      speed: 6 + Math.random()*18,
-      angle: ang,
-      targetAngle: ang,
-      changeAt: performance.now() + 400 + Math.random()*1800,
-      spriteIdx: sidx,
-      kind: 'animal-' + sidx,
-      tileC: tileC,
-      phase: Math.random()*Math.PI*2,
-      bobAmp: 0.6 + Math.random()*1.6,
-      alive: true
-    });
-  }
-}
-spawnAnimals();
-
 // initial preview spawns removed: squidrobot
 // (previously spawned here for quick preview; removed to avoid automatic sample entities)
 
@@ -2973,8 +3735,8 @@ function spawnOsprey(targetX, targetY){
   const startX = (side === -1) ? -120 : (WORLD_W + 120);
   const startY = mod(targetY + (Math.random()-0.5)*200, WORLD_H);
   const { c: tileC, g: tileG } = charTileCanvas();
-  const idle = makeOspreyIdle(tileG);
-  const run = makeOspreyRun(tileG);
+  const idle = charsIdleMakers.osprey(tileG);
+  const run = charsRunMakers.osprey(tileG);
   const ent = {
     x: startX, y: startY, vx: (side===-1? 60 : -60), vy: 0, r: 22,
     type: 'osprey', kind: 'osprey', tileC, tileG, idle, run,
@@ -2989,88 +3751,6 @@ function spawnOsprey(targetX, targetY){
 }
 
 // (tank explosion visuals and sprite baking moved to `js/tank.js`)
-
-function updateCritters(now, dt){
-  for (const c of critters){
-    if (now > c.changeAt){ c.changeAt = now + 400 + Math.random()*1800; c.targetAngle = Math.random()*Math.PI*2; }
-    // smooth turn toward targetAngle
-    const da = (c.targetAngle - c.angle + Math.PI*3) % (Math.PI*2) - Math.PI;
-    c.angle += da * 0.06;
-  const vx = Math.cos(c.angle) * c.speed; const vy = Math.sin(c.angle) * c.speed;
-  c.vx = vx; c.vy = vy; // store velocity for drawing flip
-  c.x += vx * dt; c.y += vy * dt;
-    c.phase += dt * 6;
-    // wrap around world
-  if (c.x < 0) c.x += WORLD_W; if (c.x > WORLD_W) c.x -= WORLD_W;
-  // wrap vertically to make the world endless
-  if (c.y < 0) c.y += WORLD_H; if (c.y > WORLD_H) c.y -= WORLD_H;
-  }
-}
-
-// draw sprite-based critters
-function drawCritters(now){
-  // periodic debug: report critter count and first sprite validity
-  if (DEBUG && typeof console !== 'undefined' && performance.now() - __lastCritterDrawLog > 1000){ __lastCritterDrawLog = performance.now(); try{ const sample = critterSprites.slice(0,8).map((s,idx)=>({idx, ok: !!s && !!s.width && !!s.height, w: s && s.width, h: s && s.height})); console.log('drawCritters: count=', critters.length, 'sampleSprites=', sample); }catch(_){ } }
-
-  for (let i=critters.length-1;i>=0;i--){ const c = critters[i]; if (!c.alive) continue; const ss = worldToScreen(c.x, c.y); const sx = ss.x, sy = ss.y; if (sx < -40 || sx > W+40 || sy < -40 || sy > H+40) continue; const bob = Math.sin(c.phase) * c.bobAmp;
-  // keep critters vertically locked; flip horizontally if moving left
-  const idx = (typeof c.spriteIdx === 'number') ? c.spriteIdx : 0;
-  const spr = critterSprites[idx]; const flip = (c.vx && c.vx < 0);
-  const drawScale = camera.zoom * CRITTER_DRAW_BASE;
-  // fallback: if sprite canvas is empty/invalid, draw a bright circle so it is visible
-  if (!spr || !spr.width || !spr.height){ ctx.save(); ctx.fillStyle = '#ff8b6b'; ctx.beginPath(); ctx.arc(Math.round(sx), Math.round(sy + bob), 8 * camera.zoom, 0, Math.PI*2); ctx.fill(); ctx.restore(); if (showEntityMarkers){ ctx.save(); ctx.fillStyle = '#ff8b6b'; ctx.fillRect(Math.round(sx)-3, Math.round(sy)-3, 6, 6); ctx.restore(); } continue; }
-  const pad = Math.max(24, Math.round((spr.width * drawScale)/2) + 6);
-  if (sx < -pad || sx > W+pad || sy < -pad || sy > H+pad) continue;
-  // diagnostics when markers enabled
-  if (showEntityMarkers && DEBUG){ try{ console.log('drawCritter', { idx: i, spriteIdx: c.spriteIdx, sprW: spr.width, sprH: spr.height, sx: Math.round(sx), sy: Math.round(sy), drawScale }); }catch(_){ } }
-  try{ drawImageCenteredFlipped(spr, Math.round(sx), Math.round(sy + bob), flip, drawScale); }catch(err){ ctx.save(); ctx.fillStyle = '#ff8b6b'; ctx.beginPath(); ctx.arc(Math.round(sx), Math.round(sy + bob), 8 * camera.zoom, 0, Math.PI*2); ctx.fill(); ctx.restore(); console.warn('drawCritters: drawImage failed, showed fallback marker', err); }
-    // tank-only collision: check distance to tank and trigger gibs
-    if (selectedVehicle === 'tank'){
-      const dx = c.x - tank.x, dy = c.y - tank.y; if (Math.hypot(dx,dy) < 14){ // hit by tank
-  c.alive = false; // remove
-    callSpawnGibs(c.x, c.y, '#ff8b6b', 16, 'critter-runover');
-  // visual bump feedback
-  try{ triggerTankBump(6, 0.14); }catch(_){ }
-  try{ recordDeath(c.kind || ('critter-' + (c.spriteIdx !== undefined ? c.spriteIdx : '<unknown>')), c); }catch(_){ }
-  try{ recordKill(c.kind || ('critter-' + (c.spriteIdx !== undefined ? c.spriteIdx : '<unknown>')), c); }catch(_){ }
-        // small shake on gib
-        triggerScreenShake(8, 0.12);
-      }
-    }
-  // debug marker
-  if (showEntityMarkers){ ctx.save(); ctx.fillStyle = '#ff8b6b'; ctx.fillRect(Math.round(sx)-3, Math.round(sy)-3, 6, 6); ctx.restore(); }
-  }
-}
-
-// mirror critter behavior for smaller decorative animals (same distribution)
-function updateAnimals(now, dt){
-  for (const a of animals){
-    if (now > a.changeAt){ a.changeAt = now + 400 + Math.random()*1800; a.targetAngle = Math.random()*Math.PI*2; }
-    const da = (a.targetAngle - a.angle + Math.PI*3) % (Math.PI*2) - Math.PI;
-    a.angle += da * 0.06;
-    const vx = Math.cos(a.angle) * a.speed; const vy = Math.sin(a.angle) * a.speed;
-    a.vx = vx; a.vy = vy; a.x += vx * dt; a.y += vy * dt;
-    a.phase += dt * 6;
-    if (a.x < 0) a.x += WORLD_W; if (a.x > WORLD_W) a.x -= WORLD_W;
-    if (a.y < 0) a.y += WORLD_H; if (a.y > WORLD_H) a.y -= WORLD_H;
-  }
-}
-
-function drawAnimals(now){
-  for (let i=animals.length-1;i>=0;i--){ const a = animals[i]; if (!a.alive) continue; const ss = worldToScreen(a.x, a.y); const sx = ss.x, sy = ss.y; if (sx < -40 || sx > W+40 || sy < -40 || sy > H+40) continue; const bob = Math.sin(a.phase) * a.bobAmp;
-    const idx = (typeof a.spriteIdx === 'number') ? a.spriteIdx : 0;
-    const spr = (a && a.tileC && a.tileC.width) ? a.tileC : critterSprites[idx];
-    const flip = (a.vx && a.vx < 0);
-  // compute drawScale similarly to the main enemy animal path: base by camera zoom and ANIMAL_DRAW_BASE,
-  // adjust by native sprite width so large tiles render at an appropriate visual size
-  const baseSpriteWidth = (critterSprites && critterSprites[0] && critterSprites[0].width) ? critterSprites[0].width : (8 * CRITTER_SPR_SCALE);
-  const sizeFactor = (spr && spr.width) ? (spr.width / baseSpriteWidth) : 1;
-  const drawScale = camera.zoom * ANIMAL_DRAW_BASE * sizeFactor;
-    if (!spr || !spr.width || !spr.height){ ctx.save(); ctx.fillStyle = '#ffd1d1'; ctx.beginPath(); ctx.arc(Math.round(sx), Math.round(sy + bob), 6 * camera.zoom, 0, Math.PI*2); ctx.fill(); ctx.restore(); continue; }
-    const pad = Math.max(20, Math.round((spr.width * drawScale)/2) + 6); if (sx < -pad || sx > W+pad || sy < -pad || sy > H+pad) continue;
-    try{ drawImageCenteredFlipped(spr, Math.round(sx), Math.round(sy + bob), flip, drawScale); }catch(e){ ctx.save(); ctx.fillStyle = '#ffd1d1'; ctx.beginPath(); ctx.arc(Math.round(sx), Math.round(sy + bob), 6 * camera.zoom, 0, Math.PI*2); ctx.fill(); ctx.restore(); }
-  }
-}
 
 function fireBullet(){
   if (gameOver || !selectedVehicle) return;
@@ -3236,6 +3916,9 @@ function restart(){ bullets.length = 0; enemies.length = 0; score = 0; health = 
   // spawn an initial osprey just off-screen relative to the current camera so you can immediately see it drop troops
   // spawn a single jungle NPC near the player for a minimal preview
   try{ spawnInitialJungleGroup(1); }catch(_){ }
+  // spawn critters and animals for jungle atmosphere
+  try{ spawnCritters(enemies); }catch(_){ }
+  try{ spawnAnimals(enemies); }catch(_){ }
   // spawn a test double-shot powerup near the tank so it can be picked up immediately
   spawnPowerup(tank.x + 40, tank.y, 'double');
   // set the static safe-area center to the player's spawn and grant a brief safe window
@@ -3290,7 +3973,24 @@ function updateHud(){
 
   // powerup indicator
   let pu = '';
-  if (tank.shotCount && tank.powerupUntil && performance.now() < tank.powerupUntil){ const sec = Math.ceil((tank.powerupUntil - performance.now())/1000); let label = 'Double'; if (tank.shotCount === 3) label = 'Triple'; else if (tank.shotCount === 4) label = 'Quad'; pu = `<div class="tn-panel tn-powerup">${label} (${sec}s)</div>`; }
+  const nowt = performance.now();
+  if (tank.shotCount && tank.powerupUntil && nowt < tank.powerupUntil){
+    const sec = Math.ceil((tank.powerupUntil - nowt)/1000);
+    let label = 'Double';
+    if (tank.shotCount === 3) label = 'Triple';
+    else if (tank.shotCount === 4) label = 'Quad';
+    pu = `<div class="tn-panel tn-powerup">${label} (${sec}s)</div>`;
+  }
+
+  // shield indicator
+  let shieldInfo = '';
+  if (shieldActive && nowt < shieldUntil){
+    const sec = Math.ceil((shieldUntil - nowt)/1000);
+    shieldInfo = `<div class="tn-panel tn-shield" style="margin-top:4px">Shield (${sec}s)</div>`;
+  } else if (nowt < shieldCooldownUntil){
+    const sec = Math.ceil((shieldCooldownUntil - nowt)/1000);
+    shieldInfo = `<div class="tn-panel tn-shield-cooldown" style="margin-top:4px">Shield CD (${sec}s)</div>`;
+  }
 
   // health hearts
   let hearts = '';
@@ -3307,17 +4007,73 @@ function updateHud(){
   // keep right panel compact (health/powerup)
   right.innerHTML = rightHTML;
   hud.appendChild(right);
-  // create or update vehicle menu (lower-left)
+  // create or update vehicle menu (right side, expandable)
   try{
     if (typeof window !== 'undefined' && window.__debugVehicleSlots) try{ console.log('DEBUG: updateHud vehicle slots before rebuild', VEHICLE_SLOTS, VEHICLE_UNLOCKED); }catch(_){ }
     let vmenu = document.getElementById('tn-vehicle-menu');
-  if (!vmenu){ vmenu = document.createElement('div'); vmenu.id = 'tn-vehicle-menu'; vmenu.className = 'tn-vehicle-menu'; document.body.appendChild(vmenu); }
+    let vtoggle = document.getElementById('tn-vehicle-toggle');
+    if (!vmenu){ 
+      vmenu = document.createElement('div'); 
+      vmenu.id = 'tn-vehicle-menu'; 
+      vmenu.className = 'tn-vehicle-menu closed'; 
+      document.body.appendChild(vmenu); 
+    }
+    if (!vtoggle){
+      vtoggle = document.createElement('div');
+      vtoggle.id = 'tn-vehicle-toggle';
+      vtoggle.className = 'tn-vehicle-toggle';
+      vtoggle.innerText = 'Tanks off';
+      vtoggle.addEventListener('click', ()=>{
+        const journal = document.getElementById('journal');
+        const isClosed = vmenu.classList.contains('closed');
+        if (isClosed){ 
+          vmenu.classList.remove('closed'); 
+          vmenu.classList.add('open');
+          vtoggle.innerText = 'Tanks';
+          vtoggle.classList.remove('closed');
+          // Close journal if it's open
+          if (journal && !journal.classList.contains('closed')) {
+            journal.classList.add('closed');
+            journal.classList.remove('open');
+            const jtoggle = document.getElementById('journalToggle');
+            if (jtoggle) jtoggle.innerText = 'Journal off';
+            if (jtoggle) jtoggle.classList.add('closed');
+          }
+        } else { 
+          vmenu.classList.add('closed'); 
+          vmenu.classList.remove('open');
+          vtoggle.innerText = 'Tanks off'; 
+          vtoggle.classList.add('closed');
+        }
+      });
+      document.body.appendChild(vtoggle);
+    }
+    // Position the toggle and menu relative to journal position
+    try{
+      const journalTop = (hud && hud.classList && hud.classList.contains('tn-hud')) ? '94px' : '12px';
+      const tankTop = `calc(${journalTop} + 48px)`; // 48px below journal
+      vtoggle.style.top = tankTop;
+      vtoggle.style.right = '20px';
+      vmenu.style.top = tankTop;
+      vmenu.style.right = '20px';
+    }catch(_){ }
+    // rebuild slots
+    vmenu.innerHTML = '';
+    const title = document.createElement('div');
+    title.style.fontFamily = 'monospace';
+    title.style.fontSize = '12px';
+    title.style.fontWeight = '800';
+    title.style.color = '#e6e6e6';
+    title.style.marginBottom = '8px';
+    title.style.textAlign = 'center';
+    title.innerText = 'TANK SELECTION';
+    vmenu.appendChild(title);
     // rebuild slots
     vmenu.innerHTML = '';
     for (let i=0;i<VEHICLE_SLOTS.length;i++){
       if (typeof window !== 'undefined' && window.__debugVehicleSlots) try{ console.log('DEBUG: building slot', i, VEHICLE_SLOTS[i], VEHICLE_UNLOCKED[i]); }catch(_){ }
       const slot = document.createElement('div');
-      slot.className = 'vehicle-slot' + (VEHICLE_UNLOCKED[i] ? '' : ' locked') + ( ( (VEHICLE_SLOTS[i] === 'tank' && selectedVehicle === 'tank') || (VEHICLE_SLOTS[i] === 'heli' && selectedVehicle === 'heli') ) ? ' selected' : '');
+      slot.className = 'vehicle-slot' + (VEHICLE_UNLOCKED[i] ? '' : ' locked') + ( ( (VEHICLE_SLOTS[i] === 'tank' && selectedVehicle === 'tank' && selectedVehicleVariant === 'default') || (VEHICLE_SLOTS[i] === 'fordfiesta' && selectedVehicleVariant === 'fordfiesta') || (VEHICLE_SLOTS[i] === 'murkia' && selectedVehicleVariant === 'murkia') || (VEHICLE_SLOTS[i] === 'dozer' && selectedVehicleVariant === 'dozer') || (VEHICLE_SLOTS[i] === 'bondtank' && selectedVehicleVariant === 'bondtank') || (VEHICLE_SLOTS[i] === 'empty6' && selectedVehicleVariant === 'german') || (VEHICLE_SLOTS[i] === 'empty7' && selectedVehicleVariant === 'mexico') || (VEHICLE_SLOTS[i] === 'empty8' && selectedVehicleVariant === 'china') || (VEHICLE_SLOTS[i] === 'empty9' && selectedVehicleVariant === 'mcds') || (VEHICLE_SLOTS[i] === 'french' && selectedVehicleVariant === 'french') || (VEHICLE_SLOTS[i] === 'facebook' && selectedVehicleVariant === 'facebook') || (VEHICLE_SLOTS[i] === 'waffle' && selectedVehicleVariant === 'waffle') || (VEHICLE_SLOTS[i] === 'blackstar' && selectedVehicleVariant === 'blackstar') || (VEHICLE_SLOTS[i] === 'heli' && selectedVehicle === 'heli') ) ? ' selected' : '');
       slot.dataset.idx = i;
       slot.addEventListener('pointerdown', (ev)=>{ try{ const idx = Number(slot.dataset.idx); if (VEHICLE_UNLOCKED[idx]) selectVehicleSlot(idx); ev.stopPropagation(); }catch(_){ } });
 
@@ -3478,6 +4234,70 @@ function updateHud(){
             }
 
             }catch(_){ slot.innerHTML = '<div style="font-size:18px">?</div>'; vmenu.appendChild(slot); }
+        }
+        else if (VEHICLE_SLOTS[i] === 'french'){
+          try{
+            const c = document.createElement('canvas'); c.style.display = 'block'; c.style.width = '100%';
+            const label = document.createElement('div'); label.className = 'slot-label'; label.style.fontSize = '11px'; label.style.marginTop = '6px'; label.textContent = 'French';
+            slot.appendChild(c); slot.appendChild(label); vmenu.appendChild(slot);
+            const cw = Math.max(32, Math.floor(slot.clientWidth)); const ch = Math.max(24, Math.floor(slot.clientHeight - label.offsetHeight - 6));
+            c.width = cw; c.height = ch; const g = c.getContext('2d'); try{ g.imageSmoothingEnabled = false; }catch(_){ }
+            try{
+              if (typeof window !== 'undefined' && window.__french_body){ const bw = window.__french_body.width, bh = window.__french_body.height; const scale = Math.min((cw-8)/bw, (ch-6)/bh, 1); const dx = Math.round((cw - bw*scale)/2); const dy = Math.round((ch - bh*scale)/2); try{ g.drawImage(window.__french_body, 0,0,bw,bh, dx,dy, Math.round(bw*scale), Math.round(bh*scale)); }catch(_){ }
+              } else if (typeof drawFrenchBodyInto === 'function'){
+                try{ drawFrenchBodyInto(g, cw, ch, performance.now()); }catch(_){ }
+              }
+            }catch(_){ }
+          }catch(_){ slot.innerHTML = '<div style="font-size:18px">?</div>'; vmenu.appendChild(slot); }
+        }
+        else if (VEHICLE_SLOTS[i] === 'facebook'){
+          try{
+            const c = document.createElement('canvas'); c.style.display = 'block'; c.style.width = '100%';
+            const label = document.createElement('div'); label.className = 'slot-label'; label.style.fontSize = '11px'; label.style.marginTop = '6px'; label.textContent = 'Facebook';
+            slot.appendChild(c); slot.appendChild(label); vmenu.appendChild(slot);
+            const cw = Math.max(32, Math.floor(slot.clientWidth)); const ch = Math.max(24, Math.floor(slot.clientHeight - label.offsetHeight - 6));
+            c.width = cw; c.height = ch; const g = c.getContext('2d'); try{ g.imageSmoothingEnabled = false; }catch(_){ }
+            try{
+              if (typeof window !== 'undefined' && window.__facebook_body){ const bw = window.__facebook_body.width, bh = window.__facebook_body.height; const scale = Math.min((cw-8)/bw, (ch-6)/bh, 1); const dx = Math.round((cw - bw*scale)/2); const dy = Math.round((ch - bh*scale)/2); try{ g.drawImage(window.__facebook_body, 0,0,bw,bh, dx,dy, Math.round(bw*scale), Math.round(bh*scale)); }catch(_){ }
+              } else if (typeof drawFacebookBodyInto === 'function'){
+                try{ drawFacebookBodyInto(g, cw, ch, performance.now()); }catch(_){ }
+              }
+            }catch(_){ }
+          }catch(_){ slot.innerHTML = '<div style="font-size:18px">?</div>'; vmenu.appendChild(slot); }
+        }
+        else if (VEHICLE_SLOTS[i] === 'waffle'){
+          try{
+            const c = document.createElement('canvas'); c.style.display = 'block'; c.style.width = '100%';
+            const label = document.createElement('div'); label.className = 'slot-label'; label.style.fontSize = '11px'; label.style.marginTop = '6px'; label.textContent = 'Waffle';
+            slot.appendChild(c); slot.appendChild(label); vmenu.appendChild(slot);
+            const cw = Math.max(32, Math.floor(slot.clientWidth)); const ch = Math.max(24, Math.floor(slot.clientHeight - label.offsetHeight - 6));
+            c.width = cw; c.height = ch; const g = c.getContext('2d'); try{ g.imageSmoothingEnabled = false; }catch(_){ }
+            try{
+              if (typeof window !== 'undefined' && window.__waffle_body){ const bw = window.__waffle_body.width, bh = window.__waffle_body.height; const scale = Math.min((cw-8)/bw, (ch-6)/bh, 1); const dx = Math.round((cw - bw*scale)/2); const dy = Math.round((ch - bh*scale)/2); try{ g.drawImage(window.__waffle_body, 0,0,bw,bh, dx,dy, Math.round(bw*scale), Math.round(bh*scale)); }catch(_){ }
+              } else if (typeof drawWaffleBodyInto === 'function'){
+                try{ drawWaffleBodyInto(g, cw, ch, performance.now()); }catch(_){ }
+              }
+            }catch(_){ }
+          }catch(_){ slot.innerHTML = '<div style="font-size:18px">?</div>'; vmenu.appendChild(slot); }
+        }
+        else if (VEHICLE_SLOTS[i] === 'blackstar'){
+          try{
+            const c = document.createElement('canvas'); c.style.display = 'block'; c.style.width = '100%';
+            const label = document.createElement('div'); label.className = 'slot-label'; label.style.fontSize = '11px'; label.style.marginTop = '6px'; label.textContent = 'Blackstar';
+            slot.appendChild(c); slot.appendChild(label); vmenu.appendChild(slot);
+            const cw = Math.max(32, Math.floor(slot.clientWidth)); const ch = Math.max(24, Math.floor(slot.clientHeight - label.offsetHeight - 6));
+            c.width = cw; c.height = ch; const g = c.getContext('2d'); try{ g.imageSmoothingEnabled = false; }catch(_){ }
+            try{
+              // Draw body
+              if (typeof drawBlackstarBodyInto === 'function'){
+                try{ drawBlackstarBodyInto(g, cw, ch, performance.now()); }catch(_){ }
+              }
+              // Draw turret on top
+              if (typeof drawBlackstarTurretInto === 'function'){
+                try{ drawBlackstarTurretInto(g, cw, ch, performance.now()); }catch(_){ }
+              }
+            }catch(_){ }
+          }catch(_){ slot.innerHTML = '<div style="font-size:18px">?</div>'; vmenu.appendChild(slot); }
         }
         else if (VEHICLE_SLOTS[i] && VEHICLE_SLOTS[i].startsWith && VEHICLE_SLOTS[i].startsWith('empty')){
           try{
@@ -3919,6 +4739,54 @@ function loop(now){
           }
         }
       }
+      // tank run-over: damage nearby buildings (houses/huts)
+      try{
+        for (let bi = buildingInstances.length - 1; bi >= 0; bi--){
+          const B = buildingInstances[bi];
+          const scale = B.scale || 1;
+          const half = 32 * scale; // collision radius (same as bullet collision)
+          const dx = B.x - tank.x;
+          const dy = wrapDeltaY(B.y, tank.y);
+          if (Math.hypot(dx, dy) < half){
+            // damage the building
+            B.hp = (B.hp || 10) - 1;
+            try{ spawnMuzzleFlash(B.x, B.y, 0); }catch(_){ }
+            if (B.hp <= 0){
+              // building destroyed - spawn fragments
+              try{
+                const tile = (typeof buildingTiles !== 'undefined') ? buildingTiles[B.idx] : null;
+                if (tile && tile.c){
+                  const src = tile.c;
+                  const w = Math.min(64, src.width|0), h = Math.min(64, src.height|0);
+                  const pieces = 8 + Math.floor(Math.random()*10);
+                  for (let p=0;p<pieces;p++){
+                    const pw = 6 + Math.floor(Math.random()*26);
+                    const ph = 6 + Math.floor(Math.random()*26);
+                    const sx = Math.max(0, Math.floor(Math.random()*(w - pw)));
+                    const sy = Math.max(0, Math.floor(Math.random()*(h - ph)));
+                    const worldX = B.x + (sx - w/2) * scale;
+                    const worldY = B.y + (sy - h/2) * scale;
+                    try{ moduleGibs.push({ src, sx, sy, sw: pw, sh: ph, x: worldX, y: worldY, vx: (Math.random()-0.5)*260, vy: -80 + Math.random()*260, rot: (Math.random()-0.5)*2, vr: (Math.random()-0.5)*6, life: 1.6 + Math.random()*1.8, gravity: 160, scale: scale }); }catch(_){ callSpawnGibs(B.x, B.y, '#ffd1e8', 20, 'building-frag-fallback'); }
+                  }
+                } else {
+                  callSpawnGibs(B.x, B.y, '#ffd1e8', 18, 'building-basic');
+                }
+              }catch(_){ try{ callSpawnGibs(B.x, B.y, '#ffd1e8', 18, 'building-frag-err'); }catch(_){ } }
+              // schedule building respawn
+              try{ scheduleRespawn('building', B, 5000); }catch(_){ }
+              buildingInstances.splice(bi, 1);
+              // visuals and effects
+              try{ triggerTankBump(12, 0.22); }catch(_){ }
+              try{ triggerScreenShake(18, 0.26); }catch(_){ }
+            } else {
+              // building damaged but not destroyed
+              try{ triggerTankBump(8, 0.16); }catch(_){ }
+              try{ triggerScreenShake(12, 0.18); }catch(_){ }
+            }
+            break; // only hit one building per frame
+          }
+        }
+      }catch(_){ }
       // tank run-over: damage nearby billboards
       try{
         for (let bi = 0; bi < billboardInstances.length; bi++){
@@ -4007,7 +4875,7 @@ const dx = mouseWorldX - heli.x, dy = mouseWorldY - heli.y; heli.turretAngle = M
   try{ callSpawnGibs(b.x, b.y, '#ffd1e8', 6, 'projectile-hit'); }catch(_){ }
       removed = true;
   if (e.harmless){ enemies.splice(ei,1); recordDeath(e.kind || '<harmless>', e); try{ recordKill(e.kind || (typeof e.spriteIdx === 'number' ? ('animal-' + e.spriteIdx) : '<harmless>'), e); }catch(_){ } score += 1; updateHud(); callSpawnGibs(e.x, e.y, '#ff8b6b', 8, 'enemy-hit-harmless'); try{ enemyDropChance(e,e.x,e.y); }catch(_){ } }
-      else if (e.type === 'jungle' || e.type === 'animal'){
+      else if (e.type === 'jungle' || e.type === 'animal' || e.type === 'critter'){
         e.hp = (e.hp||1) - 1;
   if (e.hp <= 0){ enemies.splice(ei,1); score += 1; updateHud(); callSpawnGibs(e.x, e.y, '#ff8b6b', 12, 'enemy-killed-by-bullet'); try{ enemyDropChance(e,e.x,e.y); }catch(_){ } }
   if (e.hp <= 0){ try{ recordDeath(e.kind || (typeof e.spriteIdx === 'number' ? ('animal-' + e.spriteIdx) : '<killed>'), e); }catch(_){ } try{ recordKill(e.kind || (typeof e.spriteIdx === 'number' ? ('animal-' + e.spriteIdx) : '<killed>'), e); }catch(_){ } }
@@ -4080,13 +4948,40 @@ const dx = mouseWorldX - heli.x, dy = mouseWorldY - heli.y; heli.turretAngle = M
           enemyBullets.splice(i,1);
           try{ callSpawnGibs(eb.x, eb.y, '#ffd1e8', 6, 'projectile-hit'); }catch(_){ }
           if (!inStartSafe) {
-            health -= 1; try{ setHealth(health); }catch(_){ } updateHud(); if (health <= 0){ if (selectedVehicle === 'tank'){ explodeTank(updateHud, center, score); paused = true; gameOver = true; selectedVehicle = null; } else { gameOver = true; showGameOverModal(score); } }
+            // Check if shield is active
+            const nowt = performance.now();
+            if (shieldActive && nowt < shieldUntil){
+              // Shield absorbs the bullet - visual feedback only
+              try{ callSpawnGibs(eb.x, eb.y, '#00ffff', 8, 'shield-absorb'); }catch(_){ }
+            } else {
+              // Normal damage
+              health -= 1; try{ setHealth(health); }catch(_){ } updateHud(); if (health <= 0){ if (selectedVehicle === 'tank'){ explodeTank(updateHud, center, score); paused = true; gameOver = true; selectedVehicle = null; } else { gameOver = true; showGameOverModal(score); } }
+            }
           } else {
             // visual feedback: small spark but no damage
             try{ callSpawnGibs(eb.x, eb.y, '#fff', 4, 'projectile-absorbed-safe'); }catch(_){ }
           }
         }
       }
+
+      // collision with allies
+      for (let ai = allies.length - 1; ai >= 0; ai--) {
+        const ally = allies[ai];
+        const dist = Math.hypot(eb.x - ally.x, eb.y - ally.y);
+        if (dist < (eb.hitR || 8)) {
+          enemyBullets.splice(i, 1);
+          try { callSpawnGibs(eb.x, eb.y, '#ffd1e8', 6, 'projectile-hit-ally'); } catch (_) { }
+          ally.hp -= 1;
+          if (ally.hp <= 0) {
+            // Ally destroyed
+            try { callSpawnGibs(ally.x, ally.y, '#ff6b6b', 12, 'ally-destroyed'); } catch (_) { }
+            allies.splice(ai, 1);
+          }
+          handled = true;
+          break;
+        }
+      }
+
       // Enemy bullets: deflect off animals, buildings, and trees; smaller foliage still takes damage
   try{
     let handled = false;
@@ -4225,7 +5120,27 @@ const dx = mouseWorldX - heli.x, dy = mouseWorldY - heli.y; heli.turretAngle = M
   }catch(_){ }
 
     // update kitten-specific bullets separately so they can use unique animation and not affect other projectiles
-    for (let i = kittenBullets.length-1; i >= 0; i--){ const kb = kittenBullets[i]; kb.x += kb.dx * dt; kb.y += kb.dy * dt; kb.life -= dt; if (kb.life <= 0 || kb.x < -200 || kb.x > WORLD_W+200 || kb.y < -200 || kb.y > WORLD_H+200) { kittenBullets.splice(i,1); continue; }
+    for (let i = kittenBullets.length-1; i >= 0; i--){ const kb = kittenBullets[i];
+      // ensure dt is defined and non-zero
+      const _dt = (typeof dt === 'number' && dt > 0) ? dt : 1/60;
+      // if dx/dy are absent or near-zero, recompute from stored angle and speed
+      if ((!kb.dx && !kb.dy) || (Math.abs(kb.dx) < 1e-6 && Math.abs(kb.dy) < 1e-6)){
+        if (typeof kb.a === 'number' && typeof kb.spd === 'number'){
+          kb.dx = Math.cos(kb.a) * kb.spd;
+          kb.dy = Math.sin(kb.a) * kb.spd;
+        }
+      }
+      // debug logging (throttled) — enable by setting window.__DEBUG_KITTEN = true in the browser console
+      try{
+        if (typeof window !== 'undefined' && window.__DEBUG_KITTEN){
+          const nowMs = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+          if (nowMs - (__lastKittenDbg || 0) > 200){
+            __lastKittenDbg = nowMs;
+            try{ console.log('kittenBullets.debug', { idx: i, x: kb.x.toFixed(2), y: kb.y.toFixed(2), dx: kb.dx.toFixed(3), dy: kb.dy.toFixed(3), spd: kb.spd, a: kb.a }); }catch(_){ }
+          }
+        }
+      }catch(_){ }
+      kb.x += kb.dx * _dt; kb.y += kb.dy * _dt; kb.life -= _dt; if (kb.life <= 0 || kb.x < -200 || kb.x > WORLD_W+200 || kb.y < -200 || kb.y > WORLD_H+200) { kittenBullets.splice(i,1); continue; }
   if (selectedVehicle){ const px = (selectedVehicle === 'heli') ? heli.x : tank.x; const py = (selectedVehicle === 'heli') ? heli.y : tank.y; const dist = Math.hypot(kb.x - px, kb.y - py);
   const nowMs = (typeof performance !== 'undefined' && performance.now) ? performance.now() : 0;
   let inStartSafe = false;
@@ -4249,8 +5164,8 @@ const dx = mouseWorldX - heli.x, dy = mouseWorldY - heli.y; heli.turretAngle = M
   if (typeof foliageInstances !== 'undefined' && foliageInstances && foliageInstances.length){
   for (let fi = foliageInstances.length - 1; fi >= 0; fi--){ const f = foliageInstances[fi]; if (!f.destructible) continue; const r = (f.isTree) ? ((64 * Math.max(1, f.scale || 1)) * 0.42) : ((96 * Math.max(1, f.scale || 1)) * 0.46); let dy = f.y - kb.y; if (dy > WORLD_H/2) dy -= WORLD_H; if (dy < -WORLD_H/2) dy += WORLD_H; const dx = f.x - kb.x; if (Math.hypot(dx,dy) < r){ kittenBullets.splice(i,1); try{ handleFoliageHit(fi, kb.x, kb.y, '#8adf76'); }catch(_){ } break; } }
   }
-    }
-    }
+  }
+  }
 
     // update casings (physics + lifetime)
     for (let ci = casings.length-1; ci >= 0; ci--){ const c = casings[ci]; // simple ballistic physics
@@ -4281,20 +5196,27 @@ const dx = mouseWorldX - heli.x, dy = mouseWorldY - heli.y; heli.turretAngle = M
     }catch(_){ }
   }
   // Centralized enemy drop helper: preserves existing heart/collect drops and
-  // adds a 1-in-5 chance to drop a weapon-upgrade powerup ('double').
+  // adds a 1-in-5 chance to drop a weapon-upgrade powerup ('double' or 'mini').
   function enemyDropChance(e, x, y){
     try{ doEnemyHeartDrops(e, x, y); }catch(_){ }
-  try{ if (Math.random() < 0.2) spawnPowerup(x || e.x, y || e.y, 'double'); }catch(_){ }
+    const rand = Math.random();
+    if (rand < 0.15) {
+      spawnPowerup(x || e.x, y || e.y, 'double');
+    } else if (rand < 0.2) {
+      spawnMiniPowerup(x || e.x, y || e.y);
+    } else if (rand < 0.25) {
+      spawnShieldPowerup(x || e.x, y || e.y);
+    }
   }
     const targetX = (selectedVehicle === 'heli') ? heli.x : tank.x;
     const targetY = (selectedVehicle === 'heli') ? heli.y : tank.y;
     for (let ei = enemies.length-1; ei >= 0; ei--){ const e = enemies[ei];
   // compute angle: animals should wander (not seek the player), other enemies target the selected vehicle
   let ang;
-  if (e.type === 'animal'){
+  if (e.type === 'animal' || e.type === 'critter'){
     // initialize angle if missing
     if (typeof e.angle !== 'number') e.angle = Math.random() * Math.PI * 2;
-    // occasional random nudge so animals wander naturally
+    // occasional random nudge so animals/critters wander naturally
     if (!e._nextWander || now > e._nextWander){
       e._nextWander = now + 600 + Math.random() * 1200;
       e.angle += (Math.random() - 0.5) * 1.2; // small turn
@@ -4333,8 +5255,9 @@ const dx = mouseWorldX - heli.x, dy = mouseWorldY - heli.y; heli.turretAngle = M
           else if (e.kind === 'scout'){ if (dist < 340) shoot=true, spdB=260, hitR=7; }
           else if (e.kind === 'medic' || e.kind === 'radioop' || e.kind === 'villager1' || e.kind === 'villager2'){ if (dist < 280) shoot=true, spdB=200, hitR=6; }
           else if (e.kind === 'squidrobot'){ if (dist < 420) shoot=true, spdB=160, hitR=8; }
-          else if (e.kind === 'pinkdot'){ // kitten enemy: use medium range, very slow projectile speed, larger visible hit radius
-            if (dist < 360) shoot = true, spdB = 9, hitR = 12; // sped up slightly to ~9 px/s
+          else if (e.kind === 'pinkdot'){ // kitten enemy: use medium range, slow projectile speed, larger visible hit radius
+            // Increase speed so kitten projectiles are visible and travel reliably.
+            if (dist < 360) shoot = true, spdB = 140, hitR = 12;
           }
               if (shoot){ e.lastAttack = now; // use turretAngle if squidrobot to shoot from rotating turret
             const shootA = (e.kind === 'squidrobot') ? (e.turretAngle || ang) : ang;
@@ -4390,9 +5313,12 @@ const dx = mouseWorldX - heli.x, dy = mouseWorldY - heli.y; heli.turretAngle = M
                     const kdx = Math.cos(shootA) * spdB;
                     const kdy = Math.sin(shootA) * spdB;
                     const t0 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
-                    kittenBullets.push({ x: bx2, y: by2, dx: kdx, dy: kdy, life: 60.0, hitR: (hitR || 6), anim: true, t0 });
+                    kittenBullets.push({ x: bx2, y: by2, dx: kdx, dy: kdy, spd: spdB, a: shootA, life: 60.0, hitR: (hitR || 6), anim: true, t0 });
                     if (typeof window !== 'undefined' && window.__DEBUG_KITTEN) try{ console.log('kitten-shot', { ex: e.x, ey: e.y, bx: bx2, by: by2, kdx, kdy, muzzleOff }); }catch(_){ }
-                  }catch(_){ kittenBullets.push({ x: bx, y: by, dx, dy, life: 60.0, hitR: (hitR || 6), anim: true }); }
+                  }catch(_){ 
+                    const t0 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+                    kittenBullets.push({ x: bx, y: by, dx, dy, spd: Math.hypot(dx,dy), a: shootA, life: 60.0, hitR: (hitR || 6), anim: true, t0 }); 
+                  }
                     try{ spawnMuzzleFlash(bx, by, shootA); }catch(_){ }
                     try{ if (SFX && typeof SFX.playCannonBlast === 'function') SFX.playCannonBlast(); }catch(_){ }
                 } else {
@@ -4465,9 +5391,9 @@ const dx = mouseWorldX - heli.x, dy = mouseWorldY - heli.y; heli.turretAngle = M
   if (collided){
       // If the player is the tank, running over things shouldn't damage it.
       // If enemy flagged harmless, remove and score but do not damage player
-  if (e.harmless){ if (e.type === 'jungle' || e.type === 'animal') callSpawnGibs(e.x, e.y, '#ff8b6b', 14, 'collision-harmless'); recordDeath(e.kind || '<collision-harmless>', e); try{ recordKill(e.kind || (typeof e.spriteIdx === 'number' ? ('animal-' + e.spriteIdx) : '<collision-harmless>'), e); }catch(_){ } enemies.splice(ei,1); try{ doEnemyHeartDrops(e,e.x,e.y); }catch(_){ } score += 1; updateHud(); }
+  if (e.harmless){ if (e.type === 'jungle' || e.type === 'animal' || e.type === 'critter') callSpawnGibs(e.x, e.y, '#ff8b6b', 14, 'collision-harmless'); recordDeath(e.kind || '<collision-harmless>', e); try{ recordKill(e.kind || (typeof e.spriteIdx === 'number' ? ('animal-' + e.spriteIdx) : '<collision-harmless>'), e); }catch(_){ } enemies.splice(ei,1); try{ doEnemyHeartDrops(e,e.x,e.y); }catch(_){ } score += 1; updateHud(); }
       else if (selectedVehicle === 'tank'){
-  if (e.type === 'jungle' || e.type === 'animal') callSpawnGibs(e.x, e.y, '#ff8b6b', 14, 'collision-tank');
+  if (e.type === 'jungle' || e.type === 'animal' || e.type === 'critter') callSpawnGibs(e.x, e.y, '#ff8b6b', 14, 'collision-tank');
   recordDeath(e.kind || '<collision-tank>', e);
   try{ recordKill(e.kind || (typeof e.spriteIdx === 'number' ? ('animal-' + e.spriteIdx) : '<collision-tank>'), e); }catch(_){ }
   // If this is an osprey, do not allow the tank to run it over; push the tank back and bump
@@ -4499,7 +5425,7 @@ const dx = mouseWorldX - heli.x, dy = mouseWorldY - heli.y; heli.turretAngle = M
   }
       } else {
         // other vehicles (heli) still take damage on collision
-  if (e.type === 'jungle' || e.type === 'animal') callSpawnGibs(e.x, e.y, '#ff8b6b', 14, 'collision-heli');
+  if (e.type === 'jungle' || e.type === 'animal' || e.type === 'critter') callSpawnGibs(e.x, e.y, '#ff8b6b', 14, 'collision-heli');
   recordDeath(e.kind || '<collision-heli>', e);
   try{ recordKill(e.kind || (typeof e.spriteIdx === 'number' ? ('animal-' + e.spriteIdx) : '<collision-heli>'), e); }catch(_){ }
     enemies.splice(ei,1);
@@ -4529,9 +5455,12 @@ const dx = mouseWorldX - heli.x, dy = mouseWorldY - heli.y; heli.turretAngle = M
   bullets.splice(bi,1);
   try{ callSpawnGibs(b.x, b.y, '#ffd1e8', 6, 'projectile-hit'); }catch(_){ }
   if (e.harmless){ enemies.splice(ei,1); recordDeath(e.kind || '<harmless-c>', e); try{ recordKill(e.kind || (typeof e.spriteIdx === 'number' ? ('animal-' + e.spriteIdx) : '<harmless-c>'), e); }catch(_){ } score += 1; updateHud(); }
-        else if (e.type === 'jungle' || e.type === 'animal'){
+        else if (e.type === 'jungle' || e.type === 'animal' || e.type === 'critter'){
           e.hp = (e.hp||1) - 1;
-          if (e.hp <= 0){ enemies.splice(ei,1); recordDeath(e.kind || '<killed-c>', e); try{ recordKill(e.kind || (typeof e.spriteIdx === 'number' ? ('animal-' + e.spriteIdx) : '<killed-c>'), e); }catch(_){ } try{ doEnemyHeartDrops(e,e.x,e.y); }catch(_){ } score += 1; updateHud(); }
+          if (e.hp <= 0){
+            if (e.type === 'critter' || e.type === 'animal') e.alive = false; // Mark for removal from critters/animals arrays
+            enemies.splice(ei,1); recordDeath(e.kind || '<killed-c>', e); try{ recordKill(e.kind || (typeof e.spriteIdx === 'number' ? ('animal-' + e.spriteIdx) : '<killed-c>'), e); }catch(_){ } try{ doEnemyHeartDrops(e,e.x,e.y); }catch(_){ } score += 1; updateHud();
+          }
         } else {
           // special-case osprey to spawn logical gibs
           if (e.type === 'osprey'){
@@ -4547,6 +5476,11 @@ const dx = mouseWorldX - heli.x, dy = mouseWorldY - heli.y; heli.turretAngle = M
         }
         break;
     } }
+
+  // Update critters and animals to remove dead ones from their arrays
+  try{ updateCritters(dt); }catch(_){ }
+  try{ updateAnimals(dt); }catch(_){ }
+
   // bullets vs billboards: allow player bullets to damage billboards
   for (let bi = bullets.length-1; bi >= 0; bi--){ const b = bullets[bi];
     for (let i = 0; i < billboardInstances.length; i++){
@@ -4571,6 +5505,8 @@ const dx = mouseWorldX - heli.x, dy = mouseWorldY - heli.y; heli.turretAngle = M
 
   // update powerups and pickup detection (while running)
   if (powerups.length) updatePowerups(dt);
+  // update allies
+  if (allies.length) updateAllies(dt);
   // pickup: check vehicle proximity to powerups
   for (let pi = powerups.length-1; pi >= 0; pi--){ const p = powerups[pi]; const vx = (selectedVehicle === 'heli') ? heli.x : tank.x; const vy = (selectedVehicle === 'heli') ? heli.y : tank.y; const dy = (selectedVehicle === 'heli') ? (vy - p.y) : wrapDeltaY(vy, p.y); const dx = vx - p.x; const pickR = (p.type === 'heal' || p.type === 'journal') ? 28 : 20; if (Math.hypot(dx, dy) < pickR){ // picked up
       if (p.type === 'double'){
@@ -4608,6 +5544,19 @@ const dx = mouseWorldX - heli.x, dy = mouseWorldY - heli.y; heli.turretAngle = M
           try{ recordKill && recordKill((p && p.journalKey) ? p.journalKey : 'set 1', { tileC: c2, spriteIdx: null }); }catch(_){ }
         }catch(_){ }
         try{ updateHud(); }catch(_){ }
+      } else if (p.type === 'mini'){
+        // spawn a mini tank ally next to the player
+        try{
+          spawnMiniTankAlly(vx, vy);
+        }catch(_){ console.warn('Failed to spawn mini tank ally', _); }
+      } else if (p.type === 'shield'){
+        // activate shield if not on cooldown
+        const nowt = performance.now();
+        if (nowt > shieldCooldownUntil){
+          shieldActive = true;
+          shieldUntil = nowt + SHIELD_DURATION;
+          shieldCooldownUntil = nowt + SHIELD_DURATION + SHIELD_COOLDOWN;
+        }
       }
   // feedback
   callSpawnGibs(vx, vy, '#ffd54f', 6, 'powerup-pickup'); spawnMuzzleFlash(vx, vy, 0);
@@ -4671,12 +5620,6 @@ const dx = mouseWorldX - heli.x, dy = mouseWorldY - heli.y; heli.turretAngle = M
   const windMag = Math.max(0, Math.min(1, Math.hypot(windDX, windDY) / (Math.max(W,H)*0.5)));
   updateFoliage(now, windAngle, windMag);
   drawFoliage(ctx, worldToScreen, camera);
-  // update & draw critters (decorative sprites) — draw after foliage so they appear on top
-  updateCritters(now, dt);
-  drawCritters(now);
-  // update/draw additional small animals distributed like critters
-  updateAnimals(now, dt);
-  drawAnimals(now);
   // draw start-safe visual area near the beginning while the safe timer is active
   try{
     const nowMs = (typeof performance !== 'undefined' && performance.now) ? performance.now() : 0;
@@ -4801,6 +5744,45 @@ const dx = mouseWorldX - heli.x, dy = mouseWorldY - heli.y; heli.turretAngle = M
       ctx.restore();
     }catch(_){ }
   }
+
+  function drawShield(ctx, worldToScreen, camera){
+    try{
+      if (!shieldActive || selectedVehicle !== 'tank') return;
+      const nowt = performance.now();
+      if (nowt > shieldUntil) return;
+
+      const s = worldToScreen(tank.x, tank.y);
+      const shieldRadius = 80 * camera.zoom; // quarter circle shield radius
+      const rotationSpeed = 2; // radians per second
+      const currentAngle = (nowt / 1000) * rotationSpeed;
+
+      ctx.save();
+      ctx.translate(s.x, s.y);
+      ctx.rotate(currentAngle);
+
+      // Draw quarter circle shield (90 degrees)
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.arc(0, 0, shieldRadius, -Math.PI/4, Math.PI/4); // 90 degree arc
+      ctx.closePath();
+
+      // Create gradient for shield effect
+      const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, shieldRadius);
+      gradient.addColorStop(0, 'rgba(0, 255, 255, 0.8)');
+      gradient.addColorStop(0.7, 'rgba(0, 255, 255, 0.4)');
+      gradient.addColorStop(1, 'rgba(0, 255, 255, 0.1)');
+
+      ctx.fillStyle = gradient;
+      ctx.fill();
+
+      // Add border
+      ctx.strokeStyle = 'rgba(0, 255, 255, 0.9)';
+      ctx.lineWidth = Math.max(2, 4 * camera.zoom);
+      ctx.stroke();
+
+      ctx.restore();
+    }catch(_){ }
+  }
   // draw tank dust behind the tank
   if (tankDust.length) drawTankDust(ctx, worldToScreen, camera);
   // draw powerups (under vehicles so they sit on the world)
@@ -4855,13 +5837,11 @@ const dx = mouseWorldX - heli.x, dy = mouseWorldY - heli.y; heli.turretAngle = M
       if (ad){
         // panel rect in billboard module
         const panel = (typeof BILLBOARD_PANEL !== 'undefined') ? BILLBOARD_PANEL : { x:10, y:6, w:44, h:28 };
-        // compute fit scale
+        // stretch to fill the panel
         const aw = ad.width, ah = ad.height;
         const pw = panel.w, ph = panel.h;
-        const scale = Math.min(pw/aw, ph/ah);
-        const dw = Math.round(aw * scale), dh = Math.round(ah * scale);
-        const dx = panel.x + Math.round((pw - dw)/2);
-        const dy = panel.y + Math.round((ph - dh)/2);
+        const dw = pw, dh = ph;
+        const dx = panel.x, dy = panel.y;
         // clip to panel so ad doesn't spill over frame
         ctx.save();
         ctx.beginPath();
@@ -4956,10 +5936,13 @@ const dx = mouseWorldX - heli.x, dy = mouseWorldY - heli.y; heli.turretAngle = M
           'german': 0,
           'mexico': 0,
           'china': 0,
+          'french': -Math.PI/2,
           // other known variants keep default +90deg mapping for safety
           'murkia': Math.PI/2,
           'dozer': Math.PI/2,
-          'fordfiesta': Math.PI/2
+          'fordfiesta': Math.PI/2,
+          'waffle': 0,
+          'blackstar': Math.PI/2
         };
         turretArtworkOffset = (typeof selectedVehicleVariant === 'string' && selectedVehicleVariant in VARIANT_TURRET_OFFSETS) ? VARIANT_TURRET_OFFSETS[selectedVehicleVariant] : Math.PI/2;
       }
@@ -4972,6 +5955,9 @@ const dx = mouseWorldX - heli.x, dy = mouseWorldY - heli.y; heli.turretAngle = M
   }catch(_){ }
   ctx.save(); ctx.translate(sx, sy + bumpOffsetY); ctx.rotate(tank.turretAngle + bumpRot + turretArtworkOffset); ctx.scale(turretScale, turretScale); ctx.translate(-turretCanvas.width/2, -turretCanvas.height/2); ctx.imageSmoothingEnabled = false; ctx.drawImage(turretCanvas, 0, 0); ctx.restore();
   }catch(_){ drawImageCentered(turretCanvas, sx, sy + bumpOffsetY, tank.turretAngle + bumpRot + turretArtworkOffset, effScale * camera.zoom); }
+
+  // Draw shield if active
+  try{ drawShield(ctx, worldToScreen, camera); }catch(_){ }
   // Debug visuals: draw pivot and forward muzzle vector for player tank when enabled
   try{
     if (typeof window !== 'undefined' && window.DEBUG_TURRET_VISUALS){
@@ -5253,8 +6239,27 @@ const dx = mouseWorldX - heli.x, dy = mouseWorldY - heli.y; heli.turretAngle = M
       if (!spr || !spr.width || !spr.height){ ctx.save(); ctx.fillStyle = '#ff8b6b'; ctx.beginPath(); ctx.arc(Math.round(sx), Math.round(sy), Math.max(6, Math.round(e.r * camera.zoom)), 0, Math.PI*2); ctx.fill(); ctx.restore(); if (showEntityMarkers){ ctx.save(); ctx.fillStyle='#ff8b6b'; ctx.fillRect(Math.round(sx)-4, Math.round(sy)-4, 8, 8); ctx.restore(); } continue; }
       const pad = Math.max(28, Math.round((spr.width * drawScale)/2) + 6);
       if (sx < -pad || sx > W+pad || sy < -pad || sy > H+pad) continue;
-      drawImageCenteredFlipped(spr, Math.round(sx), Math.round(sy), flip, drawScale);
-      if (showEntityMarkers){ ctx.save(); ctx.fillStyle='#ff8b6b'; ctx.fillRect(Math.round(sx)-4, Math.round(sy)-4, 8, 8); ctx.restore(); }
+      
+      // Apply hopping animation offset
+      const hopY = sy + (e.hopOffset || 0) * camera.zoom * 0.4;
+      drawImageCenteredFlipped(spr, Math.round(sx), Math.round(hopY), flip, drawScale);
+      if (showEntityMarkers){ ctx.save(); ctx.fillStyle='#ff8b6b'; ctx.fillRect(Math.round(sx)-4, Math.round(hopY)-4, 8, 8); ctx.restore(); }
+    } else if (e.type === 'critter'){
+      const idx = (typeof e.spriteIdx === 'number') ? e.spriteIdx : 0;
+      // prefer per-entity tile when available, otherwise use the shared critter sprite
+      const spr = (e && e.tileC && e.tileC.width) ? e.tileC : ((typeof critterSprites !== 'undefined') ? critterSprites[idx] : null);
+      const flip = (e.vx && e.vx < 0);
+      // compute drawScale: base by camera zoom and CRITTER_DRAW_BASE
+      const drawScale = camera.zoom * CRITTER_DRAW_BASE;
+      // fallback: if sprite missing or invalid, draw a bright marker so the entity remains visible
+      if (!spr || !spr.width || !spr.height){ ctx.save(); ctx.fillStyle = '#ff8b6b'; ctx.beginPath(); ctx.arc(Math.round(sx), Math.round(sy), Math.max(6, Math.round(e.r * camera.zoom)), 0, Math.PI*2); ctx.fill(); ctx.restore(); if (showEntityMarkers){ ctx.save(); ctx.fillStyle='#ff8b6b'; ctx.fillRect(Math.round(sx)-4, Math.round(sy)-4, 8, 8); ctx.restore(); } continue; }
+      const pad = Math.max(24, Math.round((spr.width * drawScale)/2) + 6);
+      if (sx < -pad || sx > W+pad || sy < -pad || sy > H+pad) continue;
+      
+      // Apply hopping animation offset
+      const hopY = sy + (e.hopOffset || 0) * camera.zoom * 0.5;
+      drawImageCenteredFlipped(spr, Math.round(sx), Math.round(hopY), flip, drawScale);
+      if (showEntityMarkers){ ctx.save(); ctx.fillStyle='#ff8b6b'; ctx.fillRect(Math.round(sx)-4, Math.round(hopY)-4, 8, 8); ctx.restore(); }
     } else if (e.type === 'osprey'){
       // draw osprey using its baked tile sprite (ensure idle is invoked so tile is populated)
       try{
@@ -5288,6 +6293,10 @@ const dx = mouseWorldX - heli.x, dy = mouseWorldY - heli.y; heli.turretAngle = M
       ctx.fillStyle = '#b94a4a'; ctx.strokeStyle = '#6b2222'; ctx.beginPath(); ctx.arc(sx, sy, e.r, 0, Math.PI*2); ctx.fill(); ctx.lineWidth = 2; ctx.stroke();
     }
   }
+
+  // draw allies
+  drawAllies();
+
   // recent-deaths overlay removed
 
     // finally, update and draw gibs so they appear on top of world sprites and explosions
