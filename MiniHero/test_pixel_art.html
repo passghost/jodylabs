@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Pixel Art</title>
+    <script type="module" src="./pixelArtModule.js"></script>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #333;
+        }
+        #test-container {
+            position: relative;
+            width: 340px;
+            height: 340px;
+            border: 2px solid red;
+            background: #222;
+        }
+        .container {
+            background: rgba(255,255,255,0.02);
+        }
+    </style>
+</head>
+<body>
+    <div id="test-container"></div>
+    <script type="module">
+        import { createPixelArt } from './pixelArtModule.js';
+        try {
+            createPixelArt('test-container');
+            console.log('Pixel art function called.');
+        } catch (error) {
+            console.error('Error rendering pixel art:', error);
+            const container = document.getElementById('test-container');
+            if (container) {
+                container.innerHTML = '<p style="color: white; text-align: center;">Failed to load pixel art. Check console for details.</p>';
+            }
+        }
+    </script>
+</body>
+</html>

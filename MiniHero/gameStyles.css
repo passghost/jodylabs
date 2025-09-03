@@ -1,0 +1,566 @@
+/* Enhanced Grinder RPG - Styles Module */
+/* Future bots: All CSS styles are here - UI panels, animations, effects, etc. */
+
+body {
+    margin: 0;
+    padding: 0;
+    background: linear-gradient(45deg, #1a1a2e, #16213e);
+    font-family: 'Courier New', monospace;
+    overflow: hidden;
+    cursor: crosshair;
+}
+
+#game-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+}
+
+#ui-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 100;
+}
+
+.ui-panel {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.8);
+    border: 2px solid #444;
+    border-radius: 5px;
+    padding: 10px;
+    color: #fff;
+    font-size: 12px;
+    pointer-events: auto;
+}
+
+/* Player Stats Panel */
+#player-stats {
+    top: 10px;
+    left: 10px;
+    min-width: 250px;
+    z-index: 110;
+}
+
+/* Ability Bar */
+#ability-bar {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 5px;
+    background: rgba(0, 0, 0, 0.9);
+    padding: 10px;
+    border-radius: 10px;
+    pointer-events: auto;
+    z-index: 120;
+}
+
+.ability-slot {
+    width: 50px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid #666;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s;
+}
+
+.ability-slot:hover {
+    border-color: #fff;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.ability-slot.active {
+    border-color: #00ff00;
+    box-shadow: 0 0 10px #00ff00;
+}
+
+.ability-icon {
+    font-size: 24px;
+    color: #fff;
+}
+
+.ability-cooldown {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 14px;
+    border-radius: 3px;
+}
+
+/* Item Bar */
+#item-bar {
+    position: absolute;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 3px;
+    background: rgba(0, 0, 0, 0.9);
+    padding: 8px;
+    border-radius: 8px;
+    pointer-events: auto;
+    z-index: 120;
+}
+
+.item-slot {
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid #666;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+    font-size: 12px;
+}
+
+.item-slot:hover {
+    border-color: #fff;
+}
+
+.item-count {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    font-size: 10px;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 1px 3px;
+    border-radius: 2px;
+}
+
+/* Enhanced Stat Bars */
+.stat-bar {
+    width: 100%;
+    height: 12px;
+    background: #333;
+    border: 1px solid #666;
+    margin: 3px 0;
+    position: relative;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.stat-fill {
+    height: 100%;
+    transition: width 0.3s ease;
+    border-radius: 5px;
+}
+
+.health-fill {
+    background: linear-gradient(90deg, #ff4444, #ff8888);
+    box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.3);
+}
+
+.mana-fill {
+    background: linear-gradient(90deg, #4444ff, #8888ff);
+    box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.3);
+}
+
+.exp-fill {
+    background: linear-gradient(90deg, #44ff44, #88ff88);
+    box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.3);
+}
+
+/* Shop Panel */
+#shop-panel {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 400px;
+    height: 300px;
+    background: rgba(0, 0, 0, 0.95);
+    border: 3px solid #666;
+    border-radius: 10px;
+    display: none;
+    flex-direction: column;
+    z-index: 300;
+}
+
+.shop-header {
+    padding: 15px;
+    border-bottom: 2px solid #666;
+    text-align: center;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.shop-content {
+    flex: 1;
+    padding: 15px;
+    overflow-y: auto;
+}
+
+.shop-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    margin: 5px 0;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.shop-item:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.shop-close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    cursor: pointer;
+    font-size: 20px;
+    color: #fff;
+}
+
+/* NPC Interaction */
+#npc-interaction {
+    position: absolute;
+    bottom: 150px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.9);
+    padding: 15px;
+    border-radius: 10px;
+    max-width: 400px;
+    display: none;
+    pointer-events: auto;
+    z-index: 200;
+    border: 2px solid #666;
+}
+
+.interaction-text {
+    margin-bottom: 10px;
+    line-height: 1.4;
+}
+
+.interaction-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.interaction-button {
+    padding: 8px 15px;
+    background: #444;
+    border: 1px solid #666;
+    border-radius: 5px;
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.interaction-button:hover {
+    background: #555;
+    border-color: #888;
+}
+
+/* Minimap */
+#minimap {
+    top: 10px;
+    right: 10px;
+    width: 150px;
+    height: 150px;
+    background: rgba(0, 0, 0, 0.8);
+    border: 2px solid #666;
+    border-radius: 5px;
+    z-index: 110;
+}
+
+/* Game Log */
+#combat-log {
+    bottom: 10px;
+    left: 10px;
+    width: 300px;
+    height: 120px;
+    overflow-y: auto;
+    font-size: 10px;
+    z-index: 110;
+}
+
+/* Chat Panel */
+#chat-panel {
+    bottom: 140px;
+    left: 10px;
+    width: 300px;
+    height: 150px;
+    z-index: 110;
+    display: flex;
+    flex-direction: column;
+}
+
+#chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    font-size: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #666;
+    padding: 5px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 3px;
+}
+
+.chat-input-container {
+    display: flex;
+    gap: 5px;
+}
+
+#chat-input {
+    flex: 1;
+    padding: 5px;
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid #666;
+    border-radius: 3px;
+    color: #fff;
+    font-size: 10px;
+    font-family: inherit;
+}
+
+#chat-input:focus {
+    outline: none;
+    border-color: #00ff00;
+}
+
+#chat-send {
+    padding: 5px 10px;
+    background: #444;
+    border: 1px solid #666;
+    border-radius: 3px;
+    color: #fff;
+    cursor: pointer;
+    font-size: 10px;
+    font-family: inherit;
+}
+
+#chat-send:hover {
+    background: #555;
+}
+
+.chat-message {
+    margin: 2px 0;
+    padding: 2px;
+    color: #00ff00;
+    word-wrap: break-word;
+}
+
+/* MMO Status Panel */
+#mmo-status {
+    top: 10px;
+    right: 170px;
+    width: 200px;
+    z-index: 110;
+}
+
+/* Player Name Tags */
+.player-nametag {
+    position: absolute;
+    color: #00ff00;
+    font-size: 12px;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+    pointer-events: none;
+    z-index: 100;
+    text-align: center;
+    min-width: 60px;
+}
+
+.log-entry {
+    margin: 1px 0;
+    padding: 2px 5px;
+    border-left: 2px solid #666;
+    animation: fadeIn 0.3s ease-in;
+}
+
+.log-damage {
+    border-left-color: #ff4444;
+}
+
+.log-death {
+    border-left-color: #ff8844;
+}
+
+.log-spawn {
+    border-left-color: #44ff44;
+}
+
+.log-shop {
+    border-left-color: #4444ff;
+}
+
+.log-chat {
+    border-left-color: #00ff00;
+    color: #00ff00;
+}
+
+/* Screen Flash Effect */
+#screen-flash {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.8);
+    pointer-events: none;
+    z-index: 1000;
+    display: none;
+}
+
+/* Floating Damage Numbers */
+.floating-damage {
+    position: absolute;
+    color: #ffff00;
+    font-weight: bold;
+    font-size: 14px;
+    pointer-events: none;
+    z-index: 200;
+    animation: floatUp 1s ease-out forwards;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes floatUp {
+    0% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateY(-50px) scale(0.8);
+    }
+}
+
+@keyframes criticalHit {
+    0% {
+        opacity: 1;
+        transform: translateY(0) scale(1.5);
+        color: #ff0000;
+    }
+
+    20% {
+        transform: translateY(-10px) scale(1.8);
+        color: #ffff00;
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateY(-60px) scale(1);
+        color: #ff0000;
+    }
+}
+
+@keyframes floatUpGold {
+    0% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateY(-40px) scale(1.2);
+    }
+}
+
+/* Floating Gold Numbers */
+.floating-gold {
+    position: absolute;
+    color: #ffd700;
+    font-weight: bold;
+    font-size: 12px;
+    pointer-events: none;
+    z-index: 250;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+/* MMO Status Panel */
+#mmo-status {
+    top: 10px;
+    right: 10px;
+    min-width: 200px;
+    z-index: 110;
+}
+
+.player-name-section {
+    margin-bottom: 8px;
+}
+
+.player-name-section label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 11px;
+    color: #ccc;
+}
+
+.name-input-container {
+    display: flex;
+    gap: 5px;
+}
+
+#player-name-input {
+    flex: 1;
+    padding: 4px 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid #666;
+    border-radius: 3px;
+    color: #fff;
+    font-size: 11px;
+    font-family: inherit;
+}
+
+#player-name-input:focus {
+    outline: none;
+    border-color: #00ff00;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+#set-name-button {
+    padding: 4px 8px;
+    background: rgba(0, 255, 0, 0.2);
+    border: 1px solid #00ff00;
+    border-radius: 3px;
+    color: #fff;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+#set-name-button:hover {
+    background: rgba(0, 255, 0, 0.4);
+    border-color: #00ff00;
+}
+
+#set-name-button:active {
+    background: rgba(0, 255, 0, 0.6);
+}
