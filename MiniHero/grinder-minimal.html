@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Grinder RPG - MMO Edition</title>
+    <link rel="stylesheet" href="gameStyles.css">
+</head>
+<body>
+    <!-- 
+    FUTURE BOTS: This HTML is intentionally minimal!
+    - All UI elements are created dynamically by uiManager.js
+    - Game canvas is created by gameEngine.js
+    - No hardcoded UI structure to avoid stacking issues
+    - Everything is modular and controlled by JavaScript
+    -->
+    
+    <div id="game-container">
+        <!-- All UI will be injected here by the modules -->
+    </div>
+
+    <script type="module">
+        import { EnhancedGrinderRPG } from './gameLogic.js';
+        
+        window.addEventListener('load', () => {
+            try {
+                new EnhancedGrinderRPG();
+            } catch (error) {
+                console.error('❌ Failed to initialize game:', error);
+                const container = document.getElementById('game-container');
+                if (container) {
+                    container.innerHTML = '<div style="color: red; text-align: center; padding: 20px;">Failed to load game. Check console for details.</div>';
+                }
+            }
+        });
+    </script>
+</body>
+</html>

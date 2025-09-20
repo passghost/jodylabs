@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tiger Silhouette</title>
+    <style>
+        canvas {
+            image-rendering: pixelated;
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <h1>32x16 Pixel Silhouette of a Tiger</h1>
+    <canvas id="tigerCanvas" width="32" height="16"></canvas>
+
+    <script>
+        const canvas = document.getElementById('tigerCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Define the pixel data for the tiger silhouette
+        const tigerPixels = [
+            "00000000000000000000000000000000",
+            "00000000000000000000000000000000",
+            "00000000000001111100000000000000",
+            "00000000000111111111000000000000",
+            "00000000001111111111100000000000",
+            "00000000011111111111110000000000",
+            "00000000111111111111111000000000",
+            "00000001111111111111111100000000",
+            "00000011111111111111111110000000",
+            "00000111111111111111111111000000",
+            "00001111111111111111111111100000",
+            "00011111111111111111111111110000",
+            "00111111111111111111111111111000",
+            "01111111111111111111111111111100",
+            "11111111111111111111111111111110",
+            "00000000000000000000000000000000"
+        ];
+
+        // Draw the tiger silhouette on the canvas
+        tigerPixels.forEach((row, y) => {
+            row.split('').forEach((pixel, x) => {
+                if (pixel === '1') {
+                    ctx.fillStyle = y % 2 === 0 ? 'orange' : 'black'; // Fill with orange and black stripes
+                    ctx.fillRect(x, y, 1, 1);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
