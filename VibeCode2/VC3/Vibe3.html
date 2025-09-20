@@ -1196,6 +1196,13 @@
       updateSearchCard(nodes[idx]);
       cardMode = 'pinned';
       showSearchCard();
+      // If the matched node has a usable href, open it in a new tab.
+      try{
+        const href = nodes[idx] && nodes[idx].href;
+        if(href && href !== '#' && href.trim() !== ''){
+          window.open(href, '_blank', 'noopener');
+        }
+      }catch(_){ }
     } else {
       // no match: show friendly hint then hide
       updateSearchCard(null);
