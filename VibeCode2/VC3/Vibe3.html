@@ -560,6 +560,7 @@
   const THEME_KEY = 'v3_theme';
   const MODE_KEY = 'v3_mode';
   const SUPPORTED_THEMES = ['aurora','neon','sunset','forest','ocean','candy','royal','beige-black','black-red','white-red-black','purple-green','slate-red'];
+  const DEBUG = false;
   const isValidTheme = (n)=> SUPPORTED_THEMES.includes(String(n||'').toLowerCase());
   function hexToRgb(hex){
     try{
@@ -585,6 +586,8 @@
     themeColors.c0 = rgba(a, 0.55);
     themeColors.c1 = rgba(b, 0.25);
     themeColors.c2 = rgba(b, 0.0);
+    // Rebuild particle sprite with new theme colors
+    try{ buildParticleSprite(); }catch(_){ }
   }
   function applyTheme(name){
     const n = isValidTheme(name) ? String(name).toLowerCase() : 'beige-black';
@@ -624,6 +627,25 @@
   const bg = document.getElementById('bg');
   const g = bg.getContext('2d');
   let W, H, dpr, particles, t = 0, mouse = {x:0,y:0, active:false};
+  // Cached particle sprite to avoid per-particle gradients every frame
+  let particleSprite = null;
+  let particleSpriteSize = 24; // logical pixels (scaled by dpr)
+  function buildParticleSprite(){
+    try{
+      const size = Math.max(16, Math.floor(particleSpriteSize));
+      const off = document.createElement('canvas');
+      const ctx = off.getContext('2d');
+      off.width = off.height = Math.max(16, Math.floor(size * (Math.min(2, window.devicePixelRatio || 1))));
+      const cx = off.width/2, cy = off.height/2, r = Math.min(cx, cy);
+      const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+      grad.addColorStop(0, themeColors.c0);
+      grad.addColorStop(0.6, themeColors.c1);
+      grad.addColorStop(1, themeColors.c2);
+      ctx.fillStyle = grad;
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fill();
+      particleSprite = off;
+    }catch(_){ particleSprite = null; }
+  }
 
   function resize(){
     dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -635,7 +657,11 @@
   }
 
   function initParticles(){
-    const count = Math.floor((W*H) / (22000 * dpr));
+    const prefersReduce = (typeof matchMedia!=='undefined') && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const cores = (navigator.hardwareConcurrency || 4);
+    const densityBase = prefersReduce ? 46000 : 32000; // higher => fewer
+    const perfFactor = cores <= 4 ? 0.8 : (cores >= 8 ? 1.2 : 1.0);
+    const count = Math.floor(((W*H) / (densityBase * dpr)) * perfFactor);
     particles = new Array(count).fill().map(()=>({
       x: Math.random()*W,
       y: Math.random()*H,
@@ -676,14 +702,15 @@
 
       if(p.x<0) p.x+=W; if(p.x>W) p.x-=W; if(p.y<0) p.y+=H; if(p.y>H) p.y-=H;
 
-    g.beginPath();
-    g.arc(p.x, p.y, p.s, 0, Math.PI*2);
-    const grad = g.createRadialGradient(p.x, p.y, 0, p.x, p.y, 16);
-    grad.addColorStop(0, themeColors.c0);
-    grad.addColorStop(0.6, themeColors.c1);
-    grad.addColorStop(1, themeColors.c2);
-    g.fillStyle = grad;
-      g.fill();
+      if(particleSprite){
+        const sz = Math.max(8, Math.floor(p.s * 18 * dpr));
+        const half = sz>>1;
+        g.drawImage(particleSprite, (p.x - half)|0, (p.y - half)|0, sz, sz);
+      } else {
+        // fallback simple circle
+        g.fillStyle = themeColors.c0;
+        g.beginPath(); g.arc(p.x, p.y, p.s, 0, Math.PI*2); g.fill();
+      }
     }
     requestAnimationFrame(tick);
   }
@@ -692,10 +719,11 @@
   bg.addEventListener('pointermove', e=>{mouse.x=e.clientX;mouse.y=e.clientY});
   bg.addEventListener('pointerdown', ()=>mouse.active=true);
   bg.addEventListener('pointerup', ()=>mouse.active=false);
+  buildParticleSprite();
   resize(); tick();
 
-  // Diagnostic hooks: log pointer events so we can see if clicks reach document/orbit/button
-  document.addEventListener('pointerdown', (e)=>{ try{ console.debug('document.pointerdown', e.type, e.target && (e.target.tagName || e.target.className)); }catch(err){} });
+  // Diagnostic hooks (gated)
+  if(DEBUG){ document.addEventListener('pointerdown', (e)=>{ try{ console.debug('document.pointerdown', e.type, e.target && (e.target.tagName || e.target.className)); }catch(err){} }); }
 
 
   // ===== 2) ICON SPHERE (dynamic from VibeCode2 projects.json) =====
@@ -963,9 +991,11 @@
   orbit.addEventListener('pointermove', onMove);
   orbit.addEventListener('pointerup', onUp);
 
-  // orbit diagnostic logs
-  orbit.addEventListener('pointerdown', (e)=>{ try{ console.debug('orbit.pointerdown', e.target && (e.target.tagName || e.target.className)); }catch(err){} });
-  orbit.addEventListener('pointerup', (e)=>{ try{ console.debug('orbit.pointerup', e.target && (e.target.tagName || e.target.className)); }catch(err){} });
+  // orbit diagnostic logs (gated)
+  if(DEBUG){
+    orbit.addEventListener('pointerdown', (e)=>{ try{ console.debug('orbit.pointerdown', e.target && (e.target.tagName || e.target.className)); }catch(err){} });
+    orbit.addEventListener('pointerup', (e)=>{ try{ console.debug('orbit.pointerup', e.target && (e.target.tagName || e.target.className)); }catch(err){} });
+  }
 
   // Global pointer tracking to synthesize taps on pointerup using elementFromPoint.
   // This bypasses pointer capture/drag stealing by the orbit container.
@@ -981,13 +1011,15 @@
       if(dist <= 10 && dt < 400){
         const el = document.elementFromPoint(e.clientX, e.clientY);
         // also inspect the full stacking list for richer diagnostics
-        try{
-          const stack = document.elementsFromPoint(e.clientX, e.clientY) || [];
-          console.debug('elementsFromPoint stack:', stack.slice(0,8).map(x=>({ tag: x.tagName, cls: x.className }))); 
-        }catch(_){ }
-        if(!el){ console.debug('elementFromPoint returned null'); return; }
+        if(DEBUG){
+          try{
+            const stack = document.elementsFromPoint(e.clientX, e.clientY) || [];
+            console.debug('elementsFromPoint stack:', stack.slice(0,8).map(x=>({ tag: x.tagName, cls: x.className })));
+          }catch(_){ }
+        }
+        if(!el){ if(DEBUG){ console.debug('elementFromPoint returned null'); } return; }
         // log the element and its classes to help debug hit-testing
-        try{ console.debug('elementFromPoint ->', el.tagName, el.className, el); }catch(_){}
+        if(DEBUG){ try{ console.debug('elementFromPoint ->', el.tagName, el.className, el); }catch(_){ } }
   const nodeEl = el.closest && el.closest('.node');
   if(nodeEl){
           const idx = parseInt(nodeEl.getAttribute('data-index'), 10);
@@ -998,16 +1030,14 @@
             if(btn && btn.__lastDbl && (now - btn.__lastDbl) < 600) return;
             // mark as synthetic handled so native click won't duplicate
             if(btn) btn.__synthHandled = true;
-            console.debug('global tap detected on node', idx, nodes[idx] && nodes[idx].label);
+            if(DEBUG){ console.debug('global tap detected on node', idx, nodes[idx] && nodes[idx].label); }
             try{ searchInput.value = nodes[idx].label || ''; }catch(e){}
             focusNodeByIndex(idx);
             updateSearchCard(nodes[idx] || {});
             positionSearchCard();
             showSearchCard();
           }
-          else {
-            try{ console.debug('no .node ancestor found for elementFromPoint result', el.tagName, el.className); }catch(_){}
-          }
+          else { if(DEBUG){ try{ console.debug('no .node ancestor found for elementFromPoint result', el.tagName, el.className); }catch(_){ } } }
         }
       }
     }catch(err){ console.warn('pointerup synth error', err); }
