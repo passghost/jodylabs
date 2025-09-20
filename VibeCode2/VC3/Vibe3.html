@@ -407,6 +407,10 @@
             <option value="purple-green" title="Vibrant purple with emerald accents">Arcane</option>
             <option value="slate-red" title="Cool slate grey with red accents">Slate</option>
           </select>
+          <select id="modeSelect" class="theme-pill" aria-label="Interaction mode">
+            <option value="auto" title="Auto-tour rotates and previews">Auto</option>
+            <option value="manual" title="Drag to spin; tour paused">Manual</option>
+          </select>
         </div>
         <div class="search-spacer" id="searchSpacer" aria-hidden="true"></div>
         <!-- quick filters -->
@@ -554,6 +558,7 @@
   <script>
   // ===== THEME SYSTEM =====
   const THEME_KEY = 'v3_theme';
+  const MODE_KEY = 'v3_mode';
   const SUPPORTED_THEMES = ['aurora','neon','sunset','forest','ocean','candy','royal','beige-black','black-red','white-red-black','purple-green','slate-red'];
   const isValidTheme = (n)=> SUPPORTED_THEMES.includes(String(n||'').toLowerCase());
   function hexToRgb(hex){
@@ -598,6 +603,23 @@
   initTheme();
   const themeSelect = document.getElementById('themeSelect');
   if(themeSelect){ themeSelect.addEventListener('change', (e)=> applyTheme(e.target.value)); }
+  // ===== MODE SYSTEM (Auto vs Manual) =====
+  let currentMode = 'auto';
+  function applyMode(name){
+    currentMode = (String(name||'').toLowerCase() === 'manual') ? 'manual' : 'auto';
+    try{ localStorage.setItem(MODE_KEY, currentMode); }catch(_){ }
+    const sel = document.getElementById('modeSelect'); if(sel) sel.value = currentMode;
+  }
+  function initMode(){
+    let saved = null; try{ saved = localStorage.getItem(MODE_KEY); }catch(_){ }
+    applyMode(saved || 'auto');
+  }
+  const modeSelect = document.getElementById('modeSelect');
+  if(modeSelect){ modeSelect.addEventListener('change', (e)=>{
+    applyMode(e.target.value);
+    if(currentMode === 'auto'){ resumeTour(); startAutoTour(); }
+    else { pauseTour(); if(typeof stopAutoTour==='function') stopAutoTour(); }
+  }); }
   // ===== 1) LIVING BACKGROUND (particle flowfield) =====
   const bg = document.getElementById('bg');
   const g = bg.getContext('2d');
@@ -1013,6 +1035,7 @@
     animate();
     addEventListener('resize', ()=>{positionNodes()});
     startAutoTour();
+  initMode();
     // populate Featured once data is in
     try{ categorizeNodes(); populateFeatured(); }catch(_){ }
     // filter chips
@@ -1193,14 +1216,17 @@
 
   function showSearchCard(){
     if(hideCardTimer){ clearTimeout(hideCardTimer); hideCardTimer = null; }
-  // ensure popup is positioned correctly (fixed positioning needs explicit coords)
-  positionSearchCard();
+  // show first so measurements include visibility
   searchCardOuter.classList.add('show');
   searchCardOuter.setAttribute('aria-hidden','false');
   // animate eraser up to reveal the floating card
   const eraser = document.getElementById('eraser'); if(eraser) eraser.classList.add('active');
   const wrap = document.getElementById('searchWrap'); if(wrap) wrap.classList.add('pushed');
   const spacer = document.getElementById('searchSpacer'); if(spacer){ spacer.style.height = getComputedStyle(document.documentElement).getPropertyValue('--eraser-lift') || '120px'; }
+  // initial position
+  positionSearchCard();
+  // re-position on the next frames so transformed rects are current
+  requestAnimationFrame(()=>{ positionSearchCard(); requestAnimationFrame(positionSearchCard); });
   }
   function hideSearchCard(delay=0){
     if(hideCardTimer) clearTimeout(hideCardTimer);
@@ -1353,11 +1379,15 @@
   updateSearchCard(nodes[tourIdx]);
   cardMode = 'tour';
   showSearchCard();
+  // Stabilize position after focus animation alters layout
+  setTimeout(positionSearchCard, 0);
+  setTimeout(positionSearchCard, 250);
   }
   function startAutoTour(){
     if(tourTimer) clearInterval(tourTimer);
     tourTimer = setInterval(nextTourStep, 6000);
   }
+  function stopAutoTour(){ if(tourTimer){ clearInterval(tourTimer); tourTimer = null; } }
   function pauseTour(){ tourPaused = true; }
   function resumeTour(){ tourPaused = false; }
   // pause while the user interacts; resume after a period of inactivity
@@ -1366,7 +1396,7 @@
     if(resumeHandle) clearTimeout(resumeHandle);
     resumeHandle = setTimeout(()=>{ resumeTour(); }, delay);
   }
-  orbit.addEventListener('pointerdown', ()=>{ pauseTour(); nudgeResume(7000); });
+  orbit.addEventListener('pointerdown', ()=>{ if(currentMode==='auto'){ pauseTour(); nudgeResume(7000); } });
   orbit.addEventListener('pointerenter', ()=>{ pauseTour(); });
   orbit.addEventListener('pointerleave', ()=>{ nudgeResume(4000); });
   searchInput.addEventListener('focus', ()=>{ pauseTour(); });
@@ -1429,7 +1459,7 @@
     }
   }
 
-  function onDown(e){ dragging=true; last.x=e.clientX; last.y=e.clientY; inertia.x=0; inertia.y=0; orbit.setPointerCapture(e.pointerId); }
+  function onDown(e){ if(currentMode!=='manual') return; dragging=true; last.x=e.clientX; last.y=e.clientY; inertia.x=0; inertia.y=0; try{ orbit.setPointerCapture && orbit.setPointerCapture(e.pointerId); }catch(_){ } }
   function onMove(e){ if(!dragging) return; const dx=e.clientX-last.x, dy=e.clientY-last.y; last.x=e.clientX; last.y=e.clientY; rotY += dx*0.008; rotX += dy*0.008; inertia.x = dx*0.008; inertia.y = dy*0.008; positionNodes(); }
   function onUp(e){ dragging=false; orbit.releasePointerCapture(e.pointerId); }
 
