@@ -900,7 +900,11 @@
         pauseTour();
       });
       btn.addEventListener('pointerleave', ()=>{
-        if(cardMode === 'hover'){
+        // Only hide hover previews when the hovered node is NOT the currently-targeted node.
+        // This prevents small mouse movements from dismissing a preview for the active/targeted project.
+        const nodeEl = btn.closest && btn.closest('.node');
+        const isHit = nodeEl ? nodeEl.classList.contains('hit') : false;
+        if(cardMode === 'hover' && !isHit){
           hideSearchCard(300);
         }
         nudgeResume(4000);
