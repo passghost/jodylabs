@@ -643,6 +643,22 @@
       a: 0,
       s: 0.7 + Math.random()*1.1
     }));
+    // pre-render particle sprite for faster draws
+    try{ createParticleSprite(36); }catch(_){ particleSprite = null; }
+  }
+
+  function createParticleSprite(size=32){
+    const c = document.createElement('canvas');
+    c.width = c.height = size;
+    const ctx = c.getContext('2d');
+    const grad = ctx.createRadialGradient(size/2,size/2,0,size/2,size/2,size/2);
+    grad.addColorStop(0, themeColors.c0);
+    grad.addColorStop(0.6, themeColors.c1);
+    grad.addColorStop(1, themeColors.c2);
+    ctx.clearRect(0,0,size,size);
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.arc(size/2,size/2,size/2,0,Math.PI*2); ctx.fill();
+    particleSprite = c;
   }
 
   function noise(x,y){
@@ -651,8 +667,10 @@
 
   function tick(){
     t+=1;
-    g.clearRect(0,0,W,H);
+    // Skip heavy drawing when tab is not visible
+    if(document.hidden){ requestAnimationFrame(tick); return; }
 
+    g.clearRect(0,0,W,H);
     g.globalCompositeOperation = 'lighter';
     for(const p of particles){
       const n = noise(p.x, p.y);
@@ -676,14 +694,20 @@
 
       if(p.x<0) p.x+=W; if(p.x>W) p.x-=W; if(p.y<0) p.y+=H; if(p.y>H) p.y-=H;
 
-    g.beginPath();
-    g.arc(p.x, p.y, p.s, 0, Math.PI*2);
-    const grad = g.createRadialGradient(p.x, p.y, 0, p.x, p.y, 16);
-    grad.addColorStop(0, themeColors.c0);
-    grad.addColorStop(0.6, themeColors.c1);
-    grad.addColorStop(1, themeColors.c2);
-    g.fillStyle = grad;
-      g.fill();
+      // Draw using sprite when available
+      const size = Math.max(1, p.s * 2 * dpr);
+      if(particleSprite && particleSprite.width){
+        g.drawImage(particleSprite, p.x - size/2, p.y - size/2, size, size);
+      } else {
+        g.beginPath();
+        g.arc(p.x, p.y, p.s, 0, Math.PI*2);
+        const grad = g.createRadialGradient(p.x, p.y, 0, p.x, p.y, 16);
+        grad.addColorStop(0, themeColors.c0);
+        grad.addColorStop(0.6, themeColors.c1);
+        grad.addColorStop(1, themeColors.c2);
+        g.fillStyle = grad;
+        g.fill();
+      }
     }
     requestAnimationFrame(tick);
   }
@@ -719,6 +743,10 @@
   let rotX = -0.3, rotY = 0; // free rotation
   let dragging = false, last = {x:0,y:0}, inertia = {x:0,y:0};
   let currentCategory = 'all';
+  // performance caches
+  let nodesWrapCached = null;
+  let nodeElementsCached = null;
+  let particleSprite = null;
   // tap detection: store pointerdown candidates and synthesize a click on pointerup
   const tapMap = new Map();
 
