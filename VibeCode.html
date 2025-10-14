@@ -225,6 +225,41 @@
             line-height: 1.6;
         }
 
+        /* Version Navigation */
+        .version-nav {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .version-nav a {
+            background: linear-gradient(145deg, #1e1e1e, #2a2a2a);
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(230, 57, 70, 0.3);
+            transition: all 0.3s ease;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .version-nav a:hover {
+            background: linear-gradient(145deg, #e63946, #ff4757);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(230, 57, 70, 0.4);
+            border-color: rgba(230, 57, 70, 0.6);
+        }
+
+        .version-nav a.active {
+            background: linear-gradient(145deg, #e63946, #ff4757);
+            border-color: rgba(230, 57, 70, 0.8);
+        }
+
         /* All empty rulesets removed for lint compliance */
 .project {
     padding: 18px 12px;
@@ -553,6 +588,12 @@
         <div class="header">
             <h1>The Vibe Code Registry</h1>
             <p>A registry of web projects, games, and creative tools to vibe with.</p>
+            <div class="version-nav">
+                <a href="VibeCode.html" class="active">Vibe 1</a>
+                <a href="VibeCode2/VibeCode2.html">Vibe 2</a>
+                <a href="VibeCode2/VC3/Vibe3.html">Vibe 3</a>
+                <a href="VibeCode2/VC3/Vibe4.html">Vibe 4</a>
+            </div>
         </div>
         
         <div class="projects-grid">

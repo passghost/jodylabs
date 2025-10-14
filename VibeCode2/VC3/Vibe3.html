@@ -1,27 +1,27 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>JodyLabs — Orbital Interface</title>
-  <meta name="description" content="An animated one‑page experience — draggable icon orb, target lock, and curated project panels from JodyLabs." />
+  <title>JodyLabs â€” Orbital Interface</title>
+  <meta name="description" content="An animated oneâ€‘page experience â€” draggable icon orb, target lock, and curated project panels from JodyLabs." />
   <link rel="canonical" href="https://passghost.github.io/jodylabs/VibeCode2/VC3/Vibe3.html" />
   <!-- Open Graph / Social -->
-  <meta property="og:title" content="JodyLabs — Orbital Interface (Vibe3)" />
-  <meta property="og:description" content="Interactive showcase of experiments, tools, and visual projects — explore previews and open demos directly from the orb interface." />
+  <meta property="og:title" content="JodyLabs â€” Orbital Interface (Vibe3)" />
+  <meta property="og:description" content="Interactive showcase of experiments, tools, and visual projects â€” explore previews and open demos directly from the orb interface." />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="JodyLabs" />
   <meta property="og:url" content="https://passghost.github.io/jodylabs/VibeCode2/VC3/Vibe3.html" />
   <meta property="og:image" content="https://drive.google.com/file/d/1XQXJlgIykHWHeVecXl3N79oPgy4FjX8O/view?usp=drive_link" />
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="JodyLabs — Orbital Interface (Vibe3)" />
-  <meta name="twitter:description" content="Interactive showcase of experiments, tools, and visual projects — explore previews and open demos directly from the orb interface." />
+  <meta name="twitter:title" content="JodyLabs â€” Orbital Interface (Vibe3)" />
+  <meta name="twitter:description" content="Interactive showcase of experiments, tools, and visual projects â€” explore previews and open demos directly from the orb interface." />
   <meta name="twitter:image" content="https://drive.google.com/file/d/1XQXJlgIykHWHeVecXl3N79oPgy4FjX8O/view?usp=drive_link" />
 
   <!-- Structured data (JSON-LD) -->
   <script type="application/ld+json">
-  {"@context":"https://schema.org","@type":"WebPage","name":"JodyLabs — Orbital Interface","url":"https://passghost.github.io/jodylabs/VibeCode2/VC3/Vibe3.html","description":"Interactive showcase of experiments, tools, and visual projects from JodyLabs.","image":"https://drive.google.com/file/d/1XQXJlgIykHWHeVecXl3N79oPgy4FjX8O/view?usp=drive_link","publisher":{"@type":"Organization","name":"JodyLabs","url":"https://passghost.github.io/jodylabs/"}}
+  {"@context":"https://schema.org","@type":"WebPage","name":"JodyLabs â€” Orbital Interface","url":"https://passghost.github.io/jodylabs/VibeCode2/VC3/Vibe3.html","description":"Interactive showcase of experiments, tools, and visual projects from JodyLabs.","image":"https://drive.google.com/file/d/1XQXJlgIykHWHeVecXl3N79oPgy4FjX8O/view?usp=drive_link","publisher":{"@type":"Organization","name":"JodyLabs","url":"https://passghost.github.io/jodylabs/"}}
   </script>
   <style>
     /* --- RESET --- */
@@ -387,8 +387,15 @@
         <!-- eraser/presenter: this chunk will move up/down to reveal or cover the floating cards -->
         <div id="eraser" class="eraser" aria-hidden="false">
           <h1 class="headline">A laboratory of <span class="accent">code based experiments</span>.</h1>
-          <p class="sub">An interactive showcase of tools, visuals, and prototypes built with my own artwork and code. Explore the cards to see what’s active right now.</p>
-        </div>
+          <p class="sub">An interactive showcase of tools, visuals, and prototypes built with my own artwork and code. Explore the cards to see whatâ€™s active right now.</p>
+        
+        
+        <div style="margin-top: 20px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; z-index: 100; position: relative;">
+          <a href="../../VibeCode.html" style="background: linear-gradient(145deg, #1e1e1e, #2a2a2a); color: white; text-decoration: none; padding: 6px 14px; border-radius: 18px; border: 1px solid rgba(255, 255, 255, 0.1); transition: all 0.3s ease; font-weight: 600; font-size: 0.85rem;">Vibe 1</a>
+          <a href="../VibeCode2.html" style="background: linear-gradient(145deg, #1e1e1e, #2a2a2a); color: white; text-decoration: none; padding: 6px 14px; border-radius: 18px; border: 1px solid rgba(255, 255, 255, 0.1); transition: all 0.3s ease; font-weight: 600; font-size: 0.85rem;">Vibe 2</a>
+          <a href="Vibe3.html" style="background: linear-gradient(90deg, var(--accent), var(--accent-2)); color: #0a0a0c; text-decoration: none; padding: 6px 14px; border-radius: 18px; border: 1px solid rgba(0, 0, 0, 0.2); transition: all 0.3s ease; font-weight: 800; font-size: 0.85rem;">Vibe 3</a>
+          <a href="Vibe4.html" style="background: linear-gradient(145deg, #1e1e1e, #2a2a2a); color: white; text-decoration: none; padding: 6px 14px; border-radius: 18px; border: 1px solid rgba(255, 255, 255, 0.1); transition: all 0.3s ease; font-weight: 600; font-size: 0.85rem;">Vibe 4</a>
+        </div></div>
         
         <div class="search-wrap" id="searchWrap">
           <input id="orbSearch" type="search" placeholder="Search projects..." aria-label="Search projects" />
@@ -422,7 +429,7 @@
         </div>
         <!-- onboarding tip -->
         <div class="tip" id="tip" role="note">
-          Drag to rotate • Click to preview • Enter to search
+          Drag to rotate â€¢ Click to preview â€¢ Enter to search
           <button class="dismiss" id="tipDismiss" type="button" aria-label="Dismiss">Got it</button>
         </div>
         <div class="orbiq-link">
@@ -467,7 +474,7 @@
         </article>
         <article class="card">
           <img src="https://passghost.github.io/jodylabs/Images/Snip/EyeballM3.png" alt="Orbiq Eyeball">
-          <div class="meta-inline"><h4>Orbiq Icons</h4><p>Procedural icon set and 3D spin rig with back‑fade.</p></div>
+          <div class="meta-inline"><h4>Orbiq Icons</h4><p>Procedural icon set and 3D spin rig with backâ€‘fade.</p></div>
         </article>
         <article class="card">
           <img src="https://passghost.github.io/jodylabs/Images/rededge.png" alt="Red texture">
@@ -475,7 +482,7 @@
         </article>
         <article class="card">
           <img src="https://passghost.github.io/jodylabs/Images/SphereIcon.png" alt="Sphere Icon">
-          <div class="meta-inline"><h4>Stream Automator</h4><p>Unreal scene pilot with chat‑driven control surfaces.</p></div>
+          <div class="meta-inline"><h4>Stream Automator</h4><p>Unreal scene pilot with chatâ€‘driven control surfaces.</p></div>
         </article>
       </div>
     </div>
@@ -494,11 +501,11 @@
         </article>
         <article class="card">
           <img src="https://passghost.github.io/jodylabs/Images/Snip/EyeballM3.png" alt="Eyeball">
-          <div class="meta-inline"><h4>Edge‑Aware Pixel Heli</h4><p>Tiny canvas toy that knows its bounds.</p></div>
+          <div class="meta-inline"><h4>Edgeâ€‘Aware Pixel Heli</h4><p>Tiny canvas toy that knows its bounds.</p></div>
         </article>
         <article class="card">
           <img src="https://passghost.github.io/jodylabs/screenshots/CardCake.png" alt="CardCake">
-          <div class="meta-inline"><h4>LLM Prompter</h4><p>In‑browser prompt macros & tokens playground.</p></div>
+          <div class="meta-inline"><h4>LLM Prompter</h4><p>Inâ€‘browser prompt macros & tokens playground.</p></div>
         </article>
       </div>
     </div>
@@ -521,7 +528,7 @@
         </article>
         <article class="card">
           <img src="https://passghost.github.io/jodylabs/Images/Snip/EyeballM3.png" alt="Eyeball">
-          <div class="meta-inline"><h4>Press Kit</h4><p>Logos, screenshots, and a one‑pager.</p></div>
+          <div class="meta-inline"><h4>Press Kit</h4><p>Logos, screenshots, and a oneâ€‘pager.</p></div>
         </article>
       </div>
     </div>
@@ -530,7 +537,7 @@
   <section class="panel small" id="panel-contact" role="dialog" aria-modal="true" aria-labelledby="panel-contact-title">
     <header>
       <h3 id="panel-contact-title">Contact</h3>
-      <button class="close" data-close aria-label="Close panel">✕</button>
+      <button class="close" data-close aria-label="Close panel">âœ•</button>
     </header>
     <div class="content">
       <div style="display:flex;align-items:center;gap:10px;"> 
@@ -539,7 +546,7 @@
     </div>
   </section>
 
-  <footer class="footer">© <span id="year"></span> JodyLabs • Built with vanilla HTML/CSS/JS.
+  <footer class="footer">Â© <span id="year"></span> JodyLabs â€¢ Built with vanilla HTML/CSS/JS.
   </footer>
 
   <!-- Floating search result card (top-level, positioned by JS) -->
@@ -1623,3 +1630,4 @@
   </script>
 </body>
 </html>
+

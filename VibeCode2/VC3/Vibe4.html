@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>JodyLabs — Rolodex Explorer</title>
+  <meta name="description" content="A horizontal rolodex-style interface to browse JodyLabs projects with smooth 3D card rotations." />
+  <link rel="canonical" href="https://passghost.github.io/jodylabs/VibeCode2/VC3/Vibe4.html" />
+  <!-- Open Graph / Social -->
+  <meta property="og:title" content="JodyLabs — Rolodex Explorer (Vibe4)" />
+  <meta property="og:description" content="Browse projects in a unique rolodex-style horizontal carousel with 3D card flips." />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="JodyLabs" />
+  <meta property="og:url" content="https://passghost.github.io/jodylabs/VibeCode2/VC3/Vibe4.html" />
+  <meta property="og:image" content="https://drive.google.com/file/d/1XQXJlgIykHWHeVecXl3N79oPgy4FjX8O/view?usp=drive_link" />
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="JodyLabs — Rolodex Explorer (Vibe4)" />
+  <meta name="twitter:description" content="Browse projects in a unique rolodex-style horizontal carousel with 3D card flips." />
+  <meta name="twitter:image" content="https://drive.google.com/file/d/1XQXJlgIykHWHeVecXl3N79oPgy4FjX8O/view?usp=drive_link" />
+
+  <style>
+    /* --- RESET --- */
+    *,*::before,*::after{box-sizing:border-box}
+    html,body{height:100%;margin:0;padding:0}
+    body{font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial;background:#0a0a0c;color:#f4f4f5;overflow-x:hidden}
+    h1,h2,h3,p{margin:0}
+    a{color:inherit;text-decoration:none}
+
+    :root{
+      --accent:#8b5cf6;
+      --accent-2:#22d3ee;
+      --accent-3:#f472b6;
+      --text:#fbfbff;
+      --muted:#c9c9d4;
+      --panel:#0b0b13ee;
+      --card:#0a0a12;
+      --glass:rgba(255,255,255,.06);
+      --radius:22px;
+      --shadow:0 12px 34px rgba(139,92,246,.28), 0 10px 30px rgba(34,211,238,.18), inset 0 1px 0 rgba(255,255,255,.05);
+    }
+
+    /* Theme variants */
+    :root[data-theme="neon"]{
+      --accent:#ff2ea6;
+      --accent-2:#21e6ff;
+      --accent-3:#ffd442;
+      --shadow:0 12px 34px rgba(255,46,166,.28), 0 10px 30px rgba(33,230,255,.18), inset 0 1px 0 rgba(255,255,255,.05);
+    }
+    :root[data-theme="sunset"]{
+      --accent:#fb923c;
+      --accent-2:#f472b6;
+      --accent-3:#60a5fa;
+      --shadow:0 12px 34px rgba(251,146,60,.28), 0 10px 30px rgba(96,165,250,.18), inset 0 1px 0 rgba(255,255,255,.05);
+    }
+    :root[data-theme="forest"]{
+      --accent:#34d399;
+      --accent-2:#84cc16;
+      --accent-3:#22c55e;
+      --shadow:0 12px 34px rgba(52,211,153,.28), 0 10px 30px rgba(132,204,22,.18), inset 0 1px 0 rgba(255,255,255,.05);
+    }
+    :root[data-theme="beige-black"]{
+      --accent:#f5e0c3;
+      --accent-2:#111111;
+      --accent-3:#d6b58a;
+      --shadow:0 12px 34px rgba(214,181,138,.28), 0 10px 30px rgba(17,17,17,.18), inset 0 1px 0 rgba(255,255,255,.05);
+    }
+
+    @keyframes shimmer{ 0%{ background-position:0% 50%; } 100%{ background-position:100% 50%; } }
+
+    /* --- Background --- */
+    #bg {position:fixed;inset:0;z-index:-1;background:
+      radial-gradient(1200px 800px at 80% -10%, color-mix(in oklab, var(--accent) 35%, transparent), transparent 60%),
+      radial-gradient(900px 600px at 10% 120%, color-mix(in oklab, var(--accent-2) 28%, transparent), transparent 55%),
+      radial-gradient(1000px 700px at 40% 40%, color-mix(in oklab, var(--accent-3) 16%, transparent), transparent 60%),
+      linear-gradient(180deg,#050507 0%,#0b0b12 100%);
+    }
+
+    /* --- Top bar --- */
+    .topbar{position:fixed;top:12px;left:12px;right:12px;display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:16px;background:var(--glass);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:var(--shadow);z-index:999}
+    .brand{display:flex;gap:12px;align-items:center}
+    .logo{width:30px;height:30px;border-radius:50%;overflow:hidden;display:grid;place-items:center;background:conic-gradient(from 220deg, var(--accent), var(--accent-2), var(--accent-3), var(--accent)); box-shadow:0 0 40px color-mix(in oklab, var(--accent) 50%, transparent)}
+    .logo img{width:100%;height:100%;object-fit:cover;filter:drop-shadow(0 0 12px rgba(255,26,26,.35))}
+    .brand h3{font-weight:800;letter-spacing:.4px}
+    .pill{font-size:12px;color:var(--muted);padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.06)}
+    .cta{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(90deg,var(--accent),var(--accent-2),var(--accent-3));background-size:200% 100%;padding:10px 14px;border-radius:999px;color:#0a0a0c;font-weight:800;border:none;box-shadow:0 10px 26px color-mix(in oklab, var(--accent) 24%, transparent);cursor:pointer}
+    .cta:hover{animation:shimmer 1.2s linear infinite}
+    .controls{display:flex;align-items:center;gap:12px}
+    .hit-pill{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:6px 10px;font-size:12px;font-weight:700;color:#0a0a0c;background:linear-gradient(90deg,var(--accent),var(--accent-2));border-radius:999px;border:1px solid rgba(0,0,0,0.15);box-shadow:0 8px 18px color-mix(in oklab, var(--accent) 24%, transparent);min-height:32px;min-width:40px}
+
+    /* --- Hero --- */
+    .hero{min-height:100svh;display:grid;place-items:center;padding:100px 20px 80px}
+    .hero-inner{max-width:1400px;width:100%;display:flex;flex-direction:column;gap:40px;align-items:center}
+    .headline{font-size:clamp(32px,6vw,64px);line-height:1.06;font-weight:900;letter-spacing:.2px;text-align:center}
+    .headline .accent{background:linear-gradient(90deg,var(--accent),var(--accent-2),var(--accent-3));-webkit-background-clip:text;background-clip:text;color:transparent}
+    .sub{margin-top:14px;color:var(--muted);font-size:clamp(14px,2vw,18px);text-align:center;max-width:800px}
+
+    /* --- Search & Controls --- */
+    .controls-bar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:center;width:100%;max-width:900px}
+    .search-input{flex:1;min-width:280px;padding:12px 16px;border-radius:14px;border:1px solid rgba(255,255,255,.08);background:linear-gradient(180deg, rgba(28,6,6,.75), rgba(0,0,0,.45));color:var(--text);font-size:16px;box-shadow:0 8px 30px rgba(255,26,26,.18), inset 0 1px 0 rgba(255,255,255,.03);outline:none;transition:box-shadow .15s ease,transform .08s ease}
+    .search-input:focus{box-shadow:0 14px 40px rgba(255,26,26,.32);transform:translateY(-2px)}
+    .theme-select{font-size:13px;padding:8px 12px;border-radius:999px;background:linear-gradient(90deg, rgba(0,0,0,.18), rgba(255,0,0,.04));border:1px solid rgba(255,255,255,.06);color:var(--text);background-color:#0b0b12;cursor:pointer}
+    .theme-select:focus{outline:none;box-shadow:0 0 0 2px color-mix(in oklab, var(--accent-2) 45%, transparent)}
+
+    /* --- Filters --- */
+    .filters{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:center}
+    .chip{padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.1);background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));color:#fff;font-weight:700;font-size:12px;cursor:pointer;user-select:none;transition:transform .15s ease, box-shadow .15s ease, background .2s ease}
+    .chip:hover{transform:translateY(-1px); box-shadow:0 8px 16px rgba(0,0,0,.25)}
+    .chip.active{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#0a0a0c;border-color:rgba(0,0,0,.2);box-shadow:0 10px 22px color-mix(in oklab, var(--accent) 22%, transparent)}
+
+    /* --- ROLODEX CAROUSEL --- */
+    .rolodex-container{position:relative;width:100%;max-width:1400px;height:600px;perspective:2000px;margin:40px auto}
+    .rolodex-track{position:absolute;width:100%;height:100%;transform-style:preserve-3d;transition:transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)}
+
+    /* Rolodex Card */
+    .rolodex-card{position:absolute;left:50%;top:50%;width:400px;height:500px;transform-style:preserve-3d;transition:all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);cursor:pointer}
+    .rolodex-card.hidden{opacity:0;pointer-events:none}
+    .card-inner{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform 0.6s ease}
+    .rolodex-card:hover .card-inner{transform:rotateY(5deg) scale(1.02)}
+    
+    .card-face{position:absolute;width:100%;height:100%;backface-visibility:hidden;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);background:var(--card);border:1px solid transparent}
+    .card-face::before{content:"";position:absolute;inset:0;padding:1px;border-radius:var(--radius);background:linear-gradient(135deg,var(--accent),var(--accent-2),var(--accent-3));-webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+
+    .card-front{transform:rotateY(0deg)}
+    .card-content{position:relative;width:100%;height:100%;display:flex;flex-direction:column;z-index:1}
+    .card-image{width:100%;height:60%;object-fit:cover;border-radius:var(--radius) var(--radius) 0 0}
+    .card-meta{padding:20px;flex:1;display:flex;flex-direction:column;gap:8px}
+    .card-meta h3{font-size:20px;font-weight:800;color:var(--text)}
+    .card-meta p{color:var(--muted);font-size:14px;line-height:1.4;flex:1;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
+    .card-link{display:inline-block;padding:10px 16px;background:linear-gradient(90deg,var(--accent),var(--accent-2));border-radius:999px;color:#0a0a0c;font-weight:800;text-align:center;margin-top:auto;transition:transform .2s ease}
+    .card-link:hover{transform:scale(1.05)}
+
+    /* Navigation buttons */
+    .nav-btn{position:absolute;top:50%;transform:translateY(-50%);width:60px;height:60px;border-radius:50%;background:var(--glass);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.08);color:var(--text);font-size:24px;cursor:pointer;display:grid;place-items:center;z-index:10;box-shadow:var(--shadow);transition:transform .2s ease, box-shadow .2s ease}
+    .nav-btn:hover{transform:translateY(-50%) scale(1.1);box-shadow:0 12px 40px color-mix(in oklab, var(--accent) 32%, transparent)}
+    .nav-btn.prev{left:20px}
+    .nav-btn.next{right:20px}
+
+    /* Pagination dots */
+    .pagination{position:absolute;bottom:-50px;left:50%;transform:translateX(-50%);display:flex;gap:8px}
+    .dot{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.2);cursor:pointer;transition:all .3s ease}
+    .dot.active{background:var(--accent);width:30px;border-radius:5px}
+    .dot:hover{background:var(--accent-2);transform:scale(1.2)}
+
+    /* Contact Panel */
+    .panel{position:fixed;left:50%;top:50%;transform:translate(-50%, -50%) scale(0.9);max-width:420px;width:90%;background:var(--panel);border:1px solid transparent;border-radius:var(--radius);box-shadow:var(--shadow);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);opacity:0;pointer-events:none;transition:opacity .35s ease, transform .35s ease;z-index:1000;padding:20px}
+    .panel::before{content:"";position:absolute;inset:0;padding:1px;border-radius:var(--radius);background:linear-gradient(90deg,var(--accent),var(--accent-2),var(--accent-3));-webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+    .panel.open{opacity:1;transform:translate(-50%, -50%) scale(1);pointer-events:auto}
+    .panel header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+    .panel h3{font-weight:800}
+    .close{background:transparent;border:1px solid rgba(255,255,255,.2);color:var(--text);border-radius:12px;padding:8px 10px;cursor:pointer;font-size:18px}
+
+    /* Footer */
+    .footer{padding:40px 20px 70px;text-align:center;color:var(--muted)}
+
+    /* Responsive */
+    @media (max-width: 920px){
+      .rolodex-card{width:340px;height:450px}
+      .nav-btn{width:50px;height:50px;font-size:20px}
+    }
+    @media (max-width: 560px){
+      .rolodex-card{width:300px;height:400px}
+      .card-meta{padding:14px}
+      .card-meta h3{font-size:18px}
+      .card-meta p{font-size:13px}
+      .nav-btn{width:40px;height:40px;font-size:18px}
+      .nav-btn.prev{left:10px}
+      .nav-btn.next{right:10px}
+      .controls-bar{flex-direction:column}
+      .search-input{width:100%;min-width:auto}
+    }
+
+    /* Loading state */
+    .loading{text-align:center;color:var(--muted);padding:40px;font-size:18px}
+  </style>
+</head>
+<body>
+  <div id="bg"></div>
+
+  <nav class="topbar" aria-label="Primary">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">
+        <img src="https://passghost.github.io/OrbiqWebsite/Images/SphereIcon.png" alt="JodyLabs logo" />
+      </div>
+      <h3>JodyLabs</h3>
+      <span class="pill">Rolodex Explorer</span>
+    </div>
+    <div class="controls">
+      <button class="cta" id="contactOpen">Contact</button>
+      <div class="hit-pill" id="hit-pill">
+        <span style="font-size:11px;color:rgba(0,0,0,0.6);font-weight:600;margin-right:4px;">Hits</span>
+        <span class="counter-value" id="hit-count-pill">0</span>
+      </div>
+    </div>
+  </nav>
+
+  <main class="hero">
+    <section class="hero-inner">
+      <div>
+        <h1 class="headline">Flip through my <span class="accent">digital rolodex</span>.</h1>
+        <p class="sub">Browse experiments, tools, and projects with smooth card transitions. Navigate with arrows, search, or filter by category.</p>
+        <div style="margin-top: 16px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
+          <a href="../../VibeCode.html" style="background: linear-gradient(145deg, #1e1e1e, #2a2a2a); color: white; text-decoration: none; padding: 6px 14px; border-radius: 18px; border: 1px solid rgba(255, 255, 255, 0.1); transition: all 0.3s ease; font-weight: 600; font-size: 0.85rem;">Vibe 1</a>
+          <a href="../VibeCode2.html" style="background: linear-gradient(145deg, #1e1e1e, #2a2a2a); color: white; text-decoration: none; padding: 6px 14px; border-radius: 18px; border: 1px solid rgba(255, 255, 255, 0.1); transition: all 0.3s ease; font-weight: 600; font-size: 0.85rem;">Vibe 2</a>
+          <a href="Vibe3.html" style="background: linear-gradient(145deg, #1e1e1e, #2a2a2a); color: white; text-decoration: none; padding: 6px 14px; border-radius: 18px; border: 1px solid rgba(255, 255, 255, 0.1); transition: all 0.3s ease; font-weight: 600; font-size: 0.85rem;">Vibe 3</a>
+          <a href="Vibe4.html" style="background: linear-gradient(90deg, var(--accent), var(--accent-2)); color: #0a0a0c; text-decoration: none; padding: 6px 14px; border-radius: 18px; border: 1px solid rgba(0, 0, 0, 0.2); transition: all 0.3s ease; font-weight: 800; font-size: 0.85rem;">Vibe 4</a>
+        </div>
+      </div>
+
+      <div class="controls-bar">
+        <input id="searchInput" class="search-input" type="search" placeholder="Search projects..." />
+        <select id="themeSelect" class="theme-select">
+          <option value="aurora">Aurora</option>
+          <option value="neon">Neon</option>
+          <option value="sunset">Sunset</option>
+          <option value="forest">Forest</option>
+          <option value="beige-black">Parchment</option>
+        </select>
+      </div>
+
+      <div class="filters" id="filters">
+        <button class="chip active" data-cat="all">All</button>
+        <button class="chip" data-cat="projects">Projects</button>
+        <button class="chip" data-cat="experiments">Experiments</button>
+        <button class="chip" data-cat="tools">Tools</button>
+      </div>
+
+      <div class="rolodex-container" id="rolodexContainer">
+        <button class="nav-btn prev" id="prevBtn">‹</button>
+        <button class="nav-btn next" id="nextBtn">›</button>
+        <div class="rolodex-track" id="rolodexTrack">
+          <div class="loading">Loading projects...</div>
+        </div>
+        <div class="pagination" id="pagination"></div>
+      </div>
+    </section>
+  </main>
+
+  <section class="panel" id="panel-contact">
+    <header>
+      <h3>Contact</h3>
+      <button class="close" id="closeContact">✕</button>
+    </header>
+    <div style="display:flex;align-items:center;justify-content:center;gap:10px;padding:20px">
+      <div style="font-weight:800;font-size:14px;color:var(--text)">pass6host@gmail.com</div>
+    </div>
+  </section>
+
+  <footer class="footer">© <span id="year"></span> JodyLabs • Built with vanilla HTML/CSS/JS.</footer>
+
+  <script>
+  // ===== THEME SYSTEM =====
+  const THEME_KEY = 'v4_theme';
+  const SUPPORTED_THEMES = ['aurora','neon','sunset','forest','beige-black'];
+  
+  function applyTheme(name){
+    const n = SUPPORTED_THEMES.includes(name) ? name : 'aurora';
+    document.documentElement.setAttribute('data-theme', n);
+    try{ localStorage.setItem(THEME_KEY, n); }catch(_){}
+    const sel = document.getElementById('themeSelect');
+    if(sel) sel.value = n;
+  }
+
+  function initTheme(){
+    try{
+      const saved = localStorage.getItem(THEME_KEY);
+      if(saved && SUPPORTED_THEMES.includes(saved)){ applyTheme(saved); return; }
+    }catch(_){}
+    applyTheme('aurora');
+  }
+
+  document.getElementById('themeSelect').addEventListener('change', (e)=>{
+    applyTheme(e.target.value);
+  });
+
+  initTheme();
+
+  // ===== DATA & STATE =====
+  const ICON_URL = 'https://passghost.github.io/OrbiqWebsite/Images/SphereIcon.png';
+  
+  let allNodes = [];
+  let filteredNodes = [];
+  let currentIndex = 0;
+  let currentCategory = 'all';
+
+  // ===== LOAD PROJECTS =====
+  async function loadProjects(){
+    try{
+      const res = await fetch('../components/projects.json');
+      if(res.ok){
+        const projects = await res.json();
+        if(Array.isArray(projects) && projects.length){
+          allNodes = projects.map(p=>{
+            const resolve = (s)=>{
+              try{
+                if(!s) return '';
+                if(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(s)) return s;
+                if(s.startsWith('/')) return location.origin + s;
+                const cleaned = s.replace(/^(?:\.\/|\.\.\/)+/, '');
+                if(/screenshots\//i.test(cleaned) || /screenshots\//i.test(s)){
+                  const file = cleaned.split('/').pop();
+                  return location.origin + '/jodylabs/screenshots/' + file;
+                }
+                return location.origin + '/jodylabs/' + cleaned.replace(/^\//, '');
+              }catch(e){ return s || ''; }
+            };
+            return {
+              label: p.title || 'Untitled',
+              href: resolve(p.href || '#'),
+              icon: resolve(p.icon || ''),
+              screenshot: resolve((p.screenshots && p.screenshots[0]) || ''),
+              desc: p.desc || '',
+              categories: p.categories || []
+            };
+          });
+          categorizeNodes();
+          filteredNodes = [...allNodes];
+          renderRolodex();
+          return;
+        }
+      }
+    }catch(e){ console.warn('projects.json load failed', e); }
+    
+    // Fallback data
+    allNodes = [
+      {label:'Projects', href:'#', screenshot:ICON_URL, desc:'Explore all projects', categories:['projects']},
+      {label:'Experiments', href:'#', screenshot:ICON_URL, desc:'Visual experiments', categories:['experiments']},
+      {label:'Tools', href:'#', screenshot:ICON_URL, desc:'Useful utilities', categories:['tools']},
+    ];
+    filteredNodes = [...allNodes];
+    renderRolodex();
+  }
+
+  function categorizeNodes(){
+    allNodes.forEach(n=>{
+      const hay = `${n.label||''} ${n.desc||''} ${n.href||''}`.toLowerCase();
+      const cats = new Set();
+      if(/tool|download|docs|press|kit|utility|helper|api|library/.test(hay)) cats.add('tools');
+      if(/experiment|demo|toy|glitch|prototype|lab|visual|shader/.test(hay)) cats.add('experiments');
+      if(/project|app|game|site|portfolio|showcase|build|shortcut/.test(hay)) cats.add('projects');
+      if(cats.size===0) cats.add('projects');
+      n._cats = Array.from(cats);
+    });
+  }
+
+  // ===== RENDER ROLODEX =====
+  function renderRolodex(){
+    const track = document.getElementById('rolodexTrack');
+    const pagination = document.getElementById('pagination');
+    track.innerHTML = '';
+    pagination.innerHTML = '';
+
+    if(filteredNodes.length === 0){
+      track.innerHTML = '<div class="loading">No projects found. Try a different filter.</div>';
+      return;
+    }
+
+    filteredNodes.forEach((node, i) => {
+      const card = document.createElement('div');
+      card.className = 'rolodex-card';
+      card.dataset.index = i;
+
+      const cardInner = document.createElement('div');
+      cardInner.className = 'card-inner';
+
+      const cardFace = document.createElement('div');
+      cardFace.className = 'card-face card-front';
+
+      const cardContent = document.createElement('div');
+      cardContent.className = 'card-content';
+
+      const img = document.createElement('img');
+      img.className = 'card-image';
+      img.src = node.screenshot || node.icon || ICON_URL;
+      img.alt = node.label;
+
+      const meta = document.createElement('div');
+      meta.className = 'card-meta';
+
+      const title = document.createElement('h3');
+      title.textContent = node.label;
+
+      const desc = document.createElement('p');
+      desc.textContent = node.desc;
+
+      const link = document.createElement('a');
+      link.className = 'card-link';
+      link.href = node.href || '#';
+      link.textContent = 'Open Project';
+      link.target = '_blank';
+      link.rel = 'noopener';
+
+      meta.appendChild(title);
+      meta.appendChild(desc);
+      meta.appendChild(link);
+
+      cardContent.appendChild(img);
+      cardContent.appendChild(meta);
+      cardFace.appendChild(cardContent);
+      cardInner.appendChild(cardFace);
+      card.appendChild(cardInner);
+
+      card.addEventListener('click', (e)=>{
+        if(e.target.tagName !== 'A'){
+          goToCard(i);
+        }
+      });
+
+      track.appendChild(card);
+
+      // Pagination dot
+      const dot = document.createElement('div');
+      dot.className = 'dot';
+      if(i === currentIndex) dot.classList.add('active');
+      dot.addEventListener('click', ()=> goToCard(i));
+      pagination.appendChild(dot);
+    });
+
+    updateCardPositions();
+  }
+
+  // ===== CARD POSITIONING =====
+  function updateCardPositions(){
+    const cards = document.querySelectorAll('.rolodex-card');
+    const dots = document.querySelectorAll('.dot');
+    const total = cards.length;
+
+    cards.forEach((card, i) => {
+      const offset = i - currentIndex;
+      const absOffset = Math.abs(offset);
+
+      dots[i].classList.toggle('active', i === currentIndex);
+
+      if(absOffset > 2){
+        card.classList.add('hidden');
+        return;
+      }
+
+      card.classList.remove('hidden');
+
+      const spacing = 420;
+      const translateX = offset * spacing;
+      const translateZ = -absOffset * 200;
+      const rotateY = offset * 15;
+      const scale = 1 - absOffset * 0.15;
+      const opacity = 1 - absOffset * 0.3;
+
+      card.style.transform = `
+        translateX(calc(-50% + ${translateX}px))
+        translateY(-50%)
+        translateZ(${translateZ}px)
+        rotateY(${rotateY}deg)
+        scale(${scale})
+      `;
+      card.style.opacity = opacity;
+      card.style.zIndex = 100 - absOffset;
+    });
+  }
+
+  function goToCard(index){
+    if(index < 0) index = filteredNodes.length - 1;
+    if(index >= filteredNodes.length) index = 0;
+    currentIndex = index;
+    updateCardPositions();
+  }
+
+  // ===== NAVIGATION =====
+  document.getElementById('prevBtn').addEventListener('click', ()=>{
+    goToCard(currentIndex - 1);
+  });
+
+  document.getElementById('nextBtn').addEventListener('click', ()=>{
+    goToCard(currentIndex + 1);
+  });
+
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'ArrowLeft') goToCard(currentIndex - 1);
+    if(e.key === 'ArrowRight') goToCard(currentIndex + 1);
+  });
+
+  // Auto-advance every 5 seconds
+  let autoInterval = setInterval(()=>{
+    goToCard(currentIndex + 1);
+  }, 5000);
+
+  // Pause auto-advance on interaction
+  document.getElementById('rolodexContainer').addEventListener('mouseenter', ()=>{
+    clearInterval(autoInterval);
+  });
+
+  // ===== SEARCH =====
+  document.getElementById('searchInput').addEventListener('input', (e)=>{
+    const query = e.target.value.toLowerCase();
+    if(!query){
+      filteredNodes = allNodes.filter(n => {
+        if(currentCategory === 'all') return true;
+        return n._cats && n._cats.includes(currentCategory);
+      });
+    } else {
+      filteredNodes = allNodes.filter(n => {
+        const matches = (n.label||'').toLowerCase().includes(query) || 
+                       (n.desc||'').toLowerCase().includes(query);
+        if(currentCategory === 'all') return matches;
+        return matches && n._cats && n._cats.includes(currentCategory);
+      });
+    }
+    currentIndex = 0;
+    renderRolodex();
+  });
+
+  // ===== FILTERS =====
+  document.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', ()=>{
+      document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      currentCategory = chip.dataset.cat;
+      
+      const query = document.getElementById('searchInput').value.toLowerCase();
+      if(!query){
+        filteredNodes = allNodes.filter(n => {
+          if(currentCategory === 'all') return true;
+          return n._cats && n._cats.includes(currentCategory);
+        });
+      } else {
+        filteredNodes = allNodes.filter(n => {
+          const matches = (n.label||'').toLowerCase().includes(query) || 
+                         (n.desc||'').toLowerCase().includes(query);
+          if(currentCategory === 'all') return matches;
+          return matches && n._cats && n._cats.includes(currentCategory);
+        });
+      }
+      currentIndex = 0;
+      renderRolodex();
+    });
+  });
+
+  // ===== CONTACT PANEL =====
+  document.getElementById('contactOpen').addEventListener('click', ()=>{
+    document.getElementById('panel-contact').classList.add('open');
+  });
+
+  document.getElementById('closeContact').addEventListener('click', ()=>{
+    document.getElementById('panel-contact').classList.remove('open');
+  });
+
+  // ===== YEAR =====
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  // ===== INIT =====
+  loadProjects();
+
+  // ===== HIT COUNTER =====
+  (function() {
+    const apiUrl = 'https://omcwjmvdjswkfjkahchm.supabase.co';
+    const headers = {
+      'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
+      'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
+      'Content-Type': 'application/json'
+    };
+    const pagePath = 'Vibe4';
+    const hitCountEl = document.getElementById('hit-count-pill');
+
+    async function recordHit() {
+      try {
+        const getResponse = await fetch(`${apiUrl}/rest/v1/page_hits?page_path=eq.${pagePath}&select=id,hit_count`, {
+          method: 'GET',
+          headers: headers
+        });
+        if (getResponse.ok) {
+          const existingData = await getResponse.json();
+          if (existingData.length > 0) {
+            const record = existingData[0];
+            const newCount = record.hit_count + 1;
+            const updateResponse = await fetch(`${apiUrl}/rest/v1/page_hits?id=eq.${record.id}`, {
+              method: 'PATCH',
+              headers: headers,
+              body: JSON.stringify({ hit_count: newCount, last_hit: new Date().toISOString(), updated_at: new Date().toISOString() })
+            });
+            if (updateResponse.ok) hitCountEl.textContent = newCount.toLocaleString();
+            else hitCountEl.textContent = record.hit_count.toLocaleString();
+          } else {
+            const createResponse = await fetch(`${apiUrl}/rest/v1/page_hits`, {
+              method: 'POST',
+              headers: headers,
+              body: JSON.stringify({ page_path: pagePath, hit_count: 1, first_hit: new Date().toISOString(), last_hit: new Date().toISOString(), last_ip_hash: 'browser-' + Math.random().toString(36).substring(7) })
+            });
+            if (createResponse.ok) hitCountEl.textContent = '1'; else hitCountEl.textContent = '---';
+          }
+        } else {
+          hitCountEl.textContent = '---';
+        }
+      } catch (error) {
+        console.error('Hit counter error:', error);
+        hitCountEl.textContent = '---';
+      }
+    }
+    recordHit();
+  })();
+  </script>
+</body>
+</html>
