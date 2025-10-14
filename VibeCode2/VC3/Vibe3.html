@@ -133,19 +133,6 @@
     @keyframes pulseGlow{ 0%{ transform:scale(1); box-shadow:0 0 0 0 rgba(255,46,166,.35);} 70%{ transform:scale(1.08); box-shadow:0 0 30px 8px rgba(33,230,255,.15);} 100%{ transform:scale(1); box-shadow:0 0 0 0 rgba(33,230,255,0);} }
     @keyframes shimmer{ 0%{ background-position:0% 50%; } 100%{ background-position:100% 50%; } }
 
-    /* GPU acceleration and performance hints */
-    .node, .node button, .ring, .orbit-wrap, .search-card-outer, .eraser {
-      will-change: transform;
-    }
-    .panel { will-change: opacity, transform; }
-    .search-card-outer.show { will-change: auto; }
-    
-    /* Reduce repaints */
-    canvas { 
-      will-change: contents;
-      transform: translateZ(0);
-    }
-
     /* --- Background --- */
     #bg {position:fixed;inset:0;z-index:-1;background:
       radial-gradient(1200px 800px at 80% -10%, color-mix(in oklab, var(--accent) 35%, transparent), transparent 60%),
@@ -324,8 +311,7 @@
   .feature-strip h3{font-size:18px;font-weight:900}
   .feature-strip .shuffle{padding:8px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.1);background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#0a0a0c;font-weight:800;cursor:pointer}
   .feature-rail{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-  .feature-card{display:flex;gap:12px;background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:12px;overflow:hidden;align-items:stretch;cursor:pointer;transition:transform .18s ease}
-  .feature-card:hover{transform:translateY(-2px)}
+  .feature-card{display:flex;gap:12px;background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:12px;overflow:hidden;align-items:stretch}
   .feature-card img{width:42%;max-width:260px;height:auto;object-fit:cover}
   .feature-card .meta{padding:10px 10px 10px 0;display:flex;flex-direction:column}
   .feature-card h4{margin:0 0 6px 0;font-size:15px}
@@ -694,19 +680,18 @@
     g.clearRect(0,0,W,H);
 
     g.globalCompositeOperation = 'lighter';
-    const mouseInfluence = mouse.active ? { x: mouse.x*dpr, y: mouse.y*dpr } : null;
-    
     for(const p of particles){
       const n = noise(p.x, p.y);
       const angle = n * Math.PI;
+      const force = 0.6;
 
       p.a += (angle - p.a)*0.08;
-      p.v += 0.36;
+      p.v += force * 0.6;
 
-      if(mouseInfluence){
-        const dx = (mouseInfluence.x - p.x), dy = (mouseInfluence.y - p.y);
-        const distSq = dx*dx + dy*dy + 0.0001;
-        const pull = Math.min(1.5, 1600/distSq);
+      if(mouse.active){
+        const dx = (mouse.x*dpr - p.x), dy = (mouse.y*dpr - p.y);
+        const d = Math.hypot(dx,dy) + 0.0001;
+        const pull = Math.min(1.5, 40/d);
         p.x += dx * pull * 0.008;
         p.y += dy * pull * 0.008;
       }
@@ -718,10 +703,11 @@
       if(p.x<0) p.x+=W; if(p.x>W) p.x-=W; if(p.y<0) p.y+=H; if(p.y>H) p.y-=H;
 
       if(particleSprite){
-        const sz = Math.max(8, (p.s * 18 * dpr)|0);
+        const sz = Math.max(8, Math.floor(p.s * 18 * dpr));
         const half = sz>>1;
         g.drawImage(particleSprite, (p.x - half)|0, (p.y - half)|0, sz, sz);
       } else {
+        // fallback simple circle
         g.fillStyle = themeColors.c0;
         g.beginPath(); g.arc(p.x, p.y, p.s, 0, Math.PI*2); g.fill();
       }
@@ -729,15 +715,10 @@
     requestAnimationFrame(tick);
   }
 
-  // Debounce resize for better performance
-  let resizeTimer;
-  addEventListener('resize', ()=>{
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(resize, 150);
-  });
-  bg.addEventListener('pointermove', e=>{mouse.x=e.clientX;mouse.y=e.clientY}, {passive:true});
-  bg.addEventListener('pointerdown', ()=>mouse.active=true, {passive:true});
-  bg.addEventListener('pointerup', ()=>mouse.active=false, {passive:true});
+  addEventListener('resize', resize);
+  bg.addEventListener('pointermove', e=>{mouse.x=e.clientX;mouse.y=e.clientY});
+  bg.addEventListener('pointerdown', ()=>mouse.active=true);
+  bg.addEventListener('pointerup', ()=>mouse.active=false);
   buildParticleSprite();
   resize(); tick();
 
@@ -763,9 +744,11 @@
   let nodes = [];
   let points = [];
   let TOTAL_ICONS = 32;
-  let rotX = -0.3, rotY = 0;
+  let rotX = -0.3, rotY = 0; // free rotation
   let dragging = false, last = {x:0,y:0}, inertia = {x:0,y:0};
   let currentCategory = 'all';
+  // tap detection: store pointerdown candidates and synthesize a click on pointerup
+  const tapMap = new Map();
 
   // fetch projects.json and build nodes; fall back to DEFAULT_BASE repeated
   async function loadProjectNodes(){
@@ -847,9 +830,11 @@
   const btn = document.createElement('button');
   btn.setAttribute('type','button');
   btn.setAttribute('aria-label', (nodes[i] && (nodes[i].label||nodes[i].title)) || 'item');
-  btn.style.pointerEvents = 'auto';
+  // ensure the button accepts pointer events and is keyboard-focusable
+  btn.style.pointerEvents = btn.style.pointerEvents || 'auto';
   btn.tabIndex = 0;
   const nd = nodes[i] || {};
+  // prefer preloaded screenshot if available
   const bgUrl = (nd._preloaded && nd._preloaded.ok && nd._preloaded.src) || nd.screenshot || nd.icon || ICON_URL;
   btn.style.backgroundImage = `url(${bgUrl})`;
       btn.style.backgroundSize = 'cover';
@@ -857,30 +842,69 @@
   const label = document.createElement('span');
     label.className = 'label';
     label.textContent = nd.label || '';
-      
-      // Single click handler - simplified
-      let clickTimeout;
+      // clicking opens the projects panel and shows a mini-card for this project
+      // ignore single-click if it immediately follows a dblclick
       btn.addEventListener('click', (ev)=>{
         ev.stopPropagation();
-        clearTimeout(clickTimeout);
-        clickTimeout = setTimeout(()=>{
-          const idx = i;
-          if(typeof idx === 'number' && idx >= 0 && idx < nodes.length){
-            try{ searchInput.value = nodes[idx].label || ''; }catch(e){}
-            focusNodeByIndex(idx);
-            updateSearchCard(nodes[idx] || {});
-            positionSearchCard();
-            cardMode = 'pinned';
-            showSearchCard();
-          }
-        }, 200);
+        const now = Date.now();
+        if(btn.__lastDbl && (now - btn.__lastDbl) < 500) return; // ignore click triggered by dblclick
+        // Single-click should behave like a search: focus the orb on this node
+        // and show the floating search card as if the user searched for it.
+        const idx = i;
+        if(typeof idx === 'number' && idx >= 0 && idx < nodes.length){
+          console.debug('node click', idx, nodes[idx] && nodes[idx].label);
+          // mirror search input so behavior matches running a search
+          try{ searchInput.value = nodes[idx].label || ''; }catch(e){}
+          focusNodeByIndex(idx);
+          updateSearchCard(nodes[idx] || {});
+          // position card relative to the search input (same as runSearch)
+          positionSearchCard();
+          cardMode = 'pinned';
+          showSearchCard();
+        }
       });
-      
-      // Double-click handler
+  // tap detection handlers: record pointerdown, and on pointerup determine if this was a tap
+  btn.addEventListener('pointerdown', (e)=>{
+    e.stopPropagation();
+    try{ btn.setPointerCapture && btn.setPointerCapture(e.pointerId); }catch(_){}
+    tapMap.set(e.pointerId, { x: e.clientX, y: e.clientY, t: Date.now(), idx: i, btn });
+  });
+  btn.addEventListener('pointerup', (e)=>{
+    e.stopPropagation();
+    try{ btn.releasePointerCapture && btn.releasePointerCapture(e.pointerId); }catch(_){}
+    const rec = tapMap.get(e.pointerId);
+    if(rec){
+      tapMap.delete(e.pointerId);
+      const dx = e.clientX - rec.x, dy = e.clientY - rec.y;
+      const dist = Math.hypot(dx, dy);
+      const dt = Date.now() - rec.t;
+      // thresholds: small movement and short time -> treat as tap
+      if(dist < 8 && dt < 300){
+        // mark as handled so native click handler (if fired) won't double-run
+        try{ rec.btn.__synthHandled = true; }catch(_){}
+        // run the same logic as a click handler
+        const idx = rec.idx;
+        if(typeof idx === 'number' && idx >= 0 && idx < nodes.length){
+          console.debug('node tap', idx, nodes[idx] && nodes[idx].label);
+          try{ searchInput.value = nodes[idx].label || ''; }catch(e){}
+          focusNodeByIndex(idx);
+          updateSearchCard(nodes[idx] || {});
+          positionSearchCard();
+          cardMode = 'pinned';
+          showSearchCard();
+        }
+      }
+    }
+  });
+  // don't intercept pointerdown here - let the orbit's handlers receive the event so drag works
+      // double-clicking shows the floating search/project card near the clicked icon
   btn.addEventListener('dblclick', (ev)=>{
         ev.stopPropagation();
-        clearTimeout(clickTimeout);
+        // mark timestamp so click handler can ignore the click(s) produced by the dblclick
+        btn.__lastDbl = Date.now();
+  // ensure card content updates for this node
   updateSearchCard(nodes[i] || {});
+        // position the fixed popup near the clicked button
         try{
           const r = btn.getBoundingClientRect();
           const centerX = r.left + r.width/2;
@@ -890,28 +914,29 @@
           let top = r.top - h - gap;
           if(top < 12) top = r.bottom + gap;
           searchCardOuter.style.top = top + 'px';
-        }catch(e){ }
+        }catch(e){ /* ignore if element not yet present */ }
         cardMode = 'pinned';
         showSearchCard();
       });
-      
-      // Hover handlers
+      // hover preview: show card for this node
       btn.addEventListener('pointerenter', ()=>{
         updateSearchCard(nodes[i] || {});
+        // position near search since the popup is fixed and consistent
         positionSearchCard();
         cardMode = 'hover';
         showSearchCard();
         pauseTour();
-      }, {passive:true});
-      
+      });
       btn.addEventListener('pointerleave', ()=>{
+        // Only hide hover previews when the hovered node is NOT the currently-targeted node.
+        // This prevents small mouse movements from dismissing a preview for the active/targeted project.
         const nodeEl = btn.closest && btn.closest('.node');
         const isHit = nodeEl ? nodeEl.classList.contains('hit') : false;
         if(cardMode === 'hover' && !isHit){
           hideSearchCard(300);
         }
         nudgeResume(4000);
-      }, {passive:true});
+      });
 
   el.appendChild(btn);
   // append label after button so flex column centers it underneath
@@ -958,40 +983,65 @@
 
   
 
-  function onDown(e){ 
-    if(currentMode!=='manual') return; 
-    dragging=true; 
-    last.x=e.clientX; 
-    last.y=e.clientY; 
-    inertia.x=0; 
-    inertia.y=0; 
-    try{ orbit.setPointerCapture && orbit.setPointerCapture(e.pointerId); }catch(_){ } 
-  }
-  function onMove(e){ 
-    if(!dragging) return; 
-    const dx=e.clientX-last.x, dy=e.clientY-last.y; 
-    last.x=e.clientX; 
-    last.y=e.clientY; 
-    rotY += dx*0.008; 
-    rotX += dy*0.008; 
-    inertia.x = dx*0.008; 
-    inertia.y = dy*0.008;
-  }
-  function onUp(e){ 
-    dragging=false; 
-    try{ orbit.releasePointerCapture && orbit.releasePointerCapture(e.pointerId); }catch(_){ } 
+  function onDown(e){ dragging=true; last.x=e.clientX; last.y=e.clientY; inertia.x=0; inertia.y=0; orbit.setPointerCapture(e.pointerId); }
+  function onMove(e){ if(!dragging) return; const dx=e.clientX-last.x, dy=e.clientY-last.y; last.x=e.clientX; last.y=e.clientY; rotY += dx*0.008; rotX += dy*0.008; inertia.x = dx*0.008; inertia.y = dy*0.008; positionNodes(); }
+  function onUp(e){ dragging=false; orbit.releasePointerCapture(e.pointerId); }
+
+  orbit.addEventListener('pointerdown', onDown);
+  orbit.addEventListener('pointermove', onMove);
+  orbit.addEventListener('pointerup', onUp);
+
+  // orbit diagnostic logs (gated)
+  if(DEBUG){
+    orbit.addEventListener('pointerdown', (e)=>{ try{ console.debug('orbit.pointerdown', e.target && (e.target.tagName || e.target.className)); }catch(err){} });
+    orbit.addEventListener('pointerup', (e)=>{ try{ console.debug('orbit.pointerup', e.target && (e.target.tagName || e.target.className)); }catch(err){} });
   }
 
-  orbit.addEventListener('pointerdown', onDown, {passive:true});
-  orbit.addEventListener('pointermove', onMove, {passive:true});
-  orbit.addEventListener('pointerup', onUp, {passive:true});
-
-  // Diagnostic hooks (gated)
-  if(DEBUG){ 
-    document.addEventListener('pointerdown', (e)=>{ 
-      try{ console.debug('document.pointerdown', e.type, e.target && (e.target.tagName || e.target.className)); }catch(err){} 
-    }); 
-  }
+  // Global pointer tracking to synthesize taps on pointerup using elementFromPoint.
+  // This bypasses pointer capture/drag stealing by the orbit container.
+  let __lastPointer = { x:0, y:0, t:0 };
+  document.addEventListener('pointerdown', (e)=>{ __lastPointer = { x: e.clientX, y: e.clientY, t: Date.now() }; });
+  document.addEventListener('pointerup', (e)=>{
+    try{
+      const dt = Date.now() - (__lastPointer.t || 0);
+      const dx = e.clientX - (__lastPointer.x || 0);
+      const dy = e.clientY - (__lastPointer.y || 0);
+      const dist = Math.hypot(dx, dy);
+      // only consider as a tap if small movement and reasonably quick
+      if(dist <= 10 && dt < 400){
+        const el = document.elementFromPoint(e.clientX, e.clientY);
+        // also inspect the full stacking list for richer diagnostics
+        if(DEBUG){
+          try{
+            const stack = document.elementsFromPoint(e.clientX, e.clientY) || [];
+            console.debug('elementsFromPoint stack:', stack.slice(0,8).map(x=>({ tag: x.tagName, cls: x.className })));
+          }catch(_){ }
+        }
+        if(!el){ if(DEBUG){ console.debug('elementFromPoint returned null'); } return; }
+        // log the element and its classes to help debug hit-testing
+        if(DEBUG){ try{ console.debug('elementFromPoint ->', el.tagName, el.className, el); }catch(_){ } }
+  const nodeEl = el.closest && el.closest('.node');
+  if(nodeEl){
+          const idx = parseInt(nodeEl.getAttribute('data-index'), 10);
+          if(!isNaN(idx) && nodes[idx]){
+            const btn = nodeEl.querySelector('button');
+            // avoid double-handling if the button's dblclick logic just ran
+            const now = Date.now();
+            if(btn && btn.__lastDbl && (now - btn.__lastDbl) < 600) return;
+            // mark as synthetic handled so native click won't duplicate
+            if(btn) btn.__synthHandled = true;
+            if(DEBUG){ console.debug('global tap detected on node', idx, nodes[idx] && nodes[idx].label); }
+            try{ searchInput.value = nodes[idx].label || ''; }catch(e){}
+            focusNodeByIndex(idx);
+            updateSearchCard(nodes[idx] || {});
+            positionSearchCard();
+            showSearchCard();
+          }
+          else { if(DEBUG){ try{ console.debug('no .node ancestor found for elementFromPoint result', el.tagName, el.className); }catch(_){ } } }
+        }
+      }
+    }catch(err){ console.warn('pointerup synth error', err); }
+  }, { capture: true });
 
   addEventListener('keydown', (e)=>{
     if(e.key==='ArrowRight') { rotY += 0.2; }
@@ -1134,18 +1184,23 @@
   }
 
   let searchAnim = null;
+  let searching = false;
   function animateToAngles(target, duration=700){
     if(searchAnim) cancelAnimationFrame(searchAnim.id);
+    // pause inertia and autobrotation influence
+    searching = true;
     inertia.x = 0; inertia.y = 0;
     const startX = rotX, startY = rotY;
     const start = performance.now();
     function step(now){
       const t = Math.min(1, (now - start) / duration);
+      // easeInOutQuad
       const e = t<.5?2*t*t:-1+(4-2*t)*t;
       rotX = startX + (target.rotX - startX) * e;
       rotY = startY + (target.rotY - startY) * e;
+      positionNodes();
       if(t < 1) searchAnim.id = requestAnimationFrame(step);
-      else searchAnim = null;
+      else { searching = false; searchAnim = null; }
     }
     searchAnim = {id: requestAnimationFrame(step)};
   }
@@ -1202,29 +1257,27 @@
 
   function showSearchCard(){
     if(hideCardTimer){ clearTimeout(hideCardTimer); hideCardTimer = null; }
-    searchCardOuter.classList.add('show');
-    searchCardOuter.setAttribute('aria-hidden','false');
-    const eraser = document.getElementById('eraser'); if(eraser) eraser.classList.add('active');
-    const wrap = document.getElementById('searchWrap'); if(wrap) wrap.classList.add('pushed');
-    const spacer = document.getElementById('searchSpacer'); 
-    if(spacer){ spacer.style.height = getComputedStyle(document.documentElement).getPropertyValue('--eraser-lift') || '120px'; }
-    schedulePositionSearchCard();
+  // show first so measurements include visibility
+  searchCardOuter.classList.add('show');
+  searchCardOuter.setAttribute('aria-hidden','false');
+  // animate eraser up to reveal the floating card
+  const eraser = document.getElementById('eraser'); if(eraser) eraser.classList.add('active');
+  const wrap = document.getElementById('searchWrap'); if(wrap) wrap.classList.add('pushed');
+  const spacer = document.getElementById('searchSpacer'); if(spacer){ spacer.style.height = getComputedStyle(document.documentElement).getPropertyValue('--eraser-lift') || '120px'; }
+  // initial position
+  positionSearchCard();
+  // re-position on the next frames so transformed rects are current
+  requestAnimationFrame(()=>{ positionSearchCard(); requestAnimationFrame(positionSearchCard); });
   }
   function hideSearchCard(delay=0){
     if(hideCardTimer) clearTimeout(hideCardTimer);
-    if(delay>0){ 
-      hideCardTimer = setTimeout(()=>{ 
-        searchCardOuter.classList.remove('show'); 
-        searchCardOuter.setAttribute('aria-hidden','true'); 
-      }, delay); 
-    } else { 
-      searchCardOuter.classList.remove('show'); 
-      searchCardOuter.setAttribute('aria-hidden','true'); 
-    }
-    const eraser = document.getElementById('eraser'); if(eraser) eraser.classList.remove('active');
-    const wrap = document.getElementById('searchWrap'); if(wrap) wrap.classList.remove('pushed');
-    const spacer = document.getElementById('searchSpacer'); if(spacer){ spacer.style.height = '0px'; }
-    cardMode = null;
+    if(delay>0){ hideCardTimer = setTimeout(()=>{ searchCardOuter.classList.remove('show'); searchCardOuter.setAttribute('aria-hidden','true'); }, delay); }
+    else { searchCardOuter.classList.remove('show'); searchCardOuter.setAttribute('aria-hidden','true'); }
+  // restore eraser when card is hidden
+  const eraser = document.getElementById('eraser'); if(eraser) eraser.classList.remove('active');
+  const wrap = document.getElementById('searchWrap'); if(wrap) wrap.classList.remove('pushed');
+  const spacer = document.getElementById('searchSpacer'); if(spacer){ spacer.style.height = '0px'; }
+  cardMode = null;
   }
 
   function updateSearchCard(nd){
@@ -1234,22 +1287,20 @@
       searchCardDesc.textContent = 'No matching project found. Try a different keyword.';
       searchCardLink.href = '#';
       searchCardLink.textContent = 'Browse projects';
-      schedulePositionSearchCard();
-      return;
+  // ensure popup repositions even for the empty state
+  positionSearchCard();
+  return;
     }
     searchCardImg.src = nd.screenshot || nd.icon || ICON_URL;
     searchCardTitle.textContent = nd.label || 'Untitled';
     searchCardDesc.textContent = nd.desc || '';
     searchCardLink.href = nd.href || '#';
     searchCardLink.textContent = nd.href ? 'Open project' : 'More';
-    schedulePositionSearchCard();
+    // position the card centered above the search input (fixed popup needs explicit coords)
+    positionSearchCard();
+    // small reveal animation (mask is transparent)
     const mask = document.querySelector('#searchCard .mask');
-    if(mask){ 
-      mask.animate([{ transform: 'scaleY(1)' }, { transform: 'scaleY(0)' }], { 
-        duration: 420, 
-        easing: 'cubic-bezier(.2,.9,.2,1)' 
-      }); 
-    }
+    if(mask){ mask.animate([{ transform: 'scaleY(1)' }, { transform: 'scaleY(0)' }], { duration: 420, easing: 'cubic-bezier(.2,.9,.2,1)' }); }
   }
 
   // Position the fixed popup centered above the search input
@@ -1258,6 +1309,7 @@
     const wrap = document.getElementById('searchWrap');
     if(!wrap) return;
     const rect = wrap.getBoundingClientRect();
+    // Prefer to center horizontally inside the left column (where the headline and search live).
     const wrapCenter = rect.left + rect.width / 2;
     const leftCol = document.querySelector('.left-col');
     const leftRect = leftCol ? leftCol.getBoundingClientRect() : null;
@@ -1265,20 +1317,26 @@
     const eraserRect = eraser ? eraser.getBoundingClientRect() : null;
     let centerX = wrapCenter;
     if(leftRect){
+      // center inside the left-column to place the card visually between text and input
       centerX = Math.round(leftRect.left + leftRect.width / 2);
     } else if(eraserRect){
+      // fallback: bias slightly toward the wording so the card sits nearer the text
       const eraserEdge = eraserRect.right;
-      const bias = 0.4;
+      const bias = 0.4; // 0..1 where 0.0 => nearer search input, 1.0 => nearer wording
       centerX = Math.round(eraserEdge * (1 - bias) + wrapCenter * bias);
     }
     searchCardOuter.style.left = centerX + 'px';
 
+    // measure height (element exists in DOM even when opacity:0)
     const h = searchCardOuter.offsetHeight || 180;
     const gap = 12;
+    // compute a vertical position between the bottom of the eraser and the top of the search input
     let top = rect.top - h - gap;
     if(eraserRect){
+      // prefer the midpoint between eraser bottom and input top
       top = Math.round((eraserRect.bottom + rect.top) / 2 - h / 2);
     }
+    // clamp below the topbar so it doesn't overlap the fixed topbar
     const topbar = document.querySelector('.topbar');
     const topbarRect = topbar ? topbar.getBoundingClientRect() : null;
     const minTop = topbarRect ? Math.round(topbarRect.bottom + 8) : 12;
@@ -1289,15 +1347,9 @@
     searchCardOuter.style.top = top + 'px';
   }
 
-  // Debounce position updates
-  let posCardTimer;
-  function schedulePositionSearchCard(){
-    clearTimeout(posCardTimer);
-    posCardTimer = setTimeout(positionSearchCard, 100);
-  }
-  
-  window.addEventListener('resize', schedulePositionSearchCard);
-  document.addEventListener('scroll', schedulePositionSearchCard, {capture:true, passive:true});
+  // reposition on resize/scroll so the popup stays aligned
+  window.addEventListener('resize', positionSearchCard);
+  document.addEventListener('scroll', positionSearchCard, true);
 
   // hide card when clicking outside search area
   document.addEventListener('click', (e)=>{
@@ -1327,8 +1379,8 @@
     const desc = n.desc || '';
     const href = n.href || '#';
     return `
-      <article class="feature-card" role="listitem" tabindex="0">
-        <img src="${img}" alt="${title}" loading="lazy" />
+      <article class="feature-card" role="listitem">
+        <img src="${img}" alt="${title}" />
         <div class="meta">
           <h4>${title}</h4>
           <p>${desc}</p>
@@ -1336,43 +1388,41 @@
         </div>
       </article>`;
   }
-  
-  const featureRail = document.getElementById('featureRail');
   function populateFeatured(){
-    if(!featureRail) return;
+    const rail = document.getElementById('featureRail'); if(!rail) return;
     const picks = sampleThree(nodes);
-    featureRail.innerHTML = picks.map(featureCardHTML).join('');
-    Array.from(featureRail.querySelectorAll('.feature-card')).forEach((card, idx)=>{
+    rail.innerHTML = picks.map(featureCardHTML).join('');
+    // clicking a card also focuses that node if present
+    Array.from(rail.querySelectorAll('.feature-card')).forEach((card, idx)=>{
       const n = picks[idx];
+      card.style.cursor = 'pointer';
       card.addEventListener('click', ()=>{
         const i = nodes.findIndex(x=> (x.label||'') === (n.label||''));
         if(i>=0){ focusNodeByIndex(i); updateSearchCard(nodes[i]); cardMode = 'pinned'; showSearchCard(); }
       });
-      card.addEventListener('keydown', (e)=>{ 
-        if(e.key==='Enter'||e.key===' '){ e.preventDefault(); card.click(); } 
-      });
+      card.tabIndex = 0;
+      card.addEventListener('keydown', (e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); card.click(); } });
     });
   }
   const featureShuffle = document.getElementById('featureShuffle');
-  if(featureShuffle){ 
-    featureShuffle.addEventListener('click', ()=>{ 
-      try{ populateFeatured(); }catch(_){ } 
-    }); 
-  }
+  if(featureShuffle){ featureShuffle.addEventListener('click', ()=>{ try{ populateFeatured(); }catch(_){ } }); }
 
   // ===== AUTO TOUR =====
   let tourTimer = null;
   let tourIdx = 0;
   let tourPaused = false;
   function nextTourStep(){
-    if(tourPaused) return;
+    if(tourPaused || searching) return;
     if(!nodes || !nodes.length) return;
     tourIdx = (tourIdx + 1) % nodes.length;
     focusNodeByIndex(tourIdx);
-    updateSearchCard(nodes[tourIdx]);
-    cardMode = 'tour';
-    showSearchCard();
-    setTimeout(positionSearchCard, 100);
+    // update floating card for the current node without stealing focus
+  updateSearchCard(nodes[tourIdx]);
+  cardMode = 'tour';
+  showSearchCard();
+  // Stabilize position after focus animation alters layout
+  setTimeout(positionSearchCard, 0);
+  setTimeout(positionSearchCard, 250);
   }
   function startAutoTour(){
     if(tourTimer) clearInterval(tourTimer);
@@ -1381,76 +1431,64 @@
   function stopAutoTour(){ if(tourTimer){ clearInterval(tourTimer); tourTimer = null; } }
   function pauseTour(){ tourPaused = true; }
   function resumeTour(){ tourPaused = false; }
+  // pause while the user interacts; resume after a period of inactivity
   let resumeHandle = null;
   function nudgeResume(delay=5000){
     if(resumeHandle) clearTimeout(resumeHandle);
     resumeHandle = setTimeout(()=>{ resumeTour(); }, delay);
   }
-  orbit.addEventListener('pointerdown', ()=>{ if(currentMode==='auto'){ pauseTour(); nudgeResume(7000); } }, {passive:true});
-  orbit.addEventListener('pointerenter', ()=>{ pauseTour(); }, {passive:true});
-  orbit.addEventListener('pointerleave', ()=>{ nudgeResume(4000); }, {passive:true});
+  orbit.addEventListener('pointerdown', ()=>{ if(currentMode==='auto'){ pauseTour(); nudgeResume(7000); } });
+  orbit.addEventListener('pointerenter', ()=>{ pauseTour(); });
+  orbit.addEventListener('pointerleave', ()=>{ nudgeResume(4000); });
   searchInput.addEventListener('focus', ()=>{ pauseTour(); });
   searchInput.addEventListener('input', ()=>{ pauseTour(); nudgeResume(8000); });
-  document.addEventListener('keydown', ()=>{ pauseTour(); nudgeResume(6000); }, {passive:true});
+  document.addEventListener('keydown', ()=>{ pauseTour(); nudgeResume(6000); });
   function rotateVec(v){
+    // rotate around X then Y
     const cosX = Math.cos(rotX), sinX = Math.sin(rotX);
     const cosY = Math.cos(rotY), sinY = Math.sin(rotY);
-    const y = v.y * cosX - v.z * sinX;
-    const z = v.y * sinX + v.z * cosX;
-    const x = v.x * cosY + z * sinY;
-    const zFinal = -v.x * sinY + z * cosY;
-    return {x,y,z:zFinal};
+    let y = v.y * cosX - v.z * sinX;
+    let z = v.y * sinX + v.z * cosX;
+    let x = v.x * cosY + z * sinY;
+    z = -v.x * sinY + z * cosY;
+    return {x,y,z};
   }
 
-  // Cache computed values
-  let cachedBounds = null;
-  let cachedR = 0;
-  let boundsUpdateTimer = null;
-  
-  function updateBoundsCache(){
-    cachedBounds = orbit.getBoundingClientRect();
-    cachedR = Math.min(cachedBounds.width, cachedBounds.height) * 0.42;
-  }
-  
   function positionNodes(){
-    if(!cachedBounds || boundsUpdateTimer === null){
-      updateBoundsCache();
-      boundsUpdateTimer = setTimeout(()=>{ boundsUpdateTimer = null; }, 150);
-    }
-    
     const nodesWrap = orbit.querySelector('.nodes');
     const children = nodesWrap ? Array.from(nodesWrap.querySelectorAll('.node')) : Array.from(ring.querySelectorAll('.node'));
-    const R = cachedR;
+    const bounds = orbit.getBoundingClientRect();
+    const R = Math.min(bounds.width, bounds.height) * 0.42;
 
     let hitIdx = -1, hitScore = 0;
-    const bgEl = document.getElementById('ringBg');
-    const twoR = 2*R;
 
     children.forEach((el, i)=>{
-      const pt = points[i];
+  const pt = points[i];
       if(!pt) return;
       const v = rotateVec(pt);
       const x = v.x * R, y = v.y * R, z = v.z * R;
       el.style.transform = `translate3d(calc(-50% + ${x}px), calc(-50% + ${y}px), ${z}px)`;
-      el.style.zIndex = 1000 + (z|0);
-      const scale = 0.65 + 0.35 * ((z + R) / twoR);
+      el.style.zIndex = 1000 + Math.round(z);
+      const scale = 0.65 + 0.35 * ((z + R) / (2*R));
       const btn = el.querySelector('button');
       if(btn) btn.style.transform = `scale(${scale.toFixed(3)})`;
-      el.style.opacity = 0.3 + 0.7 * ((z + R) / twoR);
-      
-      if(v.z < 0) el.classList.add('dim'); else el.classList.remove('dim');
-      
-      const n = nodes[i] || {};
-      const catOk = (currentCategory==='all') || (Array.isArray(n._cats) && n._cats.includes(currentCategory));
-      if(catOk) el.classList.remove('filtered'); else el.classList.add('filtered');
+      const frontness = Math.max(0, (v.z + 1) / 2);
+      el.style.opacity = 0.3 + 0.7 * ((z + R) / (2*R));
+      // dim nodes on the back half of the sphere
+  if(v.z < 0) el.classList.add('dim'); else el.classList.remove('dim');
+  // category filter: mark nodes that don't match as filtered
+  const n = nodes[i] || {};
+  const catOk = (currentCategory==='all') || (Array.isArray(n._cats) && n._cats.includes(currentCategory));
+  if(catOk) el.classList.remove('filtered'); else el.classList.add('filtered');
 
-      const rightness = Math.max(0, (v.x + 1) * 0.5);
-      const frontness = Math.max(0, (v.z + 1) * 0.5);
-      const s = Math.pow(rightness, 3) * frontness;
+      // target on the right: prefer x close to +R and front-facing (z>0)
+      const rightness = Math.max(0, (v.x + 1) / 2); // 0..1, 1 is far right
+      const s = Math.pow(rightness, 3) * frontness; // sharpen rightness
       if(s > hitScore){ hitScore = s; hitIdx = i; }
     });
 
     children.forEach(c=>c.classList.remove('hit'));
+    const bgEl = document.getElementById('ringBg');
     if(hitIdx !== -1 && hitScore > 0.5){
       const active = nodes[hitIdx] || {};
       children[hitIdx].classList.add('hit');
@@ -1462,29 +1500,13 @@
     }
   }
 
-  function onDown(e){ 
-    if(currentMode!=='manual') return; 
-    dragging=true; 
-    last.x=e.clientX; 
-    last.y=e.clientY; 
-    inertia.x=0; 
-    inertia.y=0; 
-    try{ orbit.setPointerCapture && orbit.setPointerCapture(e.pointerId); }catch(_){ } 
-  }
-  function onMove(e){ 
-    if(!dragging) return; 
-    const dx=e.clientX-last.x, dy=e.clientY-last.y; 
-    last.x=e.clientX; 
-    last.y=e.clientY; 
-    rotY += dx*0.008; 
-    rotX += dy*0.008; 
-    inertia.x = dx*0.008; 
-    inertia.y = dy*0.008;
-  }
-  function onUp(e){ 
-    dragging=false; 
-    try{ orbit.releasePointerCapture && orbit.releasePointerCapture(e.pointerId); }catch(_){ } 
-  }
+  function onDown(e){ if(currentMode!=='manual') return; dragging=true; last.x=e.clientX; last.y=e.clientY; inertia.x=0; inertia.y=0; try{ orbit.setPointerCapture && orbit.setPointerCapture(e.pointerId); }catch(_){ } }
+  function onMove(e){ if(!dragging) return; const dx=e.clientX-last.x, dy=e.clientY-last.y; last.x=e.clientX; last.y=e.clientY; rotY += dx*0.008; rotX += dy*0.008; inertia.x = dx*0.008; inertia.y = dy*0.008; positionNodes(); }
+  function onUp(e){ dragging=false; orbit.releasePointerCapture(e.pointerId); }
+
+  orbit.addEventListener('pointerdown', onDown);
+  orbit.addEventListener('pointermove', onMove);
+  orbit.addEventListener('pointerup', onUp);
 
   addEventListener('keydown', (e)=>{
     if(e.key==='ArrowRight') { rotY += 0.2; }
@@ -1492,7 +1514,8 @@
     else if(e.key==='ArrowUp') { rotX -= 0.2; }
     else if(e.key==='ArrowDown') { rotX += 0.2; }
     else if(e.key==='Escape'){ closeAllPanels(); }
-  }, {passive:true});
+    positionNodes();
+  });
 
   function animate(){
     rotX += (inertia.y *= 0.94) * 0.3;
@@ -1501,15 +1524,8 @@
     requestAnimationFrame(animate);
   }
 
-  // Debounced resize handler for nodes
-  let nodeResizeTimer;
-  addEventListener('resize', ()=>{
-    clearTimeout(nodeResizeTimer);
-    nodeResizeTimer = setTimeout(()=>{
-      cachedBounds = null;
-      positionNodes();
-    }, 150);
-  });
+  // initOrb bootstraps nodes, points, and starts animation. Duplicate boot calls removed.
+  addEventListener('resize', ()=>{positionNodes()});
 
   // categorize nodes heuristically
   function categorizeNodes(){
