@@ -347,28 +347,37 @@ function checkPlayerEnemyCollision() {
     for (let i = enemies.length - 1; i >= 0; i--) {
         const enemy = enemies[i];
         if (rectsCollide(player, enemy)) {
-            // Use the top of the hitbox (lance tip) for joust logic
-            const playerTip = player.y;
-            const enemyTip = enemy.y;
+                    // Use the vertical center of each rider for more consistent joust logic
+                    // (y increases downward; smaller value == higher on screen)
+                    const playerCenter = player.y + player.h / 2;
+                    const enemyCenter = enemy.y + enemy.h / 2;
             let impactX = (player.x + player.w/2 + enemy.x + enemy.w/2) / 2;
             let impactY = (player.y + player.h/2 + enemy.y + enemy.h/2) / 2;
             let impactType = 'tie';
-            if (Math.abs(playerTip - enemyTip) < JOUST_BUFFER) {
+            // Determine outcome by comparing centers (higher rider wins)
+            if (Math.abs(playerCenter - enemyCenter) < JOUST_BUFFER) {
                 // Tie: both bounce
                 impactType = 'tie';
                 player.vy = FLAP_STRENGTH / 2;
                 enemy.vy = FLAP_STRENGTH / 2;
-            } else if (playerTip < enemyTip) {
-                // Player is above enemy: player wins
+            } else if (playerCenter < enemyCenter) {
+                // Player is higher on screen: player wins
                 impactType = 'playerWin';
                 player.score++;
                 defeatedEnemyIndices.push(i);
-                player.vy = FLAP_STRENGTH;
+                // give player a bounce-up effect
+                player.vy = Math.min(FLAP_STRENGTH, player.vy - Math.abs(FLAP_STRENGTH) * 0.6);
+                // slight horizontal push away from enemy
+                if (player.x < enemy.x) player.vx = Math.max(player.vx, -PLAYER_SPEED * 0.3);
+                else player.vx = Math.min(player.vx, PLAYER_SPEED * 0.3);
             } else {
+                // Enemy is higher: player loses this collision
                 impactType = 'enemyWin';
                 player.lives--;
                 playerKilled = true;
-                enemy.vy = FLAP_STRENGTH;
+                // knock player upward a bit for feedback
+                player.vy = FLAP_STRENGTH;
+                enemy.vy = Math.min(FLAP_STRENGTH, enemy.vy - Math.abs(FLAP_STRENGTH) * 0.2);
             }
             impacts.push({x: impactX, y: impactY, frame: 0, type: impactType});
         }
