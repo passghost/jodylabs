@@ -18,6 +18,9 @@
   <meta name="twitter:title" content="JodyLabs — Rolodex Explorer (Vibe4)" />
   <meta name="twitter:description" content="Browse projects in a unique rolodex-style horizontal carousel with 3D card flips." />
   <meta name="twitter:image" content="https://drive.google.com/file/d/1XQXJlgIykHWHeVecXl3N79oPgy4FjX8O/view?usp=drive_link" />
+  <!-- Supabase config: set these to your project values -->
+  <meta name="supabase-url" content="https://jgvxwtqdmbqnfliaalel.supabase.co">
+  <meta name="supabase-anon-key" content="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impndnh3dHFkbWJxbmZsaWFhbGVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcwMDc4ODcsImV4cCI6MjA4MjU4Mzg4N30.t9FENiIHIeXozF0rsrNu0sxpGmi0Xvjrzz2RejASJy4">
 
   <style>
     /* --- RESET --- */
@@ -552,14 +555,24 @@
   // ===== HIT COUNTER =====
   (function() {
     // Use the RPC function `increment_page_hit` to atomically increment and return the new count
-    const apiUrl = 'https://omcwjmvdjswkfjkahchm.supabase.co';
-    const headers = {
-      'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
-      'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
-      'Content-Type': 'application/json'
-    };
+    const metaUrl = document.querySelector('meta[name="supabase-url"]');
+    const metaKey = document.querySelector('meta[name="supabase-anon-key"]');
+    const apiUrl = metaUrl ? metaUrl.content.trim() : '';
+    const anonKey = metaKey ? metaKey.content.trim() : '';
     const pagePath = 'Vibe4';
     const hitCountEl = document.getElementById('hit-count-pill');
+
+    if (!apiUrl || !anonKey) {
+      console.error('Supabase URL or anon key missing. Set meta supabase-url and supabase-anon-key.');
+      hitCountEl.textContent = '---';
+      return;
+    }
+
+    const headers = {
+      'apikey': anonKey,
+      'Authorization': `Bearer ${anonKey}`,
+      'Content-Type': 'application/json'
+    };
 
     async function recordHit() {
       try {
@@ -568,7 +581,7 @@
           headers: headers,
           body: JSON.stringify({ page_path: pagePath, last_ip_hash: 'browser-' + Math.random().toString(36).substring(7) })
         });
-        if (!resp.ok) { hitCountEl.textContent = '---'; return; }
+        if (!resp.ok) { console.warn('RPC call failed', resp.status); hitCountEl.textContent = '---'; return; }
         const data = await resp.json();
         const rec = Array.isArray(data) ? data[0] : data;
         hitCountEl.textContent = (rec && rec.hit_count != null) ? rec.hit_count.toLocaleString() : '---';
