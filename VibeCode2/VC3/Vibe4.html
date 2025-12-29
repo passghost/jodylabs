@@ -574,22 +574,43 @@
       'Content-Type': 'application/json'
     };
 
-    async function recordHit() {
+    // Try multiple candidate RPC names (in case your function was created with a different name)
+    const rpcCandidates = ['increment_page_hit', 'increment_page_hit_id5', 'id5'];
+
+    async function tryRpc(name) {
       try {
-        const resp = await fetch(`${apiUrl}/rest/v1/rpc/increment_page_hit`, {
+        const resp = await fetch(`${apiUrl}/rest/v1/rpc/${name}`, {
           method: 'POST',
           headers: headers,
           body: JSON.stringify({ page_path: pagePath, last_ip_hash: 'browser-' + Math.random().toString(36).substring(7) })
         });
-        if (!resp.ok) { console.warn('RPC call failed', resp.status); hitCountEl.textContent = '---'; return; }
+        if (!resp.ok) {
+          console.warn(`RPC '${name}' returned`, resp.status);
+          return { ok: false, status: resp.status };
+        }
         const data = await resp.json();
-        const rec = Array.isArray(data) ? data[0] : data;
-        hitCountEl.textContent = (rec && rec.hit_count != null) ? rec.hit_count.toLocaleString() : '---';
-      } catch (error) {
-        console.error('Hit counter RPC error:', error);
-        hitCountEl.textContent = '---';
+        return { ok: true, data };
+      } catch (err) {
+        console.error(`RPC '${name}' fetch error:`, err);
+        return { ok: false, error: err };
       }
     }
+
+    async function recordHit() {
+      for (const name of rpcCandidates) {
+        const result = await tryRpc(name);
+        if (result.ok) {
+          const rec = Array.isArray(result.data) ? result.data[0] : result.data;
+          hitCountEl.textContent = (rec && rec.hit_count != null) ? rec.hit_count.toLocaleString() : '---';
+          console.log('Hit recorded via RPC:', name);
+          return;
+        }
+      }
+      // If we get here none of the RPC names worked
+      hitCountEl.textContent = '---';
+      console.error('All RPC attempts failed. Confirm function name, signature and GRANT EXECUTE to anon.');
+    }
+
     recordHit();
   })();
   </script>
