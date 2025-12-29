@@ -9,12 +9,16 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const supabaseClient = (function(){
     try{
         if (window.supabase && typeof window.supabase.createClient === 'function') {
-            return window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            return window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+                auth: { persistSession: false, autoRefreshToken: false }
+            });
         }
     }catch(e){ /* fall through */ }
     // If the global is not present, try to access createClient directly (rare)
     if (typeof createClient === 'function') {
-        return createClient(SUPABASE_URL, SUPABASE_KEY);
+        return createClient(SUPABASE_URL, SUPABASE_KEY, {
+            auth: { persistSession: false, autoRefreshToken: false }
+        });
     }
     console.warn('Supabase client not available on window; highscores will fail until script is loaded');
     return null;
