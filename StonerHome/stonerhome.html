@@ -6,7 +6,7 @@
     <title>The Wake'n'bake Homepage</title>
     <meta name="description" content="The Wake'n'bake Homepage - Search, chat, weather, crypto, comics, and hemp store directory.">
     <meta name="theme-color" content="#145c2a">
-    <!-- Supabase config (for hit counter) -->
+    <!-- Supabase config (shared) -->
     <meta name="supabase-url" content="https://jgvxwtqdmbqnfliaalel.supabase.co">
     <meta name="supabase-anon-key" content="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impndnh3dHFkbWJxbmZsaWFhbGVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcwMDc4ODcsImV4cCI6MjA4MjU4Mzg4N30.t9FENiIHIeXozF0rsrNu0sxpGmi0Xvjrzz2RejASJy4">
     <style>
@@ -652,55 +652,37 @@
                     const apiUrl = metaUrl ? metaUrl.content.trim() : '';
                     const anonKey = metaKey ? metaKey.content.trim() : '';
                     const el = document.getElementById('hit-count');
-                    const err = document.getElementById('hit-error');
-                    const btn = document.getElementById('refresh-hit');
+                    const errEl = document.getElementById('hit-error');
+                    const refresh = document.getElementById('refresh-hit');
                     if(!el) return;
-                    if(!apiUrl || !anonKey){ el.textContent = '---'; if(err) { err.textContent='Supabase meta missing'; err.style.display='block'; } return; }
+                    if(!apiUrl || !anonKey){ el.textContent = '---'; if(errEl) { errEl.style.display='block'; errEl.textContent='Supabase meta missing'; } return; }
 
-                    async function tryPost(fnName, body){
+                    async function fetchHit(){
                         try{
-                            const r = await fetch(apiUrl.replace(/\/$/, '') + '/rest/v1/rpc/' + fnName, {
+                            const resp = await fetch(apiUrl.replace(/\/$/, '') + '/rest/v1/rpc/increment_page_hit_by_id', {
                                 method: 'POST',
                                 headers: { 'apikey': anonKey, 'Authorization': 'Bearer ' + anonKey, 'Content-Type': 'application/json' },
-                                body: JSON.stringify(body)
+                                body: JSON.stringify({ p_id: 5 })
                             });
-                            const txt = await r.text();
-                            let data;
-                            try{ data = txt ? JSON.parse(txt) : null; }catch(e){ data = txt; }
-                            return { ok: r.ok, status: r.status, data };
-                        }catch(e){ return { ok:false, error:e }; }
-                    }
-
-                    async function doHit(){
-                        if(err){ err.style.display='none'; err.textContent=''; }
-                        // try page_path RPC first
-                        const pageBody = { page_path: 'StonerHome', last_ip_hash: 'browser-' + Math.random().toString(36).slice(2,10) };
-                        const candidates = ['increment_page_hit','increment_page_hit_id5','id5'];
-                        for(const name of candidates){
-                            const res = await tryPost(name, pageBody);
-                            console.debug('stonerhit:', name, res);
-                            if(res.ok && res.data != null){
-                                const rec = Array.isArray(res.data) ? res.data[0] : res.data;
-                                const n = rec && (rec.hit_count ?? rec.count ?? rec.total ?? rec.value);
-                                if(n != null){ el.textContent = Number(String(n)).toLocaleString(); return; }
+                            if(!resp.ok){
+                                if(errEl){ errEl.style.display='block'; errEl.textContent = 'RPC failed: ' + resp.status; }
+                                el.textContent = '---';
+                                return;
                             }
-                        }
-                        // fallback to id-based
-                        const idRes = await tryPost('increment_page_hit_by_id', { p_id: 5 });
-                        console.debug('stonerhit: idRes', idRes);
-                        if(idRes.ok && idRes.data != null){
-                            const rec = Array.isArray(idRes.data) ? idRes.data[0] : idRes.data;
+                            const data = await resp.json();
+                            const rec = Array.isArray(data) ? data[0] : data;
                             const n = rec && (rec.hit_count ?? rec.count ?? rec.total ?? rec.value);
-                            if(n != null){ el.textContent = Number(String(n)).toLocaleString(); return; }
+                            el.textContent = (typeof n === 'number' || (typeof n === 'string' && n)) ? Number(String(n)).toLocaleString() : '---';
+                            if(errEl){ errEl.style.display='none'; errEl.textContent = ''; }
+                        }catch(e){
+                            if(errEl){ errEl.style.display='block'; errEl.textContent = 'Network error'; }
+                            el.textContent = '---';
                         }
-                        // all failed
-                        el.textContent = '---';
-                        if(err){ err.style.display='block'; err.textContent = 'Hit RPC failed'; }
                     }
 
-                    // initial
-                    doHit().catch(e=>{ console.error('stonerhit error', e); if(err){ err.style.display='block'; err.textContent='Hit error'; } });
-                    if(btn) btn.addEventListener('click', ()=>{ doHit().catch(()=>{}); });
+                    if(refresh){ refresh.addEventListener('click', fetchHit); }
+                    // record on load
+                    fetchHit();
                 })();
                 </script>
 
