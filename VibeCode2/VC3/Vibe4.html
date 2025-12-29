@@ -574,15 +574,18 @@
       'Content-Type': 'application/json'
     };
 
-    // Try multiple candidate RPC names (in case your function was created with a different name)
+    // Try multiple candidate RPC names (page_path-based) first, then fallback to id-based RPC
     const rpcCandidates = ['increment_page_hit', 'increment_page_hit_id5', 'id5'];
 
-    async function tryRpc(name) {
+    async function tryRpc(name, bodyObj) {
       try {
+        const body = bodyObj !== undefined
+          ? JSON.stringify(bodyObj)
+          : JSON.stringify({ page_path: pagePath, last_ip_hash: 'browser-' + Math.random().toString(36).substring(7) });
         const resp = await fetch(`${apiUrl}/rest/v1/rpc/${name}`, {
           method: 'POST',
           headers: headers,
-          body: JSON.stringify({ page_path: pagePath, last_ip_hash: 'browser-' + Math.random().toString(36).substring(7) })
+          body: body
         });
         if (!resp.ok) {
           console.warn(`RPC '${name}' returned`, resp.status);
@@ -606,6 +609,22 @@
           return;
         }
       }
+
+      // Fallback: use the id-based RPC for the existing logic which uses id = 5
+      try {
+        const idResult = await tryRpc('increment_page_hit_by_id', { p_id: 5 });
+        if (idResult.ok) {
+          const rec = Array.isArray(idResult.data) ? idResult.data[0] : idResult.data;
+          hitCountEl.textContent = (rec && rec.hit_count != null) ? rec.hit_count.toLocaleString() : '---';
+          console.log('Hit recorded via id-based RPC: increment_page_hit_by_id (id=5)');
+          return;
+        } else {
+          console.warn('id-based RPC returned', idResult.status || idResult.error);
+        }
+      } catch (e) {
+        console.error('id-based RPC attempt failed:', e);
+      }
+
       // If we get here none of the RPC names worked
       hitCountEl.textContent = '---';
       console.error('All RPC attempts failed. Confirm function name, signature and GRANT EXECUTE to anon.');
