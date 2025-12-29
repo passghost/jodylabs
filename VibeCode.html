@@ -1215,14 +1215,6 @@
         <span class="counter-label">Page Hits</span>
         <span class="counter-value" id="hit-count">0</span>
     </div>
-    <script src="VibeCode2/js/hitcounter.js"></script>
-    <script>
-      // Use the shared recordHitRpc; fallback increments id=5 when page_path RPC unavailable
-      if(window.recordHitRpc){
-        (function(){
-          try{ recordHitRpc('Vibe1', 'hit-count', 5); }catch(e){ console.warn('recordHitRpc call failed', e); }
-        })();
-      }
-    </script>
+        <!-- Removed external VibeCode2 hitcounter include to avoid 404/load errors -->
 </body>
 </html>

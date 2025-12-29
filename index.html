@@ -962,12 +962,7 @@
                 <span class="counter-label">Page Hits</span>
                 <span class="counter-value" id="hit-count">0</span>
         </div>
-        <script src="VibeCode2/js/hitcounter.js"></script>
-        <script>
-            if(window.recordHitRpc){
-                (function(){ try{ recordHitRpc('Index', 'hit-count', 5); }catch(e){ console.warn('recordHitRpc call failed', e); } })();
-            }
-        </script>
+        <!-- Removed external VibeCode2 hitcounter include to avoid 404/load errors -->
 
     <!-- Fallback: Inline hit counter if external script fails -->
     <script>
