@@ -4,11 +4,26 @@
 const SUPABASE_URL = 'https://omcwjmvdjswkfjkahchm.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE';
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// Avoid redeclaring the global `supabase` variable provided by the CDN.
+// Use a local `supabaseClient` wrapper instead.
+const supabaseClient = (function(){
+    try{
+        if (window.supabase && typeof window.supabase.createClient === 'function') {
+            return window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        }
+    }catch(e){ /* fall through */ }
+    // If the global is not present, try to access createClient directly (rare)
+    if (typeof createClient === 'function') {
+        return createClient(SUPABASE_URL, SUPABASE_KEY);
+    }
+    console.warn('Supabase client not available on window; highscores will fail until script is loaded');
+    return null;
+})();
 
 // Save high score for a user
 async function saveHighScore(username, score) {
-    const { data, error } = await supabase
+    if (!supabaseClient) return null;
+    const { data, error } = await supabaseClient
         .from('highscores')
         .upsert([{ username, score }], { onConflict: ['username'] });
     if (error) {
@@ -19,7 +34,8 @@ async function saveHighScore(username, score) {
 
 // Get top N high scores
 async function getHighScores(limit = 10) {
-    const { data, error } = await supabase
+    if (!supabaseClient) return null;
+    const { data, error } = await supabaseClient
         .from('highscores')
         .select('*')
         .order('score', { ascending: false })
