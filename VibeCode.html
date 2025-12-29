@@ -1210,51 +1210,19 @@
         });
     </script>
 
-    <!-- JodyLabs Hit Counter -->
+    <!-- JodyLabs Hit Counter (shared) -->
     <div class="hit-counter" id="hit-counter" style="position:fixed;bottom:20px;right:20px;font-size:0.9rem;font-weight:500;color:#e63946;background:rgba(20,20,20,0.9);padding:8px 15px;border-radius:12px;border:1px solid #e63946;backdrop-filter:blur(5px);z-index:1000;text-align:center;min-width:120px;">
         <span class="counter-label">Page Hits</span>
         <span class="counter-value" id="hit-count">0</span>
-        <span id="hit-error" style="display:none;color:#ff4444;font-size:0.7rem;margin-top:2px;"></span>
     </div>
+    <script src="VibeCode2/js/hitcounter.js"></script>
     <script>
-    // Hit Counter with Supabase via RPC (increment_page_hit)
-    (function() {
-        const apiUrl = 'https://omcwjmvdjswkfjkahchm.supabase.co';
-        const headers = {
-            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
-            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
-            'Content-Type': 'application/json'
-        };
-        const pagePath = 'aifun';
-        const hitCountEl = document.getElementById('hit-count');
-        const hitErrorEl = document.getElementById('hit-error');
-
-        async function recordHit() {
-            hitErrorEl.style.display = 'none';
-            hitErrorEl.textContent = '';
-            try {
-                const resp = await fetch(`${apiUrl}/rest/v1/rpc/increment_page_hit`, {
-                    method: 'POST',
-                    headers: headers,
-                    body: JSON.stringify({ page_path: pagePath, last_ip_hash: 'browser-' + Math.random().toString(36).substring(7) })
-                });
-                if (!resp.ok) { hitCountEl.textContent = '---'; hitErrorEl.textContent = 'API error.'; hitErrorEl.style.display = 'block'; return; }
-                const data = await resp.json();
-                const rec = Array.isArray(data) ? data[0] : data;
-                if (rec && rec.hit_count != null) {
-                    hitCountEl.textContent = rec.hit_count.toLocaleString();
-                } else {
-                    hitCountEl.textContent = '---';
-                }
-            } catch (error) {
-                console.error('Hit counter RPC error:', error);
-                hitCountEl.textContent = '---';
-                hitErrorEl.textContent = 'Network or server error.';
-                hitErrorEl.style.display = 'block';
-            }
-        }
-        recordHit();
-    })();
+      // Use the shared recordHitRpc; fallback increments id=5 when page_path RPC unavailable
+      if(window.recordHitRpc){
+        (function(){
+          try{ recordHitRpc('Vibe1', 'hit-count', 5); }catch(e){ console.warn('recordHitRpc call failed', e); }
+        })();
+      }
     </script>
 </body>
 </html>

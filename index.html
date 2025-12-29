@@ -957,6 +957,17 @@
             new AnimatedEye();
         });
     </script>
+        <!-- JodyLabs Hit Counter (shared) -->
+        <div class="hit-counter" id="hit-counter" style="position:fixed;bottom:20px;right:20px;font-size:0.9rem;font-weight:500;color:#e63946;background:rgba(20,20,20,0.9);padding:8px 15px;border-radius:12px;border:1px solid #e63946;backdrop-filter:blur(5px);z-index:1000;text-align:center;min-width:120px;">
+                <span class="counter-label">Page Hits</span>
+                <span class="counter-value" id="hit-count">0</span>
+        </div>
+        <script src="VibeCode2/js/hitcounter.js"></script>
+        <script>
+            if(window.recordHitRpc){
+                (function(){ try{ recordHitRpc('Index', 'hit-count', 5); }catch(e){ console.warn('recordHitRpc call failed', e); } })();
+            }
+        </script>
 
     <!-- Fallback: Inline hit counter if external script fails -->
     <script>
