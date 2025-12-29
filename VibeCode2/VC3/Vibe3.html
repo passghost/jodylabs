@@ -1580,7 +1580,7 @@
   document.getElementById('year').textContent = new Date().getFullYear();
   </script>
   <script>
-  // Hit Counter with Supabase (targets the small pill element)
+  // Hit Counter with Supabase (uses RPC increment_page_hit)
   (function() {
     const apiUrl = 'https://omcwjmvdjswkfjkahchm.supabase.co';
     const headers = {
@@ -1593,35 +1593,17 @@
 
     async function recordHit() {
       try {
-        const getResponse = await fetch(`${apiUrl}/rest/v1/page_hits?page_path=eq.${pagePath}&select=id,hit_count`, {
-          method: 'GET',
-          headers: headers
+        const resp = await fetch(`${apiUrl}/rest/v1/rpc/increment_page_hit`, {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({ page_path: pagePath, last_ip_hash: 'browser-' + Math.random().toString(36).substring(7) })
         });
-        if (getResponse.ok) {
-          const existingData = await getResponse.json();
-          if (existingData.length > 0) {
-            const record = existingData[0];
-            const newCount = record.hit_count + 1;
-            const updateResponse = await fetch(`${apiUrl}/rest/v1/page_hits?id=eq.${record.id}`, {
-              method: 'PATCH',
-              headers: headers,
-              body: JSON.stringify({ hit_count: newCount, last_hit: new Date().toISOString(), updated_at: new Date().toISOString() })
-            });
-            if (updateResponse.ok) hitCountEl.textContent = newCount.toLocaleString();
-            else hitCountEl.textContent = record.hit_count.toLocaleString();
-          } else {
-            const createResponse = await fetch(`${apiUrl}/rest/v1/page_hits`, {
-              method: 'POST',
-              headers: headers,
-              body: JSON.stringify({ page_path: pagePath, hit_count: 1, first_hit: new Date().toISOString(), last_hit: new Date().toISOString(), last_ip_hash: 'browser-' + Math.random().toString(36).substring(7) })
-            });
-            if (createResponse.ok) hitCountEl.textContent = '1'; else hitCountEl.textContent = '---';
-          }
-        } else {
-          hitCountEl.textContent = '---';
-        }
+        if (!resp.ok) { hitCountEl.textContent = '---'; return; }
+        const data = await resp.json();
+        const rec = Array.isArray(data) ? data[0] : data;
+        hitCountEl.textContent = (rec && rec.hit_count != null) ? rec.hit_count.toLocaleString() : '---';
       } catch (error) {
-        console.error('Hit counter error:', error);
+        console.error('Hit counter RPC error:', error);
         hitCountEl.textContent = '---';
       }
     }

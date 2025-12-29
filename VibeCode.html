@@ -1217,7 +1217,7 @@
         <span id="hit-error" style="display:none;color:#ff4444;font-size:0.7rem;margin-top:2px;"></span>
     </div>
     <script>
-    // Hit Counter with Supabase (Stoner Home logic)
+    // Hit Counter with Supabase via RPC (increment_page_hit)
     (function() {
         const apiUrl = 'https://omcwjmvdjswkfjkahchm.supabase.co';
         const headers = {
@@ -1233,67 +1233,26 @@
             hitErrorEl.style.display = 'none';
             hitErrorEl.textContent = '';
             try {
-                // Get existing record
-                const getResponse = await fetch(`${apiUrl}/rest/v1/page_hits?page_path=eq.${pagePath}&select=id,hit_count`, {
-                    method: 'GET',
-                    headers: headers
+                const resp = await fetch(`${apiUrl}/rest/v1/rpc/increment_page_hit`, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({ page_path: pagePath, last_ip_hash: 'browser-' + Math.random().toString(36).substring(7) })
                 });
-                if (getResponse.ok) {
-                    const existingData = await getResponse.json();
-                    if (existingData.length > 0) {
-                        // Try to update existing
-                        const record = existingData[0];
-                        const newCount = record.hit_count + 1;
-                        const updateResponse = await fetch(`${apiUrl}/rest/v1/page_hits?id=eq.${record.id}`, {
-                            method: 'PATCH',
-                            headers: headers,
-                            body: JSON.stringify({
-                                hit_count: newCount,
-                                last_hit: new Date().toISOString(),
-                                updated_at: new Date().toISOString()
-                            })
-                        });
-                        if (updateResponse.ok) {
-                            hitCountEl.textContent = newCount.toLocaleString();
-                        } else {
-                            hitCountEl.textContent = record.hit_count.toLocaleString();
-                            hitErrorEl.textContent = 'Could not update hit count.';
-                            hitErrorEl.style.display = 'block';
-                        }
-                    } else {
-                        // Create new record
-                        const createResponse = await fetch(`${apiUrl}/rest/v1/page_hits`, {
-                            method: 'POST',
-                            headers: headers,
-                            body: JSON.stringify({
-                                page_path: pagePath,
-                                hit_count: 1,
-                                first_hit: new Date().toISOString(),
-                                last_hit: new Date().toISOString(),
-                                last_ip_hash: 'browser-' + Math.random().toString(36).substring(7)
-                            })
-                        });
-                        if (createResponse.ok) {
-                            hitCountEl.textContent = '1';
-                        } else {
-                            hitCountEl.textContent = '---';
-                            hitErrorEl.textContent = 'Could not create hit record.';
-                            hitErrorEl.style.display = 'block';
-                        }
-                    }
+                if (!resp.ok) { hitCountEl.textContent = '---'; hitErrorEl.textContent = 'API error.'; hitErrorEl.style.display = 'block'; return; }
+                const data = await resp.json();
+                const rec = Array.isArray(data) ? data[0] : data;
+                if (rec && rec.hit_count != null) {
+                    hitCountEl.textContent = rec.hit_count.toLocaleString();
                 } else {
                     hitCountEl.textContent = '---';
-                    hitErrorEl.textContent = 'API error.';
-                    hitErrorEl.style.display = 'block';
                 }
             } catch (error) {
-                console.error('Hit counter error:', error);
+                console.error('Hit counter RPC error:', error);
                 hitCountEl.textContent = '---';
                 hitErrorEl.textContent = 'Network or server error.';
                 hitErrorEl.style.display = 'block';
             }
         }
-        // Always show the latest count on page load
         recordHit();
     })();
     </script>
