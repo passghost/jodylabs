@@ -19,6 +19,10 @@
   <meta name="twitter:description" content="Interactive showcase of experiments, tools, and visual projects â€” explore previews and open demos directly from the orb interface." />
   <meta name="twitter:image" content="https://drive.google.com/file/d/1XQXJlgIykHWHeVecXl3N79oPgy4FjX8O/view?usp=drive_link" />
 
+  <!-- Supabase config (copied from Vibe4) -->
+  <meta name="supabase-url" content="https://jgvxwtqdmbqnfliaalel.supabase.co">
+  <meta name="supabase-anon-key" content="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impndnh3dHFkbWJxbmZsaWFhbGVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcwMDc4ODcsImV4cCI6MjA4MjU4Mzg4N30.t9FENiIHIeXozF0rsrNu0sxpGmi0Xvjrzz2RejASJy4">
+
   <!-- Structured data (JSON-LD) -->
   <script type="application/ld+json">
   {"@context":"https://schema.org","@type":"WebPage","name":"JodyLabs â€” Orbital Interface","url":"https://passghost.github.io/jodylabs/VibeCode2/VC3/Vibe3.html","description":"Interactive showcase of experiments, tools, and visual projects from JodyLabs.","image":"https://drive.google.com/file/d/1XQXJlgIykHWHeVecXl3N79oPgy4FjX8O/view?usp=drive_link","publisher":{"@type":"Organization","name":"JodyLabs","url":"https://passghost.github.io/jodylabs/"}}
@@ -1581,10 +1585,34 @@
   </script>
   <script src="../js/hitcounter.js"></script>
   <script>
-    // Use shared hitcounter; fallback id=5
-    if(window.recordHitRpc){
-      (function(){ try{ recordHitRpc('Vibe3', 'hit-count-pill', 5); }catch(e){ console.warn('recordHitRpc call failed', e); } })();
-    }
+    (function(){
+      if(window.recordHitRpc){
+        try{ recordHitRpc('Vibe3', 'hit-count-pill', 5); }catch(e){ console.warn('recordHitRpc call failed', e); }
+        return;
+      }
+      // Inline fallback: call id-based RPC directly
+      (async function(){
+        const metaUrl = document.querySelector('meta[name="supabase-url"]');
+        const metaKey = document.querySelector('meta[name="supabase-anon-key"]');
+        const apiUrl = metaUrl ? metaUrl.content.trim() : '';
+        const anonKey = metaKey ? metaKey.content.trim() : '';
+        const el = document.getElementById('hit-count-pill');
+        if(!el) return;
+        if(!apiUrl || !anonKey){ el.textContent = '---'; return; }
+        try{
+          const resp = await fetch(apiUrl.replace(/\/$/, '') + '/rest/v1/rpc/increment_page_hit_by_id', {
+            method: 'POST',
+            headers: { 'apikey': anonKey, 'Authorization': 'Bearer ' + anonKey, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ p_id: 5 })
+          });
+          if(!resp.ok){ el.textContent = '---'; return; }
+          const data = await resp.json();
+          const rec = Array.isArray(data) ? data[0] : data;
+          const n = rec && (rec.hit_count ?? rec.count ?? rec.total ?? rec.value);
+          el.textContent = (typeof n === 'number' || (typeof n === 'string' && n)) ? Number(String(n)).toLocaleString() : '---';
+        }catch(e){ console.error('hit RPC error', e); el.textContent = '---'; }
+      })();
+    })();
   </script>
 </body>
 </html>

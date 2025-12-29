@@ -21,6 +21,9 @@
     <meta property="og:site_name" content="JodyLabs Vibe Code Registry">
     <meta property="og:locale" content="en_US">
     <meta property="og:image" content="https://jodylabs.surge.sh/Images/jodylabs-main.png">
+    <!-- Supabase config (copied from Vibe4) -->
+    <meta name="supabase-url" content="https://jgvxwtqdmbqnfliaalel.supabase.co">
+    <meta name="supabase-anon-key" content="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impndnh3dHFkbWJxbmZsaWFhbGVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcwMDc4ODcsImV4cCI6MjA4MjU4Mzg4N30.t9FENiIHIeXozF0rsrNu0sxpGmi0Xvjrzz2RejASJy4">
     
     <!-- Twitter Card Meta Tags -->
     <meta name="twitter:card" content="summary_large_image">
@@ -1215,6 +1218,32 @@
         <span class="counter-label">Page Hits</span>
         <span class="counter-value" id="hit-count">0</span>
     </div>
-        <!-- Removed external VibeCode2 hitcounter include to avoid 404/load errors -->
+        <script>
+            (async function(){
+                const metaUrl = document.querySelector('meta[name="supabase-url"]');
+                const metaKey = document.querySelector('meta[name="supabase-anon-key"]');
+                const apiUrl = metaUrl ? metaUrl.content.trim() : '';
+                const anonKey = metaKey ? metaKey.content.trim() : '';
+                const el = document.getElementById('hit-count');
+                if(!el){ return; }
+                if(!apiUrl || !anonKey){ el.textContent = '---'; console.error('Supabase meta missing'); return; }
+                try{
+                    const resp = await fetch(apiUrl.replace(/\/$/, '') + '/rest/v1/rpc/increment_page_hit_by_id', {
+                        method: 'POST',
+                        headers: {
+                            'apikey': anonKey,
+                            'Authorization': 'Bearer ' + anonKey,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ p_id: 5 })
+                    });
+                    if(!resp.ok){ console.warn('hit RPC failed', resp.status); el.textContent = '---'; return; }
+                    const data = await resp.json();
+                    const rec = Array.isArray(data) ? data[0] : data;
+                    const n = rec && (rec.hit_count ?? rec.count ?? rec.total ?? rec.value);
+                    el.textContent = (typeof n === 'number' || (typeof n === 'string' && n)) ? Number(String(n)).toLocaleString() : '---';
+                }catch(err){ console.error('hit RPC error', err); el.textContent = '---'; }
+            })();
+        </script>
 </body>
 </html>
