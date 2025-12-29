@@ -30,6 +30,9 @@
 
     <!-- Canonical URL -->
     <link rel="canonical" href="https://passghost.github.io/jodylabs/">
+    <!-- Supabase config (shared) -->
+    <meta name="supabase-url" content="https://jgvxwtqdmbqnfliaalel.supabase.co">
+    <meta name="supabase-anon-key" content="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impndnh3dHFkbWJxbmZsaWFhbGVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcwMDc4ODcsImV4cCI6MjA4MjU4Mzg4N30.t9FENiIHIeXozF0rsrNu0sxpGmi0Xvjrzz2RejASJy4">
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -1151,26 +1154,33 @@
             }
         }
 
-        // Initialize immediately
+        // Initialize: use shared Supabase RPC to record and show hits
         document.addEventListener('DOMContentLoaded', () => {
-            try {
-                window.jodyHitCounter = new JodyHitCounter({
-                    apiUrl: 'https://omcwjmvdjswkfjkahchm.supabase.co',
-                    headers: {
-                        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
-                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9tY3dqbXZkanN3a2Zqa2FoY2htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0NDU1MDcsImV4cCI6MjA2NzAyMTUwN30.v-zypq4wN5EW0z8dxbUHWeNzDhuTylyL4chpBfTISxE',
-                        'Content-Type': 'application/json'
-                    },
-                    theme: 'jody',
-                    animated: true,
-                    showCounter: true
-                });
-                console.log('✅ Inline JodyHitCounter initialized');
-            } catch (error) {
-                console.error('❌ Error initializing hit counter:', error);
-                // Fallback counter
-                new SimpleHitCounter();
-            }
+            (async function(){
+                const metaUrl = document.querySelector('meta[name="supabase-url"]');
+                const metaKey = document.querySelector('meta[name="supabase-anon-key"]');
+                const apiUrl = metaUrl ? metaUrl.content.trim() : '';
+                const anonKey = metaKey ? metaKey.content.trim() : '';
+                const hitEl = document.getElementById('hit-count');
+                if(!hitEl){ return; }
+                if(!apiUrl || !anonKey){ hitEl.textContent = '---'; console.error('Supabase meta missing'); return; }
+                try{
+                    const resp = await fetch(apiUrl.replace(/\/$/, '') + '/rest/v1/rpc/increment_page_hit_by_id', {
+                        method: 'POST',
+                        headers: {
+                            'apikey': anonKey,
+                            'Authorization': 'Bearer ' + anonKey,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ p_id: 5 })
+                    });
+                    if(!resp.ok){ console.warn('hit RPC failed', resp.status); hitEl.textContent = '---'; return; }
+                    const data = await resp.json();
+                    const rec = Array.isArray(data) ? data[0] : data;
+                    const n = rec && (rec.hit_count ?? rec.count ?? rec.total ?? rec.value);
+                    hitEl.textContent = (typeof n === 'number' || (typeof n === 'string' && n)) ? Number(String(n)).toLocaleString() : '---';
+                }catch(err){ console.error('hit RPC error', err); hitEl.textContent = '---'; }
+            })();
         });
     </script>
 
