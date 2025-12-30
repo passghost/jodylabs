@@ -25,29 +25,110 @@ const supabaseClient = (function(){
 })();
 
 // Save high score for a user
-async function saveHighScore(username, score) {
-    if (!supabaseClient) return null;
-    const { data, error } = await supabaseClient
-        .from('highscores')
-        .upsert([{ username, score }], { onConflict: ['username'] });
-    if (error) {
-        console.error('Error saving high score:', error);
-    }
-    return data;
-}
+// --- Provide a Supabase-backed implementation with a localStorage fallback ---
+const LS_KEY = 'jousti_highscores_v1';
 
-// Get top N high scores
-async function getHighScores(limit = 10) {
-    if (!supabaseClient) return null;
+async function supabaseGetHighScores(limit = 10) {
+    if (!supabaseClient) throw new Error('No supabase client');
     const { data, error } = await supabaseClient
         .from('highscores')
         .select('*')
         .order('score', { ascending: false })
         .limit(limit);
-    if (error) {
-        console.error('Error fetching high scores:', error);
-    }
+    if (error) throw error;
     return data;
+}
+
+async function supabaseSaveHighScore(username, score) {
+    if (!supabaseClient) throw new Error('No supabase client');
+    const { data, error } = await supabaseClient
+        .from('highscores')
+        .upsert([{ username, score }], { onConflict: ['username'] });
+    if (error) throw error;
+    return data;
+}
+
+async function supabaseDeleteHighScore(username, score) {
+    if (!supabaseClient) throw new Error('No supabase client');
+    const { data, error } = await supabaseClient
+        .from('highscores')
+        .delete()
+        .match({ username: username, score: score });
+    if (error) throw error;
+    return data;
+}
+
+function lsGetHighScores(limit = 10) {
+    try {
+        const raw = localStorage.getItem(LS_KEY);
+        if (!raw) return [];
+        const arr = JSON.parse(raw);
+        if (!Array.isArray(arr)) return [];
+        return arr.sort((a, b) => b.score - a.score).slice(0, limit);
+    } catch (e) {
+        console.error('Failed to read local highscores:', e);
+        return [];
+    }
+}
+
+function lsSaveHighScore(username, score) {
+    try {
+        const arr = lsGetHighScores(1000);
+        // Upsert logic: keep highest score per username
+        const idx = arr.findIndex(s => s.username === username);
+        if (idx >= 0) {
+            if (score > arr[idx].score) arr[idx].score = score;
+        } else {
+            arr.push({ username, score });
+        }
+        arr.sort((a, b) => b.score - a.score);
+        localStorage.setItem(LS_KEY, JSON.stringify(arr));
+        return arr.slice(0, 10);
+    } catch (e) {
+        console.error('Failed to save local highscore:', e);
+        return [];
+    }
+}
+
+function lsDeleteHighScore(username, score) {
+    try {
+        let arr = lsGetHighScores(1000);
+        arr = arr.filter(s => !(s.username === username && s.score === score));
+        localStorage.setItem(LS_KEY, JSON.stringify(arr));
+        return arr.slice(0, 10);
+    } catch (e) {
+        console.error('Failed to delete local highscore:', e);
+        return [];
+    }
+}
+
+// Public API: try Supabase first, fall back to localStorage when unavailable
+async function saveHighScore(username, score) {
+    try {
+        return await supabaseSaveHighScore(username, score);
+    } catch (e) {
+        console.warn('Supabase save failed, using localStorage fallback:', e.message || e);
+        return lsSaveHighScore(username, score);
+    }
+}
+
+async function getHighScores(limit = 10) {
+    try {
+        const res = await supabaseGetHighScores(limit);
+        return Array.isArray(res) ? res : [];
+    } catch (e) {
+        console.warn('Supabase fetch failed, falling back to localStorage:', e.message || e);
+        return lsGetHighScores(limit);
+    }
+}
+
+async function deleteHighScore(username, score) {
+    try {
+        return await supabaseDeleteHighScore(username, score);
+    } catch (e) {
+        console.warn('Supabase delete failed, falling back to localStorage:', e.message || e);
+        return lsDeleteHighScore(username, score);
+    }
 }
 
 // Utility: Attach to window for global access
