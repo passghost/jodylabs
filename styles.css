@@ -16,6 +16,9 @@ body{background:#07070a;display:flex;align-items:center;justify-content:center;o
 .overlay.hidden{display:none}
 .btn{background:#1db954;border:none;color:#fff;padding:12px 20px;font-size:18px;border-radius:10px;cursor:pointer}
 .btn:focus{outline:3px solid rgba(255,255,255,0.15)}
+.skip-btn{position:fixed;right:24px;bottom:24px;z-index:999;display:inline-flex;align-items:center;justify-content:center;min-width:120px;padding:14px 18px;background:rgba(255,255,255,0.12);color:#fff;border:1px solid rgba(255,255,255,0.18);border-radius:14px;font-size:0.95rem;font-weight:600;text-decoration:none;backdrop-filter:blur(10px);transition:transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease}
+.skip-btn:hover{background:rgba(255,255,255,0.18);transform:translateY(-2px);box-shadow:0 16px 40px rgba(0,0,0,0.2)}
+.skip-btn:focus{outline:3px solid rgba(255,255,255,0.24);outline-offset:2px}
 
 @media (prefers-reduced-motion:reduce){
   #logo.animate,#logo.idle{animation:none;transform:translateX(-50%) translateY(10vh);opacity:1}
