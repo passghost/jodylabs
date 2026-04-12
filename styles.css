@@ -1,0 +1,166 @@
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:#07070a;display:flex;align-items:center;justify-content:center;overflow:hidden;font-family:Inter,system-ui,Segoe UI,Arial;color:#fff}
+.stage{position:relative;width:100%;height:100%}
+#logo{position:absolute;left:50%;transform:translateX(-50%) translateY(120vh);width:min(60vmin,600px);will-change:transform,opacity;opacity:0}
+#logo.animate{animation:floatUp 12s ease-out forwards}
+@keyframes floatUp{
+  0%{transform:translateX(-50%) translateY(120vh);opacity:0}
+  80%{opacity:1}
+  100%{transform:translateX(-50%) translateY(10vh);opacity:1}
+}
+#logo.idle{animation:idle 4.5s ease-in-out infinite}
+@keyframes idle{0%{transform:translateX(-50%) translateY(8vh)}50%{transform:translateX(-50%) translateY(12vh)}100%{transform:translateX(-50%) translateY(8vh)}}
+
+.overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:auto;background:rgba(0,0,0,0.35)}
+.overlay.hidden{display:none}
+.btn{background:#1db954;border:none;color:#fff;padding:12px 20px;font-size:18px;border-radius:10px;cursor:pointer}
+.btn:focus{outline:3px solid rgba(255,255,255,0.15)}
+
+@media (prefers-reduced-motion:reduce){
+  #logo.animate,#logo.idle{animation:none;transform:translateX(-50%) translateY(10vh);opacity:1}
+}
+
+/* Hands */
+/* Hand (single, larger) — wrappers hidden off-screen until pop classes run */
+.hand-wrap{position:absolute;bottom:8vh;width:min(72vmin,1200px);will-change:transform,opacity;pointer-events:none;opacity:0;transition:opacity 180ms ease}
+#hand1-wrap{right:-18vw;transform:translateX(160%)}
+#hand2-wrap{left:-18vw;transform:translateX(-160%)}
+
+.hand-art{width:100%;display:block}
+.hand-art.flip{transform:scaleX(-1)}
+.hand-img{width:100%;display:block}
+
+/* subtle shake during voice playback */
+@keyframes shake {
+  0%{transform:translateX(0) rotate(0) scaleX(1)}
+  25%{transform:translateX(-2px) rotate(-0.6deg) scaleX(1)}
+  50%{transform:translateX(0) rotate(0) scaleX(1)}
+  75%{transform:translateX(2px) rotate(0.6deg) scaleX(1)}
+  100%{transform:translateX(0) rotate(0) scaleX(1)}
+}
+
+@keyframes shakeFlip {
+  0%{transform:translateX(0) rotate(0)}
+  25%{transform:translateX(-2px) rotate(-0.6deg)}
+  50%{transform:translateX(0) rotate(0)}
+  75%{transform:translateX(2px) rotate(0.6deg)}
+  100%{transform:translateX(0) rotate(0)}
+}
+
+.hand-art.shake{animation:shake 0.18s ease-in-out infinite}
+.hand-art.flip.shake{animation:shakeFlip 0.18s ease-in-out infinite}
+
+/* subtle point animation during speaking: keep hand essentially horizontal and a small lateral bob */
+@keyframes pointNod {
+  0%{transform:rotate(0) translateX(0)}
+  50%{transform:rotate(0) translateX(3px)}
+  100%{transform:rotate(0) translateX(0)}
+}
+
+@keyframes pointNodFlip {
+  0%{transform:rotate(0) translateX(0)}
+  50%{transform:rotate(0) translateX(-3px)}
+  100%{transform:rotate(0) translateX(0)}
+}
+
+.hand-art.point .hand-img{animation:pointNod 0.25s ease-in-out infinite;transform-origin:92% 50%}
+.hand-art.flip.point .hand-img{animation:pointNodFlip 0.25s ease-in-out infinite;transform-origin:8% 50%}
+
+@keyframes pokeOut {
+  0%{transform:translateX(0) rotate(0deg)}
+  50%{transform:translateX(14px) rotate(12deg)}
+  100%{transform:translateX(0) rotate(0deg)}
+}
+
+@keyframes pokeOutFlip {
+  0%{transform:translateX(0) rotate(0deg)}
+  50%{transform:translateX(-14px) rotate(-12deg)}
+  100%{transform:translateX(0) rotate(0deg)}
+}
+
+.hand-art.poke .hand-img{animation:pokeOut 0.35s ease-in-out 4 alternate;transform-origin:92% 50%}
+.hand-art.flip.poke .hand-img{animation:pokeOutFlip 0.35s ease-in-out 4 alternate;transform-origin:8% 50%}
+
+@keyframes loserBounce {
+  0%{transform:translateX(0) translateY(0) rotate(0deg)}
+  10%{transform:translateX(8px) translateY(-6px) rotate(24deg)}
+  22%{transform:translateX(-9px) translateY(4px) rotate(-22deg)}
+  36%{transform:translateX(5px) translateY(-4px) rotate(28deg)}
+  50%{transform:translateX(-3px) translateY(5px) rotate(-16deg)}
+  64%{transform:translateX(7px) translateY(-7px) rotate(32deg)}
+  78%{transform:translateX(-6px) translateY(3px) rotate(-24deg)}
+  90%{transform:translateX(4px) translateY(-2px) rotate(18deg)}
+  100%{transform:translateX(0) translateY(0) rotate(0deg)}
+}
+
+@keyframes loserBounceFlip {
+  0%{transform:translateX(0) translateY(0) rotate(0deg)}
+  10%{transform:translateX(-8px) translateY(-6px) rotate(-24deg)}
+  22%{transform:translateX(9px) translateY(4px) rotate(22deg)}
+  36%{transform:translateX(-5px) translateY(-4px) rotate(-28deg)}
+  50%{transform:translateX(3px) translateY(5px) rotate(16deg)}
+  64%{transform:translateX(-7px) translateY(-7px) rotate(-32deg)}
+  78%{transform:translateX(6px) translateY(3px) rotate(24deg)}
+  90%{transform:translateX(-4px) translateY(-2px) rotate(-18deg)}
+  100%{transform:translateX(0) translateY(0) rotate(0deg)}
+}
+
+@keyframes loserWobble {
+  0%{transform:scale(1) translateX(0) rotate(0deg)}
+  20%{transform:scale(1.02) translateX(-2px) rotate(-6deg)}
+  40%{transform:scale(0.98) translateX(3px) rotate(5deg)}
+  60%{transform:scale(1.01) translateX(-1px) rotate(-4deg)}
+  80%{transform:scale(0.99) translateX(2px) rotate(7deg)}
+  100%{transform:scale(1) translateX(0) rotate(0deg)}
+}
+
+.hand-art.bounce .hand-img{animation:loserBounce 1.2s ease-in-out infinite, loserWobble 2.7s ease-in-out infinite;transform-origin:92% 50%}
+.hand-art.flip.bounce .hand-img{animation:loserBounceFlip 1.2s ease-in-out infinite, loserWobble 2.7s ease-in-out infinite;transform-origin:8% 50%}
+
+@keyframes popInRight{
+  0%{transform:translateX(160%) rotate(36deg);opacity:1}
+  60%{transform:translateX(-6%) rotate(-8deg);opacity:1}
+  100%{transform:translateX(-8%) rotate(0);opacity:1}
+}
+
+@keyframes exitRight{
+  0%{transform:translateX(-8%) rotate(0);opacity:1}
+  100%{transform:translateX(160%) rotate(30deg);opacity:0}
+}
+@keyframes waveRot{
+  0%{transform:rotate(0deg)}
+  25%{transform:rotate(28deg)}
+  50%{transform:rotate(0deg)}
+  75%{transform:rotate(-22deg)}
+  100%{transform:rotate(0deg)}
+}
+
+.hand-wrap.pop-right{animation:popInRight 0.8s cubic-bezier(.2,.8,.2,1) forwards;opacity:1}
+.hand-wrap.pop-left{animation:popInLeft 0.8s cubic-bezier(.2,.8,.2,1) forwards;opacity:1}
+.hand-wrap.exit-right{animation:exitRight 0.7s ease-in forwards;opacity:0}
+.hand-wrap.exit-left{animation:exitLeft 0.7s ease-in forwards;opacity:0}
+
+/* wave applies to the image only (rotation) to avoid clobbering translateX */
+.hand-img.wave{animation:waveRot 0.6s ease-in-out 4;transform-origin:92% 50%}
+/* when image is flipped on its parent, use opposite origin for rotation */
+.hand-art.flip .hand-img.wave{transform-origin:8% 50%}
+
+/* Hand2 handled by wrapper; image is mirrored using `.hand.flip`. */
+
+@keyframes popInLeft{
+  0%{transform:translateX(-160%) rotate(-36deg);opacity:1}
+  60%{transform:translateX(6%) rotate(8deg);opacity:1}
+  100%{transform:translateX(8%) rotate(0);opacity:1}
+}
+
+@keyframes exitLeft{
+  0%{transform:translateX(8%) rotate(0);opacity:1}
+  100%{transform:translateX(-160%) rotate(-30deg);opacity:0}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .hand{animation:none;transform:none;opacity:1}
+  .hand-wrap{animation:none;transform:none;opacity:1}
+  .hand.wave{animation:none}
+}
