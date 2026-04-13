@@ -625,6 +625,37 @@
       display: block;
     }
 
+    .debug-counter-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .status-toggle {
+      min-width: 104px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(103, 242, 255, 0.12);
+      color: #f6f8ff;
+      font: 700 11px/1.2 "Segoe UI", Arial, sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      transition: transform 0.16s ease, background 0.16s ease, opacity 0.16s ease;
+    }
+
+    .status-toggle:hover:not(:disabled) {
+      background: rgba(103, 242, 255, 0.18);
+      transform: translateY(-1px);
+    }
+
+    .status-toggle:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
     .mute-btn {
       position: fixed;
       left: 14px;
@@ -825,6 +856,10 @@
   </style>
 </head>
 <body>
+  <div class="status-badge" title="IGGMMORPG is currently online">
+    <span class="status-badge__label">IGGMMORPG: online</span>
+    <span class="status-badge__dot" aria-hidden="true"></span>
+  </div>
   <main class="stage">
     <section class="showcase" aria-label="Animated ad display">
       <header class="brand-bar">
@@ -886,6 +921,10 @@
     <strong>Debug Counter</strong>
     <span id="debug-counter-value">Visits: --</span>
     <span id="debug-counter-status">Status: hidden</span>
+    <div class="debug-counter-row">
+      <button id="status-toggle" class="status-toggle" type="button" disabled>Loading...</button>
+      <span id="status-toggle-label">IGGMMORPG status pending</span>
+    </div>
   </aside>
 
   <script>
@@ -961,6 +1000,20 @@
       });
     }
 
+    const statusToggle = document.getElementById('status-toggle');
+    const statusToggleLabel = document.getElementById('status-toggle-label');
+    const statusBadge = document.querySelector('.status-badge');
+    const statusBadgeLabel = statusBadge?.querySelector('.status-badge__label');
+    const statusBadgeDot = statusBadge?.querySelector('.status-badge__dot');
+
+    const statusConfig = {
+      url: counterConfig.url,
+      anonKey: counterConfig.anonKey,
+      table: 'server_status',
+      rowId: 'iggmmorpg',
+      field: 'is_online'
+    };
+
     function setDebugCounter(value, status) {
       if (typeof value !== 'undefined') {
         debugCounterValue.textContent = 'Visits: ' + value;
@@ -968,6 +1021,111 @@
       if (status) {
         debugCounterStatus.textContent = 'Status: ' + status;
       }
+    }
+
+    function renderOnlineStatus(isOnline, message) {
+      if (statusBadgeLabel) {
+        statusBadgeLabel.textContent = 'IGGMMORPG: ' + (isOnline ? 'online' : 'offline');
+      }
+      if (statusBadgeDot) {
+        statusBadgeDot.style.background = isOnline ? '#4ade80' : '#f87171';
+      }
+      if (statusToggle) {
+        statusToggle.disabled = false;
+        statusToggle.textContent = isOnline ? 'Set offline' : 'Set online';
+        statusToggle.dataset.online = isOnline ? 'true' : 'false';
+      }
+      if (statusToggleLabel) {
+        statusToggleLabel.textContent = message || 'Currently ' + (isOnline ? 'online' : 'offline');
+      }
+    }
+
+    async function supabaseRequest(path, options = {}) {
+      const headers = {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        apikey: statusConfig.anonKey,
+        Authorization: 'Bearer ' + statusConfig.anonKey,
+        ...(options.headers || {})
+      };
+
+      const response = await fetch(statusConfig.url.replace(/\/$/, '') + path, {
+        ...options,
+        headers
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => response.statusText);
+        throw new Error(errorText || response.statusText);
+      }
+
+      return response;
+    }
+
+    async function loadServiceStatus() {
+      if (!statusConfig.url || !statusConfig.anonKey) {
+        if (statusToggleLabel) statusToggleLabel.textContent = 'Supabase not configured';
+        setDebugCounter('--', 'supabase not configured');
+        return;
+      }
+
+      try {
+        setDebugCounter(undefined, 'loading status');
+        const response = await supabaseRequest(
+          '/rest/v1/' + statusConfig.table + '?select=' + statusConfig.field + '&id=eq.' + encodeURIComponent(statusConfig.rowId)
+        );
+        const data = await response.json();
+
+        if (Array.isArray(data) && data.length > 0) {
+          renderOnlineStatus(Boolean(data[0][statusConfig.field]), 'status synced');
+        } else {
+          await supabaseRequest('/rest/v1/' + statusConfig.table, {
+            method: 'POST',
+            headers: { Prefer: 'return=representation' },
+            body: JSON.stringify({ id: statusConfig.rowId, [statusConfig.field]: false })
+          });
+          renderOnlineStatus(false, 'initialized offline');
+        }
+      } catch (error) {
+        if (statusToggleLabel) statusToggleLabel.textContent = 'Status load failed';
+        setDebugCounter('--', error.message || 'load failed');
+      }
+    }
+
+    async function writeServiceStatus(isOnline) {
+      if (!statusConfig.url || !statusConfig.anonKey) {
+        throw new Error('Supabase not configured');
+      }
+
+      await supabaseRequest(
+        '/rest/v1/' + statusConfig.table + '?id=eq.' + encodeURIComponent(statusConfig.rowId),
+        {
+          method: 'PATCH',
+          headers: { Prefer: 'return=representation' },
+          body: JSON.stringify({ [statusConfig.field]: isOnline })
+        }
+      );
+      renderOnlineStatus(isOnline, 'status synced');
+      setDebugCounter(undefined, 'status synced');
+    }
+
+    if (statusToggle) {
+      statusToggle.addEventListener('click', async () => {
+        const currentOnline = statusToggle.dataset.online === 'true';
+        const desiredOnline = !currentOnline;
+        statusToggle.disabled = true;
+        statusToggle.textContent = desiredOnline ? 'Setting online…' : 'Setting offline…';
+
+        try {
+          await writeServiceStatus(desiredOnline);
+        } catch (error) {
+          if (statusToggleLabel) statusToggleLabel.textContent = 'Sync failed';
+          setDebugCounter('--', error.message || 'sync failed');
+          console.error(error);
+        } finally {
+          statusToggle.disabled = false;
+        }
+      });
     }
 
     async function refreshVisitCounter() {
@@ -1061,6 +1219,7 @@
       portal.addEventListener('pointercancel', () => resetPortalMotion(portal));
     });
 
+    loadServiceStatus();
     refreshVisitCounter();
   </script>
 </body>
