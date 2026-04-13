@@ -777,6 +777,8 @@
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            Accept: 'application/json',
+            Prefer: 'return=representation',
             apikey: counterConfig.anonKey,
             Authorization: 'Bearer ' + counterConfig.anonKey
           },
@@ -784,7 +786,22 @@
         });
 
         if (!response.ok) {
-          throw new Error('HTTP ' + response.status);
+          let errorDetail = 'HTTP ' + response.status;
+
+          try {
+            const errorPayload = await response.json();
+            errorDetail = errorPayload?.message || errorPayload?.hint || errorPayload?.details || errorDetail;
+          } catch (jsonError) {
+            try {
+              const errorText = await response.text();
+              if (errorText) {
+                errorDetail = errorText;
+              }
+            } catch (textError) {
+            }
+          }
+
+          throw new Error(errorDetail);
         }
 
         const payload = await response.json();
