@@ -456,23 +456,31 @@
       left: var(--left, 20%);
     }
 
+    .emote-viper,
     .legacy-mini {
       position: absolute;
-      right: 4px;
-      bottom: -42px;
-      width: min(250px, 31vw);
-      min-width: 176px;
+      bottom: -180px;
       min-height: 0;
       height: 76px;
       border-radius: 22px;
       z-index: 5;
-      overflow: hidden;
+      overflow: visible;
       transform-style: flat;
       background:
         linear-gradient(135deg, rgba(10, 13, 24, 0.86), rgba(14, 18, 34, 0.66)),
         rgba(10, 12, 22, 0.78);
       border: 1px solid rgba(255, 255, 255, 0.1);
       box-shadow: 0 22px 54px rgba(0, 0, 0, 0.34);
+    }
+
+    .emote-viper {
+      right: calc(4px + min(250px, 31vw) + 14px);
+      width: min(180px, 24vw);
+    }
+
+    .legacy-mini {
+      right: 4px;
+      width: min(250px, 31vw);
     }
 
     .legacy-mini::before {
@@ -483,7 +491,8 @@
       pointer-events: none;
     }
 
-    .legacy-mini .portal-shell {
+    .legacy-mini .portal-shell,
+    .emote-viper .portal-shell {
       inset: 8px;
       border-radius: 16px;
       background: rgba(8, 12, 24, 0.55);
@@ -499,6 +508,69 @@
       background-size: auto 82%;
       background-repeat: no-repeat;
       animation: legacyFloat 7s ease-in-out infinite;
+    }
+
+    .legacy-tooltip {
+      position: absolute;
+      right: 0;
+      bottom: calc(100% + 12px);
+      width: min(280px, 92vw);
+      padding: 12px 14px;
+      border-radius: 16px;
+      border: 1px solid rgba(103, 242, 255, 0.18);
+      background: rgba(5, 8, 18, 0.96);
+      color: #e9f4ff;
+      font: 500 0.83rem/1.5 "Segoe UI", Arial, sans-serif;
+      letter-spacing: 0.01em;
+      text-transform: none;
+      text-align: left;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(8px);
+      transition: opacity 180ms ease, transform 180ms ease;
+      z-index: 15;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+      white-space: normal;
+    }
+
+    .legacy-tooltip::after {
+      content: "";
+      position: absolute;
+      right: 18px;
+      top: 100%;
+      width: 0;
+      height: 0;
+      border-left: 8px solid transparent;
+      border-right: 8px solid transparent;
+      border-top: 8px solid rgba(5, 8, 18, 0.96);
+    }
+
+    .legacy-mini:hover .legacy-tooltip,
+    .legacy-mini:focus-within .legacy-tooltip {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .emote-viper .portal-image {
+      inset: 10px 10px 10px 10px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.04);
+      color: #67f2ff;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      font-weight: 700;
+      font-size: 0.9rem;
+      overflow: hidden;
+      animation: legacyFloat 7s ease-in-out infinite;
+    }
+
+    .emote-viper .portal-image span {
+      display: block;
+      text-align: center;
+      width: 100%;
     }
 
     .legacy-mini:hover .portal-image,
@@ -647,12 +719,21 @@
         min-height: 620px;
       }
 
+      .emote-viper,
       .legacy-mini {
-        right: 0;
-        bottom: -36px;
-        width: 210px;
+        bottom: -162px;
         min-height: 0;
         height: 70px;
+      }
+
+      .emote-viper {
+        right: calc(0 + 210px + 14px);
+        width: 160px;
+      }
+
+      .legacy-mini {
+        right: 0;
+        width: 210px;
       }
     }
 
@@ -697,14 +778,24 @@
         border-radius: 18px;
       }
 
+      .emote-viper,
       .legacy-mini {
-        right: 2px;
-        bottom: -24px;
-        width: 150px;
-        min-width: 150px;
+        bottom: -126px;
         min-height: 0;
         height: 54px;
         border-radius: 16px;
+      }
+
+      .emote-viper {
+        right: calc(2px + 150px + 12px);
+        width: 132px;
+        min-width: 132px;
+      }
+
+      .legacy-mini {
+        right: 2px;
+        width: 150px;
+        min-width: 150px;
       }
 
       .legacy-mini .portal-shell {
@@ -772,10 +863,17 @@
           <div class="portal-core"></div>
         </article>
 
+        <article class="portal emote-viper" data-depth="6" aria-label="Emote Viper link">
+          <div class="portal-shell">
+            <div class="portal-image"><span>Emote Viper</span></div>
+          </div>
+          <a class="portal-hit" href="../EmoteViper/emoteviper.html" target="_self" rel="noreferrer" aria-label="Open Emote Viper"></a>
+        </article>
         <article class="portal legacy-mini" data-depth="6" aria-label="Legacy JodyLabs link">
           <div class="portal-shell">
             <div class="portal-image"></div>
           </div>
+          <div class="legacy-tooltip">Legacy JodyLabs, like legacy legacy. I nuked the like... regular legacy one. Get over it, it was just bad.</div>
           <a class="legacy-hit" href="https://jodylabs.surge.sh/index.html" target="_blank" rel="noreferrer" aria-label="Open Legacy JodyLabs"></a>
         </article>
       </div>
@@ -808,11 +906,7 @@
 
     function setMuteButton() {
       if (!bgMusic) return;
-      if (bgMusic.paused) {
-        muteBtn.textContent = 'Play music';
-      } else {
-        muteBtn.textContent = bgMusic.muted ? 'Unmute' : 'Mute';
-      }
+      muteBtn.textContent = bgMusic.muted ? 'Unmute' : 'Mute';
       muteBtn.classList.toggle('muted', bgMusic.muted);
     }
 
@@ -858,7 +952,7 @@
             musicStarted = true;
             bgMusic.muted = false;
           } catch (error) {
-            muteBtn.textContent = 'Play music';
+            // keep the button as mute so the page stays consistent
           }
         } else {
           bgMusic.muted = !bgMusic.muted;
@@ -921,7 +1015,7 @@
           ? payload
           : payload?.count ?? payload?.visits ?? payload?.value ?? '--';
 
-        setDebugCounter(count, 'supabase connected');
+        setDebugCounter(count, 'synced');
       } catch (error) {
         setDebugCounter('error', error.message || 'request failed');
       }

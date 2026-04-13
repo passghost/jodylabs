@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>EmoteViper — JodyLabs</title>
+  <meta name="description" content="EmoteViper is a dark creator tool from JodyLabs built for the Razer Siren Emote Solution problem. It includes a built-in 8x8 graphics megapack, easy rotating keyframe animation, and lighting compatibility for creators who want premium control." />
+  <meta name="keywords" content="EmoteViper, Razer Siren Emote Solution, lighting compatibility, 8x8 graphics megapack, keyframe animation, rotating effects, JodyLabs, gaming mic visuals, emote lighting" />
+  <meta name="theme-color" content="#050507" />
+  <meta property="og:title" content="EmoteViper — JodyLabs" />
+  <meta property="og:description" content="EmoteViper solves the Razer Siren Emote lighting problem with built-in 8x8 graphics, easy rotation, and keyframe animation tools." />
+  <meta property="og:image" content="Emoteviper.jpg" />
+  <link rel="icon" href="../assets/JodyLabs.png" type="image/png" />
+  <link rel="apple-touch-icon" href="../assets/JodyLabs.png" />
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #050507;
+      --panel: rgba(14, 16, 24, 0.92);
+      --panel-strong: rgba(10, 12, 18, 0.98);
+      --text: #e9ecff;
+      --muted: #8f98b3;
+      --accent: #54d7ff;
+      --accent-strong: #8b7bff;
+      --border: rgba(84, 215, 255, 0.18);
+      --shadow: 0 28px 80px rgba(0, 0, 0, 0.42);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      min-height: 100%;
+      margin: 0;
+      background: radial-gradient(circle at top left, rgba(84, 215, 255, 0.08), transparent 24%),
+                  radial-gradient(circle at 82% 14%, rgba(139, 123, 255, 0.12), transparent 18%),
+                  linear-gradient(180deg, #060609 0%, #030305 100%);
+      color: var(--text);
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3.5rem 1.5rem 4rem;
+    }
+
+    .shell {
+      width: min(1180px, 100%);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      background: linear-gradient(180deg, rgba(8, 10, 16, 0.96), rgba(6, 7, 11, 0.92));
+      box-shadow: var(--shadow);
+      border-radius: 28px;
+      overflow: hidden;
+      backdrop-filter: blur(12px);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1fr 420px;
+      gap: 2rem;
+      padding: 3rem;
+      align-items: flex-start;
+    }
+
+    .eyebrow {
+      margin: 0 0 1rem;
+      color: var(--accent);
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      font-size: 0.88rem;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(3rem, 4.3vw, 4.8rem);
+      line-height: 0.95;
+      letter-spacing: -0.04em;
+    }
+
+    .hero-copy p {
+      margin: 1.4rem 0 0;
+      max-width: 42rem;
+      color: #c8d1ff;
+      font-size: 1.05rem;
+      line-height: 1.85;
+    }
+
+    .hero-copy .hero-tagline {
+      margin: 1.6rem 0 0;
+      max-width: 40rem;
+      color: #f3f7ff;
+      font-size: 1.08rem;
+      line-height: 1.9;
+    }
+
+    .testimonial {
+      margin: 1.65rem 0 0;
+      padding: 1rem 1.2rem;
+      border-left: 3px solid var(--accent);
+      background: rgba(9, 11, 18, 0.9);
+      color: #dbe6ff;
+      font-size: 0.98rem;
+      line-height: 1.75;
+      letter-spacing: -0.01em;
+      border-radius: 14px;
+      max-width: 42rem;
+    }
+
+    .testimonial span {
+      display: block;
+      margin-top: 0.9rem;
+      color: var(--muted);
+      font-size: 0.9rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.9rem;
+      margin-top: 2rem;
+    }
+
+    .meta-pill {
+      padding: 0.85rem 1.1rem;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(84, 215, 255, 0.16);
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .hero-image {
+      position: relative;
+      border-radius: 24px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: linear-gradient(180deg, rgba(6, 7, 10, 0.92), rgba(2, 3, 6, 0.98));
+      box-shadow: inset 0 0 0 1px rgba(84, 215, 255, 0.05);
+    }
+
+    .hero-image::after {
+      content: '';
+      position: absolute;
+      inset: 16px;
+      border: 1px solid rgba(84, 215, 255, 0.08);
+      border-radius: 18px;
+      pointer-events: none;
+      opacity: 0.55;
+    }
+
+    .hero-image::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top center, rgba(84, 215, 255, 0.16), transparent 38%);
+      pointer-events: none;
+    }
+
+    .hero-image img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      aspect-ratio: 4 / 5;
+      object-fit: cover;
+      filter: saturate(0.98) contrast(1.08);
+    }
+
+    .compat-note {
+      margin: 1rem 0 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .features {
+      display: grid;
+      gap: 1.6rem;
+      padding: 0 3rem 3rem;
+    }
+
+    .section-title {
+      margin: 0 0 1rem;
+      font-size: 1.05rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .feature-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 1rem;
+    }
+
+    .feature-list li {
+      display: grid;
+      gap: 0.55rem;
+      padding: 1.35rem 1.4rem;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .feature-list strong {
+      display: block;
+      color: #f7f9ff;
+      font-size: 1rem;
+    }
+
+    .feature-list span {
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.7;
+    }
+
+    .terminal-panel {
+      padding: 1.5rem;
+      border-radius: 20px;
+      background: rgba(10, 12, 18, 0.98);
+      border: 1px solid rgba(84, 215, 255, 0.12);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+      color: #d7efff;
+      line-height: 1.7;
+      white-space: pre-wrap;
+    }
+
+    .preview-video-wrapper {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .preview-video {
+      width: 100%;
+      min-height: 320px;
+      max-height: 520px;
+      border-radius: 22px;
+      border: 1px solid rgba(84, 215, 255, 0.14);
+      background: #020306;
+      box-shadow: 0 30px 70px rgba(0, 0, 0, 0.28);
+      object-fit: cover;
+    }
+
+    .preview-caption {
+      color: var(--muted);
+      font-size: 0.95rem;
+      letter-spacing: 0.01em;
+    }
+
+    .terminal-panel code {
+      display: block;
+      font-size: 0.96rem;
+    }
+
+    .footer {
+      padding: 1.6rem 3rem 2rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.04);
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    @media (max-width: 900px) {
+      .hero {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-image {
+        min-height: 420px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 2rem 1rem 2.5rem;
+      }
+
+      .shell {
+        border-radius: 22px;
+      }
+
+      .hero {
+        padding: 2rem;
+      }
+
+      .features {
+        padding: 0 2rem 2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">JodyLabs</p>
+        <h1>EmoteViper</h1>
+        <p class="compat-note">Compatible with Razer-style lighting ecosystems.</p>
+        <p class="hero-tagline">Built-in 8x8 graphics. Easy rotating effects. Keyframe animation that feels immediate. This is the level of control you expect from premium mic hardware.</p>
+        <p>EmoteViper includes a growing graphics megapack, instant playback tools, and built-in workflows for animated display output.</p>
+        <div class="testimonial">“I personally hate it when cool features are left unsupported; this was an obvious problem that needed a solution.” <span>- Jody</span></div>
+        <div class="hero-meta">
+          <span class="meta-pill">8x8 graphics megapack</span>
+          <span class="meta-pill">Live rotation & animation</span>
+          <span class="meta-pill">Creator-first control</span>
+        </div>
+      </div>
+      <div class="hero-image">
+        <img src="Emoteviper.jpg" alt="EmoteViper preview" />
+      </div>
+    </section>
+
+    <section class="features">
+      <p class="section-title">EmoteViper in a nutshell</p>
+      <ul class="feature-list">
+        <li>
+          <strong>Built-in 8x8 graphics megapack</strong>
+          <span>Ships with pixel-perfect assets ready for display and expands with every new version, so your visuals keep evolving.</span>
+        </li>
+        <li>
+          <strong>Effortless animation tools</strong>
+          <span>Rotate, transform, and keyframe effects with a workflow that feels immediate and intuitive.</span>
+        </li>
+        <li>
+          <strong>Premium mic-style output</strong>
+          <span>Designed for creators who expect polished performance and control from their hardware.</span>
+        </li>
+        <li>
+          <strong>Lighting compatibility</strong>
+          <span>Small text: compatible with Razer-style lighting ecosystems, without requiring external API access.</span>
+        </li>
+      </ul>
+    </section>
+    <section class="features">
+      <p class="section-title">Quick preview</p>
+      <div class="preview-video-wrapper">
+        <video class="preview-video" src="EVexample.mp4" autoplay muted loop playsinline></video>
+        <div class="preview-caption">Live EmoteViper demo — see the built-in graphics megapack, rotation, and keyframe animation in action.</div>
+      </div>
+    </section>
+    <footer class="footer">JodyLabs • EmoteViper</footer>
+  </div>
+</body>
+</html>
