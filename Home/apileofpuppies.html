@@ -3,7 +3,22 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>A Pile of Puppies</title>
+  <meta name="theme-color" content="#090611" />
+  <meta name="description" content="JodyLabs presents a bold, immersive portfolio showcase with high-impact creative experiences, developer-crafted visuals, and modern digital storytelling. Discover the future of ambient product marketing in a page built for browsers and bots alike." />
+  <meta name="keywords" content="JodyLabs, creative showcase, web experience, digital marketing, ambient portfolio, startup branding, immersive design" />
+  <meta name="author" content="JodyLabs" />
+  <meta property="og:title" content="JodyLabs — A Pile of Puppies" />
+  <meta property="og:description" content="A striking JodyLabs showcase page designed for attention, discovery, and modern web visibility. See immersive creative ad worlds, promotional content, and elegant brand storytelling." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="../assets/JodyLabs.png" />
+  <meta property="og:image:alt" content="JodyLabs brand mark" />
+  <meta property="twitter:card" content="summary_large_image" />
+  <meta property="twitter:title" content="JodyLabs — A Pile of Puppies" />
+  <meta property="twitter:description" content="JodyLabs delivers a polished digital landing space with immersive visuals, strategic brand messaging, and crawler-ready metadata for superior discoverability." />
+  <meta property="twitter:image" content="../assets/JodyLabs.png" />
+  <link rel="icon" href="../assets/JodyLabs.png" type="image/png" />
+  <link rel="apple-touch-icon" href="../assets/JodyLabs.png" />
+  <title>A Pile of Puppies — JodyLabs</title>
   <link rel="stylesheet" href="../styles.css" />
   <style>
     :root {
@@ -538,6 +553,36 @@
       display: block;
     }
 
+    .mute-btn {
+      position: fixed;
+      left: 14px;
+      bottom: 14px;
+      z-index: 21;
+      min-width: 104px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(5, 7, 18, 0.9);
+      color: #f6f8ff;
+      font: 600 0.95rem/1.2 "Segoe UI", Arial, sans-serif;
+      cursor: pointer;
+      box-shadow: 0 14px 32px rgba(0, 0, 0, 0.32);
+      backdrop-filter: blur(10px);
+      transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .mute-btn:hover,
+    .mute-btn:focus-visible {
+      transform: translateY(-1px);
+      background: rgba(255, 255, 255, 0.08);
+      outline: none;
+    }
+
+    .mute-btn.muted {
+      background: rgba(255, 255, 255, 0.08);
+      color: #f4f7ff;
+    }
+
     @keyframes skyShift {
       from { transform: translate3d(-2%, 0, 0); }
       to { transform: translate3d(2%, 0, 0); }
@@ -737,6 +782,8 @@
     </section>
   </main>
 
+  <audio id="bg-music" src="Midnight in Motion.wav" preload="auto" loop></audio>
+  <button id="mute-btn" class="mute-btn" aria-label="Mute background music">Mute</button>
   <aside id="debug-counter" class="debug-counter" hidden aria-live="polite">
     <strong>Debug Counter</strong>
     <span id="debug-counter-value">Visits: --</span>
@@ -748,12 +795,77 @@
     const debugCounter = document.getElementById('debug-counter');
     const debugCounterValue = document.getElementById('debug-counter-value');
     const debugCounterStatus = document.getElementById('debug-counter-status');
+    const bgMusic = document.getElementById('bg-music');
+    const muteBtn = document.getElementById('mute-btn');
     const counterConfig = {
       url: 'https://kbflseywzxikuzndvkpw.supabase.co',
       anonKey: 'sb_publishable_r2V19OpmwUFvXqDPkmPgvQ_i4RKcsAR',
       rpc: 'increment_page_visit',
       pageSlug: 'apileofpuppies'
     };
+
+    let musicStarted = false;
+
+    function setMuteButton() {
+      if (!bgMusic) return;
+      if (bgMusic.paused) {
+        muteBtn.textContent = 'Play music';
+      } else {
+        muteBtn.textContent = bgMusic.muted ? 'Unmute' : 'Mute';
+      }
+      muteBtn.classList.toggle('muted', bgMusic.muted);
+    }
+
+    async function tryStartMusic() {
+      if (!bgMusic) return;
+      bgMusic.volume = 0.75;
+      bgMusic.muted = false;
+      try {
+        await bgMusic.play();
+        musicStarted = true;
+        setMuteButton();
+      } catch (error) {
+        musicStarted = false;
+        setMuteButton();
+      }
+    }
+
+    if (bgMusic) {
+      bgMusic.addEventListener('ended', () => {
+        setMuteButton();
+      });
+      bgMusic.addEventListener('pause', () => {
+        if (musicStarted) {
+          setMuteButton();
+        }
+      });
+      bgMusic.addEventListener('play', () => {
+        musicStarted = true;
+        setMuteButton();
+      });
+      bgMusic.addEventListener('error', () => {
+        muteBtn.textContent = 'Audio error';
+        muteBtn.disabled = true;
+      });
+      tryStartMusic();
+    }
+
+    if (muteBtn && bgMusic) {
+      muteBtn.addEventListener('click', async () => {
+        if (bgMusic.paused || !musicStarted) {
+          try {
+            await bgMusic.play();
+            musicStarted = true;
+            bgMusic.muted = false;
+          } catch (error) {
+            muteBtn.textContent = 'Play music';
+          }
+        } else {
+          bgMusic.muted = !bgMusic.muted;
+        }
+        setMuteButton();
+      });
+    }
 
     function setDebugCounter(value, status) {
       if (typeof value !== 'undefined') {
