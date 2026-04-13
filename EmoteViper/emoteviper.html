@@ -267,6 +267,68 @@
       font-size: 0.95rem;
     }
 
+    .footer-link {
+      margin-top: 0.85rem;
+      font-size: 0.95rem;
+      display: grid;
+      gap: 0.55rem;
+    }
+
+    .footer-link a {
+      color: #54d7ff;
+      text-decoration: none;
+      border-bottom: 1px solid rgba(84, 215, 255, 0.25);
+    }
+
+    .footer-link span {
+      color: var(--muted);
+      line-height: 1.6;
+      max-width: 36rem;
+    }
+
+    .footer-email {
+      color: #8b7bff;
+      text-decoration: none;
+    }
+
+    .footer-link a:hover {
+      color: #8b7bff;
+      border-color: rgba(139, 123, 255, 0.45);
+    }
+
+    .debug-counter {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      z-index: 30;
+      display: grid;
+      gap: 2px;
+      min-width: 180px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: rgba(6, 8, 18, 0.84);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.34);
+      color: rgba(245, 248, 255, 0.92);
+      font: 600 12px/1.3 "Segoe UI", Arial, sans-serif;
+      letter-spacing: 0.03em;
+      backdrop-filter: blur(10px);
+    }
+
+    .debug-counter[hidden] {
+      display: none;
+    }
+
+    .debug-counter strong {
+      font-size: 11px;
+      text-transform: uppercase;
+      color: rgba(103, 242, 255, 0.95);
+    }
+
+    .debug-counter span {
+      display: block;
+    }
+
     @media (max-width: 900px) {
       .hero {
         grid-template-columns: 1fr;
@@ -345,7 +407,103 @@
         <div class="preview-caption">Live EmoteViper demo — see the built-in graphics megapack, rotation, and keyframe animation in action.</div>
       </div>
     </section>
-    <footer class="footer">JodyLabs • EmoteViper</footer>
+    <footer class="footer">
+      JodyLabs • EmoteViper
+      <div class="footer-link">
+        <a href="https://drive.google.com/file/d/1_tVNXNaWg8erZoRfu6VzQRDGHNYFlLsT/view?usp=drive_link" target="_blank" rel="noreferrer">Download this version</a>
+        <span>Free for the time being. The megapack and bug fixes are still being ironed out and developed. Email questions or concerns to <a class="footer-email" href="mailto:pass6host@gmail.com">pass6host@gmail.com</a>.</span>
+      </div>
+    </footer>
   </div>
+  <aside id="debug-counter" class="debug-counter" hidden aria-live="polite">
+    <strong>Debug Counter</strong>
+    <span id="debug-counter-value">Visits: --</span>
+    <span id="debug-counter-status">Status: hidden</span>
+  </aside>
+  <script>
+    const debugCounter = document.getElementById('debug-counter');
+    const debugCounterValue = document.getElementById('debug-counter-value');
+    const debugCounterStatus = document.getElementById('debug-counter-status');
+    const counterConfig = {
+      url: 'https://kbflseywzxikuzndvkpw.supabase.co',
+      anonKey: 'sb_publishable_r2V19OpmwUFvXqDPkmPgvQ_i4RKcsAR',
+      rpc: 'increment_page_visit',
+      pageSlug: 'emoteviper'
+    };
+
+    function setDebugCounter(value, status) {
+      if (typeof value !== 'undefined') {
+        debugCounterValue.textContent = 'Visits: ' + value;
+      }
+      if (status) {
+        debugCounterStatus.textContent = 'Status: ' + status;
+      }
+    }
+
+    async function refreshVisitCounter() {
+      if (!counterConfig.url || !counterConfig.anonKey) {
+        setDebugCounter('--', 'supabase not configured');
+        return;
+      }
+
+      setDebugCounter('...', 'syncing');
+
+      try {
+        const response = await fetch(counterConfig.url.replace(/\/$/, '') + '/rest/v1/rpc/' + counterConfig.rpc, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            Prefer: 'return=representation',
+            apikey: counterConfig.anonKey,
+            Authorization: 'Bearer ' + counterConfig.anonKey
+          },
+          body: JSON.stringify({ p_page_slug: counterConfig.pageSlug })
+        });
+
+        if (!response.ok) {
+          let errorDetail = 'HTTP ' + response.status;
+
+          try {
+            const errorPayload = await response.json();
+            errorDetail = errorPayload?.message || errorPayload?.hint || errorPayload?.details || errorDetail;
+          } catch (jsonError) {
+            try {
+              const errorText = await response.text();
+              if (errorText) {
+                errorDetail = errorText;
+              }
+            } catch (textError) {
+            }
+          }
+
+          throw new Error(errorDetail);
+        }
+
+        const payload = await response.json();
+        const count = typeof payload === 'number'
+          ? payload
+          : payload?.count ?? payload?.visits ?? payload?.value ?? '--';
+
+        setDebugCounter(count, 'synced');
+      } catch (error) {
+        setDebugCounter('error', error.message || 'request failed');
+      }
+    }
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'F8') {
+        event.preventDefault();
+        const nextHidden = !debugCounter.hasAttribute('hidden');
+        if (nextHidden) {
+          debugCounter.setAttribute('hidden', '');
+        } else {
+          debugCounter.removeAttribute('hidden');
+        }
+      }
+    });
+
+    refreshVisitCounter();
+  </script>
 </body>
 </html>
