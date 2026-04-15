@@ -456,58 +456,174 @@
       left: var(--left, 20%);
     }
 
-    .emote-viper,
-    .legacy-mini {
+    .portal-mini {
       position: absolute;
-      bottom: -180px;
+      bottom: -176px;
       min-height: 0;
-      height: 76px;
-      border-radius: 22px;
+      height: 68px;
+      border-radius: 999px;
       z-index: 5;
       overflow: visible;
       transform-style: flat;
-      background:
-        linear-gradient(135deg, rgba(10, 13, 24, 0.86), rgba(14, 18, 34, 0.66)),
-        rgba(10, 12, 22, 0.78);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      box-shadow: 0 22px 54px rgba(0, 0, 0, 0.34);
+      background: rgba(8, 14, 28, 0.82);
+      border: 1px solid rgba(137, 241, 255, 0.12);
+      box-shadow: 0 18px 42px rgba(0, 0, 0, 0.28);
+      transition: transform 0.35s ease, box-shadow 0.35s ease, background 0.35s ease;
     }
 
-    .emote-viper {
-      right: calc(4px + min(250px, 31vw) + 14px);
+    .portal-mini:hover,
+    .portal-mini:focus-within {
+      transform: translateY(-2px);
+      box-shadow: 0 24px 56px rgba(0, 0, 0, 0.32);
+      background: rgba(12, 22, 40, 0.88);
+    }
+
+    .portal-mini .portal-shell {
+      inset: 6px;
+      border-radius: 999px;
+      background: rgba(9, 16, 31, 0.95);
+      box-shadow: inset 0 0 0 1px rgba(142, 240, 255, 0.08);
+      transition: background 0.35s ease, box-shadow 0.35s ease;
+    }
+
+    .portal-mini .portal-image {
+      inset: 8px;
+      border-radius: 999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.9rem;
+      padding: 0 1rem;
+      background: linear-gradient(180deg, rgba(11, 29, 54, 0.96), rgba(7, 12, 20, 0.98));
+      color: #7ef1ff;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      font-weight: 700;
+      font-size: 0.88rem;
+      text-shadow: 0 0 14px rgba(126, 241, 255, 0.24);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      transition: transform 0.35s ease, background 0.35s ease, box-shadow 0.35s ease;
+      overflow: hidden;
+    }
+
+    .portal-mini:hover .portal-image,
+    .portal-mini:focus-within .portal-image {
+      transform: scale(1.04);
+      background: linear-gradient(180deg, rgba(34, 98, 146, 0.96), rgba(6, 11, 20, 0.98));
+      box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.1);
+    }
+
+    .portal-mini::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 999px;
+      pointer-events: none;
+      background: radial-gradient(circle at center, rgba(126, 241, 255, 0.14), transparent 40%);
+      opacity: 0;
+      transition: opacity 0.35s ease;
+    }
+
+    .portal-mini:hover::after,
+    .portal-mini:focus-within::after {
+      opacity: 1;
+    }
+
+    .portal-mini .portal-image span {
+      width: 100%;
+      text-align: center;
+    }
+
+    .emote-viper,
+    .orbiq,
+    .workbench {
       width: min(180px, 24vw);
     }
 
     .legacy-mini {
+      width: min(220px, 28vw);
+    }
+
+    .emote-viper {
+      right: calc(4px + min(250px, 31vw) + 14px);
+    }
+
+    .orbiq {
+      right: calc(4px + min(250px, 31vw) + 14px + min(180px, 24vw) + 14px);
+    }
+
+    .workbench {
+      right: calc(4px + min(250px, 31vw) + 14px + min(180px, 24vw) + 14px + min(180px, 24vw) + 14px);
+    }
+
+    .legacy-mini {
       right: 4px;
-      width: min(250px, 31vw);
     }
 
     .legacy-mini::before {
       content: "";
       position: absolute;
       inset: 0;
+      border-radius: inherit;
       background: linear-gradient(130deg, rgba(103, 242, 255, 0.14), transparent 34%, rgba(255, 73, 182, 0.12) 70%, transparent);
       pointer-events: none;
     }
 
-    .legacy-mini .portal-shell,
-    .emote-viper .portal-shell {
+    .legacy-mini .portal-image {
       inset: 8px;
-      border-radius: 16px;
-      background: rgba(8, 12, 24, 0.55);
+      border-radius: 999px;
+      display: block;
+      width: 100%;
+      height: 100%;
+      background-image: url('JL.png');
+      background-position: center center;
+      background-size: 80% auto;
+      background-repeat: no-repeat;
+      background-color: rgba(11, 14, 24, 0.34);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), inset 0 -1px 8px rgba(0, 0, 0, 0.12);
+      transition: background 0.35s ease, box-shadow 0.35s ease, transform 0.35s ease;
+      overflow: hidden;
+      animation: legacyFloat 8s ease-in-out infinite;
     }
 
-    .legacy-mini .portal-image {
-      inset: 10px 52px 10px 12px;
-      border-radius: 12px;
-      background-image:
-        linear-gradient(180deg, rgba(11, 14, 24, 0.06), rgba(11, 14, 24, 0.28)),
-        url('JL.png');
-      background-position: left center;
-      background-size: auto 82%;
-      background-repeat: no-repeat;
-      animation: legacyFloat 7s ease-in-out infinite;
+    .emote-viper .portal-image span,
+    .orbiq .portal-image span,
+    .workbench .portal-image span {
+      width: 100%;
+      text-align: center;
+    }
+
+    .portal:hover .portal-shell,
+    .portal:focus-within .portal-shell {
+      box-shadow: inset 0 0 0 1px rgba(142, 240, 255, 0.18), 0 20px 50px rgba(0, 0, 0, 0.28);
+      background: rgba(10, 18, 34, 0.82);
+    }
+
+    .portal:hover .portal-image,
+    .portal:focus-within .portal-image {
+      transform: translate3d(calc(var(--shift-x, 0px) * 1.35), calc(var(--shift-y, 0px) * 1.35), 0) scale(1.09);
+      box-shadow: 0 32px 62px rgba(0, 0, 0, 0.38);
+    }
+
+    .portal-mini:hover .portal-image,
+    .portal-mini:focus-within .portal-image {
+      background: linear-gradient(180deg, rgba(72, 144, 204, 0.95), rgba(8, 14, 24, 0.95));
+    }
+
+    .portal::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      background: radial-gradient(circle at center, rgba(142, 240, 255, 0.08), transparent 48%);
+      opacity: 0;
+      transition: opacity 0.35s ease;
+    }
+
+    .portal:hover::after,
+    .portal:focus-within::after {
+      opacity: 1;
     }
 
     .legacy-tooltip {
@@ -551,7 +667,9 @@
       transform: translateY(0);
     }
 
-    .emote-viper .portal-image {
+    .emote-viper .portal-image,
+    .orbiq .portal-image,
+    .workbench .portal-image {
       inset: 10px 10px 10px 10px;
       border-radius: 14px;
       display: flex;
@@ -750,21 +868,35 @@
         min-height: 620px;
       }
 
-      .emote-viper,
-      .legacy-mini {
+      .portal-mini {
         bottom: -162px;
-        min-height: 0;
-        height: 70px;
+        height: 66px;
       }
 
-      .emote-viper {
-        right: calc(0 + 210px + 14px);
+      .emote-viper,
+      .orbiq,
+      .workbench {
         width: 160px;
       }
 
       .legacy-mini {
-        right: 0;
         width: 210px;
+      }
+
+      .emote-viper {
+        right: calc(0 + 210px + 14px);
+      }
+
+      .orbiq {
+        right: calc(0 + 210px + 14px + 160px + 14px);
+      }
+
+      .workbench {
+        right: calc(0 + 210px + 14px + 160px + 14px + 160px + 14px);
+      }
+
+      .legacy-mini {
+        right: 0;
       }
     }
 
@@ -846,13 +978,14 @@
 
       .legacy-mini .portal-shell {
         inset: 6px;
-        border-radius: 12px;
+        border-radius: 999px;
       }
 
       .legacy-mini .portal-image {
-        inset: 7px 36px 7px 8px;
-        border-radius: 10px;
-        background-size: auto 72%;
+        inset: 7px 8px 7px 8px;
+        border-radius: 999px;
+        background-position: center center;
+        background-size: cover;
       }
     }
 
@@ -913,25 +1046,25 @@
           <div class="portal-core"></div>
         </article>
 
-        <article class="portal workbench" data-depth="6" aria-label="Workbench link">
+        <article class="portal portal-mini workbench" data-depth="6" aria-label="Workbench link">
           <div class="portal-shell">
             <div class="portal-image"><span>Workbench</span></div>
           </div>
           <a class="portal-hit" href="../workbench.html" target="_self" rel="noreferrer" aria-label="Open Workbench"></a>
         </article>
-        <article class="portal orbiq" data-depth="6" aria-label="Orbiq link">
+        <article class="portal portal-mini orbiq" data-depth="6" aria-label="Orbiq link">
           <div class="portal-shell">
             <div class="portal-image"><span>Orbiq</span></div>
           </div>
           <a class="portal-hit" href="https://passghost.github.io/OrbiqWebsite/" target="_blank" rel="noreferrer" aria-label="Open Orbiq"></a>
         </article>
-        <article class="portal emote-viper" data-depth="6" aria-label="Emote Viper link">
+        <article class="portal portal-mini emote-viper" data-depth="6" aria-label="Emote Viper link">
           <div class="portal-shell">
             <div class="portal-image"><span>Emote Viper</span></div>
           </div>
           <a class="portal-hit" href="../EmoteViper/emoteviper.html" target="_self" rel="noreferrer" aria-label="Open Emote Viper"></a>
         </article>
-        <article class="portal legacy-mini" data-depth="6" aria-label="Legacy JodyLabs link">
+        <article class="portal portal-mini legacy-mini" data-depth="6" aria-label="Legacy JodyLabs link">
           <div class="portal-shell">
             <div class="portal-image"></div>
           </div>
