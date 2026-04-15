@@ -456,134 +456,455 @@
       left: var(--left, 20%);
     }
 
-    .portal-mini {
+    .mini-hub-dock {
       position: absolute;
-      bottom: -176px;
-      min-height: 0;
-      height: 68px;
-      border-radius: 999px;
-      z-index: 5;
-      overflow: visible;
-      transform-style: flat;
-      background: rgba(8, 14, 28, 0.82);
-      border: 1px solid rgba(137, 241, 255, 0.12);
-      box-shadow: 0 18px 42px rgba(0, 0, 0, 0.28);
-      transition: transform 0.35s ease, box-shadow 0.35s ease, background 0.35s ease;
-    }
-
-    .portal-mini:hover,
-    .portal-mini:focus-within {
-      transform: translateY(-2px);
-      box-shadow: 0 24px 56px rgba(0, 0, 0, 0.32);
-      background: rgba(12, 22, 40, 0.88);
-    }
-
-    .portal-mini .portal-shell {
-      inset: 6px;
-      border-radius: 999px;
-      background: rgba(9, 16, 31, 0.95);
-      box-shadow: inset 0 0 0 1px rgba(142, 240, 255, 0.08);
-      transition: background 0.35s ease, box-shadow 0.35s ease;
-    }
-
-    .portal-mini .portal-image {
-      inset: 8px;
-      border-radius: 999px;
+      right: 10px;
+      bottom: 16px;
+      z-index: 6;
       display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 12px;
+    }
+
+    .mini-hub-launcher {
+      position: relative;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 0.9rem;
+      gap: 0.65rem;
+      min-width: 126px;
+      height: 52px;
       padding: 0 1rem;
-      background: linear-gradient(180deg, rgba(11, 29, 54, 0.96), rgba(7, 12, 20, 0.98));
-      color: #7ef1ff;
-      text-transform: uppercase;
-      letter-spacing: 0.18em;
-      font-weight: 700;
-      font-size: 0.88rem;
-      text-shadow: 0 0 14px rgba(126, 241, 255, 0.24);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
-      transition: transform 0.35s ease, background 0.35s ease, box-shadow 0.35s ease;
-      overflow: hidden;
-    }
-
-    .portal-mini:hover .portal-image,
-    .portal-mini:focus-within .portal-image {
-      transform: scale(1.04);
-      background: linear-gradient(180deg, rgba(34, 98, 146, 0.96), rgba(6, 11, 20, 0.98));
-      box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.1);
-    }
-
-    .portal-mini::after {
-      content: "";
-      position: absolute;
-      inset: 0;
+      border: 1px solid #233356;
       border-radius: 999px;
-      pointer-events: none;
-      background: radial-gradient(circle at center, rgba(126, 241, 255, 0.14), transparent 40%);
-      opacity: 0;
-      transition: opacity 0.35s ease;
+      background: linear-gradient(180deg, #192746, #0b1220);
+      color: #eef7ff;
+      cursor: pointer;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
     }
 
-    .portal-mini:hover::after,
-    .portal-mini:focus-within::after {
-      opacity: 1;
+    .mini-hub-launcher:hover,
+    .mini-hub-launcher:focus-visible {
+      transform: translateY(-1px);
+      border-color: rgba(103, 242, 255, 0.34);
+      box-shadow: 0 18px 42px rgba(0, 0, 0, 0.32), 0 0 24px rgba(103, 242, 255, 0.12);
+      outline: none;
     }
 
-    .portal-mini .portal-image span {
-      width: 100%;
-      text-align: center;
-    }
-
-    .emote-viper,
-    .orbiq,
-    .workbench {
-      width: min(180px, 24vw);
-    }
-
-    .legacy-mini {
-      width: min(220px, 28vw);
-    }
-
-    .emote-viper {
-      right: calc(4px + min(250px, 31vw) + 14px);
-    }
-
-    .orbiq {
-      right: calc(4px + min(250px, 31vw) + 14px + min(180px, 24vw) + 14px);
-    }
-
-    .workbench {
-      right: calc(4px + min(250px, 31vw) + 14px + min(180px, 24vw) + 14px + min(180px, 24vw) + 14px);
-    }
-
-    .legacy-mini {
-      right: 4px;
-    }
-
-    .legacy-mini::before {
+    .mini-hub-launcher::after {
       content: "";
       position: absolute;
       inset: 0;
       border-radius: inherit;
-      background: linear-gradient(130deg, rgba(103, 242, 255, 0.14), transparent 34%, rgba(255, 73, 182, 0.12) 70%, transparent);
+      pointer-events: none;
+      background: linear-gradient(180deg, rgba(255,255,255,0.12), transparent 44%, rgba(103,242,255,0.14));
+      opacity: 1;
+    }
+
+    .mini-hub-launcher-icon {
+      position: relative;
+      z-index: 1;
+      width: 28px;
+      height: 28px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+      background: linear-gradient(180deg, #223969, #111c32);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+    }
+
+    .mini-hub-launcher-label {
+      position: relative;
+      z-index: 1;
+      font-size: 0.72rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .mini-hub-launcher-caret {
+      position: relative;
+      z-index: 1;
+      width: 10px;
+      height: 10px;
+      border-right: 2px solid currentColor;
+      border-bottom: 2px solid currentColor;
+      transform: rotate(45deg) translateY(-1px);
+      transition: transform 0.25s ease;
+      opacity: 0.75;
+    }
+
+    .mini-hub-dock:not(.is-collapsed) .mini-hub-launcher-caret {
+      transform: rotate(225deg) translateY(-1px);
+    }
+
+    .mini-hub-panel {
+      position: absolute;
+      right: 0;
+      bottom: 64px;
+      width: 360px;
+      height: 360px;
+      transform-origin: bottom right;
+      transition: opacity 0.28s ease, transform 0.32s ease, visibility 0.28s ease;
+    }
+
+    .mini-hub-dock.is-collapsed .mini-hub-panel {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transform: translate3d(0, 20px, 0) scale(0.68);
+    }
+
+    .mini-hub-dock:not(.is-collapsed) .mini-hub-panel {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+
+    .mini-hub {
+      position: relative;
+      width: 360px;
+      height: 360px;
+      transform-style: preserve-3d;
+      transition: transform 0.25s ease;
       pointer-events: none;
     }
 
-    .legacy-mini .portal-image {
-      inset: 8px;
-      border-radius: 999px;
-      display: block;
+    .mini-hub .hub-core {
+      position: absolute;
+      inset: 50%;
+      width: 74px;
+      height: 74px;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.04) 60%, transparent 72%);
+      filter: blur(10px);
+      opacity: 0.5;
+      pointer-events: none;
+      animation: hubCorePulse 4.6s ease-in-out infinite;
+    }
+
+    .mini-hub .svg-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .mini-hub .conn-line {
+      fill: none;
+      stroke: rgba(255, 255, 255, 0.12);
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      stroke-dasharray: 1000;
+      stroke-dashoffset: 1000;
+      transition: stroke 0.35s ease, stroke-width 0.35s ease, stroke-dashoffset 0.8s ease, filter 0.35s ease;
+      filter: drop-shadow(0 0 0 rgba(255, 255, 255, 0));
+    }
+
+    .node-wrapper {
+      position: absolute;
+      width: 112px;
+      height: 112px;
+      transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+      z-index: 10;
+      pointer-events: auto;
+    }
+
+    .node-top { transform: translate(124px, 10px); }
+    .node-right { transform: translate(238px, 124px); }
+    .node-bottom { transform: translate(124px, 238px); }
+    .node-left { transform: translate(10px, 124px); }
+
+    .mini-node {
+      position: relative;
       width: 100%;
       height: 100%;
-      background-image: url('JL.png');
-      background-position: center center;
-      background-size: 80% auto;
-      background-repeat: no-repeat;
-      background-color: rgba(11, 14, 24, 0.34);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), inset 0 -1px 8px rgba(0, 0, 0, 0.12);
-      transition: background 0.35s ease, box-shadow 0.35s ease, transform 0.35s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      padding: 0.9rem 0.6rem 0.8rem;
+      border-radius: 24px;
+      background: linear-gradient(180deg, #10192d, #060a14);
+      border: 1px solid #1f2841;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+      color: #eef7ff;
+      text-decoration: none;
       overflow: hidden;
-      animation: legacyFloat 8s ease-in-out infinite;
+      transition: transform 0.35s ease, box-shadow 0.35s ease, background 0.35s ease, border-color 0.35s ease;
+    }
+
+    .mini-node::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      border: 1px solid transparent;
+      box-shadow: inset 0 0 0 1px transparent;
+      opacity: 0;
+      transform: scale(0.985);
+      transition: opacity 0.35s ease, transform 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
+    }
+
+    .mini-node::after {
+      content: "";
+      position: absolute;
+      top: -110%;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+      transition: top 0.7s ease;
+    }
+
+    .node-wrapper:hover .mini-node,
+    .node-wrapper:focus-within .mini-node {
+      transform: scale(1.05);
+      background: linear-gradient(180deg, #152342, #080d18);
+      border-color: var(--node-border, rgba(255, 255, 255, 0.34));
+      box-shadow: 0 0 38px -12px var(--node-glow, rgba(255, 255, 255, 0.3)), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+
+    .node-wrapper:hover .mini-node::before,
+    .node-wrapper:focus-within .mini-node::before {
+      opacity: 1;
+      transform: scale(1.02);
+      border-color: var(--node-border, rgba(255, 255, 255, 0.34));
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--node-border, rgba(255,255,255,0.34)) 45%, transparent);
+    }
+
+    .node-wrapper:hover .mini-node::after,
+    .node-wrapper:focus-within .mini-node::after {
+      top: 110%;
+    }
+
+    .mini-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      background: linear-gradient(180deg, #1b2a48, #0c1527);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+      transition: transform 0.25s ease, color 0.25s ease, background 0.25s ease, border-color 0.25s ease;
+    }
+
+    .mini-icon svg,
+    .mini-hub-launcher-icon svg {
+      width: 24px;
+      height: 24px;
+      overflow: visible;
+    }
+
+    .mini-icon svg {
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .mini-hub-launcher-icon svg {
+      stroke: #9fdbff;
+      fill: none;
+      stroke-width: 1.7;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .mini-icon__fill {
+      fill: currentColor;
+      stroke: none;
+      opacity: 0.92;
+    }
+
+    .mini-icon__ghost {
+      stroke-width: 1.2;
+      opacity: 0.42;
+    }
+
+    .mini-icon.workbench-icon {
+      color: #74d7ff;
+    }
+
+    .mini-icon.orbiq-icon {
+      color: #b79cff;
+    }
+
+    .mini-icon.emote-viper-icon {
+      color: #ff8fa8;
+    }
+
+    .mini-icon.legacy-icon {
+      color: #7dffbe;
+    }
+
+    .mini-label {
+      max-width: 100%;
+      font-size: 0.66rem;
+      line-height: 1.2;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      font-weight: 700;
+      opacity: 0.62;
+      text-align: center;
+      white-space: normal;
+      text-wrap: balance;
+      transition: opacity 0.25s ease;
+    }
+
+    .node-top:hover {
+      --node-border: rgba(0, 242, 255, 0.6);
+      --node-glow: rgba(0, 242, 255, 0.45);
+    }
+
+    .node-right:hover {
+      --node-border: rgba(112, 0, 255, 0.58);
+      --node-glow: rgba(112, 0, 255, 0.42);
+    }
+
+    .node-bottom:hover {
+      --node-border: rgba(255, 0, 122, 0.58);
+      --node-glow: rgba(255, 0, 122, 0.42);
+    }
+
+    .node-left:hover {
+      --node-border: rgba(0, 255, 140, 0.58);
+      --node-glow: rgba(0, 255, 140, 0.42);
+    }
+
+    .node-wrapper:hover .mini-icon,
+    .node-wrapper:focus-within .mini-icon {
+      transform: scale(1.08);
+      color: var(--node-border, #ffffff);
+      background: linear-gradient(180deg, color-mix(in srgb, var(--node-border, rgba(255,255,255,0.22)) 22%, #253b65), #0d1526);
+      animation: miniIconGlitch 0.32s linear 1;
+    }
+
+    .node-wrapper:hover .mini-label,
+    .node-wrapper:focus-within .mini-label {
+      opacity: 1;
+    }
+
+    .mini-node.legacy-mini .mini-icon {
+      width: 50px;
+      height: 50px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, #173829, #091a15);
+    }
+
+    .mini-node.legacy-mini .mini-label {
+      display: block;
+    }
+
+    @keyframes hubCorePulse {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.34; }
+      50% { transform: translate(-50%, -50%) scale(1.42); opacity: 0.58; }
+    }
+
+    @keyframes miniIconGlitch {
+      0% { transform: translate(0, 0); }
+      25% { transform: translate(-1px, 1px); }
+      50% { transform: translate(1px, -1px); }
+      75% { transform: translate(-1px, 0); }
+      100% { transform: translate(0, 0); }
+    }
+
+    @media (max-width: 1100px) {
+      .mini-hub-panel {
+        width: 320px;
+        height: 320px;
+        bottom: 60px;
+      }
+
+      .mini-hub {
+        width: 320px;
+        height: 320px;
+      }
+
+      .node-wrapper {
+        width: 100px;
+        height: 100px;
+      }
+
+      .node-top { transform: translate(110px, 10px); }
+      .node-right { transform: translate(210px, 110px); }
+      .node-bottom { transform: translate(110px, 210px); }
+      .node-left { transform: translate(10px, 110px); }
+
+      .mini-label {
+        font-size: 0.62rem;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .mini-hub-dock {
+        right: 4px;
+        bottom: 12px;
+      }
+
+      .mini-hub-launcher {
+        min-width: 112px;
+        height: 48px;
+        padding: 0 0.85rem;
+      }
+
+      .mini-hub-panel {
+        width: 248px;
+        height: 248px;
+        bottom: 56px;
+      }
+
+      .mini-hub {
+        width: 248px;
+        height: 248px;
+      }
+
+      .mini-hub .hub-core {
+        width: 58px;
+        height: 58px;
+      }
+
+      .node-wrapper {
+        width: 76px;
+        height: 76px;
+      }
+
+      .node-top { transform: translate(86px, 6px); }
+      .node-right { transform: translate(166px, 86px); }
+      .node-bottom { transform: translate(86px, 166px); }
+      .node-left { transform: translate(6px, 86px); }
+
+      .mini-node {
+        padding: 0.55rem 0.35rem;
+        border-radius: 18px;
+      }
+
+      .mini-icon {
+        width: 34px;
+        height: 34px;
+        font-size: 1rem;
+      }
+
+      .mini-node.legacy-mini .mini-icon {
+        width: 40px;
+        height: 40px;
+      }
+
+      .mini-label {
+        font-size: 0.52rem;
+        letter-spacing: 0.12em;
+      }
     }
 
     .emote-viper .portal-image span,
@@ -603,11 +924,6 @@
     .portal:focus-within .portal-image {
       transform: translate3d(calc(var(--shift-x, 0px) * 1.35), calc(var(--shift-y, 0px) * 1.35), 0) scale(1.09);
       box-shadow: 0 32px 62px rgba(0, 0, 0, 0.38);
-    }
-
-    .portal-mini:hover .portal-image,
-    .portal-mini:focus-within .portal-image {
-      background: linear-gradient(180deg, rgba(72, 144, 204, 0.95), rgba(8, 14, 24, 0.95));
     }
 
     .portal::after {
@@ -867,37 +1183,6 @@
       .portal {
         min-height: 620px;
       }
-
-      .portal-mini {
-        bottom: -162px;
-        height: 66px;
-      }
-
-      .emote-viper,
-      .orbiq,
-      .workbench {
-        width: 160px;
-      }
-
-      .legacy-mini {
-        width: 210px;
-      }
-
-      .emote-viper {
-        right: calc(0 + 210px + 14px);
-      }
-
-      .orbiq {
-        right: calc(0 + 210px + 14px + 160px + 14px);
-      }
-
-      .workbench {
-        right: calc(0 + 210px + 14px + 160px + 14px + 160px + 14px);
-      }
-
-      .legacy-mini {
-        right: 0;
-      }
     }
 
     @media (max-width: 720px) {
@@ -922,7 +1207,7 @@
 
       .ad-worlds {
         margin-top: -4px;
-        padding-bottom: 10px;
+        padding-bottom: 70px;
       }
 
       .portal {
@@ -939,53 +1224,6 @@
       .igg .portal-image {
         inset: 18px;
         border-radius: 18px;
-      }
-
-      .emote-viper,
-      .orbiq,
-      .workbench,
-      .legacy-mini {
-        bottom: -126px;
-        min-height: 0;
-        height: 54px;
-        border-radius: 16px;
-      }
-
-      .workbench,
-      .orbiq,
-      .emote-viper {
-        width: 132px;
-        min-width: 132px;
-      }
-
-      .orbiq {
-        right: calc(2px + 150px + 12px + 132px + 12px);
-      }
-
-      .workbench {
-        right: calc(2px + 150px + 12px + 132px + 12px + 132px + 12px);
-      }
-
-      .emote-viper {
-        right: calc(2px + 150px + 12px);
-      }
-
-      .legacy-mini {
-        right: 2px;
-        width: 150px;
-        min-width: 150px;
-      }
-
-      .legacy-mini .portal-shell {
-        inset: 6px;
-        border-radius: 999px;
-      }
-
-      .legacy-mini .portal-image {
-        inset: 7px 8px 7px 8px;
-        border-radius: 999px;
-        background-position: center center;
-        background-size: cover;
       }
     }
 
@@ -1046,31 +1284,86 @@
           <div class="portal-core"></div>
         </article>
 
-        <article class="portal portal-mini workbench" data-depth="6" aria-label="Workbench link">
-          <div class="portal-shell">
-            <div class="portal-image"><span>Workbench</span></div>
+        <div class="mini-hub-dock is-collapsed" id="mini-hub-dock">
+          <button class="mini-hub-launcher" id="mini-hub-launcher" type="button" aria-expanded="false" aria-controls="mini-hub-panel">
+            <span class="mini-hub-launcher-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <circle cx="6" cy="12" r="2.2"></circle>
+                <circle cx="18" cy="6" r="2.2"></circle>
+                <circle cx="18" cy="18" r="2.2"></circle>
+                <path d="M8.2 11.3 15.8 6.8"></path>
+                <path d="M8.2 12.7 15.8 17.2"></path>
+              </svg>
+            </span>
+            <span class="mini-hub-launcher-label">Quick Links</span>
+            <span class="mini-hub-launcher-caret" aria-hidden="true"></span>
+          </button>
+          <div class="mini-hub-panel" id="mini-hub-panel">
+            <div class="mini-hub">
+              <div class="node-wrapper node-top" data-path="path-top">
+                <a class="mini-node workbench" href="../workbench.html" target="_self" rel="noreferrer" aria-label="Open Workbench">
+                  <span class="mini-icon workbench-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" focusable="false">
+                      <path d="M4 18.5h16"></path>
+                      <path d="M6.5 18.5v-5.5l2.2-2.1 2.1 2.1v5.5"></path>
+                      <path d="M13 18.5v-8l2.5-2.5 2.5 2.5v8"></path>
+                      <path class="mini-icon__ghost" d="M6.5 9.5h4.3"></path>
+                      <path class="mini-icon__ghost" d="M13 7.5h5"></path>
+                    </svg>
+                  </span>
+                  <span class="mini-label">Workbench</span>
+                </a>
+              </div>
+              <div class="node-wrapper node-right" data-path="path-right">
+                <a class="mini-node orbiq" href="https://passghost.github.io/OrbiqWebsite/" target="_blank" rel="noreferrer" aria-label="Open Orbiq">
+                  <span class="mini-icon orbiq-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" focusable="false">
+                      <circle cx="12" cy="12" r="2.2" class="mini-icon__fill"></circle>
+                      <ellipse cx="12" cy="12" rx="7.5" ry="3.8"></ellipse>
+                      <ellipse cx="12" cy="12" rx="7.5" ry="3.8" transform="rotate(60 12 12)"></ellipse>
+                      <ellipse cx="12" cy="12" rx="7.5" ry="3.8" transform="rotate(-60 12 12)"></ellipse>
+                    </svg>
+                  </span>
+                  <span class="mini-label">Orbiq</span>
+                </a>
+              </div>
+              <div class="node-wrapper node-bottom" data-path="path-bottom">
+                <a class="mini-node emote-viper" href="../EmoteViper/emoteviper.html" target="_self" rel="noreferrer" aria-label="Open Emote Viper">
+                  <span class="mini-icon emote-viper-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" focusable="false">
+                      <path d="M7 7.5h10l2 4.5-2 4.5H7L5 12z"></path>
+                      <path d="M9.2 10.2h1.4"></path>
+                      <path d="M13.4 10.2h1.4"></path>
+                      <path class="mini-icon__fill" d="M9.8 13.2h1.1l-0.55 2.1z"></path>
+                      <path class="mini-icon__fill" d="M13.1 13.2h1.1l-0.55 2.1z"></path>
+                    </svg>
+                  </span>
+                  <span class="mini-label">Emote Viper</span>
+                </a>
+              </div>
+              <div class="node-wrapper node-left" data-path="path-left">
+                <a class="mini-node legacy-mini" href="https://jodylabs.surge.sh/index.html" target="_blank" rel="noreferrer" aria-label="Open Legacy JodyLabs">
+                  <span class="mini-icon legacy-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" focusable="false">
+                      <path d="M7 5.5v9.2c0 2.1 1.5 3.8 3.5 3.8 1.9 0 3.5-1.7 3.5-3.8v-6.2"></path>
+                      <path d="M14 5.5h4"></path>
+                      <path d="M14 9.2h3.2"></path>
+                      <path class="mini-icon__ghost" d="M5 19h14"></path>
+                    </svg>
+                  </span>
+                  <span class="mini-label">Legacy</span>
+                </a>
+              </div>
+              <svg class="svg-overlay" viewBox="0 0 320 320">
+                <path id="path-top" class="conn-line" d="M160 160 L160 38" />
+                <path id="path-right" class="conn-line" d="M160 160 L282 160" />
+                <path id="path-bottom" class="conn-line" d="M160 160 L160 282" />
+                <path id="path-left" class="conn-line" d="M160 160 L38 160" />
+              </svg>
+              <div class="hub-core"></div>
+            </div>
           </div>
-          <a class="portal-hit" href="../workbench.html" target="_self" rel="noreferrer" aria-label="Open Workbench"></a>
-        </article>
-        <article class="portal portal-mini orbiq" data-depth="6" aria-label="Orbiq link">
-          <div class="portal-shell">
-            <div class="portal-image"><span>Orbiq</span></div>
-          </div>
-          <a class="portal-hit" href="https://passghost.github.io/OrbiqWebsite/" target="_blank" rel="noreferrer" aria-label="Open Orbiq"></a>
-        </article>
-        <article class="portal portal-mini emote-viper" data-depth="6" aria-label="Emote Viper link">
-          <div class="portal-shell">
-            <div class="portal-image"><span>Emote Viper</span></div>
-          </div>
-          <a class="portal-hit" href="../EmoteViper/emoteviper.html" target="_self" rel="noreferrer" aria-label="Open Emote Viper"></a>
-        </article>
-        <article class="portal portal-mini legacy-mini" data-depth="6" aria-label="Legacy JodyLabs link">
-          <div class="portal-shell">
-            <div class="portal-image"></div>
-          </div>
-          <div class="legacy-tooltip">Legacy JodyLabs, like legacy legacy. I nuked the like... regular legacy one. Get over it, it was just bad.</div>
-          <a class="legacy-hit" href="https://jodylabs.surge.sh/index.html" target="_blank" rel="noreferrer" aria-label="Open Legacy JodyLabs"></a>
-        </article>
+        </div>
       </div>
     </section>
   </main>
@@ -1089,6 +1382,10 @@
 
   <script>
     const portals = Array.from(document.querySelectorAll('.portal'));
+    const miniHubDock = document.getElementById('mini-hub-dock');
+    const miniHubLauncher = document.getElementById('mini-hub-launcher');
+    const miniHub = document.querySelector('.mini-hub');
+    const miniHubWrappers = Array.from(document.querySelectorAll('.mini-hub .node-wrapper'));
     const debugCounter = document.getElementById('debug-counter');
     const debugCounterValue = document.getElementById('debug-counter-value');
     const debugCounterStatus = document.getElementById('debug-counter-status');
@@ -1102,6 +1399,21 @@
     };
 
     let musicStarted = false;
+
+    function setMiniHubCollapsed(isCollapsed) {
+      if (!miniHubDock || !miniHubLauncher) return;
+      miniHubDock.classList.toggle('is-collapsed', isCollapsed);
+      miniHubLauncher.setAttribute('aria-expanded', String(!isCollapsed));
+      if (isCollapsed) {
+        resetMiniHubMotion();
+        miniHubWrappers.forEach((wrapper) => setMiniHubLineState(wrapper.dataset.path, wrapper, false));
+      }
+    }
+
+    function toggleMiniHub() {
+      if (!miniHubDock) return;
+      setMiniHubCollapsed(!miniHubDock.classList.contains('is-collapsed'));
+    }
 
     function setMuteButton() {
       if (!bgMusic) return;
@@ -1372,12 +1684,77 @@
       portal.style.setProperty('--shift-y', '0px');
     }
 
+    function updateMiniHubMotion(event) {
+      if (!miniHub || miniHubDock?.classList.contains('is-collapsed')) return;
+      const rect = miniHub.getBoundingClientRect();
+      const offsetX = event.clientX - rect.left - rect.width / 2;
+      const offsetY = event.clientY - rect.top - rect.height / 2;
+      const rotateY = (offsetX / rect.width) * 10;
+      const rotateX = (offsetY / rect.height) * -10;
+
+      miniHub.style.transform = 'perspective(1200px) rotateX(' + rotateX.toFixed(2) + 'deg) rotateY(' + rotateY.toFixed(2) + 'deg)';
+    }
+
+    function resetMiniHubMotion() {
+      if (!miniHub) return;
+      miniHub.style.transform = 'perspective(1200px) rotateX(0deg) rotateY(0deg)';
+    }
+
+    function setMiniHubLineState(pathId, wrapper, isActive) {
+      if (!miniHub || !pathId) return;
+      const path = miniHub.querySelector('#' + pathId);
+      if (!path) return;
+
+      const accent = getComputedStyle(wrapper).getPropertyValue('--node-border').trim() || 'rgba(255, 255, 255, 0.35)';
+      path.style.stroke = isActive ? accent : 'rgba(255, 255, 255, 0.12)';
+      path.style.strokeWidth = isActive ? '2.5' : '1.5';
+      path.style.strokeDashoffset = isActive ? '0' : '1000';
+      path.style.filter = isActive ? 'drop-shadow(0 0 8px ' + accent + ')' : 'drop-shadow(0 0 0 rgba(255, 255, 255, 0))';
+    }
+
     portals.forEach((portal) => {
       resetPortalMotion(portal);
       portal.addEventListener('pointermove', (event) => updatePortalMotion(portal, event));
       portal.addEventListener('pointerleave', () => resetPortalMotion(portal));
       portal.addEventListener('pointercancel', () => resetPortalMotion(portal));
     });
+
+    if (miniHub) {
+      resetMiniHubMotion();
+      miniHub.addEventListener('pointermove', updateMiniHubMotion);
+      miniHub.addEventListener('pointerleave', resetMiniHubMotion);
+      miniHub.addEventListener('pointercancel', resetMiniHubMotion);
+    }
+
+    if (miniHubLauncher) {
+      miniHubLauncher.addEventListener('click', () => toggleMiniHub());
+    }
+
+    miniHubWrappers.forEach((wrapper) => {
+      const pathId = wrapper.dataset.path;
+
+      setMiniHubLineState(pathId, wrapper, false);
+
+      wrapper.addEventListener('mouseenter', () => setMiniHubLineState(pathId, wrapper, true));
+      wrapper.addEventListener('mouseleave', () => setMiniHubLineState(pathId, wrapper, false));
+      wrapper.addEventListener('focusin', () => setMiniHubLineState(pathId, wrapper, true));
+      wrapper.addEventListener('focusout', () => setMiniHubLineState(pathId, wrapper, false));
+    });
+
+    document.addEventListener('pointerdown', (event) => {
+      if (!miniHubDock || miniHubDock.classList.contains('is-collapsed')) return;
+      if (!miniHubDock.contains(event.target)) {
+        setMiniHubCollapsed(true);
+      }
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && miniHubDock && !miniHubDock.classList.contains('is-collapsed')) {
+        setMiniHubCollapsed(true);
+      }
+    });
+
+    setMiniHubCollapsed(true);
 
     loadServiceStatus();
     refreshVisitCounter();
