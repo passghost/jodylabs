@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BackBGone | High-Precision Edge AI</title>
-    <script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio"></script>
+    <title>BackBGone | AI Precision Edge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .checkerboard {
             background-image: linear-gradient(45deg, #f8f8f8 25%, transparent 25%), 
@@ -24,7 +24,7 @@
             <div class="bg-indigo-600 w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
             </div>
-            <h1 class="text-xl font-black tracking-tighter">BACKBGONE</h1>
+            <h1 class="text-xl font-black tracking-tighter uppercase">BackBGone</h1>
         </div>
         <div id="statusIndicator" class="flex items-center gap-3 bg-white px-4 py-2 rounded-full border border-zinc-200 shadow-sm">
             <div id="statusDot" class="w-2 h-2 bg-zinc-300 rounded-full animate-pulse"></div>
@@ -34,8 +34,8 @@
 
     <main class="max-w-6xl mx-auto p-6 md:p-12">
         <div class="max-w-2xl mx-auto text-center mb-16">
-            <h2 class="text-5xl font-black text-zinc-950 mb-6 tracking-tight leading-tight">Professional Background Removal.</h2>
-            <p class="text-zinc-500 text-lg mb-10">Localized AI inference via WebGPU. Total privacy.</p>
+            <h2 class="text-5xl font-black text-zinc-950 mb-6 tracking-tight">Pro Background Removal.</h2>
+            <p class="text-zinc-500 text-lg mb-10">Localized AI inference. Privacy-first processing.</p>
             
             <label class="group relative flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-zinc-300 rounded-[2.5rem] bg-white hover:border-indigo-500 hover:bg-indigo-50/20 transition-all cursor-pointer shadow-sm">
                 <div class="flex flex-col items-center justify-center space-y-4">
@@ -50,7 +50,7 @@
 
         <div id="loadingBarContainer" class="hidden fixed bottom-8 right-8 w-80 p-6 bg-white rounded-3xl border border-zinc-200 shadow-2xl z-50">
             <div class="flex justify-between mb-3 text-zinc-800">
-                <span class="text-[10px] font-black uppercase tracking-wider">Downloading Engine</span>
+                <span class="text-[10px] font-black uppercase tracking-wider">Engine: RMBG-1.4</span>
                 <span id="progressPercent" class="text-xs font-mono font-bold text-indigo-600">0%</span>
             </div>
             <div class="w-full bg-zinc-100 rounded-full h-1.5 overflow-hidden">
@@ -62,15 +62,15 @@
     </main>
 
     <script type="module">
-        // Using a more stable ESM provider for GitHub Pages
-        import { pipeline, env, RawImage } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0-alpha.19';
+        import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0-alpha.19';
 
-        // FORCE CONFIG FOR GITHUB PAGES
+        // --- GITHUB PAGES COMPATIBILITY LAYER ---
         env.allowLocalModels = false;
+        env.allowRemoteModels = true; 
         env.useBrowserCache = true;
-        // Pointing explicitly to the resolve endpoint to prevent 403s
+        // Explicitly defining the endpoint helps bypass CORS "guessing" errors
         env.remoteHost = 'https://huggingface.co';
-        env.remotePathTemplate = '{model}/resolve/main/';
+        env.remotePathTemplate = '{model}/resolve/{revision}/';
 
         let segmenter = null;
 
@@ -89,18 +89,17 @@
                 
                 // We use the image-segmentation task specifically
                 segmenter = await pipeline('image-segmentation', 'Xenova/rmbg-1.4', {
+                    revision: 'main', // Explicitly targeting main branch to satisfy headers
                     device: navigator.gpu ? 'webgpu' : 'wasm',
                     progress_callback: (p) => {
                         if (p.status === 'progress') {
                             progressBar.style.width = p.progress + '%';
                             progressPercent.innerText = Math.round(p.progress) + '%';
                         }
-                        if (p.status === 'done') {
-                            loadingBarContainer.classList.add('hidden');
-                        }
                     }
                 });
 
+                loadingBarContainer.classList.add('hidden');
                 statusText.innerText = "Edge Active";
                 statusDot.classList.replace('bg-zinc-300', 'bg-emerald-500');
                 statusDot.classList.remove('animate-pulse');
@@ -128,7 +127,7 @@
             card.className = "bg-white p-5 rounded-[2.5rem] border border-zinc-200 shadow-sm group";
             card.innerHTML = `
                 <div class="aspect-square bg-zinc-50 rounded-[1.8rem] overflow-hidden relative checkerboard mb-5">
-                    <img id="img-${id}" src="${url}" class="w-full h-full object-contain opacity-30 blur-md transition-all duration-1000">
+                    <img id="img-${id}" src="${url}" class="w-full h-full object-contain opacity-30 blur-md transition-all duration-1000 scale-90">
                     <div id="loader-${id}" class="absolute inset-0 flex flex-col items-center justify-center">
                         <div class="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
                     </div>
@@ -138,7 +137,7 @@
                         <p class="text-sm font-bold truncate text-zinc-900">${file.name}</p>
                         <p id="label-${id}" class="text-[10px] font-black uppercase tracking-widest text-zinc-400 mt-1">Processing</p>
                     </div>
-                    <a id="dl-${id}" class="hidden w-12 h-12 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-lg">
+                    <a id="dl-${id}" class="hidden w-12 h-12 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-lg transition-all scale-0">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
                     </a>
                 </div>
@@ -146,10 +145,9 @@
             resultsGrid.prepend(card);
 
             try {
-                // FIXED: In v3, we call the segmenter as a function and it returns the mask
+                // In v3, we call the segmenter directly as a function
                 const output = await segmenter(url);
-                const mask = output; // For RMBG-1.4, output is the mask directly
-
+                
                 const originalImg = new Image();
                 originalImg.src = url;
                 await originalImg.decode();
@@ -162,7 +160,8 @@
 
                 const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 
-                // Resize mask to original image size
+                // Process the alpha mask (output is a RawImage in v3)
+                const mask = output;
                 const maskCanvas = document.createElement('canvas');
                 maskCanvas.width = mask.width;
                 maskCanvas.height = mask.height;
@@ -180,7 +179,6 @@
                 finalMask.getContext('2d').drawImage(maskCanvas, 0, 0, canvas.width, canvas.height);
                 const fmData = finalMask.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
 
-                // Apply mask
                 for(let i=0; i < imageData.data.length; i += 4) {
                     imageData.data[i+3] = fmData[i];
                 }
@@ -188,10 +186,12 @@
                 ctx.putImageData(imageData, 0, 0);
                 const resultUrl = canvas.toDataURL('image/png');
 
-                // UI Update
+                // UI UPDATES
                 const img = document.getElementById(`img-${id}`);
                 img.src = resultUrl;
-                img.classList.remove('opacity-30', 'blur-sm');
+                img.classList.remove('opacity-30', 'blur-sm', 'scale-90');
+                img.classList.add('scale-100');
+                
                 document.getElementById(`loader-${id}`).remove();
                 document.getElementById(`label-${id}`).innerText = "Complete";
                 document.getElementById(`label-${id}`).classList.replace('text-zinc-400', 'text-emerald-500');
@@ -199,10 +199,11 @@
                 const dl = document.getElementById(`dl-${id}`);
                 dl.href = resultUrl;
                 dl.download = `no-bg-${file.name.split('.')[0]}.png`;
-                dl.classList.remove('hidden');
+                dl.classList.remove('hidden', 'scale-0');
+                dl.classList.add('scale-100');
 
             } catch (err) {
-                console.error("Processing error:", err);
+                console.error(err);
                 document.getElementById(`label-${id}`).innerText = "Error";
                 document.getElementById(`label-${id}`).classList.replace('text-zinc-400', 'text-rose-500');
             }
