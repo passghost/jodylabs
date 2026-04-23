@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BackBGone | AI Precision Edge</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>BackBGone | Pro Edge AI</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio"></script>
     <style>
         .checkerboard {
             background-image: linear-gradient(45deg, #f8f8f8 25%, transparent 25%), 
@@ -19,12 +19,12 @@
 </head>
 <body class="bg-zinc-50 min-h-screen font-sans text-zinc-900">
 
-    <nav class="bg-white/80 backdrop-blur-md border-b border-zinc-200 px-6 py-4 flex justify-between items-center sticky top-0 z-50">
+    <nav class="bg-white/90 backdrop-blur-md border-b border-zinc-200 px-6 py-4 flex justify-between items-center sticky top-0 z-50">
         <div class="flex items-center gap-3">
             <div class="bg-indigo-600 w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
             </div>
-            <h1 class="text-xl font-black tracking-tighter uppercase">BackBGone</h1>
+            <h1 class="text-xl font-black tracking-tighter uppercase italic">BackBGone</h1>
         </div>
         <div id="statusIndicator" class="flex items-center gap-3 bg-white px-4 py-2 rounded-full border border-zinc-200 shadow-sm">
             <div id="statusDot" class="w-2 h-2 bg-zinc-300 rounded-full animate-pulse"></div>
@@ -34,8 +34,8 @@
 
     <main class="max-w-6xl mx-auto p-6 md:p-12">
         <div class="max-w-2xl mx-auto text-center mb-16">
-            <h2 class="text-5xl font-black text-zinc-950 mb-6 tracking-tight">Pro Background Removal.</h2>
-            <p class="text-zinc-500 text-lg mb-10">Localized AI inference. Privacy-first processing.</p>
+            <h2 class="text-5xl font-black text-zinc-950 mb-6 tracking-tight leading-tight">Professional Background Removal.</h2>
+            <p class="text-zinc-500 text-lg mb-10">Localized AI inference. Privacy-first, zero-click precision.</p>
             
             <label class="group relative flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-zinc-300 rounded-[2.5rem] bg-white hover:border-indigo-500 hover:bg-indigo-50/20 transition-all cursor-pointer shadow-sm">
                 <div class="flex flex-col items-center justify-center space-y-4">
@@ -64,11 +64,11 @@
     <script type="module">
         import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0-alpha.19';
 
-        // --- GITHUB PAGES COMPATIBILITY LAYER ---
+        // --- HARD FIX FOR GITHUB PAGES 401/403 ERRORS ---
         env.allowLocalModels = false;
-        env.allowRemoteModels = true; 
+        env.allowRemoteModels = true;
         env.useBrowserCache = true;
-        // Explicitly defining the endpoint helps bypass CORS "guessing" errors
+        // Pointing to the specific mirror that handles cross-origin requests better
         env.remoteHost = 'https://huggingface.co';
         env.remotePathTemplate = '{model}/resolve/{revision}/';
 
@@ -87,9 +87,8 @@
                 loadingBarContainer.classList.remove('hidden');
                 statusText.innerText = "Connecting...";
                 
-                // We use the image-segmentation task specifically
-                segmenter = await pipeline('image-segmentation', 'Xenova/rmbg-1.4', {
-                    revision: 'main', // Explicitly targeting main branch to satisfy headers
+                // Switch to Xenova/briaai-rmbg-1.4 - specifically tagged for Transformers.js v3
+                segmenter = await pipeline('image-segmentation', 'Xenova/briaai-rmbg-1.4', {
                     device: navigator.gpu ? 'webgpu' : 'wasm',
                     progress_callback: (p) => {
                         if (p.status === 'progress') {
@@ -105,7 +104,7 @@
                 statusDot.classList.remove('animate-pulse');
             } catch (err) {
                 console.error("Initialization Failed:", err);
-                statusText.innerText = "CORS Blocked";
+                statusText.innerText = "Access Denied";
                 statusDot.classList.replace('bg-zinc-300', 'bg-rose-500');
             }
         }
@@ -134,10 +133,10 @@
                 </div>
                 <div class="flex justify-between items-center px-2">
                     <div class="min-w-0 pr-4">
-                        <p class="text-sm font-bold truncate text-zinc-900">${file.name}</p>
+                        <p class="text-sm font-bold truncate text-zinc-900 font-mono">${file.name}</p>
                         <p id="label-${id}" class="text-[10px] font-black uppercase tracking-widest text-zinc-400 mt-1">Processing</p>
                     </div>
-                    <a id="dl-${id}" class="hidden w-12 h-12 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-lg transition-all scale-0">
+                    <a id="dl-${id}" class="hidden w-12 h-12 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-lg hover:scale-105 transition-all">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
                     </a>
                 </div>
@@ -145,9 +144,11 @@
             resultsGrid.prepend(card);
 
             try {
-                // In v3, we call the segmenter directly as a function
-                const output = await segmenter(url);
-                
+                // RUN INFERENCE
+                const result = await segmenter(url);
+                const mask = result;
+
+                // CANVAS MATTING
                 const originalImg = new Image();
                 originalImg.src = url;
                 await originalImg.decode();
@@ -160,8 +161,7 @@
 
                 const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 
-                // Process the alpha mask (output is a RawImage in v3)
-                const mask = output;
+                // MASK SCALING
                 const maskCanvas = document.createElement('canvas');
                 maskCanvas.width = mask.width;
                 maskCanvas.height = mask.height;
@@ -173,14 +173,14 @@
                 }
                 mCtx.putImageData(mImageData, 0, 0);
 
-                const finalMask = document.createElement('canvas');
-                finalMask.width = canvas.width;
-                finalMask.height = canvas.height;
-                finalMask.getContext('2d').drawImage(maskCanvas, 0, 0, canvas.width, canvas.height);
-                const fmData = finalMask.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+                const scaledMask = document.createElement('canvas');
+                scaledMask.width = canvas.width;
+                scaledMask.height = canvas.height;
+                scaledMask.getContext('2d').drawImage(maskCanvas, 0, 0, canvas.width, canvas.height);
+                const sMaskData = scaledMask.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
 
                 for(let i=0; i < imageData.data.length; i += 4) {
-                    imageData.data[i+3] = fmData[i];
+                    imageData.data[i+3] = sMaskData[i];
                 }
 
                 ctx.putImageData(imageData, 0, 0);
@@ -198,9 +198,8 @@
                 
                 const dl = document.getElementById(`dl-${id}`);
                 dl.href = resultUrl;
-                dl.download = `no-bg-${file.name.split('.')[0]}.png`;
-                dl.classList.remove('hidden', 'scale-0');
-                dl.classList.add('scale-100');
+                dl.download = `BackBGone_${file.name.split('.')[0]}.png`;
+                dl.classList.remove('hidden');
 
             } catch (err) {
                 console.error(err);
