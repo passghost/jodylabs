@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BackBGone | Edge AI</title>
+    <title>BackBGone | High-Precision Edge AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .checkerboard {
@@ -34,15 +34,15 @@
 
     <main class="max-w-6xl mx-auto p-6 md:p-12">
         <div class="max-w-2xl mx-auto text-center mb-16">
-            <h2 class="text-5xl font-black text-zinc-950 mb-6 tracking-tight leading-tight">Zero-Click AI Matting.</h2>
-            <p class="text-zinc-500 text-lg mb-10">High-precision segmentation. 100% Client-side.</p>
+            <h2 class="text-5xl font-black text-zinc-950 mb-6 tracking-tight leading-tight leading-none">AI Segmentation at the Edge.</h2>
+            <p class="text-zinc-500 text-lg mb-10 font-medium">Localized background removal. No cloud. Pure privacy.</p>
             
             <label class="group relative flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-zinc-300 rounded-[2.5rem] bg-white hover:border-indigo-500 hover:bg-indigo-50/20 transition-all cursor-pointer shadow-sm">
                 <div class="flex flex-col items-center justify-center space-y-4">
                     <div class="p-5 bg-indigo-50 rounded-2xl group-hover:scale-110 transition-transform duration-500">
                         <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
                     </div>
-                    <p class="text-sm font-bold text-zinc-700">Select images</p>
+                    <p class="text-sm font-bold text-zinc-700">Drop images or click to browse</p>
                 </div>
                 <input type="file" id="fileInput" class="hidden" multiple accept="image/*">
             </label>
@@ -50,7 +50,7 @@
 
         <div id="loadingBarContainer" class="hidden fixed bottom-8 right-8 w-80 p-6 bg-white rounded-3xl border border-zinc-200 shadow-2xl z-50">
             <div class="flex justify-between mb-3 text-zinc-800">
-                <span class="text-[10px] font-black uppercase tracking-wider text-zinc-500">Loading Intelligence...</span>
+                <span class="text-[10px] font-black uppercase tracking-wider text-zinc-500">Engine: RMBG-1.4</span>
                 <span id="progressPercent" class="text-xs font-mono font-bold text-indigo-600">0%</span>
             </div>
             <div class="w-full bg-zinc-100 rounded-full h-1.5 overflow-hidden">
@@ -62,13 +62,11 @@
     </main>
 
     <script type="module">
-        // Import specific classes to avoid the buggy auto-pipeline
         import { AutoModel, AutoProcessor, RawImage, env } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0-alpha.19';
 
         env.allowLocalModels = false;
         env.useBrowserCache = true;
         
-        // Pointing directly to the model folder
         const MODEL_ID = 'briaai/RMBG-1.4';
 
         let model = null;
@@ -85,10 +83,8 @@
         async function init() {
             try {
                 loadingBarContainer.classList.remove('hidden');
-                statusText.innerText = "Downloading Model...";
+                statusText.innerText = "Downloading Neural Engine...";
                 
-                // Load model and processor individually
-                // This forces the library to use the correct architecture
                 [model, processor] = await Promise.all([
                     AutoModel.from_pretrained(MODEL_ID, {
                         device: navigator.gpu ? 'webgpu' : 'wasm',
@@ -127,7 +123,7 @@
             const url = URL.createObjectURL(file);
             
             const card = document.createElement('div');
-            card.className = "bg-white p-5 rounded-[2.5rem] border border-zinc-200 shadow-sm group";
+            card.className = "bg-white p-5 rounded-[2.5rem] border border-zinc-200 shadow-sm group hover:shadow-xl transition-all duration-500";
             card.innerHTML = `
                 <div class="aspect-square bg-zinc-50 rounded-[1.8rem] overflow-hidden relative checkerboard mb-5">
                     <img id="img-${id}" src="${url}" class="w-full h-full object-contain opacity-30 blur-md transition-all duration-1000 scale-90">
@@ -148,20 +144,27 @@
             resultsGrid.prepend(card);
 
             try {
-                // MANUAL INFERENCE FLOW
+                // LOAD IMAGE
                 const image = await RawImage.fromURL(url);
+                
+                // PREPROCESS
                 const { pixel_values } = await processor(image);
+                
+                // INFERENCE
                 const { output } = await model({ input: pixel_values });
                 
-                // Post-process the output tensor into an alpha mask
-                const mask = await RawImage.fromTensor(output.mul(255).to('uint8')).resize(image.width, image.height);
+                // --- THE CRITICAL TENSOR FIX ---
+                // We use .squeeze() to turn [1, 1, 1024, 1024] into [1, 1024, 1024]
+                // This prevents the "Tensor should have 3 dimensions" error.
+                const mask = await RawImage.fromTensor(
+                    output[0].mul(255).to('uint8').squeeze()
+                ).resize(image.width, image.height);
 
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
                 canvas.width = image.width;
                 canvas.height = image.height;
                 
-                // Draw original
                 const originalImg = new Image();
                 originalImg.src = url;
                 await originalImg.decode();
@@ -169,15 +172,15 @@
 
                 const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 
-                // Apply the mask to the alpha channel
+                // Apply the red channel of our processed mask to the Alpha channel of the original
                 for(let i=0; i < imageData.data.length; i += 4) {
-                    imageData.data[i+3] = mask.data[i/4 * 4]; // Use the red channel of the mask as alpha
+                    imageData.data[i+3] = mask.data[i]; 
                 }
 
                 ctx.putImageData(imageData, 0, 0);
                 const resultUrl = canvas.toDataURL('image/png');
 
-                // UI UPDATES
+                // UI REVEAL
                 const imgDisplay = document.getElementById(`img-${id}`);
                 imgDisplay.src = resultUrl;
                 imgDisplay.classList.remove('opacity-30', 'blur-sm', 'scale-90');
@@ -194,8 +197,9 @@
                 dl.classList.add('scale-100');
 
             } catch (err) {
-                console.error(err);
-                document.getElementById(`label-${id}`).innerText = "Inference Error";
+                console.error("Processing Error:", err);
+                document.getElementById(`label-${id}`).innerText = "Tensor Error";
+                document.getElementById(`label-${id}`).classList.replace('text-zinc-400', 'text-rose-500');
             }
         }
     </script>
