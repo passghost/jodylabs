@@ -1,190 +1,192 @@
-import React, { useState, useCallback } from 'react';
-import { 
-  Upload, 
-  ImageIcon, 
-  Download, 
-  Loader2, 
-  Zap, 
-  Layers, 
-  X,
-  AlertCircle
-} from 'lucide-react';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BackBGone | AI Background Remover</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .checkerboard {
+            background-image: linear-gradient(45deg, #f0f0f0 25%, transparent 25%), 
+                              linear-gradient(-45deg, #f0f0f0 25%, transparent 25%), 
+                              linear-gradient(45deg, transparent 75%, #f0f0f0 75%), 
+                              linear-gradient(-45deg, transparent 75%, #f0f0f0 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans">
 
-const App = () => {
-  const [images, setImages] = useState([]);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [error, setError] = useState(null);
-
-  const processImage = async (imgObj) => {
-    try {
-      setImages(prev => prev.map(img => 
-        img.id === imgObj.id ? { ...img, status: 'processing' } : img
-      ));
-
-      // Use the environment-native image editing model for high-precision matting
-      const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{
-            parts: [
-              { text: "Remove the background from this image with absolute precision. Return only the foreground subject with a transparent background. Preserve fine details like hair and edges." },
-              { inlineData: { mimeType: "image/png", data: imgObj.base64.split(',')[1] } }
-            ]
-          }],
-          generationConfig: { responseModalities: ['IMAGE'] }
-        })
-      });
-
-      if (!response.ok) throw new Error('Segmentation engine failed to respond.');
-
-      const result = await response.json();
-      const base64 = result.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
-
-      if (!base64) throw new Error('Failed to extract alpha matte.');
-
-      setImages(prev => prev.map(img => 
-        img.id === imgObj.id ? { 
-          ...img, 
-          status: 'completed', 
-          resultUrl: `data:image/png;base64,${base64}` 
-        } : img
-      ));
-    } catch (err) {
-      console.error(err);
-      setImages(prev => prev.map(img => 
-        img.id === imgObj.id ? { ...img, status: 'error', error: err.message } : img
-      ));
-    }
-  };
-
-  const onFileChange = (e) => {
-    const files = Array.from(e.target.files);
-    files.forEach(file => {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const newImg = {
-          id: Math.random().toString(36).substr(2, 9),
-          file,
-          url: URL.createObjectURL(file),
-          base64: event.target.result,
-          status: 'queued',
-          resultUrl: null,
-          error: null
-        };
-        setImages(prev => [...prev, newImg]);
-        processImage(newImg);
-      };
-      reader.readAsDataURL(file);
-    });
-  };
-
-  const removeImage = (id) => {
-    setImages(prev => prev.filter(img => img.id !== id));
-  };
-
-  return (
-    <div className="min-h-screen bg-[#fcfcfc] text-zinc-900 font-sans p-6 md:p-12">
-      <div className="max-w-4xl mx-auto">
-        <header className="flex items-center justify-between mb-12">
-          <div className="flex items-center gap-3">
-            <div className="bg-indigo-600 p-2.5 rounded-2xl shadow-xl shadow-indigo-100">
-              <Layers className="w-6 h-6 text-white" />
-            </div>
-            <h1 className="text-2xl font-black tracking-tighter uppercase italic">Precision.AI</h1>
-          </div>
-          <div className="flex items-center gap-2 px-4 py-2 bg-zinc-100 text-zinc-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-zinc-200">
-            <Zap className="w-3.5 h-3.5" /> Native Engine Active
-          </div>
-        </header>
-
-        <div className="mb-12">
-          <label className="group relative flex flex-col items-center justify-center w-full aspect-[21/7] border-4 border-dashed border-zinc-200 rounded-[2.5rem] bg-white hover:bg-indigo-50/30 hover:border-indigo-400 transition-all cursor-pointer overflow-hidden">
-            <div className="flex flex-col items-center justify-center space-y-4">
-              <div className="p-5 bg-indigo-50 rounded-2xl group-hover:scale-110 transition-transform duration-300">
-                <Upload className="w-8 h-8 text-indigo-600" />
-              </div>
-              <div className="text-center">
-                <p className="text-sm font-bold text-zinc-800">Drop High-Resolution Assets</p>
-                <p className="text-[10px] text-zinc-400 mt-1 uppercase tracking-widest font-black">Professional Alpha Matting</p>
-              </div>
-            </div>
-            <input type="file" className="hidden" multiple onChange={onFileChange} accept="image/*" />
-          </label>
+    <nav class="bg-white border-b px-8 py-4 flex justify-between items-center sticky top-0 z-50">
+        <div class="flex items-center gap-2">
+            <div class="bg-indigo-600 p-1.5 rounded-lg text-white font-bold">BG</div>
+            <h1 class="text-xl font-black tracking-tight uppercase">BackBGone</h1>
         </div>
+        <div id="statusIndicator" class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+            <span id="statusDot" class="w-2 h-2 bg-slate-300 rounded-full"></span>
+            <span id="statusText">Initializing AI...</span>
+        </div>
+    </nav>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-          {images.map((img) => (
-            <div key={img.id} className="bg-white rounded-[2rem] border border-zinc-200 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 group relative">
-              <div className="aspect-square bg-zinc-50 flex items-center justify-center overflow-hidden relative">
-                {img.status === 'completed' && (
-                  <div className="absolute inset-0" style={{ 
-                    backgroundImage: 'linear-gradient(45deg, #eee 25%, transparent 25%), linear-gradient(-45deg, #eee 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #eee 75%), linear-gradient(-45deg, transparent 75%, #eee 75%)',
-                    backgroundSize: '20px 20px',
-                    backgroundColor: 'white'
-                  }} />
-                )}
-                
-                <img 
-                  src={img.resultUrl || img.url} 
-                  alt="Preview" 
-                  className={`max-w-full max-h-full object-contain transition-all duration-700 ${img.status === 'processing' ? 'scale-90 opacity-20 blur-md' : 'scale-100 opacity-100'}`}
-                />
-
-                {img.status === 'processing' && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <Loader2 className="w-10 h-10 text-indigo-600 animate-spin" />
-                    <span className="mt-6 text-[10px] font-black text-indigo-900 tracking-[0.3em] uppercase">Segmenting</span>
-                  </div>
-                )}
-
-                <button 
-                  onClick={() => removeImage(img.id)}
-                  className="absolute top-4 right-4 p-2 bg-white/90 hover:bg-rose-500 text-zinc-500 hover:text-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="p-6 flex items-center justify-between">
-                <div className="min-w-0 pr-4">
-                  <p className="text-xs font-black text-zinc-900 truncate uppercase tracking-tight">
-                    {img.file.name}
-                  </p>
-                  <p className="text-[10px] font-bold text-zinc-400 mt-1 uppercase">
-                    {img.status}
-                  </p>
+    <main class="max-w-5xl mx-auto p-8">
+        <div class="text-center py-12">
+            <h2 class="text-4xl font-extrabold text-slate-900 mb-4">Pro Background Removal.</h2>
+            <p class="text-slate-500 text-lg mb-10">Localized AI inference. No servers. Total privacy.</p>
+            
+            <label id="dropZone" class="group relative flex flex-col items-center justify-center w-full h-64 border-4 border-dashed border-slate-200 rounded-[2.5rem] bg-white hover:border-indigo-400 hover:bg-indigo-50/30 transition-all cursor-pointer overflow-hidden shadow-sm">
+                <div class="flex flex-col items-center justify-center space-y-4">
+                    <div class="p-5 bg-indigo-50 rounded-2xl group-hover:scale-110 transition-transform">
+                        <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                    </div>
+                    <p class="text-sm font-bold text-slate-700">Click or drag images here</p>
                 </div>
-
-                {img.status === 'completed' && (
-                  <a 
-                    href={img.resultUrl}
-                    download={`nobg-${img.file.name.split('.')[0]}.png`}
-                    className="p-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg transition-all active:scale-90"
-                  >
-                    <Download className="w-4 h-4" />
-                  </a>
-                )}
-                
-                {img.status === 'error' && (
-                  <div className="text-rose-500" title={img.error}>
-                    <AlertCircle className="w-5 h-5" />
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
+                <input type="file" id="fileInput" class="hidden" multiple accept="image/*">
+            </label>
         </div>
 
-        {images.length === 0 && (
-          <div className="py-20 flex flex-col items-center justify-center text-zinc-300">
-            <ImageIcon className="w-12 h-12 mb-4 opacity-20" />
-            <p className="text-sm font-bold uppercase tracking-widest opacity-40">Queue Empty</p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
+        <div id="loadingBarContainer" class="hidden mb-12 p-6 bg-white rounded-3xl border border-slate-200 shadow-sm">
+            <div class="flex justify-between mb-2">
+                <span class="text-sm font-bold text-slate-800">Downloading AI Model (176MB)...</span>
+                <span id="progressPercent" class="text-xs font-mono font-bold text-indigo-600">0%</span>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-2">
+                <div id="progressBar" class="bg-indigo-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+        </div>
 
-export default App;
+        <div id="resultsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+    </main>
+
+    <script type="module">
+        import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0-alpha.19';
+
+        // Config
+        env.allowLocalModels = false;
+        let segmenter = null;
+
+        const fileInput = document.getElementById('fileInput');
+        const resultsGrid = document.getElementById('resultsGrid');
+        const statusText = document.getElementById('statusText');
+        const statusDot = document.getElementById('statusDot');
+        const progressBar = document.getElementById('progressBar');
+        const progressPercent = document.getElementById('progressPercent');
+        const loadingBarContainer = document.getElementById('loadingBarContainer');
+
+        // Initialize AI
+        async function init() {
+            try {
+                loadingBarContainer.classList.remove('hidden');
+                segmenter = await pipeline('image-segmentation', 'Xenova/rmbg-1.4', {
+                    device: navigator.gpu ? 'webgpu' : 'wasm',
+                    progress_callback: (p) => {
+                        if (p.status === 'progress') {
+                            progressBar.style.width = p.progress + '%';
+                            progressPercent.innerText = Math.round(p.progress) + '%';
+                        }
+                        if (p.status === 'done') {
+                            loadingBarContainer.classList.add('hidden');
+                        }
+                    }
+                });
+                statusText.innerText = "System Ready";
+                statusDot.classList.replace('bg-slate-300', 'bg-emerald-500');
+            } catch (err) {
+                statusText.innerText = "Error: " + err.message;
+                statusDot.classList.replace('bg-slate-300', 'bg-rose-500');
+            }
+        }
+
+        init();
+
+        // Handle Uploads
+        fileInput.addEventListener('change', async (e) => {
+            const files = Array.from(e.target.files);
+            for (const file of files) {
+                processImage(file);
+            }
+        });
+
+        async function processImage(file) {
+            const id = Math.random().toString(36).substr(2, 9);
+            const url = URL.createObjectURL(file);
+            
+            // Create UI Card
+            const card = document.createElement('div');
+            card.className = "bg-white p-4 rounded-3xl border border-slate-200 shadow-sm transition-all";
+            card.innerHTML = `
+                <div class="aspect-square bg-slate-100 rounded-2xl overflow-hidden relative checkerboard mb-4">
+                    <img id="img-${id}" src="${url}" class="w-full h-full object-contain opacity-50 blur-sm transition-all duration-700">
+                    <div id="loader-${id}" class="absolute inset-0 flex items-center justify-center bg-white/20">
+                        <div class="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                </div>
+                <div class="flex justify-between items-center">
+                    <p class="text-xs font-bold truncate pr-4">${file.name}</p>
+                    <a id="dl-${id}" class="hidden p-2 bg-indigo-600 text-white rounded-xl shadow-lg shadow-indigo-100">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                    </a>
+                </div>
+            `;
+            resultsGrid.prepend(card);
+
+            try {
+                const result = await segmenter(url);
+                const mask = result;
+
+                // Canvas alpha matting
+                const img = document.getElementById(`img-${id}`);
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                const originalImg = new Image();
+                originalImg.src = url;
+                await originalImg.decode();
+
+                canvas.width = originalImg.width;
+                canvas.height = originalImg.height;
+                ctx.drawImage(originalImg, 0, 0);
+
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                
+                // Create scaled mask
+                const maskCanvas = document.createElement('canvas');
+                maskCanvas.width = mask.width;
+                maskCanvas.height = mask.height;
+                const maskCtx = maskCanvas.getContext('2d');
+                const maskImageData = maskCtx.createImageData(mask.width, mask.height);
+                for(let i=0; i<mask.data.length; i++) {
+                    const v = mask.data[i];
+                    maskImageData.data[i*4]=v; maskImageData.data[i*4+1]=v; maskImageData.data[i*4+2]=v; maskImageData.data[i*4+3]=255;
+                }
+                maskCtx.putImageData(maskImageData, 0, 0);
+
+                const finalMaskCanvas = document.createElement('canvas');
+                finalMaskCanvas.width = canvas.width;
+                finalMaskCanvas.height = canvas.height;
+                finalMaskCanvas.getContext('2d').drawImage(maskCanvas, 0, 0, canvas.width, canvas.height);
+                const finalMaskData = finalMaskCanvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+
+                for(let i=0; i<imageData.data.length; i+=4) {
+                    imageData.data[i+3] = finalMaskData[i];
+                }
+
+                ctx.putImageData(imageData, 0, 0);
+                const resultUrl = canvas.toDataURL('image/png');
+
+                // Update UI
+                img.src = resultUrl;
+                img.classList.remove('opacity-50', 'blur-sm');
+                document.getElementById(`loader-${id}`).remove();
+                const dl = document.getElementById(`dl-${id}`);
+                dl.href = resultUrl;
+                dl.download = `no-bg-${file.name.split('.')[0]}.png`;
+                dl.classList.remove('hidden');
+
+            } catch (err) {
+                console.error(err);
+            }
+        }
+    </script>
+</body>
+</html>
