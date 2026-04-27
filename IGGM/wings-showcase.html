@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IGGMORPG Equipment Showcase</title>
+  <style>
+    :root {
+      --bg: #12070b;
+      --panel: rgba(34, 10, 18, 0.9);
+      --panel-soft: rgba(61, 14, 27, 0.7);
+      --line: rgba(212, 175, 55, 0.24);
+      --line-strong: rgba(212, 175, 55, 0.56);
+      --text: #f8ebdc;
+      --muted: #d1b8a4;
+      --steel: #d7b47a;
+      --gold: #d4af37;
+      --crimson: #5b1322;
+      --shadow: 0 26px 72px rgba(0, 0, 0, 0.52);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font-family: "Trebuchet MS", Verdana, sans-serif;
+      background:
+        radial-gradient(circle at top center, rgba(139, 30, 48, 0.24), transparent 24%),
+        radial-gradient(circle at 15% 20%, rgba(212, 175, 55, 0.14), transparent 28%),
+        linear-gradient(180deg, #2a0b14 0%, #18070d 46%, #0b0306 100%);
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+      background-size: 44px 44px;
+      opacity: 0.22;
+    }
+
+    .shell {
+      width: min(1280px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 32px 0 56px;
+      position: relative;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
+      gap: 28px;
+      padding: 30px;
+      border: 1px solid var(--line);
+      border-radius: 30px;
+      background:
+        linear-gradient(135deg, rgba(76, 16, 31, 0.92), rgba(23, 7, 11, 0.94)),
+        var(--panel);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: auto auto -120px -90px;
+      width: 280px;
+      height: 280px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(212, 175, 55, 0.18), transparent 70%);
+      pointer-events: none;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(212, 175, 55, 0.24);
+      background: rgba(212, 175, 55, 0.08);
+      color: var(--steel);
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 16px 0 14px;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(42px, 7vw, 78px);
+      line-height: 0.94;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .hero p {
+      margin: 0;
+      max-width: 60ch;
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.72;
+    }
+
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 22px;
+    }
+
+    .hero-meta span {
+      padding: 10px 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(245, 203, 118, 0.18);
+      background: rgba(245, 203, 118, 0.07);
+      color: #f7ddb1;
+      font-size: 14px;
+    }
+
+    .hero-mark {
+      display: grid;
+      place-items: center;
+      min-height: 420px;
+      position: relative;
+      border-radius: 24px;
+      border: 1px solid rgba(245, 203, 118, 0.14);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01)),
+        radial-gradient(circle at center, rgba(212, 175, 55, 0.16), transparent 58%),
+        var(--panel-soft);
+      overflow: hidden;
+    }
+
+    .hero-mark::before {
+      content: "";
+      position: absolute;
+      inset: 18px;
+      border: 1px solid rgba(184, 202, 216, 0.14);
+      border-radius: 18px;
+    }
+
+    .showcase-stage {
+      width: min(100%, 500px);
+      height: 360px;
+      border-radius: 18px;
+      border: 1px solid rgba(245, 203, 118, 0.16);
+      background:
+        radial-gradient(circle at 50% 18%, rgba(212, 175, 55, 0.14), transparent 32%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01)),
+        #17070d;
+      box-shadow: inset 0 -40px 80px rgba(0, 0, 0, 0.42);
+    }
+
+    .hero-mark img {
+      position: absolute;
+      width: 84px;
+      right: 16px;
+      top: 16px;
+      object-fit: contain;
+      filter: drop-shadow(0 16px 28px rgba(0, 0, 0, 0.42));
+      opacity: 0.62;
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 14px;
+      margin: 34px 6px 18px;
+    }
+
+    .section-head h2 {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(24px, 4vw, 36px);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .section-head p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 18px;
+    }
+
+    .grid.compact .frame {
+      height: 190px;
+    }
+
+    .grid.compact .frame img {
+      max-height: 70%;
+    }
+
+    .grid.wings .frame img,
+    .grid.forms .frame img {
+      max-width: 96%;
+      max-height: 92%;
+    }
+
+    .grid.weapons .frame {
+      height: 210px;
+    }
+
+    .grid.weapons .frame img {
+      max-width: 84%;
+      max-height: 94%;
+    }
+
+    .card {
+      position: relative;
+      overflow: hidden;
+      border-radius: 24px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(63, 12, 25, 0.96), rgba(24, 6, 11, 0.95));
+      box-shadow: 0 16px 38px rgba(0, 0, 0, 0.34);
+      transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      border-color: var(--line-strong);
+      box-shadow: 0 24px 50px rgba(0, 0, 0, 0.42);
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(145deg, rgba(212, 175, 55, 0.10), transparent 42%, transparent 70%, rgba(118, 19, 40, 0.08));
+      pointer-events: none;
+    }
+
+    .frame {
+      height: 220px;
+      margin: 16px 16px 0;
+      border-radius: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle at top, rgba(212, 175, 55, 0.16), transparent 48%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01)),
+        #18070d;
+      position: relative;
+    }
+
+    .frame::after {
+      content: "";
+      position: absolute;
+      inset: 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(245, 203, 118, 0.14);
+      pointer-events: none;
+    }
+
+    .frame img {
+      width: auto;
+      height: auto;
+      max-width: 88%;
+      max-height: 88%;
+      object-fit: contain;
+      object-position: center center;
+      filter: drop-shadow(0 12px 16px rgba(0, 0, 0, 0.46));
+    }
+
+    .body {
+      padding: 16px 18px 18px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .rarity {
+      display: inline-block;
+      margin-bottom: 10px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(245, 203, 118, 0.16);
+      background: rgba(245, 203, 118, 0.08);
+      color: #f7deb1;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    .label {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 28px;
+      line-height: 1.08;
+    }
+
+    .meta {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 13px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .meta strong {
+      color: #e6d8bb;
+      font-weight: 600;
+    }
+
+    footer {
+      margin-top: 28px;
+      padding-top: 6px;
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    @media (max-width: 900px) {
+      .hero {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-mark {
+        min-height: 220px;
+      }
+
+      .showcase-stage {
+        height: 220px;
+      }
+
+      .section-head {
+        flex-direction: column;
+        align-items: start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <div>
+        <div class="eyebrow">IGGMORPG Armory Archive</div>
+        <h1>Armor, Headgear, Wings, Forms and Weapons</h1>
+        <p>
+          A broader equipment showcase built from the live client art. The preview runner now cycles through armor, headgear, wing, and weapon combinations on the presentation stage,
+          and the boards below break out the currently exposed wardrobe, weapon, wing, and form visuals used by the client.
+        </p>
+        <div class="hero-meta">
+          <span id="armor-count">0 Body Armors</span>
+          <span id="headgear-count">0 Helms and Masks</span>
+          <span id="wings-count">0 Wing Sets</span>
+          <span id="weapons-count">0 Weapons</span>
+          <span id="forms-count">0 Forms</span>
+        </div>
+      </div>
+      <div class="hero-mark">
+        <canvas class="showcase-stage" id="runner-stage" width="500" height="360"></canvas>
+        <img src="client/content/game.png" alt="IGGMORPG emblem">
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <h2>Wardrobe Board</h2>
+        <p>Each card maps to a real body armor overlay used by the client mannequin.</p>
+      </div>
+      <div class="grid" id="armor-grid"></div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <h2>Helm and Mask Board</h2>
+        <p>Every live head overlay the mannequin can randomize with the armor set.</p>
+      </div>
+      <div class="grid compact" id="headgear-grid"></div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <h2>Wing Board</h2>
+        <p>Back-slot wing art currently exposed in the client build.</p>
+      </div>
+      <div class="grid wings" id="wings-grid"></div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <h2>Weapon Board</h2>
+        <p>A showcase pass of the available standalone weapon art files used by the client.</p>
+      </div>
+      <div class="grid weapons" id="weapons-grid"></div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <h2>Form Board</h2>
+        <p>Transformation and presentation forms with visible client art available in this repository.</p>
+      </div>
+      <div class="grid forms compact" id="forms-grid"></div>
+    </section>
+
+    <footer>IGGMORPG Equipment Presentation Board</footer>
+  </main>
+
+  <script>
+    const armors = [
+      { name: "Gold Legion Armor", file: "Armor_Gold1.png", rarity: "rare", accent: "fortified" },
+      { name: "MOB Armor", file: "MIB_Suit.png", rarity: "rare", accent: "executive" },
+      { name: "Suffer Trench", file: "DarkArmor.png", rarity: "rare", accent: "midnight" },
+      { name: "Ruffles Armor", file: "Armor_Ruffles.png", rarity: "rare", accent: "ornate" },
+      { name: "Classy Red Suit", file: "ClassyRedSuit.png", rarity: "rare", accent: "regal" },
+      { name: "Gruff Armor", file: "gruff_Armor.png", rarity: "rare", accent: "rugged" },
+      { name: "Gi Armor", file: "Gi_Armor.png", rarity: "common", accent: "discipline" }
+    ];
+
+    const headgear = [
+      { name: "Bear Mask", file: "bearmask.png", rarity: "rare", accent: "beast" },
+      { name: "Fox Mask", file: "foxmask.png", rarity: "rare", accent: "ember" },
+      { name: "Badger Mask", file: "badgermask.png", rarity: "rare", accent: "burrow" },
+      { name: "Giraffe Mask", file: "giraffemask.png", rarity: "rare", accent: "savanna" },
+      { name: "Chameleon Mask", file: "chameleonmask.png", rarity: "rare", accent: "shifter" },
+      { name: "MOB Glasses", file: "MIB_Glasses.png", rarity: "rare", accent: "agent" },
+      { name: "Suffer Hat", file: "DarkHat.png", rarity: "rare", accent: "midnight" },
+      { name: "Punk Bunny Mask", file: "punkbunnymask.png", rarity: "rare", accent: "riot" },
+      { name: "Punk Kitty Mask", file: "punkkittymask.png", rarity: "rare", accent: "neon" },
+      { name: "Tiger Mask", file: "tigermask.png", rarity: "rare", accent: "predator" },
+      { name: "Wolf Mask", file: "wolfmask.png", rarity: "rare", accent: "pack" },
+      { name: "Otter Mask", file: "ottermask.png", rarity: "rare", accent: "river" },
+      { name: "Puppy Mask", file: "puppymask.png", rarity: "rare", accent: "playful" },
+      { name: "Deer Mask", file: "deermask.png", rarity: "rare", accent: "grove" },
+      { name: "Punk Bear Mask", file: "punkbearmask.png", rarity: "rare", accent: "garage" },
+      { name: "Rabbit Mask", file: "rabbitmask.png", rarity: "rare", accent: "meadow" },
+      { name: "Classy Red Hat", file: "ClassyRedHat.png", rarity: "rare", accent: "regal" },
+      { name: "Gruff Helm", file: "gruff_Helm.png", rarity: "rare", accent: "rugged" },
+      { name: "Gi Hair Bun", file: "Gi_HairBun.png", rarity: "common", accent: "discipline" }
+    ];
+
+    const wings = [
+      { name: "Blood Wings", file: "Wings/bloodwings.png", rarity: "rare", accent: "crimson" },
+      { name: "Blood II Wings", file: "Wings/blood2w.png", rarity: "rare", accent: "ascended" },
+      { name: "Bone Wings", file: "Wings/bonewings1.png", rarity: "rare", accent: "ossuary" },
+      { name: "Challenger Wings", file: "Wings/challengerwings.png", rarity: "rare", accent: "arena" },
+      { name: "Hop Wings", file: "Wings/HopWings.png", rarity: "rare", accent: "spring" },
+      { name: "Iwin Wings", file: "Wings/Iwin.png", rarity: "rare", accent: "victory" },
+      { name: "LGTV Wings", file: "Wings/LGTVWings.png", rarity: "rare", accent: "spectrum" },
+      { name: "Liq Wings", file: "Wings/liqwings.png", rarity: "rare", accent: "gloss" },
+      { name: "Mary Jane Essence Wings", file: "Wings/MaryJaneEssence.png", rarity: "rare", accent: "botanic" },
+      { name: "Puppy Wings", file: "Wings/Puppywings.png", rarity: "rare", accent: "playful" },
+      { name: "Tali Wings", file: "Wings/taliwings.webp", rarity: "rare", accent: "stormglass" },
+      { name: "Toxic Wings", file: "Wings/toxicwings.png", rarity: "rare", accent: "venom" },
+      { name: "Val Wings", file: "Wings/Valwings.png", rarity: "rare", accent: "halo" }
+    ];
+
+    const weapons = [
+      { name: "Basic Weapon", file: "BasicWeapon_solo.png", rarity: "common", accent: "starter" },
+      { name: "Anguk Axe", file: "Anguk Axe.png", rarity: "rare", accent: "tribal" },
+      { name: "Blade", file: "Blade.png", rarity: "rare", accent: "duelist" },
+      { name: "Draco Axe", file: "DracoAxe.png", rarity: "legendary", accent: "drakefire" },
+      { name: "Gumchi Machete", file: "gumchimaxe.png", rarity: "legendary", accent: "jagged" },
+      { name: "Gun M417", file: "Gun_M417.png", rarity: "legendary", accent: "ballistic" },
+      { name: "Prayer Axe", file: "PrayerAxe.png", rarity: "rare", accent: "ritual" },
+      { name: "Razer Axe", file: "RazerAxe.png", rarity: "epic", accent: "edge" }
+    ];
+
+    const forms = [
+      { name: "Company Car", file: "porsche.png", rarity: "legendary", accent: "velocity" },
+      { name: "Butthead", file: "Butthead1.png", rarity: "legendary", accent: "chaos" },
+      { name: "Beavis", file: "Beavis1.png", rarity: "legendary", accent: "riot" },
+      { name: "Keyform", file: "keyform.png", rarity: "legendary", accent: "cipher" },
+      { name: "Keyform G", file: "keyformG.png", rarity: "legendary", accent: "glyph" },
+      { name: "Keyforms", file: "keyforms.png", rarity: "legendary", accent: "sigil" },
+      { name: "SunGlasses I", file: "sunGlasses1.png", rarity: "legendary", accent: "chrome" },
+      { name: "SunGlasses II", file: "sunGlasses2.png", rarity: "legendary", accent: "midnight" },
+      { name: "SunGlasses III", file: "sunGlasses3.png", rarity: "legendary", accent: "mirage" }
+    ];
+
+    const categoryCounts = {
+      armor: document.getElementById("armor-count"),
+      headgear: document.getElementById("headgear-count"),
+      wings: document.getElementById("wings-count"),
+      weapons: document.getElementById("weapons-count"),
+      forms: document.getElementById("forms-count")
+    };
+
+    categoryCounts.armor.textContent = `${armors.length} Body Armors`;
+    categoryCounts.headgear.textContent = `${headgear.length} Helms and Masks`;
+    categoryCounts.wings.textContent = `${wings.length} Wing Sets`;
+    categoryCounts.weapons.textContent = `${weapons.length} Weapons`;
+    categoryCounts.forms.textContent = `${forms.length} Forms`;
+
+    function createCard(item) {
+      const card = document.createElement("article");
+      card.className = "card";
+      card.innerHTML = `
+        <div class="frame">
+          <img src="client/content/${item.file}" alt="${item.name}">
+        </div>
+        <div class="body">
+          <div class="rarity">${item.rarity}</div>
+          <h3 class="label">${item.name}</h3>
+          <div class="meta"><strong>${item.accent}</strong></div>
+        </div>
+      `;
+      return card;
+    }
+
+    function populateGrid(gridId, items) {
+      const grid = document.getElementById(gridId);
+      items.forEach((item) => {
+        grid.appendChild(createCard(item));
+      });
+    }
+
+    populateGrid("armor-grid", armors);
+    populateGrid("headgear-grid", headgear);
+    populateGrid("wings-grid", wings);
+    populateGrid("weapons-grid", weapons);
+    populateGrid("forms-grid", forms);
+
+    const stage = document.getElementById("runner-stage");
+    const ctx = stage.getContext("2d");
+    const walkFrames = ["W1.png", "W2.png", "W3.png"].map((file) => {
+      const img = new Image();
+      img.src = `client/content/Walk/${file}`;
+      return img;
+    });
+    const armorImages = armors.map((armor) => {
+      const img = new Image();
+      img.src = `client/content/${armor.file}`;
+      return { ...armor, img };
+    });
+    const headgearImages = headgear.map((item) => {
+      const img = new Image();
+      img.src = `client/content/${item.file}`;
+      return { ...item, img };
+    });
+    const wingImages = wings.map((item) => {
+      const img = new Image();
+      img.src = `client/content/${item.file}`;
+      return { ...item, img };
+    });
+    const weaponImages = weapons.map((item) => {
+      const img = new Image();
+      img.src = `client/content/${item.file}`;
+      return { ...item, img };
+    });
+
+    let runnerX = -120;
+    let runnerFrame = 0;
+    let frameAt = 0;
+    let currentArmor = armorImages[Math.floor(Math.random() * armorImages.length)];
+    let currentHeadgear = headgearImages[Math.floor(Math.random() * headgearImages.length)];
+    let currentWing = wingImages[Math.floor(Math.random() * wingImages.length)];
+    let currentWeapon = weaponImages[Math.floor(Math.random() * weaponImages.length)];
+
+    function nextArmor() {
+      currentArmor = armorImages[Math.floor(Math.random() * armorImages.length)];
+      currentHeadgear = headgearImages[Math.floor(Math.random() * headgearImages.length)];
+      currentWing = wingImages[Math.floor(Math.random() * wingImages.length)];
+      currentWeapon = weaponImages[Math.floor(Math.random() * weaponImages.length)];
+    }
+
+    const BACK_WEAPON_HEIGHT_RATIO = 1.56;
+    const BACK_WEAPON_WIDTH_RATIO = 0.92;
+    const BACK_WEAPON_SIDE_OFFSET = 0.08;
+    const BACK_WEAPON_UP_OFFSET = 0.02;
+    const BACK_WEAPON_ANGLE = 0.34;
+    const BACK_WEAPON_ATTACH_X = 0.42;
+    const BACK_WEAPON_ATTACH_Y = 0.58;
+    const WING_HEIGHT_RATIO = 1.239;
+    const WING_WIDTH_RATIO = 1.995;
+    const WING_VERTICAL_OFFSET = -0.03;
+
+    function drawStageBackdrop() {
+      ctx.clearRect(0, 0, stage.width, stage.height);
+      const sky = ctx.createLinearGradient(0, 0, 0, stage.height);
+      sky.addColorStop(0, "#5b1322");
+      sky.addColorStop(0.52, "#22080f");
+      sky.addColorStop(1, "#090204");
+      ctx.fillStyle = sky;
+      ctx.fillRect(0, 0, stage.width, stage.height);
+
+      ctx.fillStyle = "rgba(212, 175, 55, 0.18)";
+      ctx.beginPath();
+      ctx.ellipse(stage.width * 0.5, stage.height * 0.22, 132, 44, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      const floorGlow = ctx.createRadialGradient(stage.width * 0.5, stage.height - 62, 0, stage.width * 0.5, stage.height - 62, 180);
+      floorGlow.addColorStop(0, "rgba(212, 175, 55, 0.16)");
+      floorGlow.addColorStop(1, "rgba(212, 175, 55, 0)");
+      ctx.fillStyle = floorGlow;
+      ctx.fillRect(0, stage.height - 180, stage.width, 180);
+
+      ctx.strokeStyle = "rgba(212, 175, 55, 0.22)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, stage.height - 54);
+      ctx.lineTo(stage.width, stage.height - 54);
+      ctx.stroke();
+
+      ctx.strokeStyle = "rgba(255,255,255,0.06)";
+      for (let x = -20; x < stage.width + 40; x += 28) {
+        ctx.beginPath();
+        ctx.moveTo(x, stage.height - 28);
+        ctx.lineTo(x + 10, stage.height - 18);
+        ctx.stroke();
+      }
+    }
+
+    function drawBackWing(img, centerX, centerY, spriteW, spriteH) {
+      if (!img.complete || !img.naturalWidth || !img.naturalHeight) {
+        return;
+      }
+      let targetH = spriteH * WING_HEIGHT_RATIO;
+      let targetW = img.naturalWidth * (targetH / img.naturalHeight);
+      const maxW = spriteW * WING_WIDTH_RATIO;
+      if (targetW > maxW) {
+        targetW = maxW;
+        targetH = img.naturalHeight * (targetW / img.naturalWidth);
+      }
+      ctx.save();
+      ctx.translate(centerX + 1, centerY + spriteH * WING_VERTICAL_OFFSET);
+      ctx.drawImage(img, -targetW / 2, -targetH / 2, targetW, targetH);
+      ctx.restore();
+    }
+
+    function drawBackWeapon(img, centerX, centerY, spriteW, spriteH) {
+      if (!img.complete || !img.naturalWidth || !img.naturalHeight) {
+        return;
+      }
+      let targetH = spriteH * BACK_WEAPON_HEIGHT_RATIO * 1.05;
+      let targetW = img.naturalWidth * (targetH / img.naturalHeight);
+      const maxW = spriteW * BACK_WEAPON_WIDTH_RATIO * 1.05;
+      if (targetW > maxW) {
+        targetW = maxW;
+        targetH = img.naturalHeight * (targetW / img.naturalWidth);
+      }
+      const pivotX = img.naturalWidth * BACK_WEAPON_ATTACH_X;
+      const pivotY = img.naturalHeight * BACK_WEAPON_ATTACH_Y;
+      ctx.save();
+      ctx.translate(centerX + spriteW * BACK_WEAPON_SIDE_OFFSET, centerY - spriteH * BACK_WEAPON_UP_OFFSET);
+      ctx.rotate(BACK_WEAPON_ANGLE);
+      ctx.scale(-(targetW / img.naturalWidth), -(targetH / img.naturalHeight));
+      ctx.drawImage(img, -pivotX, -pivotY);
+      ctx.restore();
+    }
+
+    function drawRunner(now) {
+      if (now - frameAt > 120) {
+        runnerFrame = (runnerFrame + 1) % walkFrames.length;
+        frameAt = now;
+      }
+
+      runnerX += 2.2;
+      if (runnerX > stage.width + 96) {
+        runnerX = -120;
+        nextArmor();
+      }
+
+      const bob = Math.sin(now / 120) * 3;
+      const y = stage.height - 200 + bob;
+      const spriteW = 122;
+      const spriteH = 158;
+      const centerX = runnerX + spriteW / 2;
+      const centerY = y + spriteH / 2;
+      const frame = walkFrames[runnerFrame];
+      drawBackWing(currentWing.img, centerX, centerY, spriteW, spriteH);
+      drawBackWeapon(currentWeapon.img, centerX, centerY, spriteW, spriteH);
+      if (frame.complete) {
+        ctx.drawImage(frame, runnerX, y, spriteW, spriteH);
+      }
+      if (currentArmor.img.complete) {
+        ctx.drawImage(currentArmor.img, runnerX - 4, y - 2, 128, 162);
+      }
+      if (currentHeadgear.img.complete) {
+        ctx.drawImage(currentHeadgear.img, runnerX - 4, y - 2, 128, 162);
+      }
+      ctx.fillStyle = "rgba(0,0,0,0.45)";
+      ctx.beginPath();
+      ctx.ellipse(runnerX + 61, stage.height - 26, 42, 12, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "rgba(245, 239, 228, 0.88)";
+      ctx.font = "15px Trebuchet MS";
+      ctx.textAlign = "center";
+      ctx.fillText(`${currentArmor.name} · ${currentHeadgear.name} · ${currentWing.name} · ${currentWeapon.name}`, stage.width / 2, 28);
+    }
+
+    function tick(now) {
+      drawStageBackdrop();
+      drawRunner(now);
+      requestAnimationFrame(tick);
+    }
+
+    requestAnimationFrame(tick);
+  </script>
+</body>
+</html>
