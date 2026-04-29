@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro Image Pipeline</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .dashed-box { border: 2px dashed #e2e8f0; transition: all 0.2s ease; }
+        .dashed-box:hover { border-color: #3b82f6; background-color: #eff6ff; }
+        .active-mode { background-color: #0f172a; color: white; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+        .btn-primary { background-color: #0f172a; color: white; transition: all 0.2s ease; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        .btn-primary:active { transform: translateY(0); }
+        .result-card:hover .overlay { opacity: 1; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen p-6">
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <header class="mb-8 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div>
+                <h1 class="text-3xl font-black tracking-tighter">Pro Image Pipeline</h1>
+                <p class="text-sm text-slate-500 font-bold uppercase tracking-widest">Upload &bull; Convert &bull; Crop &bull; Output</p>
+            </div>
+            
+            <div class="flex bg-white p-1 rounded-2xl shadow-sm border border-slate-200">
+                <button id="modeMerge" onclick="setPipelineMode('merge')" class="flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black transition-all active-mode">
+                    MERGE & CENTER
+                </button>
+                <button id="modeCrop" onclick="setPipelineMode('crop')" class="flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black transition-all text-slate-400">
+                    CROP ONLY
+                </button>
+            </div>
+        </header>
+
+        <!-- Configuration -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
+            <!-- Background Section -->
+            <div id="bgSection" class="bg-white p-8 rounded-3xl shadow-sm border border-slate-200">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xs font-black uppercase tracking-widest text-slate-400">1. Background Template</h2>
+                    <button id="hueToggle" onclick="toggleHue()" class="flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-black transition-all border bg-slate-50 border-slate-200 text-slate-400 hover:bg-indigo-50 hover:border-indigo-200">
+                        RANDOM HUE: <span id="hueStatus">OFF</span>
+                    </button>
+                </div>
+                <label class="dashed-box relative flex flex-col items-center justify-center w-full h-52 rounded-2xl cursor-pointer overflow-hidden">
+                    <div id="bgPlaceholder" class="text-center p-4">
+                        <svg class="w-8 h-8 mx-auto mb-2 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        <p class="text-sm font-bold text-slate-400">Square Background Image</p>
+                    </div>
+                    <img id="bgPreview" class="hidden absolute inset-0 w-full h-full object-contain p-4" />
+                    <input type="file" id="bgInput" class="hidden" accept="image/*" onchange="handleBgFile(this)" />
+                </label>
+            </div>
+
+            <!-- Foreground Section -->
+            <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-200">
+                <h2 class="text-xs font-black uppercase tracking-widest text-slate-400 mb-4">2. Foreground Batch</h2>
+                <label class="dashed-box flex flex-col items-center justify-center w-full h-52 rounded-2xl cursor-pointer">
+                    <div class="text-center p-4">
+                        <svg class="w-8 h-8 mx-auto mb-2 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                        <p class="text-sm font-bold text-slate-400">Select Multiple PNG/JPGs</p>
+                        <p id="fgCount" class="text-[10px] text-slate-400 mt-1 uppercase font-black">0 files selected</p>
+                    </div>
+                    <input type="file" id="fgInput" class="hidden" accept="image/*" multiple onchange="handleFgFiles(this)" />
+                </label>
+            </div>
+        </div>
+
+        <!-- Execution -->
+        <div class="flex flex-col items-center gap-4 mb-12">
+            <button id="runBtn" onclick="runPipeline()" class="btn-primary flex items-center gap-3 px-16 py-5 rounded-full font-black text-sm uppercase tracking-widest disabled:opacity-30 disabled:cursor-not-allowed">
+                <span>Run Pipeline</span>
+            </button>
+            <button onclick="resetAll()" class="text-[10px] font-black text-slate-300 hover:text-red-500 uppercase tracking-widest transition-colors">Reset Everything</button>
+        </div>
+
+        <!-- Output -->
+        <div id="outputSection" class="hidden bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-200">
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <h2 class="text-2xl font-black tracking-tight">Pipeline Output</h2>
+                    <p class="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Processed Assets</p>
+                </div>
+                <button onclick="downloadAll()" class="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-emerald-200 transition-all flex items-center gap-2">
+                    Download All
+                </button>
+            </div>
+            <div id="resultsGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6"></div>
+        </div>
+
+        <!-- Hidden canvas for math -->
+        <canvas id="mainCanvas" class="hidden"></canvas>
+    </div>
+
+    <script>
+        let mode = 'merge';
+        let randomHue = false;
+        let bgSource = null;
+        let fgFiles = [];
+        let results = [];
+
+        function setPipelineMode(m) {
+            mode = m;
+            document.getElementById('modeMerge').className = `flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black transition-all ${m === 'merge' ? 'active-mode' : 'text-slate-400'}`;
+            document.getElementById('modeCrop').className = `flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black transition-all ${m === 'crop' ? 'active-mode' : 'text-slate-400'}`;
+            document.getElementById('bgSection').style.opacity = m === 'crop' ? '0.4' : '1';
+            document.getElementById('bgSection').style.pointerEvents = m === 'crop' ? 'none' : 'auto';
+        }
+
+        function toggleHue() {
+            randomHue = !randomHue;
+            document.getElementById('hueStatus').textContent = randomHue ? 'ON' : 'OFF';
+            const btn = document.getElementById('hueToggle');
+            btn.className = `flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-black transition-all border ${randomHue ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-slate-50 border-slate-200 text-slate-400'}`;
+        }
+
+        function handleBgFile(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                bgSource = e.target.result;
+                document.getElementById('bgPreview').src = bgSource;
+                document.getElementById('bgPreview').classList.remove('hidden');
+                document.getElementById('bgPlaceholder').classList.add('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function handleFgFiles(input) {
+            fgFiles = Array.from(input.files);
+            document.getElementById('fgCount').textContent = `${fgFiles.length} files selected`;
+        }
+
+        function findAlphaBounds(ctx, width, height) {
+            const data = ctx.getImageData(0, 0, width, height).data;
+            let minX = width, minY = height, maxX = 0, maxY = 0, found = false;
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    if (data[(y * width + x) * 4 + 3] > 0) {
+                        if (x < minX) minX = x; if (x > maxX) maxX = x;
+                        if (y < minY) minY = y; if (y > maxY) maxY = y;
+                        found = true;
+                    }
+                }
+            }
+            return found ? { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 } : null;
+        }
+
+        async function runPipeline() {
+            if (fgFiles.length === 0 || (mode === 'merge' && !bgSource)) return;
+            
+            const runBtn = document.getElementById('runBtn');
+            runBtn.disabled = true;
+            runBtn.innerHTML = `<span>Processing...</span>`;
+            
+            results = [];
+            const canvas = document.getElementById('mainCanvas');
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            
+            let bgImg = null;
+            let canvasSize = 0;
+            if (mode === 'merge') {
+                bgImg = await loadImage(bgSource);
+                canvasSize = Math.max(bgImg.width, bgImg.height);
+            }
+
+            for (const file of fgFiles) {
+                const fgImg = await loadImage(URL.createObjectURL(file));
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = fgImg.width;
+                tempCanvas.height = fgImg.height;
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCtx.drawImage(fgImg, 0, 0);
+                const bounds = findAlphaBounds(tempCtx, fgImg.width, fgImg.height);
+
+                if (mode === 'merge') {
+                    canvas.width = canvasSize;
+                    canvas.height = canvasSize;
+                    if (randomHue) ctx.filter = `hue-rotate(${Math.random() * 360}deg)`;
+                    ctx.drawImage(bgImg, 0, 0, canvasSize, canvasSize);
+                    ctx.filter = 'none';
+
+                    if (bounds) {
+                        const scale = Math.min((canvasSize * 0.9) / bounds.w, (canvasSize * 0.9) / bounds.h, 1);
+                        const fw = bounds.w * scale;
+                        const fh = bounds.h * scale;
+                        ctx.drawImage(fgImg, bounds.x, bounds.y, bounds.w, bounds.h, (canvasSize - fw) / 2, (canvasSize - fh) / 2, fw, fh);
+                    }
+                } else {
+                    if (bounds) {
+                        canvas.width = bounds.w;
+                        canvas.height = bounds.h;
+                        ctx.drawImage(fgImg, bounds.x, bounds.y, bounds.w, bounds.h, 0, 0, bounds.w, bounds.h);
+                    } else {
+                        canvas.width = fgImg.width; canvas.height = fgImg.height;
+                        ctx.drawImage(fgImg, 0, 0);
+                    }
+                }
+
+                results.push({
+                    url: canvas.toDataURL('image/png'),
+                    name: file.name.replace(/\.[^/.]+$/, "") + (mode === 'merge' ? '_merged.png' : '_cropped.png')
+                });
+            }
+
+            renderResults();
+            runBtn.disabled = false;
+            runBtn.innerHTML = `<span>Run Pipeline</span>`;
+        }
+
+        function loadImage(src) {
+            return new Promise(resolve => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.src = src;
+            });
+        }
+
+        function renderResults() {
+            const grid = document.getElementById('resultsGrid');
+            grid.innerHTML = '';
+            document.getElementById('outputSection').classList.remove('hidden');
+            
+            results.forEach(res => {
+                const div = document.createElement('div');
+                div.className = 'group relative aspect-square bg-slate-50 border border-slate-200 rounded-2xl overflow-hidden flex items-center justify-center p-2 result-card';
+                div.innerHTML = `
+                    <img src="${res.url}" class="max-w-full max-h-full object-contain drop-shadow-sm transition-transform group-hover:scale-105">
+                    <div class="overlay opacity-0 absolute inset-0 bg-slate-900/90 transition-opacity flex flex-col items-center justify-center p-4">
+                        <p class="text-[8px] text-white font-black text-center mb-4 uppercase truncate w-full">${res.name}</p>
+                        <button onclick="downloadOne('${res.url}', '${res.name}')" class="bg-white text-slate-900 p-3 rounded-full hover:bg-blue-500 hover:text-white transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        </button>
+                    </div>
+                `;
+                grid.appendChild(div);
+            });
+        }
+
+        function downloadOne(url, name) {
+            const a = document.createElement('a');
+            a.href = url; a.download = name; a.click();
+        }
+
+        function downloadAll() {
+            results.forEach((res, i) => {
+                setTimeout(() => downloadOne(res.url, res.name), i * 200);
+            });
+        }
+
+        function resetAll() {
+            bgSource = null; fgFiles = []; results = [];
+            document.getElementById('bgPreview').classList.add('hidden');
+            document.getElementById('bgPlaceholder').classList.remove('hidden');
+            document.getElementById('fgCount').textContent = '0 files selected';
+            document.getElementById('outputSection').classList.add('hidden');
+            document.getElementById('bgInput').value = '';
+            document.getElementById('fgInput').value = '';
+        }
+    </script>
+</body>
+</html>
