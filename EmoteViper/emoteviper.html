@@ -18,18 +18,20 @@
   <link rel="icon" href="../assets/JodyLabs.png" type="image/png" />
   <link rel="apple-touch-icon" href="../assets/JodyLabs.png" />
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap');
+
     :root {
       color-scheme: dark;
-      --bg: #050507;
-      --panel: rgba(14, 16, 24, 0.92);
-      --panel-strong: rgba(10, 12, 18, 0.98);
-      --text: #e9ecff;
-      --muted: #8f98b3;
-      --accent: #54d7ff;
-      --accent-strong: #8b7bff;
-      --border: rgba(84, 215, 255, 0.18);
-      --shadow: 0 28px 80px rgba(0, 0, 0, 0.42);
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --bg: #07111b;
+      --panel: rgba(8, 17, 27, 0.9);
+      --panel-strong: rgba(6, 12, 20, 0.96);
+      --text: #edf5ff;
+      --muted: #98a9bb;
+      --accent: #6ef0d2;
+      --accent-warm: #ffc56d;
+      --border: rgba(110, 240, 210, 0.16);
+      --shadow: 0 34px 90px rgba(0, 0, 0, 0.34);
+      font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
     }
 
     * {
@@ -39,9 +41,10 @@
     html, body {
       min-height: 100%;
       margin: 0;
-      background: radial-gradient(circle at top left, rgba(84, 215, 255, 0.08), transparent 24%),
-                  radial-gradient(circle at 82% 14%, rgba(139, 123, 255, 0.12), transparent 18%),
-                  linear-gradient(180deg, #060609 0%, #030305 100%);
+      background:
+        radial-gradient(circle at top left, rgba(110, 240, 210, 0.16), transparent 26%),
+        radial-gradient(circle at 85% 12%, rgba(255, 197, 109, 0.14), transparent 18%),
+        linear-gradient(180deg, #09131f 0%, #04080d 100%);
       color: var(--text);
     }
 
@@ -49,256 +52,297 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 3.5rem 1.5rem 4rem;
+      padding: 2.5rem 1.25rem 3.5rem;
     }
 
     .shell {
-      width: min(1180px, 100%);
+      width: min(1200px, 100%);
       border: 1px solid rgba(255, 255, 255, 0.06);
-      background: linear-gradient(180deg, rgba(8, 10, 16, 0.96), rgba(6, 7, 11, 0.92));
+      background: linear-gradient(180deg, rgba(7, 15, 24, 0.95), rgba(6, 11, 18, 0.92));
       box-shadow: var(--shadow);
-      border-radius: 28px;
+      border-radius: 32px;
       overflow: hidden;
-      backdrop-filter: blur(12px);
+      backdrop-filter: blur(16px);
     }
 
     .hero {
-      display: grid;
-      grid-template-columns: 1fr 420px;
-      gap: 2rem;
-      padding: 3rem;
-      align-items: flex-start;
-    }
-
-    .eyebrow {
-      margin: 0 0 1rem;
-      color: var(--accent);
-      letter-spacing: 0.25em;
-      text-transform: uppercase;
-      font-size: 0.88rem;
-    }
-
-    h1 {
-      margin: 0;
-      font-size: clamp(3rem, 4.3vw, 4.8rem);
-      line-height: 0.95;
-      letter-spacing: -0.04em;
-    }
-
-    .hero-copy p {
-      margin: 1.4rem 0 0;
-      max-width: 42rem;
-      color: #c8d1ff;
-      font-size: 1.05rem;
-      line-height: 1.85;
-    }
-
-    .hero-copy .hero-tagline {
-      margin: 1.6rem 0 0;
-      max-width: 40rem;
-      color: #f3f7ff;
-      font-size: 1.08rem;
-      line-height: 1.9;
-    }
-
-    .testimonial {
-      margin: 1.65rem 0 0;
-      padding: 1rem 1.2rem;
-      border-left: 3px solid var(--accent);
-      background: rgba(9, 11, 18, 0.9);
-      color: #dbe6ff;
-      font-size: 0.98rem;
-      line-height: 1.75;
-      letter-spacing: -0.01em;
-      border-radius: 14px;
-      max-width: 42rem;
-    }
-
-    .testimonial span {
-      display: block;
-      margin-top: 0.9rem;
-      color: var(--muted);
-      font-size: 0.9rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
-    .hero-meta {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.9rem;
-      margin-top: 2rem;
-    }
-
-    .meta-pill {
-      padding: 0.85rem 1.1rem;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(84, 215, 255, 0.16);
-      color: var(--muted);
-      font-size: 0.95rem;
+      padding: 1.25rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     }
 
     .hero-image {
       position: relative;
-      border-radius: 24px;
       overflow: hidden;
+      border-radius: 26px;
       border: 1px solid rgba(255, 255, 255, 0.08);
-      background: linear-gradient(180deg, rgba(6, 7, 10, 0.92), rgba(2, 3, 6, 0.98));
-      box-shadow: inset 0 0 0 1px rgba(84, 215, 255, 0.05);
+      min-height: clamp(320px, 48vw, 580px);
+      background: #07111b;
     }
 
     .hero-image::after {
       content: '';
       position: absolute;
-      inset: 16px;
-      border: 1px solid rgba(84, 215, 255, 0.08);
-      border-radius: 18px;
-      pointer-events: none;
-      opacity: 0.55;
-    }
-
-    .hero-image::before {
-      content: '';
-      position: absolute;
       inset: 0;
-      background: radial-gradient(circle at top center, rgba(84, 215, 255, 0.16), transparent 38%);
+      background: linear-gradient(180deg, transparent 5%, rgba(5, 8, 12, 0.16) 52%, rgba(5, 8, 12, 0.92) 100%);
       pointer-events: none;
     }
 
     .hero-image img {
-      display: block;
       width: 100%;
       height: 100%;
-      aspect-ratio: 4 / 5;
+      display: block;
       object-fit: cover;
-      filter: saturate(0.98) contrast(1.08);
+      filter: saturate(1.05) contrast(1.05);
     }
 
-    .compat-note {
-      margin: 1rem 0 0;
-      color: var(--muted);
-      font-size: 0.92rem;
+    .hero-overlay {
+      position: absolute;
+      left: clamp(1.25rem, 3vw, 2.75rem);
+      right: clamp(1.25rem, 3vw, 2.75rem);
+      bottom: clamp(1.25rem, 3vw, 2.5rem);
+      z-index: 1;
+      display: grid;
+      gap: 1rem;
+    }
+
+    .eyebrow {
+      margin: 0;
+      color: var(--accent);
+      font: 500 0.82rem/1 'IBM Plex Mono', monospace;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      max-width: 12ch;
+      font-size: clamp(3.25rem, 7vw, 6rem);
+      line-height: 0.92;
+      letter-spacing: -0.05em;
+    }
+
+    .hero-tagline {
+      margin: 0;
+      max-width: 40rem;
+      color: rgba(237, 245, 255, 0.9);
+      font-size: clamp(1rem, 1.8vw, 1.18rem);
+      line-height: 1.7;
+    }
+
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .meta-pill {
+      padding: 0.8rem 1rem;
+      border-radius: 999px;
+      background: rgba(7, 15, 24, 0.72);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      color: #d8e6f7;
+      font: 500 0.85rem/1.2 'IBM Plex Mono', monospace;
       letter-spacing: 0.04em;
       text-transform: uppercase;
     }
 
-    .features {
+    .content {
+      padding: 2.8rem;
       display: grid;
-      gap: 1.6rem;
-      padding: 0 3rem 3rem;
+      gap: 2rem;
     }
 
-    .section-title {
-      margin: 0 0 1rem;
-      font-size: 1.05rem;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
+    .intro-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(320px, 0.9fr);
+      gap: 1.4rem;
+    }
+
+    .card {
+      padding: 1.55rem;
+      border-radius: 24px;
+      background: linear-gradient(180deg, rgba(10, 19, 31, 0.94), rgba(7, 14, 23, 0.92));
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+    }
+
+    .section-kicker {
+      margin: 0 0 0.9rem;
       color: var(--accent);
+      font: 500 0.82rem/1 'IBM Plex Mono', monospace;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
     }
 
-    .feature-list {
-      list-style: none;
-      padding: 0;
+    .lead {
       margin: 0;
-      display: grid;
-      gap: 1rem;
+      color: #eff6ff;
+      font-size: 1.08rem;
+      line-height: 1.85;
     }
 
-    .feature-list li {
+    .support-copy {
+      margin: 1rem 0 0;
+      color: var(--muted);
+      line-height: 1.75;
+      font-size: 0.98rem;
+    }
+
+    .hero-actions {
+      margin-top: 1.6rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.9rem;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      padding: 0.9rem 1.4rem;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      background: linear-gradient(135deg, var(--accent) 0%, #8cf5e3 100%);
+      color: #042029;
+      text-decoration: none;
+      font-weight: 700;
+      transition: transform 0.22s ease, box-shadow 0.22s ease, background 0.22s ease;
+      box-shadow: 0 18px 40px rgba(110, 240, 210, 0.18);
+    }
+
+    .button:hover,
+    .button:focus-visible {
+      transform: translateY(-1px);
+      box-shadow: 0 24px 56px rgba(110, 240, 210, 0.24);
+    }
+
+    .button-secondary {
+      border-color: rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text);
+      box-shadow: none;
+    }
+
+    .stat-grid {
       display: grid;
-      gap: 0.55rem;
-      padding: 1.35rem 1.4rem;
+      gap: 0.9rem;
+    }
+
+    .stat {
+      padding: 1rem 1.05rem;
       border-radius: 18px;
       background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.07);
     }
 
-    .feature-list strong {
+    .stat strong {
       display: block;
-      color: #f7f9ff;
+      margin-bottom: 0.3rem;
+      color: #fff7eb;
       font-size: 1rem;
     }
 
-    .feature-list span {
+    .stat span {
       color: var(--muted);
-      font-size: 0.95rem;
-      line-height: 1.7;
+      line-height: 1.65;
+      font-size: 0.94rem;
     }
 
-    .terminal-panel {
-      padding: 1.5rem;
-      border-radius: 20px;
-      background: rgba(10, 12, 18, 0.98);
-      border: 1px solid rgba(84, 215, 255, 0.12);
-      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
-      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
-      color: #d7efff;
-      line-height: 1.7;
-      white-space: pre-wrap;
-    }
-
-    .preview-video-wrapper {
+    .video-section {
       display: grid;
-      gap: 1rem;
+      gap: 1.2rem;
+    }
+
+    .video-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1.2rem;
+    }
+
+    .video-card {
+      display: grid;
+      gap: 0.9rem;
+      padding: 1rem;
+      border-radius: 24px;
+      background: linear-gradient(180deg, rgba(10, 19, 31, 0.94), rgba(7, 14, 23, 0.92));
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .video-card h2 {
+      margin: 0;
+      font-size: 1.1rem;
+      letter-spacing: -0.02em;
     }
 
     .preview-video {
       width: 100%;
-      min-height: 320px;
-      max-height: 520px;
-      border-radius: 22px;
-      border: 1px solid rgba(84, 215, 255, 0.14);
-      background: #020306;
-      box-shadow: 0 30px 70px rgba(0, 0, 0, 0.28);
+      min-height: 260px;
+      max-height: 460px;
+      border-radius: 18px;
+      border: 1px solid rgba(110, 240, 210, 0.14);
+      background: #020508;
+      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.22);
       object-fit: cover;
     }
 
     .preview-caption {
+      margin: 0;
       color: var(--muted);
-      font-size: 0.95rem;
-      letter-spacing: 0.01em;
+      font-size: 0.94rem;
+      line-height: 1.7;
     }
 
-    .terminal-panel code {
-      display: block;
-      font-size: 0.96rem;
+    .quote-card {
+      display: grid;
+      gap: 0.8rem;
+      align-items: start;
+    }
+
+    .quote-card blockquote {
+      margin: 0;
+      color: #ecf5ff;
+      font-size: 1.05rem;
+      line-height: 1.8;
+    }
+
+    .quote-card cite {
+      color: var(--accent-warm);
+      font-style: normal;
+      font: 500 0.85rem/1 'IBM Plex Mono', monospace;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
     }
 
     .footer {
-      padding: 1.6rem 3rem 2rem;
-      border-top: 1px solid rgba(255, 255, 255, 0.04);
+      padding: 0 2.8rem 2.5rem;
       color: var(--muted);
       font-size: 0.95rem;
     }
 
     .footer-link {
-      margin-top: 0.85rem;
-      font-size: 0.95rem;
       display: grid;
       gap: 0.55rem;
+      padding-top: 1.35rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
     }
 
     .footer-link a {
-      color: #54d7ff;
+      width: fit-content;
+      color: var(--accent);
       text-decoration: none;
-      border-bottom: 1px solid rgba(84, 215, 255, 0.25);
-    }
-
-    .footer-link span {
-      color: var(--muted);
-      line-height: 1.6;
-      max-width: 36rem;
+      border-bottom: 1px solid rgba(110, 240, 210, 0.28);
     }
 
     .footer-email {
-      color: #8b7bff;
+      color: var(--accent-warm);
       text-decoration: none;
     }
 
-    .footer-link a:hover {
-      color: #8b7bff;
-      border-color: rgba(139, 123, 255, 0.45);
+    .footer-link a:hover,
+    .footer-link a:focus-visible {
+      color: #bafbf0;
+      border-color: rgba(186, 251, 240, 0.45);
     }
 
     .debug-counter {
@@ -315,7 +359,7 @@
       border: 1px solid rgba(255, 255, 255, 0.12);
       box-shadow: 0 16px 36px rgba(0, 0, 0, 0.34);
       color: rgba(245, 248, 255, 0.92);
-      font: 600 12px/1.3 "Segoe UI", Arial, sans-serif;
+      font: 600 12px/1.3 'Segoe UI', Arial, sans-serif;
       letter-spacing: 0.03em;
       backdrop-filter: blur(10px);
     }
@@ -334,31 +378,49 @@
       display: block;
     }
 
-    @media (max-width: 900px) {
-      .hero {
+    @media (max-width: 960px) {
+      .intro-grid,
+      .video-grid {
         grid-template-columns: 1fr;
       }
 
-      .hero-image {
-        min-height: 420px;
+      .content,
+      .footer {
+        padding-left: 1.75rem;
+        padding-right: 1.75rem;
       }
     }
 
     @media (max-width: 640px) {
       body {
-        padding: 2rem 1rem 2.5rem;
+        padding: 1.25rem 0.8rem 2rem;
       }
 
       .shell {
-        border-radius: 22px;
+        border-radius: 24px;
       }
 
       .hero {
-        padding: 2rem;
+        padding: 0.85rem;
       }
 
-      .features {
-        padding: 0 2rem 2rem;
+      .hero-image {
+        min-height: 420px;
+      }
+
+      .content,
+      .footer {
+        padding-left: 1.2rem;
+        padding-right: 1.2rem;
+      }
+
+      .content {
+        padding-top: 1.6rem;
+        padding-bottom: 1.8rem;
+      }
+
+      h1 {
+        font-size: clamp(2.7rem, 13vw, 3.8rem);
       }
     }
   </style>
@@ -366,57 +428,83 @@
 <body>
   <div class="shell">
     <section class="hero">
-      <div class="hero-copy">
-        <p class="eyebrow">JodyLabs</p>
-        <h1>EmoteViper</h1>
-        <p class="compat-note">Compatible with Razer-style lighting ecosystems.</p>
-        <p class="hero-tagline">Built-in 8x8 graphics. Easy rotating effects. Keyframe animation that feels immediate. This is the level of control you expect from premium mic hardware.</p>
-        <p>EmoteViper includes a growing graphics megapack, instant playback tools, and built-in workflows for animated display output.</p>
-        <div class="testimonial">“I personally hate it when cool features are left unsupported; this was an obvious problem that needed a solution.” <span>- Jody</span></div>
-        <div class="hero-meta">
-          <span class="meta-pill">8x8 graphics megapack</span>
-          <span class="meta-pill">Live rotation & animation</span>
-          <span class="meta-pill">Creator-first control</span>
-        </div>
-      </div>
       <div class="hero-image">
-        <img src="Emoteviper.jpg" alt="EmoteViper preview" />
+        <img src="EmoteViper3.jpg" alt="EmoteViper top preview artwork" />
+        <div class="hero-overlay">
+          <p class="eyebrow">JodyLabs</p>
+          <h1>EmoteViper</h1>
+          <p class="hero-tagline">A sharper control deck for animated mic displays, 8x8 graphics, and creator-friendly playback that feels built for showing off.</p>
+          <div class="hero-meta">
+            <span class="meta-pill">8x8 graphics</span>
+            <span class="meta-pill">Animation workflow</span>
+            <span class="meta-pill">Razer-style lighting</span>
+          </div>
+        </div>
       </div>
     </section>
 
-    <section class="features">
-      <p class="section-title">EmoteViper in a nutshell</p>
-      <ul class="feature-list">
-        <li>
-          <strong>Built-in 8x8 graphics megapack</strong>
-          <span>Ships with pixel-perfect assets ready for display and expands with every new version, so your visuals keep evolving.</span>
-        </li>
-        <li>
-          <strong>Effortless animation tools</strong>
-          <span>Rotate, transform, and keyframe effects with a workflow that feels immediate and intuitive.</span>
-        </li>
-        <li>
-          <strong>Premium mic-style output</strong>
-          <span>Designed for creators who expect polished performance and control from their hardware.</span>
-        </li>
-        <li>
-          <strong>Lighting compatibility</strong>
-          <span>Small text: compatible with Razer-style lighting ecosystems, without requiring external API access.</span>
-        </li>
-      </ul>
-    </section>
-    <section class="features">
-      <p class="section-title">Quick preview</p>
-      <div class="preview-video-wrapper">
-        <video class="preview-video" src="EVexample.mp4" autoplay muted loop playsinline></video>
-        <div class="preview-caption">Live EmoteViper demo — see the built-in graphics megapack, rotation, and keyframe animation in action.</div>
-      </div>
-    </section>
+    <main class="content">
+      <section class="intro-grid">
+        <article class="card">
+          <p class="section-kicker">Refresh</p>
+          <p class="lead">EmoteViper is built for creators who want animated mic visuals to feel fast, clean, and dramatic instead of buried under awkward tooling.</p>
+          <p class="support-copy">This facelift puts the product front and center: one hero image up top, stronger copy, cleaner hierarchy, and clearer routes into the newest demos and the download page.</p>
+          <div class="hero-actions">
+            <a class="button" href="https://passghost.itch.io/emote-viper" target="_blank" rel="noreferrer">Download on itch.io</a>
+            <a class="button button-secondary" href="#preview">Watch the demos</a>
+          </div>
+        </article>
+
+        <aside class="card stat-grid">
+          <div class="stat">
+            <strong>Built-in megapack</strong>
+            <span>Load graphics fast and keep expanding your rotation with ready-made 8x8 art.</span>
+          </div>
+          <div class="stat">
+            <strong>Live animation control</strong>
+            <span>Preview motion, loops, and keyframes without breaking your creative flow.</span>
+          </div>
+          <div class="stat">
+            <strong>Creator-first setup</strong>
+            <span>Made for polished output without forcing you through a cluttered workflow.</span>
+          </div>
+        </aside>
+      </section>
+
+      <section id="preview" class="video-section">
+        <article class="quote-card card">
+          <p class="section-kicker">Why it exists</p>
+          <blockquote>“I personally hate it when cool features are left unsupported; this was an obvious problem that needed a solution.”</blockquote>
+          <cite>Jody</cite>
+        </article>
+
+        <div class="video-grid">
+          <article class="video-card">
+            <h2>Latest walkthrough</h2>
+            <video class="preview-video" autoplay muted loop playsinline>
+              <source src="VID_20260501_064220.mp4" type="video/mp4" />
+              Your browser does not support embedded video.
+            </video>
+            <p class="preview-caption">The newest preview shows the updated motion, interface feel, and the kind of polished display output EmoteViper is aimed at.</p>
+          </article>
+
+          <article class="video-card">
+            <h2>Original sample loop</h2>
+            <video class="preview-video" autoplay muted loop playsinline>
+              <source src="EVexample.mp4" type="video/mp4" />
+              Your browser does not support embedded video.
+            </video>
+            <p class="preview-caption">The earlier example stays here as a quick side-by-side reference for the animation style and playback rhythm.</p>
+          </article>
+        </div>
+      </section>
+    </main>
+
     <footer class="footer">
-      JodyLabs • EmoteViper
       <div class="footer-link">
-        <a href="https://drive.google.com/file/d/1_tVNXNaWg8erZoRfu6VzQRDGHNYFlLsT/view?usp=drive_link" target="_blank" rel="noreferrer">Download this version</a>
-        <span>Free for the time being. The megapack and bug fixes are still being ironed out and developed. Email questions or concerns to <a class="footer-email" href="mailto:pass6host@gmail.com">pass6host@gmail.com</a>.</span>
+        <span>JodyLabs • EmoteViper</span>
+        <a href="https://passghost.itch.io/emote-viper" target="_blank" rel="noreferrer">Download on itch.io</a>
+        <span>Have questions or feedback? Email <a class="footer-email" href="mailto:pass6host@gmail.com">pass6host@gmail.com</a>.</span>
       </div>
     </footer>
   </div>
