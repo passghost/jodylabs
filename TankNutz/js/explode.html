@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>One-Hit Explosion</title>
+<style>
+  body {
+    margin: 0;
+    background: #111;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+  canvas {
+    image-rendering: pixelated;
+    background: #111;
+  }
+</style>
+</head>
+<body>
+<canvas id="explosionCanvas" width="128" height="128"></canvas>
+<script>
+const canvas = document.getElementById('explosionCanvas');
+const ctx = canvas.getContext('2d');
+const width = canvas.width;
+const height = canvas.height;
+
+// Palette for flames and explosion
+const palette = ['#fff9e8','#fff1b0','#ffda70','#ffa500','#ff5f00','#cc2200','#660d00','#331100','#111111'];
+
+// Explosion particle (fire/debris)
+class Particle {
+  constructor(x, y, type) {
+    this.x = x;
+    this.y = y;
+    const angle = Math.random() * 2 * Math.PI;
+    const speed = (type === 'fire') ? Math.random() * 3 + 2 : Math.random() * 5 + 2;
+    this.vx = Math.cos(angle) * speed;
+    this.vy = Math.sin(angle) * speed;
+    this.size = (type === 'fire') ? Math.random() * 4 + 2 : Math.random() * 2 + 1;
+    this.life = 0;
+    this.maxLife = (type === 'fire') ? Math.random() * 20 + 20 : Math.random() * 25 + 20;
+    this.type = type;
+    this.colorIndex = 0;
+  }
+  update() {
+    this.x += this.vx;
+    this.y += this.vy;
+    // gravity for debris
+    if(this.type === 'debris') this.vy += 0.1;
+    this.life++;
+    this.colorIndex = Math.floor((this.life / this.maxLife) * (palette.length - 2));
+  }
+  draw(ctx) {
+    ctx.fillStyle = palette[this.colorIndex];
+    ctx.fillRect(Math.floor(this.x), Math.floor(this.y), Math.ceil(this.size), Math.ceil(this.size));
+  }
+}
+
+// Smoke particle class
+class Smoke {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    this.vx = (Math.random() - 0.5) * 0.5;
+    this.vy = -Math.random() * 1;
+    this.size = Math.random() * 5 + 3;
+    this.life = 0;
+    this.maxLife = Math.random() * 50 + 50;
+  }
+  update() {
+    this.x += this.vx;
+    this.y += this.vy;
+    this.life++;
+  }
+  draw(ctx) {
+    const alpha = 1 - this.life / this.maxLife;
+    ctx.fillStyle = `rgba(50,50,50,${alpha})`;
+    ctx.fillRect(Math.floor(this.x), Math.floor(this.y), Math.ceil(this.size), Math.ceil(this.size));
+  }
+}
+
+// Initialize explosion
+let particles = [];
+let smokeParticles = [];
+const totalFire = 120;
+const totalDebris = 60;
+
+for (let i = 0; i < totalFire; i++) {
+  particles.push(new Particle(width/2, height/2, 'fire'));
+}
+for (let i = 0; i < totalDebris; i++) {
+  particles.push(new Particle(width/2, height/2, 'debris'));
+}
+
+// Dithering helper
+function dither(ctx, x, y, color1, color2) {
+  ctx.fillStyle = ((x + y) % 2 === 0) ? color1 : color2;
+  ctx.fillRect(x, y, 1, 1);
+}
+
+// Sparks
+function drawSparks(ctx) {
+  for(let i=0;i<20;i++){
+    const angle = Math.random()*2*Math.PI;
+    const dist = Math.random()*40;
+    const sx = width/2 + Math.cos(angle)*dist;
+    const sy = height/2 + Math.sin(angle)*dist;
+    ctx.fillStyle = palette[Math.floor(Math.random()*(palette.length-1))];
+    ctx.fillRect(Math.floor(sx),Math.floor(sy),1,1);
+  }
+}
+
+// Main animation
+let frame = 0;
+function animate() {
+  frame++;
+  ctx.clearRect(0,0,width,height);
+
+  // update and draw particles
+  particles.forEach((p,i)=>{
+    p.update();
+    p.draw(ctx);
+    for(let dx=0;dx<p.size;dx++){
+      for(let dy=0;dy<p.size;dy++){
+        dither(ctx,Math.floor(p.x+dx),Math.floor(p.y+dy),
+          palette[Math.max(p.colorIndex-1,0)],
+          palette[p.colorIndex]
+        );
+      }
+    }
+
+    // spawn smoke for fire particles
+    if(p.type==='fire' && Math.random()<0.07){
+      smokeParticles.push(new Smoke(p.x,p.y));
+    }
+  });
+
+  // draw smoke
+  smokeParticles.forEach((s,i)=>{
+    s.update();
+    s.draw(ctx);
+    if(s.life>s.maxLife) smokeParticles.splice(i,1);
+  });
+
+  drawSparks(ctx);
+
+  requestAnimationFrame(animate);
+}
+
+animate();
+</script>
+</body>
+</html>

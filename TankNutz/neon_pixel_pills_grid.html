@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>MUTANT SPLIT PILL GLORY</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+  html, body { height:100%; margin:0; display:grid; place-items:center; background:#000; }
+  canvas { image-rendering:pixelated; image-rendering:crisp-edges; }
+</style>
+</head>
+<body>
+<canvas id="c" width="1152" height="512"></canvas>
+<script>
+(() => {
+  const COLS=3, ROWS=2, CELL=64, SCALE=6;
+  const canvas=document.getElementById('c');
+  const ctx=canvas.getContext('2d');
+  ctx.imageSmoothingEnabled=false;
+  canvas.width=COLS*CELL*SCALE;
+  canvas.height=ROWS*CELL*SCALE;
+
+  function px(x,y,c){ctx.fillStyle=c;ctx.fillRect(x*SCALE,y*SCALE,SCALE,SCALE);} 
+  function hsv(h,s,v,a=1){
+    let f=(n,k=(n+h/60)%6)=>v-v*s*Math.max(Math.min(k,4-k,1),0);
+    let [r,g,b]=[f(5),f(3),f(1)];
+    return `rgba(${(r*255)|0},${(g*255)|0},${(b*255)|0},${a})`;
+  }
+
+  // draw pill shape split white / color with glow aura and more detail
+  function drawSplitPill(cx,cy,hue,t,iconFn){
+    const pulse = 0.5+0.5*Math.sin(t/150);
+    for(let x=-16;x<=16;x++){
+      for(let y=-10;y<=10;y++){
+        let inEllipse = (x*x)/(16*16)+(y*y)/(10*10) <=1;
+        if(inEllipse){
+          let color = (x<0)?hsv(0,0,1-pulse*0.3):hsv((hue+t/20)%360,0.9,0.8+0.2*pulse);
+          px(cx+x,cy+y,color);
+        }
+      }
+    }
+    // rim glow
+    for(let ang=0; ang<360; ang+=2){
+      let rx=Math.round(Math.cos(ang*Math.PI/180)*16);
+      let ry=Math.round(Math.sin(ang*Math.PI/180)*10);
+      let glow=hsv((hue+ang+t/10)%360,1,1,0.7);
+      px(cx+rx,cy+ry,glow);
+      if(pulse>0.7) px(cx+rx*1.1|0,cy+ry*1.1|0,hsv((hue+ang)%360,1,1,0.3));
+    }
+    // aura outside
+    for(let r=17;r<22;r++){
+      for(let ang=0; ang<360; ang+=15){
+        let rx=Math.round(Math.cos(ang*Math.PI/180)*r);
+        let ry=Math.round(Math.sin(ang*Math.PI/180)*r*0.6);
+        px(cx+rx,cy+ry,hsv((hue+t/5)%360,1,1,0.05+0.1*pulse));
+      }
+    }
+    // overlay details
+    iconFn(cx,cy,hue,t);
+  }
+
+  // Animated icons
+  function iconTentacles(cx,cy,h,t){
+    for(let k=0;k<8;k++){
+      let ang=(t/10+k*45)*Math.PI/180;
+      let len=5+Math.floor(2*Math.sin(t/200+k));
+      for(let l=1;l<len;l++){
+        let x=Math.round(Math.cos(ang)*l);
+        let y=Math.round(Math.sin(ang)*l);
+        px(cx+x,cy+y,hsv((h+120+l*10+t/5)%360,1,1));
+      }
+    }
+  }
+  function iconEyes(cx,cy,h,t){
+    let blink=(Math.floor(t/300)%6===0);
+    for(let dx=-6;dx<=6;dx+=6){
+      px(cx+dx,cy,blink?'black':'white');
+      if(!blink) px(cx+dx,cy+1,hsv(h,1,1));
+    }
+    px(cx,cy-2,'black');
+  }
+  function iconSigil(cx,cy,h,t){
+    for(let i=-5;i<=5;i+=2){
+      let col=hsv((h+t/10+i*10)%360,1,1);
+      px(cx+i,cy+i,col);
+      px(cx-i,cy+i,col);
+    }
+  }
+  function iconWorm(cx,cy,h,t){
+    for(let s=-8;s<=8;s++){
+      let y=Math.round(Math.sin((s+t/30))*4);
+      px(cx+s,cy+y,hsv((h+s*10+t/3)%360,1,1));
+    }
+  }
+  function iconCore(cx,cy,h,t){
+    for(let a=0;a<12;a++){
+      let ang=(a*30+t/15)*Math.PI/180;
+      let r=5+(Math.sin(t/100+a)*3);
+      let x=Math.round(Math.cos(ang)*r);
+      let y=Math.round(Math.sin(ang)*r);
+      px(cx+x,cy+y,hsv((h+a*20+t/10)%360,1,1));
+    }
+  }
+  function iconMaw(cx,cy,h,t){
+    let open=2+Math.floor(2*Math.sin(t/150));
+    for(let i=-6;i<=6;i+=2){
+      px(cx+i,cy-open,'black');
+      px(cx+i,cy+open,'black');
+    }
+    for(let i=-5;i<=5;i+=5){px(cx+i,cy,hsv(h,1,1));}
+  }
+
+  const cells=[
+    {col:0,row:0,hue:0,icon:iconMaw},
+    {col:1,row:0,hue:190,icon:iconTentacles},
+    {col:2,row:0,hue:120,icon:iconEyes},
+    {col:0,row:1,hue:55,icon:iconSigil},
+    {col:1,row:1,hue:290,icon:iconWorm},
+    {col:2,row:1,hue:170,icon:iconCore},
+  ];
+
+  function frame(t){
+    ctx.fillStyle='#000';ctx.fillRect(0,0,canvas.width,canvas.height);
+    for(const it of cells){
+      let cx=it.col*CELL+CELL/2;
+      let cy=it.row*CELL+CELL/2;
+      drawSplitPill(cx,cy,it.hue,t,it.icon);
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

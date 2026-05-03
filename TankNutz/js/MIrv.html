@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Controlled Boid Missile Swarm</title>
+<style>
+  body {
+    background: #111;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+  }
+  canvas {
+    image-rendering: pixelated;
+    border: 2px solid #444;
+    background: #111;
+  }
+</style>
+</head>
+<body>
+<canvas id="canvas" width="256" height="256"></canvas>
+<script>
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+const WIDTH = canvas.width;
+const HEIGHT = canvas.height;
+const NUM_MISSILES = 12;
+const TARGET = {x: WIDTH/2, y: 20};
+const missileColor = ["#ff3d3d","#ff8f3d","#ffcf3d","#ffffff"];
+
+class Missile {
+  constructor(){
+    this.reset();
+  }
+
+  reset(){
+    this.x = WIDTH/2 + (Math.random()*10-5);
+    this.y = HEIGHT-10;
+    this.vx = Math.random()*1-0.5;
+    this.vy = -Math.random()*2-2;
+    this.size = 3;
+    this.trail = [];
+    this.color = missileColor[Math.floor(Math.random()*missileColor.length)];
+    this.phase = "spread"; // spread then converge
+  }
+
+  update(missiles){
+    // Trail for visual effect
+    this.trail.push({x:this.x, y:this.y});
+    if(this.trail.length>10) this.trail.shift();
+
+    if(this.phase==="spread"){
+      // Boid-like separation
+      let sepX=0, sepY=0;
+      missiles.forEach(m=>{
+        if(m===this) return;
+        let dx = this.x-m.x;
+        let dy = this.y-m.y;
+        let dist = Math.sqrt(dx*dx+dy*dy);
+        if(dist<15){
+          sepX += dx/dist;
+          sepY += dy/dist;
+        }
+      });
+      this.vx += sepX*0.05;
+      this.vy += sepY*0.05;
+
+      // Slow convergence trigger
+      if(this.y<HEIGHT/2){
+        this.phase="converge";
+      }
+    }
+
+    if(this.phase==="converge"){
+      // Steer toward target
+      let dx = TARGET.x - this.x;
+      let dy = TARGET.y - this.y;
+      let dist = Math.sqrt(dx*dx+dy*dy);
+      this.vx += dx/dist*0.1;
+      this.vy += dy/dist*0.1;
+    }
+
+    // Limit speed
+    let speed = Math.sqrt(this.vx*this.vx + this.vy*this.vy);
+    if(speed>3){
+      this.vx = (this.vx/speed)*3;
+      this.vy = (this.vy/speed)*3;
+    }
+
+    // Update position
+    this.x += this.vx;
+    this.y += this.vy;
+
+    // Reset if reached target
+    if(this.y<TARGET.y+5){
+      this.reset();
+    }
+  }
+
+  draw(){
+    // Draw trail
+    for(let i=0;i<this.trail.length;i++){
+      const alpha = i/this.trail.length;
+      ctx.fillStyle = `rgba(255,${Math.floor(100+155*alpha)},${Math.floor(100+155*alpha)},${alpha})`;
+      ctx.fillRect(this.trail[i].x,this.trail[i].y,2,2);
+    }
+    // Draw missile
+    ctx.fillStyle = this.color;
+    ctx.fillRect(this.x-1,this.y-2,2,4);
+    ctx.strokeStyle = "#000";
+    ctx.strokeRect(this.x-1,this.y-2,2,4);
+  }
+}
+
+let missiles=[];
+for(let i=0;i<NUM_MISSILES;i++){
+  missiles.push(new Missile());
+}
+
+function animate(){
+  ctx.clearRect(0,0,WIDTH,HEIGHT);
+
+  missiles.forEach(m=>{
+    m.update(missiles);
+    m.draw();
+  });
+
+  // Draw target
+  ctx.fillStyle="#00ff00";
+  ctx.fillRect(TARGET.x-3,TARGET.y-3,6,6);
+
+  requestAnimationFrame(animate);
+}
+
+animate();
+</script>
+</body>
+</html>

@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Armored Circular Boss Tank — Top-Down Pixel</title>
+<style>
+  html, body {
+    height: 100%;
+    margin: 0;
+    background: #0e1116;              /* deep space backdrop to help rim light pop */
+    color: #c9d1d9;
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    display: grid;
+    place-items: center;
+  }
+  .wrap {
+    display: grid;
+    gap: 10px;
+    place-items: center;
+    user-select: none;
+  }
+  canvas {
+    image-rendering: pixelated;       /* crisp pixel edges */
+    image-rendering: crisp-edges;
+    box-shadow: 0 6px 24px rgba(0,0,0,.6), inset 0 0 0 1px rgba(255,255,255,.04);
+    border-radius: 12px;
+    background: #0b0d11;
+  }
+  .hint { opacity: .7; font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <!-- Canvas 256x256 as requested -->
+  <canvas id="c" width="256" height="256" aria-label="Armored Circular Boss Tank"></canvas>
+  <div class="hint">Top-down armored boss tank · 8fps+ variable · Press <b>H</b> for hitbox overlay</div>
+</div>
+<script>
+/*
+  Armored Circular Boss Tank — Pixel Spec
+  Subject: Armored circular boss tank (top-down)
+  Canvas: 256x256, internal pixel grid 128×128 upscaled 2×
+  Palette: 10+ colors (steel blues, outlines, hazard yellows, glows)
+  Style: chunky shading, rim light, strong silhouette, dithering ramps
+  Motion: rotating rim-light, spinning turret barrel, rotating hazard ring, subtle pulse
+  Hitbox/Anchor: pivot = center (64,64) in internal grid
+  Export: single-file HTML (no dependencies)
+  Constraints: cohesive single element, no floating parts
+*/
+
+/* --------------------------- Canvas & Pixel Grid --------------------------- */
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d', { alpha: false });
+
+/* Internal pixel grid. We paint 128×128 “logical pixels” and upscale 2× */
+const SCALE = 2;
+const W = canvas.width  / SCALE;  // 128
+const H = canvas.height / SCALE;  // 128
+const CX = (W/2)|0;               // 64
+const CY = (H/2)|0;
+
+/* Pixel plotter: draws a single logical pixel scaled up */
+function p(x, y, col) {
+  // Guard against stray pixels
+  if (x < 0 || y < 0 || x >= W || y >= H) return;
+  ctx.fillStyle = col;
+  ctx.fillRect(x * SCALE, y * SCALE, SCALE, SCALE);
+}
+
+/* ------------------------------- Palette ---------------------------------- */
+/* Slightly “industrial nord” steel with warm hazard accents + cool glows */
+const PAL = {
+  outline:   '#091018',
+  black:     '#000000',
+  hull0:     '#1a222b', // deepest shadow
+  hull1:     '#242c38',
+  hull2:     '#2e3947',
+  hull3:     '#3b4758',
+  hull4:     '#4b5a6f', // lightest hull
+  steel0:    '#424a56',
+  steel1:    '#5c6772',
+  steel2:    '#7a8693',
+  steel3:    '#a1adba',
+  rim:       '#9fb9d8',
+  glowA:     '#9fe3ff',
+  glowB:     '#78d8ff',
+  glowG:     '#7bf4b3',
+  hazard:    '#f0c04a',
+  hazardD:   '#7a4e19',
+  redA:      '#cb4a4a',
+  shadow:    '#0d1219',
+  grid:      '#263040'
+};
+
+/* A few ramps for gradient + dithering selection */
+const HULL_RAMP = [PAL.hull0, PAL.hull1, PAL.hull2, PAL.hull3, PAL.hull4];
+const STEEL_RAMP = [PAL.steel0, PAL.steel1, PAL.steel2, PAL.steel3];
+
+/* --------------------------- Precomputed Fields --------------------------- */
+/* Precompute radius and angle per pixel to speed up animation loop */
+const R = new Float32Array(W * H);
+const A = new Float32Array(W * H);
+
+for (let y = 0; y < H; y++) {
+  for (let x = 0; x < W; x++) {
+    const dx = x - CX + 0.5; // center pixels
+    const dy = y - CY + 0.5;
+    const r = Math.hypot(dx, dy);
+    const a = Math.atan2(dy, dx); // -PI..PI
+    const i = y * W + x;
+    R[i] = r;
+    A[i] = a;
+  }
+}
+
+/* ------------------------------ Utilities --------------------------------- */
+
+/* Clamp helper */
+const clamp = (v, lo, hi) => v < lo ? lo : v > hi ? hi : v;
+
+/* Pick from array with safe index */
+function pick(arr, idx) {
+  const i = clamp(idx|0, 0, arr.length - 1);
+  return arr[i];
+}
+
+/* Simple ordered Bayer-like 2×2 dithering based on x,y parity.
+   Returns 0 or 1 depending on checker parity. */
+function d2(x, y) {
+  return ((x ^ y) & 1);
+}
+
+/* A soft step that returns 0..1 for a range with smooth edges */
+function smoothStep(edge0, edge1, x) {
+  const t = clamp((x - edge0) / (edge1 - edge0), 0, 1);
+  return t * t * (3 - 2 * t);
+}
+
+/* Mix two hex colors via simple channel lerp, returns hex string. */
+function mixHex(c1, c2, t) {
+  // parse #rrggbb
+  const n1 = parseInt(c1.slice(1), 16);
+  const n2 = parseInt(c2.slice(1), 16);
+  const r1 = (n1 >> 16) & 255, g1 = (n1 >> 8) & 255, b1 = n1 & 255;
+  const r2 = (n2 >> 16) & 255, g2 = (n2 >> 8) & 255, b2 = n2 & 255;
+  const r = (r1 + (r2 - r1) * t) | 0;
+  const g = (g1 + (g2 - g1) * t) | 0;
+  const b = (b1 + (b2 - b1) * t) | 0;
+  return '#' + ((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1);
+}
+
+/* Outline helper: returns true if radius near a ring boundary (with pixel tolerance) */
+function near(r, target, tol = 0.6) {
+  return Math.abs(r - target) <= tol;
+}
+
+/* ------------------------------- Geometry --------------------------------- */
+/*
+  Structure (all radii in internal pixels):
+  - Outer armor shell        R_out = 50 (heavy outline)
+  - Outer hull gradient      R_hull_outer: 49 .. 46
+  - Plating ring             R_plate: 42 .. 46 (with spokes/gaps)
+  - Hazard ring              R_hazard: 30 .. 36 (rotating diagonal stripes)
+  - Turret base (round)      R_turret: 20
+  - Gun collar               R_collar: 16 .. 18 (steel ramp + outline)
+  - Barrel                   3px wide line from center outward along barrelAngle
+  - Core glass (subtle)      R_core: 8 (faint green/blue pulse under barrel)
+*/
+const R_OUT   = 50;
+const R_HULLI = 46;
+const R_PLATE = 42;
+const R_HAZ_O = 36;
+const R_HAZ_I = 30;
+const R_TUR   = 20;
+const R_COLLO = 18;
+const R_COLLI = 16;
+const R_CORE  =  8;
+
+/* ----------------------------- Animation State ---------------------------- */
+let showHitbox = false;
+let lastT = 0;
+
+/* Keyboard toggle for hitbox overlay */
+addEventListener('keydown', (e) => {
+  if (e.key === 'h' || e.key === 'H') {
+    showHitbox = !showHitbox;
+  }
+});
+
+/* ------------------------------- Draw Loop -------------------------------- */
+
+/* Core renderer for a single frame time t (ms) */
+function draw(t) {
+  // Compute animated parameters from time
+  // Convert to seconds
+  const ts = t * 0.001;
+
+  // Rim light direction slowly rotates
+  const rimAngle = ts * 0.8; // radians/sec
+  const rimCos = Math.cos(rimAngle);
+  const rimSin = Math.sin(rimAngle);
+
+  // Barrel slowly spins (boss tank “searching”)
+  const barrelAngle = ts * 1.6;
+  const barCos = Math.cos(barrelAngle);
+  const barSin = Math.sin(barrelAngle);
+
+  // Hazard ring scrolling stripes
+  const hazardShift = ts * 2.2;
+
+  // Subtle breathing scale (for core glow)
+  const breath = 0.5 + 0.5 * Math.sin(ts * 2.1);
+
+  // Clear background
+  ctx.fillStyle = PAL.shadow;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Iterate every pixel, paint layers from outer to inner
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const i = y * W + x;
+      const r = R[i];
+      const a = A[i];
+
+      // Start as background (outside tank)
+      let col = null;
+
+      // --------------------- OUTER OUTLINE & RIM SHINE ----------------------
+      // Strong silhouette — draw outer armor with outline + hull ramp inside
+      if (r <= R_OUT + 0.5) {
+        // Outline edge
+        if (near(r, R_OUT, 0.65)) {
+          col = PAL.outline;
+        } else {
+          // Rim-light boost near tangent facing rimAngle
+          // Compute how aligned this pixel is with rim direction
+          // Dot of surface normal (from center) with rim direction
+          const nx = (x - CX + 0.5) / (r || 1);
+          const ny = (y - CY + 0.5) / (r || 1);
+          const ndotl = nx * rimCos + ny * rimSin; // -1..1
+          const rimBoost = Math.max(0, ndotl);     // 0..1 on the lit side
+
+          // Hull gradient (outer shell thickness ~ R_OUT .. R_HULLI)
+          if (r > R_HULLI) {
+            const tHull = smoothStep(R_OUT, R_HULLI, r);       // 0 at edge -> 1 inside
+            const idx = Math.floor(tHull * (HULL_RAMP.length - 1));
+            let base = pick(HULL_RAMP, idx);
+
+            // Dither between steps to fake more tones
+            const frac = tHull * (HULL_RAMP.length - 1) - idx;
+            if (frac > 0.4 && d2(x, y)) base = pick(HULL_RAMP, idx + 1);
+
+            // Apply rim-light tint for pixels on the lit side (cooler blue)
+            const rimTint = clamp(rimBoost * 0.55, 0, 1); // how strong the rim is
+            col = mixHex(base, PAL.rim, rimTint);
+          }
+
+          // ----------------------- PLATING RING (armor) ----------------------
+          else if (r > R_PLATE) {
+            // Base hull just inside
+            let tHull2 = smoothStep(R_HULLI, R_PLATE, r);
+            let base2 = pick(HULL_RAMP, Math.floor(tHull2 * (HULL_RAMP.length - 1)));
+
+            // Add radial “plates” via angle bands with slight darker separators
+            const plates = 16; // number of plate sectors
+            let sector = Math.floor(((a + Math.PI) / (2 * Math.PI)) * plates);
+            // Add small gaps every sector edge
+            const edgeWidth = 0.15; // in sector units
+            let sectPos = (((a + Math.PI) / (2 * Math.PI)) * plates) - sector;
+            const nearEdge = (sectPos < edgeWidth) || (sectPos > 1 - edgeWidth);
+            if (nearEdge && d2(x, y)) base2 = PAL.hull1;
+
+            // Rim-light effect inside as well
+            const nx = (x - CX + 0.5) / (r || 1);
+            const ny = (y - CY + 0.5) / (r || 1);
+            const ndotl = nx * rimCos + ny * rimSin;
+            const rimTint2 = clamp(Math.max(0, ndotl) * 0.35, 0, 1);
+            col = mixHex(base2, PAL.rim, rimTint2);
+          }
+
+          // ------------------------- HAZARD RING ----------------------------
+          else if (r > R_HAZ_O) {
+            // Thin steel ring between plating and hazard
+            const tSteel = smoothStep(R_PLATE, R_HAZ_O, r);
+            let baseS = pick(STEEL_RAMP, Math.floor(tSteel * (STEEL_RAMP.length - 1)));
+            // Slight dither
+            if (d2(x, y) && Math.random() < 0.04) baseS = PAL.steel1;
+            col = baseS;
+          }
+
+          else if (r > R_HAZ_I) {
+            // Rotating diagonal stripes: combine angle and radius to make chevrons
+            // Convert angle to [0..1)
+            const ang01 = (a + Math.PI) / (2 * Math.PI);
+            // Add scrolling shift
+            const stripe = Math.floor(((ang01 + hazardShift * 0.05) * 32) + Math.floor(r * 0.35)) & 1;
+            // Alternate hazard color with dark safety brown
+            let hz = stripe ? PAL.hazard : PAL.hazardD;
+
+            // Light scuffing / paint wear via sparse dithering
+            if (d2(x, y) && Math.random() < 0.03) {
+              hz = mixHex(hz, PAL.steel2, 0.25);
+            }
+
+            // Slight rim lift even here (subtle)
+            const nx = (x - CX + 0.5) / (r || 1);
+            const ny = (y - CY + 0.5) / (r || 1);
+            const rimTint3 = clamp((nx * rimCos + ny * rimSin) * 0.15 + 0.05, 0, 0.25);
+            col = mixHex(hz, PAL.rim, rimTint3);
+          }
+
+          // ------------------------- TURRET BASE ----------------------------
+          else if (r > R_TUR) {
+            // Steel ramp toward center
+            const tIn = smoothStep(R_HAZ_I, R_TUR, r);
+            let baseT = pick(STEEL_RAMP, Math.floor(tIn * (STEEL_RAMP.length - 1)));
+
+            // Add concentric grooves (faint) for chunkiness
+            const groove = (Math.floor(r) % 3) === 0;
+            if (groove && d2(x, y)) baseT = mixHex(baseT, PAL.steel0, 0.25);
+
+            col = baseT;
+          }
+
+          // ------------------------- COLLAR RING ----------------------------
+          else if (r > R_COLLO) {
+            // Thin collar: bright steel with crisp outline edges
+            let tC = smoothStep(R_TUR, R_COLLO, r);
+            let c = pick(STEEL_RAMP, Math.floor(tC * (STEEL_RAMP.length - 1)));
+            // Slight inner glow seep from core
+            const ig = clamp((R_COLLO - r) / (R_COLLO - R_COLLI + 0.0001), 0, 1);
+            c = mixHex(c, PAL.glowG, ig * 0.10);
+            col = c;
+          }
+
+          // ---------------------------- CORE --------------------------------
+          else {
+            // Glassy core beneath barrel; green-blue pulse
+            const g = clamp((R_COLLI - r) / (R_COLLI - R_CORE + 0.0001), 0, 1);
+            const pulse = 0.4 + 0.6 * breath; // 0.4..1.0
+            const coreMix = clamp(g * 0.8 * pulse, 0, 1);
+            const glass = mixHex(PAL.glowB, PAL.glowG, 0.4);
+            const glass2 = mixHex(glass, PAL.glowA, 0.5);
+            let c = mixHex(PAL.hull2, glass2, coreMix);
+
+            // Inner outline at core boundary
+            if (near(r, R_CORE, 0.7)) c = PAL.outline;
+
+            // A tiny specular sparkle toward rim light
+            const nx = (x - CX + 0.5) / (r || 1);
+            const ny = (y - CY + 0.5) / (r || 1);
+            const spark = clamp(nx * rimCos + ny * rimSin, 0, 1);
+            if (spark > 0.9 && r < R_CORE - 1) c = mixHex(c, PAL.glowA, (spark - 0.9) * 5);
+
+            col = c;
+          }
+        }
+      }
+
+      // If still null, pixel is background — skip (we already painted bg)
+      if (col) {
+        p(x, y, col);
+      }
+    }
+  }
+
+  // ----------------------------- Barrel & Details ---------------------------
+  // Barrel: 3px wide, connected to turret (no floating parts)
+  drawBarrel(CX, CY, barrelAngle, 28, 3, PAL.steel3, PAL.outline);
+
+  // Gun collar outline rings
+  drawRingOutline(R_OUT, PAL.outline, 0.65);
+  drawRingOutline(R_HULLI, PAL.outline, 0.55);
+  drawRingOutline(R_PLATE, PAL.outline, 0.55);
+  drawRingOutline(R_HAZ_O, PAL.outline, 0.45);
+  drawRingOutline(R_HAZ_I, PAL.outline, 0.45);
+  drawRingOutline(R_TUR,   PAL.outline, 0.50);
+  drawRingOutline(R_COLLO, PAL.outline, 0.45);
+  drawRingOutline(R_COLLI, PAL.outline, 0.45);
+  drawRingOutline(R_CORE,  PAL.outline, 0.60);
+
+  // Rivets around plating ring (every 30 degrees)
+  drawRivets(R_PLATE - 1.5, 12, PAL.steel2, PAL.outline);
+
+  // Small warning dots on hazard ring
+  drawWarningLEDs(R_HAZ_I + 2, 8, PAL.redA, PAL.outline, t);
+
+  // Optional: hitbox/anchor overlay
+  if (showHitbox) {
+    drawHitbox();
+  }
+}
+
+/* Draw a circular outline by checking near() for each pixel at the ring radius */
+function drawRingOutline(radius, color, tol) {
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const r = R[y * W + x];
+      if (near(r, radius, tol)) {
+        p(x, y, color);
+      }
+    }
+  }
+}
+
+/* Draw barrel as a 3-pixel wide line from the center outward at a given angle.
+   Uses Bresenham-ish stepping in polar. */
+function drawBarrel(cx, cy, angle, length, width, colMain, colEdge) {
+  const dx = Math.cos(angle);
+  const dy = Math.sin(angle);
+  const ox = cx;
+  const oy = cy;
+
+  // Start just outside collar to avoid overwriting inner outline too much
+  const start = R_COLLO + 1;
+
+  for (let s = start; s <= length; s += 0.2) {
+    const px = Math.round(ox + dx * s);
+    const py = Math.round(oy + dy * s);
+
+    // Thickness orthogonal to direction
+    const nx = -dy, ny = dx;
+    for (let w = -Math.floor(width/2); w <= Math.floor(width/2); w++) {
+      const bx = Math.round(px + nx * w);
+      const by = Math.round(py + ny * w);
+
+      // Steel main
+      p(bx, by, colMain);
+
+      // Edges outlined slightly for chunky clarity
+      if (w === -Math.floor(width/2) || w === Math.floor(width/2)) {
+        p(bx, by, colEdge);
+      }
+    }
+  }
+
+  // Barrel tip muzzle — darker rim and small bright pixel
+  const tipx = Math.round(ox + dx * length);
+  const tipy = Math.round(oy + dy * length);
+  p(tipx, tipy, PAL.black);
+  // muzzle sparkle slightly forward
+  p(Math.round(tipx + dx * 1), Math.round(tipy + dy * 1), PAL.steel3);
+}
+
+/* Rivets around a ring: n evenly spaced studs with tiny shadow */
+function drawRivets(radius, n, col, edge) {
+  for (let k = 0; k < n; k++) {
+    const a = (k / n) * Math.PI * 2;
+    const x = Math.round(CX + Math.cos(a) * radius);
+    const y = Math.round(CY + Math.sin(a) * radius);
+    // highlight
+    p(x, y, col);
+    // tiny shadow under (shift along angle slightly)
+    const sx = Math.round(x + Math.cos(a) * 1);
+    const sy = Math.round(y + Math.sin(a) * 1);
+    p(sx, sy, PAL.hull1);
+    // ring edge pixel
+    p(x, y, edge);
+  }
+}
+
+/* Warning LEDs: slow blink synced to time */
+function drawWarningLEDs(radius, n, colOn, edge, t) {
+  const ts = t * 0.001;
+  for (let k = 0; k < n; k++) {
+    const a = (k / n) * Math.PI * 2;
+    const pulse = 0.5 + 0.5 * Math.sin(ts * 3 + k * 0.6);
+    const on = pulse > 0.6;
+    const x = Math.round(CX + Math.cos(a) * radius);
+    const y = Math.round(CY + Math.sin(a) * radius);
+    p(x, y, on ? colOn : PAL.hull2);
+    if (on) {
+      // faint glow pixel adjacent toward center
+      const gx = Math.round(CX + Math.cos(a) * (radius - 1));
+      const gy = Math.round(CY + Math.sin(a) * (radius - 1));
+      p(gx, gy, PAL.glowA);
+    }
+    // crisp edge
+    p(x, y, edge);
+  }
+}
+
+/* Hitbox / anchor overlay */
+function drawHitbox() {
+  // Crosshair at center
+  for (let dx = -2; dx <= 2; dx++) p(CX + dx, CY, PAL.grid);
+  for (let dy = -2; dy <= 2; dy++) p(CX, CY + dy, PAL.grid);
+
+  // Approximate collision circle at plating ring
+  drawRingOutline(R_PLATE + 0.5, PAL.grid, 0.6);
+}
+
+/* ------------------------------- Ticker ----------------------------------- */
+/* Drive at ~8–24 fps (we paint every frame; visuals handle low/high fps) */
+function tick(t) {
+  draw(t);
+  lastT = t;
+  requestAnimationFrame(tick);
+}
+
+// Kick it off
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>

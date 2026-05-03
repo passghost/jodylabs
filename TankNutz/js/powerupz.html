@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Vintage Nuclear Bomb</title>
+<style>
+  body {
+    background: #111;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+  }
+  canvas {
+    image-rendering: pixelated;
+  }
+</style>
+</head>
+<body>
+<div style="display:flex; flex-direction:column; gap:32px; align-items:center;">
+  <canvas id="nukeCanvas" width="64" height="64" title="Existing Bomb Sprite"></canvas>
+  <canvas id="heliGuardCanvas" width="64" height="64" title="Heli Guard Powerup"></canvas>
+  <div style="color:#ccc; font:12px monospace; text-align:center;">Heli-Guard Powerup Preview</div>
+</div>
+<script>
+const canvas = document.getElementById('nukeCanvas');
+const ctx = canvas.getContext('2d');
+// Helicopter guardian icon canvas
+const heliC = document.getElementById('heliGuardCanvas');
+const heliG = heliC.getContext('2d');
+
+// Bomb parameters
+const nuke = {
+  x: 32,
+  y: 36,
+  width: 12,
+  height: 28,
+  tailWidth: 6,
+  fuseLength: 6,
+  pulse: 0,
+  pulseSpeed: 0.08,
+  shineAngle: 0,
+  shineSpeed: 0.05
+};
+
+// Palette
+const palette = {
+  black: '#0b0b0b',
+  darkGray: '#222',
+  gray: '#555',
+  lightGray: '#aaa',
+  metal: '#999',
+  highlight: '#fff',
+  glowYellow: '#fffa90'
+};
+
+// Draw a single pixel helper
+function drawPixel(x, y, color) {
+  ctx.fillStyle = color;
+  ctx.fillRect(x, y, 1, 1);
+}
+
+// Draw bomb body with panels and metallic shading
+function drawBombBody() {
+  const {x, y, width, height, tailWidth} = nuke;
+  for (let dy = -height/2; dy <= height/2; dy++) {
+    const rowWidth = width - Math.floor((dy / height) * width/2);
+    for (let dx = -rowWidth/2; dx <= rowWidth/2; dx++) {
+      let shade;
+      const dist = Math.abs(dy)/(height/2) + Math.abs(dx)/(rowWidth/2);
+      if (dist < 0.4) shade = palette.highlight;
+      else if (dist < 0.7) shade = palette.lightGray;
+      else shade = palette.gray;
+      drawPixel(x+dx, y+dy, shade);
+    }
+  }
+
+  // Tail fin section
+  for (let dy = height/4; dy <= height/2; dy++) {
+    for (let dx = -tailWidth/2; dx <= tailWidth/2; dx++) {
+      drawPixel(x+dx, y+dy, palette.darkGray);
+    }
+  }
+
+  // Vertical seam lines
+  for (let s = -Math.floor(width/4); s <= Math.floor(width/4); s+=2) {
+    for (let dy = -height/2; dy <= height/2; dy++) {
+      if (Math.random() > 0.6) drawPixel(x+s, y+dy, palette.darkGray);
+    }
+  }
+}
+
+// Top fuse / detonator rod
+function drawFuse() {
+  const {x, y, fuseLength, pulse} = nuke;
+  const fuseX = x;
+  const fuseY = y - nuke.height/2 - fuseLength;
+  // Rod
+  ctx.strokeStyle = palette.darkGray;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(x, y - nuke.height/2);
+  ctx.lineTo(fuseX, fuseY);
+  ctx.stroke();
+
+  // Spark glow at top
+  const flamePulse = Math.sin(pulse)*2;
+  drawPixel(fuseX, Math.round(fuseY+flamePulse), palette.glowYellow);
+  drawPixel(fuseX-1, Math.round(fuseY+flamePulse), palette.glowYellow);
+  drawPixel(fuseX+1, Math.round(fuseY+flamePulse), palette.glowYellow);
+}
+
+// Shiny metallic reflection effect
+function drawShine() {
+  const {x, y, width, height, shineAngle} = nuke;
+  for (let dy = -height/2; dy <= height/2; dy++) {
+    const rowWidth = width - Math.floor((dy / height) * width/2);
+    const shinePos = Math.floor(rowWidth/2 * (0.5 + 0.5*Math.sin(shineAngle + dy/10)));
+    drawPixel(x - rowWidth/2 + shinePos, y+dy, palette.highlight);
+  }
+}
+
+// Dithering to give metal texture
+function applyDithering() {
+  const {x, y, width, height} = nuke;
+  for (let dy = -height/2; dy <= height/2; dy++) {
+    const rowWidth = width - Math.floor((dy / height) * width/2);
+    for (let dx = -rowWidth/2; dx <= rowWidth/2; dx++) {
+      if (Math.random() > 0.7) drawPixel(x+dx, y+dy, palette.metal);
+    }
+  }
+}
+
+// Animate bomb pulse / shine / fuse
+function animate() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  nuke.pulse += nuke.pulseSpeed;
+  nuke.shineAngle += nuke.shineSpeed;
+
+  drawBombBody();
+  applyDithering();
+  drawShine();
+  drawFuse();
+
+  // Draw helicopter guardian pixel icon (simple rotors + shield ring)
+  heliG.clearRect(0,0,heliC.width,heliC.height);
+  const t = performance.now()/400;
+  // Shield pulse
+  const pulse = (Math.sin(t*2)+1)*0.5; // 0..1
+  const R = 20;
+  for (let a=0; a<Math.PI*2; a+=Math.PI/32){
+    const x = 32 + Math.cos(a)*R;
+    const y = 32 + Math.sin(a)*R;
+    heliG.fillStyle = `hsl(${58 + pulse*40}deg 80% ${55 + pulse*25}% / ${0.5 + 0.5*Math.sin(t*6 + a*4)})`;
+    heliG.fillRect(x|0,y|0,1,1);
+  }
+  // Body
+  const bodyCols = ['#222','#333','#555'];
+  for (let dy=-4; dy<=4; dy++){
+    for (let dx=-8; dx<=8; dx++){
+      const dist = Math.abs(dx)/8 + Math.abs(dy)/4;
+      if (dist <= 1){
+        const idx = Math.min(bodyCols.length-1, Math.floor(dist*bodyCols.length));
+        heliG.fillStyle = bodyCols[idx];
+        heliG.fillRect(32+dx,32+dy,1,1);
+      }
+    }
+  }
+  // Cockpit
+  heliG.fillStyle = '#6cb3ff';
+  heliG.fillRect(32-3,32-2,6,4);
+  // Rotors (animate simple cross)
+  const ra = t * Math.PI*2;
+  function rotor(px,py,len){
+    for (let i=-len; i<=len; i++){
+      heliG.fillStyle = '#999';
+      heliG.fillRect(px + Math.cos(ra)*i |0, py + Math.sin(ra)*i |0,1,1);
+      heliG.fillRect(px + Math.cos(ra+Math.PI/2)*i |0, py + Math.sin(ra+Math.PI/2)*i |0,1,1);
+    }
+  }
+  rotor(32, 24, 10);
+  // Tail
+  for (let i=0;i<10;i++){ heliG.fillStyle = i%2? '#444':'#555'; heliG.fillRect(32+i,32,1,1); }
+  // Label small H
+  heliG.fillStyle = '#ffe97a'; heliG.fillRect(29,41,1,3); heliG.fillRect(33,41,1,3); heliG.fillRect(29,42,5,1);
+  requestAnimationFrame(animate);
+}
+
+animate();
+</script>
+</body>
+</html>

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>64×64 Pixel Explosion — 8f @120ms</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+  :root { color-scheme: dark; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; display: grid; place-items: center; gap: 10px;
+    background: #0f0f12; font-family: ui-sans-serif, system-ui, -apple-system;
+  }
+  canvas {
+    width: 384px; height: 384px; /* preview size; logical size stays 64x64 */
+    image-rendering: pixelated; image-rendering: crisp-edges; border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.55), inset 0 0 0 1px rgba(255,255,255,.04);
+    background: #15161a;
+  }
+  .row { display: flex; gap: 8px; align-items: center; }
+  button {
+    all: unset; cursor: pointer; padding: 8px 12px; border-radius: 10px;
+    background: #1e1f26; box-shadow: inset 0 0 0 1px #2a2b33;
+  }
+  button:active { transform: translateY(1px); }
+  small { opacity: .7 }
+</style>
+</head>
+<body>
+<canvas id="c" width="64" height="64" aria-label="Pixel explosion preview"></canvas>
+<div class="row">
+  <button id="restart">Restart</button>
+  <button id="sheet">Export spritesheet PNG</button>
+  <small>8 frames · 120ms · pivot (32,32)</small>
+</div>
+
+<script>
+(() => {
+  const SIZE = 64;
+  const FRAMES = 8;
+  const FRAME_MS = 120;
+
+  const PALETTE = {
+    soot:  hex("#1a1a1a"),
+    ember: hex("#4f2f1a"),
+    darkO: hex("#a33c1a"),
+    orange:hex("#ff6a00"),
+    yellow:hex("#ffd000"),
+    lightY:hex("#fff4b5"),
+    smoke: hex("#736f6e"),
+    ash:   hex("#2e2e2e")
+  };
+
+  const canvas = document.getElementById("c");
+  const ctx = canvas.getContext("2d", { alpha: true, willReadFrequently: false });
+  ctx.imageSmoothingEnabled = false;
+
+  // --- Utility ---------------------------------------------------------------
+  function hex(h){ h=h.replace('#',''); const i=parseInt(h,16);
+    return [(i>>16)&255,(i>>8)&255,i&255,255];
+  }
+  function setPx(img, x,y, rgba){
+    const i = (y*img.width + x) * 4;
+    img.data[i+0]=rgba[0]; img.data[i+1]=rgba[1]; img.data[i+2]=rgba[2]; img.data[i+3]=rgba[3];
+  }
+  // deterministic pixel noise (no allocations)
+  function n(x,y,f){ // 0..1
+    const s = Math.sin(x*12.9898 + y*78.233 + f*37.719) * 43758.5453;
+    return s - Math.floor(s);
+  }
+
+  function thresholdsForFrame(f){
+    // Radii for core/inner/mid/outer/smoke per frame.
+    // Grows then cools to smoke.
+    const table = [
+      [2,  4,  6,  8,  0],  // f0
+      [3,  5,  7,  9,  11], // f1
+      [4,  6,  8, 10, 13],  // f2
+      [3,  6,  9, 12, 15],  // f3 (max bloom + smoke ring)
+      [2,  5,  8, 11, 14],  // f4 (cool)
+      [1,  3,  6,  9, 12],  // f5
+      [0,  2,  4,  7, 10],  // f6
+      [0,  0,  2,  4,  7],  // f7 (mostly smoke)
+    ];
+    return table[Math.max(0, Math.min(FRAMES-1, f))];
+  }
+
+  function drawFrameTo(ctx, f){
+    const img = ctx.createImageData(SIZE, SIZE);
+    const cx = SIZE/2, cy = SIZE/2;
+
+    // jitter amounts increase for outer rings for a ragged rim
+    const jitter = [0.6, 0.9, 1.2, 1.6, 2.0];
+    const [Rcore, Rinner, Rmid, Router, Rsmoke] = thresholdsForFrame(f);
+
+    // Precompute alpha fade for smoke per frame
+    const smokeAlpha = Math.min(255, Math.floor(80 + f*20)); // 80..220
+
+    for(let y=0;y<SIZE;y++){
+      for(let x=0;x<SIZE;x++){
+        const dx = x - cx + 0.5;
+        const dy = y - cy + 0.5;
+        const r = Math.hypot(dx, dy);
+
+        let c = null;
+
+        // frame-dependent jaggedness
+        const j = [
+          (n(x,y,f)-0.5)*jitter[0],
+          (n(x+7,y-3,f)-0.5)*jitter[1],
+          (n(x-5,y+11,f)-0.5)*jitter[2],
+          (n(x*2,y*2,f)-0.5)*jitter[3],
+          (n(x*3+f,y*3-f,f)-0.5)*jitter[4],
+        ];
+
+        if (Rcore>0 && r <= Rcore + j[0]) {
+          c = PALETTE.lightY;
+        } else if (Rinner>0 && r <= Rinner + j[1]) {
+          c = PALETTE.yellow;
+        } else if (Rmid>0 && r <= Rmid + j[2]) {
+          c = PALETTE.orange;
+        } else if (Router>0 && r <= Router + j[3]) {
+          // darker orange/ember mix with subtle speckle
+          const mix = n(x-13,y+9,f) > 0.6 ? PALETTE.darkO : PALETTE.ember;
+          c = [mix[0], mix[1], mix[2], 255];
+        } else if (Rsmoke>0 && r <= Rsmoke + j[4]) {
+          // smoke fades outward and over frames
+          const s = PALETTE.smoke.slice();
+          s[3] = smokeAlpha - Math.min(200, (r - Router) * 18);
+          if (s[3] < 0) s[3] = 0;
+          c = s;
+        } else {
+          // outside: transparent, but add a few hot sparks in early frames
+          if (f <= 3 && n(x,y,f) > 0.995 && r < SIZE*0.45){
+            c = [PALETTE.lightY[0], PALETTE.lightY[1], PALETTE.lightY[2], 200];
+          }
+        }
+
+        if (c){
+          setPx(img, x,y, c);
+        } else {
+          // leave transparent
+        }
+      }
+    }
+
+    // optional thin soot outline at outer rim for chunkiness
+    if (Router>0){
+      for(let a=0;a<360;a++){
+        const rad = (a*Math.PI)/180;
+        const rr = Router + 0.6;
+        const x = Math.round(cx + Math.cos(rad)*rr);
+        const y = Math.round(cy + Math.sin(rad)*rr);
+        if (x>=0&&x<SIZE&&y>=0&&y<SIZE) setPx(img,x,y,[...PALETTE.ash.slice(0,3), 200]);
+      }
+    }
+
+    ctx.putImageData(img, 0, 0);
+  }
+
+  // --- Animation loop --------------------------------------------------------
+  let frame = 0, last = 0, rafId = 0, playing = true;
+
+  function loop(t){
+    if (!playing){ rafId = requestAnimationFrame(loop); return; }
+    if (t - last >= FRAME_MS){
+      drawFrameTo(ctx, frame);
+      frame = (frame + 1) % FRAMES;
+      last = t;
+    }
+    rafId = requestAnimationFrame(loop);
+  }
+  rafId = requestAnimationFrame(loop);
+
+  // --- Controls --------------------------------------------------------------
+  document.getElementById("restart").addEventListener("click", () => {
+    frame = 0; last = 0; playing = true;
+  });
+
+  document.getElementById("sheet").addEventListener("click", () => {
+    // Build a horizontal spritesheet: 8 × (64×64)
+    const w = SIZE * FRAMES, h = SIZE;
+    const tmp = document.createElement("canvas");
+    tmp.width = w; tmp.height = h;
+    const tctx = tmp.getContext("2d", { alpha: true });
+    tctx.imageSmoothingEnabled = false;
+
+    // render each frame into the sheet
+    const single = document.createElement("canvas");
+    single.width = SIZE; single.height = SIZE;
+    const sctx = single.getContext("2d", { alpha: true });
+    sctx.imageSmoothingEnabled = false;
+
+    for(let f=0; f<FRAMES; f++){
+      drawFrameTo(sctx, f);
+      tctx.drawImage(single, f*SIZE, 0);
+    }
+
+    tmp.toBlob(b => {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(b);
+      a.download = "explosion_64x64_8f.png";
+      document.body.appendChild(a);
+      a.click();
+      URL.revokeObjectURL(a.href);
+      a.remove();
+    }, "image/png");
+  });
+
+  // Space toggles pause/resume
+  addEventListener("keydown", (e) => {
+    if (e.code === "Space"){ playing = !playing; e.preventDefault(); }
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "name": "pixelarts",
+  "version": "1.0.0",
+  "description": "PixelArts static site with pixel_tank_game",
+  "type": "module",
+  "scripts": {
+    "start": "http-server . -p 8080",
+  "ads:manifest": "node tools/gdrive_folder_to_manifest.mjs",
+    "ads:test": "node tools/puppeteer_smoke_connect.js"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "puppeteer": "^24.20.0"
+  }
+}

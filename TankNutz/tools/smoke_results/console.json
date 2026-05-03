@@ -1,0 +1,102 @@
+[
+  {
+    "ts": "2025-09-18T15:12:05.349Z",
+    "type": "log",
+    "text": "[critters.js] loaded (module): charTileCanvas= function"
+  },
+  {
+    "ts": "2025-09-18T15:12:06.066Z",
+    "type": "log",
+    "text": "billboards: created 20 instances; placeholders assigned"
+  },
+  {
+    "ts": "2025-09-18T15:12:06.067Z",
+    "type": "debug",
+    "text": "[input] attaching legacy listeners (fallback)"
+  },
+  {
+    "ts": "2025-09-18T15:12:06.252Z",
+    "type": "log",
+    "text": "Starting Wave 1 with 8 enemies"
+  },
+  {
+    "ts": "2025-09-18T15:12:06.253Z",
+    "type": "log",
+    "text": "Wave 1 starting!"
+  },
+  {
+    "ts": "2025-09-18T15:12:06.259Z",
+    "type": "warn",
+    "text": "[coord-watch] critter initial-bad -> (57.79986643156527,29.011037592973278) from (57.79986643156527,29.011037592973278)  Error: stack\n    at log (http://127.0.0.1:8080/js/alternativetanks.js:714:26)\n    at globalThis.attachCoordWatch (http://127.0.0.1:8080/js/alternativetanks.js:765:37)\n    at spawnCritters (http://127.0.0.1:8080/js/critters.js:295:52)\n    at restart (http://127.0.0.1:8080/js/game.js:2747:8)\n    at http://127.0.0.1:8080/js/game.js:5211:6"
+  },
+  {
+    "ts": "2025-09-18T15:12:06.264Z",
+    "type": "log",
+    "text": "critters:spawn_snapshot JSHandle@array"
+  },
+  {
+    "ts": "2025-09-18T15:12:06.267Z",
+    "type": "warn",
+    "text": "[coord-watch] critter initial-bad -> (22.106697200724533,48.81754737972365) from (22.106697200724533,48.81754737972365)  Error: stack\n    at log (http://127.0.0.1:8080/js/alternativetanks.js:714:26)\n    at globalThis.attachCoordWatch (http://127.0.0.1:8080/js/alternativetanks.js:765:37)\n    at spawnAnimals (http://127.0.0.1:8080/js/critters.js:390:56)\n    at restart (http://127.0.0.1:8080/js/game.js:2748:8)\n    at http://127.0.0.1:8080/js/game.js:5211:6"
+  },
+  {
+    "ts": "2025-09-18T15:12:06.272Z",
+    "type": "log",
+    "text": "animals:spawn_snapshot JSHandle@array"
+  },
+  {
+    "ts": "2025-09-18T15:12:06.314Z",
+    "type": "debug",
+    "text": "game.js: calling Dialogue.playConversation"
+  },
+  {
+    "ts": "2025-09-18T15:12:06.315Z",
+    "type": "debug",
+    "text": "Dialogue.playConversation called JSHandle@object"
+  },
+  {
+    "ts": "2025-09-18T15:12:06.333Z",
+    "type": "debug",
+    "text": "Dialogue.playConversation: chosen images JSHandle@object"
+  },
+  {
+    "ts": "2025-09-18T15:12:06.334Z",
+    "type": "debug",
+    "text": "Dialogue.playConversation: rendering initial line"
+  },
+  {
+    "ts": "2025-09-18T15:12:06.387Z",
+    "type": "log",
+    "text": "critters:diag JSHandle@object"
+  },
+  {
+    "ts": "2025-09-18T15:12:06.387Z",
+    "type": "log",
+    "text": "critters:diag_spawn JSHandle@object"
+  },
+  {
+    "ts": "2025-09-18T15:12:06.388Z",
+    "type": "log",
+    "text": "critters:raw JSHandle@array animals:raw JSHandle@array"
+  },
+  {
+    "ts": "2025-09-18T15:12:06.418Z",
+    "type": "debug",
+    "text": "pickRandomTileDataURL: loaded ./js/cub.webp 1024 1024"
+  },
+  {
+    "ts": "2025-09-18T15:12:06.419Z",
+    "type": "debug",
+    "text": "pickRandomTileDataURL: tileW,tileH,cols,rows 341 341 3 3"
+  },
+  {
+    "ts": "2025-09-18T15:12:06.419Z",
+    "type": "debug",
+    "text": "pickRandomTileDataURL: chosen col,row 0 1"
+  },
+  {
+    "ts": "2025-09-18T15:12:13.777Z",
+    "type": "log",
+    "text": "kitten-debug JSHandle@object"
+  }
+]

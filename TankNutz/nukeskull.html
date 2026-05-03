@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Pixel Sprite — Nuclear Explosion with Skull (64×64, 15 frames @120ms)</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+  :root { --scale: 8; }
+  *{ box-sizing:border-box; }
+  html,body{
+    margin:0; height:100%; background:#0d0f14; color:#cfd3da; font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial;
+  }
+  main{
+    min-height:100%; display:grid; place-items:center; gap:16px; padding:12px;
+  }
+  canvas{
+    width: calc(64px * var(--scale));
+    height: calc(64px * var(--scale));
+    image-rendering: pixelated;
+    outline: 1px solid #2a2f3a;
+    background:#0d0f14;
+  }
+  .meta{ font-size:12px; opacity:.85; text-align:center; line-height:1.3; }
+  .meta code{ background:#151821; padding:2px 6px; border-radius:6px; }
+  .hint{ font-size:11px; opacity:.7; }
+</style>
+</head>
+<body>
+<main>
+  <canvas id="anim" width="64" height="64"></canvas>
+  <div class="meta">
+    <div><strong>Subject:</strong> Nuclear explosion with skull motif</div>
+    <div><strong>View:</strong> side &middot; <strong>Canvas:</strong> 64×64 &middot; <strong>Frames:</strong> 15 &middot; <strong>FPS:</strong> ~8.33 (120ms)</div>
+    <div><strong>Palette (8):</strong> <code>#0d0f14</code> <code>#1f232b</code> <code>#3a3f4b</code> <code>#7a3e00</code> <code>#d16d00</code> <code>#ffb800</code> <code>#fff4a3</code> <code>#8a7760</code></div>
+    <div><strong>Style:</strong> chunky shading, rim light, strong silhouette &middot; <strong>Hitbox/anchor:</strong> pivot center (32, 56)</div>
+    <div class="hint">Click canvas to pause / resume</div>
+  </div>
+</main>
+
+<script>
+(() => {
+  // ---- Spec ---------------------------------------------------------------
+  const W = 64, H = 64, FRAMES = 15, FRAME_MS = 120;
+
+  // ---- Palette ------------------------------------------------------------
+  // 0 bg, 1 ground dark, 2 ground mid, 3 orange dark, 4 orange mid,
+  // 5 bright, 6 rim light, 7 smoke
+  const PAL_HEX = [
+    "#0d0f14", "#1f232b", "#3a3f4b",
+    "#7a3e00", "#d16d00", "#ffb800",
+    "#fff4a3", "#8a7760"
+  ];
+  const PAL = PAL_HEX.map(hexToRGBA);
+
+  // ---- Canvas setup -------------------------------------------------------
+  const view = document.getElementById("anim");
+  const vctx = view.getContext("2d", { alpha:false });
+  vctx.imageSmoothingEnabled = false;
+
+  const off = document.createElement("canvas");
+  off.width = W; off.height = H;
+  const ctx = off.getContext("2d", { alpha:false });
+  ctx.imageSmoothingEnabled = false;
+
+  // ---- Helpers ------------------------------------------------------------
+  function hexToRGBA(hex){
+    const n = hex.replace('#','');
+    const bigint = parseInt(n, 16);
+    const r = (n.length===3) ? ((bigint>>8)&0xF)*17 : (bigint>>16)&255;
+    const g = (n.length===3) ? ((bigint>>4)&0xF)*17 : (bigint>>8)&255;
+    const b = (n.length===3) ? ((bigint>>0)&0xF)*17 : (bigint>>0)&255;
+    return [r,g,b,255];
+  }
+  function makeImageData(){ return ctx.createImageData(W, H); }
+  function pset(img, x, y, ci){
+    if(x<0||y<0||x>=W||y>=H) return;
+    const i = (y*W + x) * 4;
+    const c = PAL[ci];
+    img.data[i+0]=c[0]; img.data[i+1]=c[1]; img.data[i+2]=c[2]; img.data[i+3]=c[3];
+  }
+  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  const lerp=(a,b,t)=>a+(b-a)*t;
+  const easeOut=(t)=>1-Math.pow(1-t,2);
+  const easeInOut=(t)=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+
+  function inEllipse(x,y,cx,cy,rx,ry){
+    const dx = (x-cx)/rx, dy = (y-cy)/ry;
+    return dx*dx + dy*dy <= 1;
+  }
+  function inRing(x,y,cx,cy,r,thick){
+    const dx=x-cx, dy=y-cy;
+    const d = Math.sqrt(dx*dx+dy*dy);
+    return d>=r-thick && d<=r+thick;
+  }
+
+  // deterministic small hash for dithering (no flicker chaos)
+  function hmask(x,y,k=0){
+    return ((x*37 + y*101 + k*13) % 7) === 0;
+  }
+
+  // ---- Frame renderer -----------------------------------------------------
+  function drawFrame(f){
+    const t = f/(FRAMES-1);                 // 0..1
+    const im = makeImageData();
+
+    // Background
+    for(let y=0;y<H;y++){
+      for(let x=0;x<W;x++){
+        pset(im,x,y,0);
+      }
+    }
+
+    // Ground strip (keeps the piece cohesive; no floating)
+    for(let y=58;y<H;y++){
+      for(let x=0;x<W;x++){
+        pset(im,x,y, (y<60)?2:1);
+      }
+    }
+
+    // Shockwave ring on ground
+    {
+      const r = lerp(0, 28, easeOut(t));
+      for(let y=56;y<64;y++){
+        for(let x=0;x<W;x++){
+          if(inRing(x,y,32,59,r,1)){
+            pset(im,x,y,7);
+          }
+        }
+      }
+    }
+
+    // Cloud dynamics
+    const rise = easeInOut(Math.min(1, t/0.55));
+    const spread = easeOut(Math.max(0, (t-0.25)/0.75));
+    const thicken = easeOut(Math.max(0,(t-0.35)/0.65));
+
+    const capCY = Math.round(48 - 18*rise);
+    const capRX = 6 + Math.round(18*spread);
+    const capRY = 4 + Math.round(9*spread);
+
+    const stemTopY = Math.min(56, capCY + Math.max(0, Math.round(2 - 4*spread)));
+    const stemBotY = 58;
+    const stemTopW = 3 + Math.round(2*spread);
+    const stemBotW = stemTopW + Math.round(4*thicken);
+
+    // Stem (taper)
+    for(let y=stemTopY; y<=stemBotY; y++){
+      const k = (y-stemTopY)/Math.max(1,(stemBotY-stemTopY));
+      const halfW = Math.round(lerp(stemTopW, stemBotW, k));
+      for(let x=32-halfW; x<=32+halfW; x++){
+        const edge = (x===32-halfW || x===32+halfW);
+        pset(im,x,y, edge ? 3 : 4);
+      }
+    }
+
+    // Cap + SKULL overlay
+    for(let y=0;y<H;y++){
+      for(let x=0;x<W;x++){
+        if(!inEllipse(x,y,32,capCY,capRX,capRY)) continue;
+
+        // base shading (hot core / body / rim)
+        const dx = (x-32)/capRX, dy = (y-capCY)/capRY;
+        const d = Math.sqrt(dx*dx+dy*dy);
+        const rimZone = (d>0.85 && y<=capCY);
+        const hotCore = (d<0.45);
+        let base = 4;
+        if(rimZone)      base = 6;
+        else if(hotCore) base = (d<0.28)?6:5;
+
+        // --- SKULL MOTIF (normalized coordinates u,v in [-1..1]) -----------
+        const u = dx;      // left/right
+        const v = dy;      // up(-) / down(+)
+
+        // Cheek contour darkening (subtle)
+        if(v>-0.05 && v<0.45 && Math.abs(u)>0.55 && Math.abs(u)<0.9){
+          base = 3;
+        }
+
+        // Eyes (two ovals)
+        const eyeY = -0.05;
+        const ex = 0.20 + 0.02*spread;
+        const ey = 0.18 + 0.03*spread;
+        const inLeftEye  = (((u+0.36)/ex)**2 + ((v-eyeY)/ey)**2) < 1.0;
+        const inRightEye = (((u-0.36)/ex)**2 + ((v-eyeY)/ey)**2) < 1.0;
+
+        // Nose (inverted wedge)
+        const nose = (v>0 && v<0.45) && (Math.abs(u) < (0.10 + 0.15*v));
+
+        // Teeth (striped jaw inside lower cap)
+        let tooth = false, toothBright = false;
+        if(v>0.33 && v<0.95){
+          const jawW = 0.80 - 0.30*(v-0.33); // narrows downward
+          if(Math.abs(u) < jawW){
+            const col = Math.floor(((u + jawW)/(2*jawW)) * 8); // 8 columns
+            tooth = true;
+            toothBright = (col % 2) === 0;
+          }
+        }
+
+        // Apply overlays priority: eyes/nose (dark), then teeth (bright/dark), then base
+        let ci = base;
+        if(inLeftEye || inRightEye) ci = 3;              // dark sockets
+        else if(nose)               ci = 3;
+        else if(tooth)              ci = toothBright ? 6 : 3;
+
+        // Slight sooty underside dither (deterministic, minimal shimmer)
+        if(v>0.20 && v<0.95 && hmask(x,y,f)){
+          if(ci===4) ci = 7;           // turn mid body into smoke specks
+          else if(ci===5) ci = 4;      // tone down some brights
+        }
+
+        pset(im,x,y,ci);
+      }
+    }
+
+    // Neck flare
+    {
+      const neckY = clamp(capCY + Math.round(capRY*0.95), 0, H-1);
+      for(let x=32-capRX; x<=32+capRX; x++){
+        if(x>=0 && x<W) pset(im,x,neckY,5);
+      }
+    }
+
+    // Base dust, deterministic jitter
+    {
+      const rx = Math.round(10 + 10*spread);
+      const ry = 3;
+      for(let y=56; y<60; y++){
+        for(let x=32-rx; x<=32+rx; x++){
+          if(inEllipse(x,y,32,58,rx,ry) && hmask(x,y,f+3)){
+            pset(im,x,y,7);
+          }
+        }
+      }
+    }
+
+    // Commit
+    ctx.putImageData(im,0,0);
+    vctx.clearRect(0,0,W,H);
+    vctx.drawImage(off, 0, 0, W, H, 0, 0, view.width, view.height);
+  }
+
+  // ---- Animation loop -----------------------------------------------------
+  let frame = 0, playing = true;
+  drawFrame(frame);
+  setInterval(() => {
+    if(!playing) return;
+    frame = (frame + 1) % FRAMES;
+    drawFrame(frame);
+  }, FRAME_MS);
+
+  // Pause/Resume on click
+  view.addEventListener('click', () => { playing = !playing; });
+
+})();
+</script>
+</body>
+</html>

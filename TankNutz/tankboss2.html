@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Armored Circular Boss Tank — Bolty & Armored Edition</title>
+<style>
+  html, body {
+    height: 100%;
+    margin: 0;
+    background: #0e1116;
+    color: #c9d1d9;
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    display: grid;
+    place-items: center;
+  }
+  .wrap { display: grid; gap: 10px; place-items: center; user-select: none; }
+  canvas {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    width: 512px; height: 512px; /* upscale 2x for viewing; internal 256x256 */
+    box-shadow: 0 6px 24px rgba(0,0,0,.6), inset 0 0 0 1px rgba(255,255,255,.04);
+    border-radius: 12px;
+    background: #0b0d11;
+  }
+  .hint { opacity: .75; font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <canvas id="c" width="256" height="256" aria-label="Armored Circular Boss Tank"></canvas>
+  <div class="hint">Bolty & armored upgrade · Press <b>H</b> hitbox · <b>G</b> bolt glints</div>
+</div>
+<script>
+/*
+  Armored Circular Boss Tank — Bolty & Armored Edition
+  - Heavier plate segmentation & beveled shells
+  - Dense bolt rings + clusters, weld seams, radial ribs
+  - Cohesive single element; pivot = center; no external libs
+  - Animated: rotating rim light, barrel spin, hazard ring scroll, bolt glints
+*/
+
+/* --------------------------- Canvas & Pixel Grid --------------------------- */
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d', { alpha: false });
+
+/* Internal pixel grid: we paint 128×128 logical pixels and upscale 2× to 256 */
+const SCALE = 2;
+const W = canvas.width  / SCALE;  // 128
+const H = canvas.height / SCALE;  // 128
+const CX = (W/2)|0;               // 64
+const CY = (H/2)|0;
+
+/* Draw a single logical pixel */
+function p(x, y, col) {
+  if (x < 0 || y < 0 || x >= W || y >= H) return;
+  ctx.fillStyle = col;
+  ctx.fillRect(x * SCALE, y * SCALE, SCALE, SCALE);
+}
+
+/* ------------------------------- Palette ---------------------------------- */
+const PAL = {
+  outline:   '#070c12',
+  black:     '#000000',
+  hull0:     '#161c23',
+  hull1:     '#202833',
+  hull2:     '#2a3442',
+  hull3:     '#374354',
+  hull4:     '#46576d',
+  steel0:    '#3f454f',
+  steel1:    '#59626d',
+  steel2:    '#768190',
+  steel3:    '#a4adb8',
+  rim:       '#9fb9d8',
+  glowA:     '#9fe3ff',
+  glowB:     '#78d8ff',
+  glowG:     '#7bf4b3',
+  hazard:    '#f0c04a',
+  hazardD:   '#7a4e19',
+  redA:      '#cb4a4a',
+  shadow:    '#0d1219',
+  grid:      '#293241'
+};
+const HULL_RAMP  = [PAL.hull0, PAL.hull1, PAL.hull2, PAL.hull3, PAL.hull4];
+const STEEL_RAMP = [PAL.steel0, PAL.steel1, PAL.steel2, PAL.steel3];
+
+/* --------------------------- Precomputed Fields --------------------------- */
+const R = new Float32Array(W * H);
+const A = new Float32Array(W * H);
+for (let y = 0; y < H; y++) {
+  for (let x = 0; x < W; x++) {
+    const dx = x - CX + 0.5;
+    const dy = y - CY + 0.5;
+    const i = y * W + x;
+    R[i] = Math.hypot(dx, dy);
+    A[i] = Math.atan2(dy, dx);
+  }
+}
+
+/* ------------------------------ Utilities --------------------------------- */
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const pick  = (arr, i) => arr[clamp(i|0, 0, arr.length - 1)];
+function smoothStep(a, b, x){ const t = clamp((x - a)/(b - a), 0, 1); return t*t*(3-2*t); }
+function near(r, target, tol=0.6){ return Math.abs(r - target) <= tol; }
+function d2(x, y){ return ((x ^ y) & 1); } // 2×2 ordered dither
+
+/* Deterministic pseudo-noise per (x,y) for static scuff/dirt */
+function noise01(x, y){
+  // hash with large primes; result in [0,1)
+  const n = ((x*73856093) ^ (y*19349663)) >>> 0;
+  return (n & 1023) / 1023; // 10-bit fraction
+}
+
+/* Mix two hex colors */
+function mixHex(c1, c2, t){
+  const n1 = parseInt(c1.slice(1), 16);
+  const n2 = parseInt(c2.slice(1), 16);
+  const r1 = (n1>>16)&255, g1 = (n1>>8)&255, b1 = n1&255;
+  const r2 = (n2>>16)&255, g2 = (n2>>8)&255, b2 = n2&255;
+  const r = (r1 + (r2-r1)*t)|0, g = (g1 + (g2-g1)*t)|0, b = (b1 + (b2-b1)*t)|0;
+  return '#' + ((1<<24)|(r<<16)|(g<<8)|b).toString(16).slice(1);
+}
+
+/* ------------------------------- Geometry --------------------------------- */
+/* Radii (internal pixels in 128×128 grid) */
+const R_OUT   = 52;   // beefed-up outer silhouette
+const R_SHELL2= 49;   // outer shell bevel inner edge
+const R_HULLI = 46;   // inner hull band start
+const R_PLATE = 42;   // plating ring
+const R_RIBO  = 39;   // ribs outer
+const R_RIBI  = 37;   // ribs inner
+const R_HAZ_O = 36;   // hazard ring outer
+const R_HAZ_I = 30;   // hazard ring inner
+const R_TUR   = 20;   // turret base
+const R_COLLO = 18;   // collar outer
+const R_COLLI = 16;   // collar inner
+const R_CORE  =  8;   // core
+
+/* ----------------------------- Animation State ---------------------------- */
+let showHitbox = false;
+let boltGlints = true;
+addEventListener('keydown', (e) => {
+  if (e.key === 'h' || e.key === 'H') showHitbox = !showHitbox;
+  if (e.key === 'g' || e.key === 'G') boltGlints = !boltGlints;
+});
+
+/* ------------------------------- Draw Loop -------------------------------- */
+function draw(tms){
+  const t = tms * 0.001;
+
+  // Animated directions
+  const rimAngle = t * 0.8;
+  const rimCos = Math.cos(rimAngle), rimSin = Math.sin(rimAngle);
+
+  const barrelAngle = t * 1.6;
+  const bCos = Math.cos(barrelAngle), bSin = Math.sin(barrelAngle);
+
+  const hazardShift = t * 2.2;
+  const breath = 0.5 + 0.5 * Math.sin(t * 2.1);
+
+  // Clear
+  ctx.fillStyle = PAL.shadow;
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  // ------------------------ Base body & rings (per-pixel) -------------------
+  for (let y = 0; y < H; y++){
+    for (let x = 0; x < W; x++){
+      const i = y*W + x;
+      const r = R[i];
+      const a = A[i];
+      let col = null;
+
+      if (r <= R_OUT + 0.5){
+
+        // Outer silhouette outline + beveled shell
+        if (near(r, R_OUT, 0.7)) {
+          col = PAL.outline;
+        } else if (r > R_SHELL2) {
+          // bevel between R_OUT..R_SHELL2
+          const nx = (x - CX + 0.5)/(r||1);
+          const ny = (y - CY + 0.5)/(r||1);
+          const ndl = Math.max(0, nx*rimCos + ny*rimSin);
+          const tHull = smoothStep(R_OUT, R_SHELL2, r);
+          let base = pick(HULL_RAMP, Math.floor(tHull*(HULL_RAMP.length-1)));
+          base = mixHex(base, PAL.rim, ndl*0.55);
+          // scuffs
+          if (d2(x,y) && noise01(x,y) < 0.08) base = mixHex(base, PAL.steel1, 0.15);
+          col = base;
+        }
+
+        // Shell2..HullI: thicker hull band with plate segmentation shadows
+        else if (r > R_HULLI){
+          const nx = (x - CX + 0.5)/(r||1);
+          const ny = (y - CY + 0.5)/(r||1);
+          const ndl = Math.max(0, nx*rimCos + ny*rimSin);
+          const tBand = smoothStep(R_SHELL2, R_HULLI, r);
+          let base = pick(HULL_RAMP, Math.floor(tBand*(HULL_RAMP.length-1)));
+          base = mixHex(base, PAL.rim, ndl*0.35);
+
+          // Segment edges every ~18°
+          const segs = 20;
+          const segPos = (((a + Math.PI)/(2*Math.PI)) * segs) % 1;
+          const nearEdge = segPos < 0.08 || segPos > 0.92;
+          if (nearEdge && d2(x,y)) base = mixHex(base, PAL.hull1, 0.5);
+
+          col = base;
+        }
+
+        // Plating ring (armor plates with heavy seams)
+        else if (r > R_PLATE){
+          const nx = (x - CX + 0.5)/(r||1);
+          const ny = (y - CY + 0.5)/(r||1);
+          const ndl = Math.max(0, nx*rimCos + ny*rimSin);
+          let base = PAL.hull3;
+
+          // Thicker seams every 30°
+          const plates = 12;
+          const pos = (((a + Math.PI)/(2*Math.PI))*plates) % 1;
+          const seam = pos < 0.06 || pos > 0.94;
+          if (seam) {
+            // weld seam: dark line + tiny bright bead slightly to one side
+            base = PAL.hull1;
+            const beadSide = (pos < 0.06) ? -1 : 1;
+            const bx = Math.round(x + (-ny)*beadSide*1);
+            const by = Math.round(y + ( nx)*beadSide*1);
+            p(bx, by, mixHex(PAL.steel3, PAL.glowA, 0.2));
+          }
+
+          // Rim lift
+          base = mixHex(base, PAL.rim, ndl*0.25);
+
+          // Light pitting via static noise
+          if (noise01(x,y) < 0.03) base = mixHex(base, PAL.steel0, 0.25);
+          col = base;
+        }
+
+        // Rib ring: radial ribs sit between PLATE..RIBI
+        else if (r > R_RIBO){
+          let c = PAL.steel1;
+          col = c;
+        }
+        else if (r > R_RIBI){
+          let c = PAL.steel0;
+          // grooves
+          if (Math.floor(r)%2===0 && d2(x,y)) c = mixHex(c, PAL.steel2, 0.15);
+          col = c;
+        }
+
+        // Hazard ring
+        else if (r > R_HAZ_O){
+          // thin steel spacer
+          const tS = smoothStep(R_RIBI, R_HAZ_O, r);
+          let c = pick(STEEL_RAMP, Math.floor(tS*(STEEL_RAMP.length-1)));
+          if (d2(x,y) && (noise01(x,y) < 0.05)) c = mixHex(c, PAL.steel0, 0.2);
+          col = c;
+        }
+        else if (r > R_HAZ_I){
+          const ang01 = (a + Math.PI)/(2*Math.PI);
+          const stripe = (Math.floor(((ang01 + hazardShift*0.05)*32) + Math.floor(r*0.35)) & 1);
+          let hz = stripe ? PAL.hazard : PAL.hazardD;
+          // paint wear
+          if (d2(x,y) && noise01(x,y) < 0.06) hz = mixHex(hz, PAL.steel2, 0.25);
+          col = hz;
+        }
+
+        // Turret base
+        else if (r > R_TUR){
+          const tIn = smoothStep(R_HAZ_I, R_TUR, r);
+          let c = pick(STEEL_RAMP, Math.floor(tIn*(STEEL_RAMP.length-1)));
+          // concentric grooves
+          if (Math.floor(r)%3===0 && d2(x,y)) c = mixHex(c, PAL.steel0, 0.25);
+          col = c;
+        }
+
+        // Collar ring
+        else if (r > R_COLLO){
+          let tC = smoothStep(R_TUR, R_COLLO, r);
+          let c = pick(STEEL_RAMP, Math.floor(tC*(STEEL_RAMP.length-1)));
+          const ig = clamp((R_COLLO - r)/(R_COLLO - R_COLLI + 1e-5), 0, 1);
+          c = mixHex(c, PAL.glowG, ig*0.12);
+          col = c;
+        }
+
+        // Core glass
+        else {
+          const g = clamp((R_COLLI - r)/(R_COLLI - R_CORE + 1e-5), 0, 1);
+          const pulse = 0.4 + 0.6 * breath;
+          const coreMix = clamp(g * 0.85 * pulse, 0, 1);
+          const glass = mixHex(PAL.glowB, PAL.glowG, 0.4);
+          let c = mixHex(PAL.hull2, mixHex(glass, PAL.glowA, 0.5), coreMix);
+          if (near(r, R_CORE, 0.7)) c = PAL.outline;
+
+          // sparkle toward rim light
+          const nx = (x - CX + 0.5)/(r||1);
+          const ny = (y - CY + 0.5)/(r||1);
+          const spark = clamp(nx*rimCos + ny*rimSin, 0, 1);
+          if (spark > 0.9 && r < R_CORE - 1) c = mixHex(c, PAL.glowA, (spark-0.9)*5);
+          col = c;
+        }
+
+        // paint
+        if (col) p(x,y,col);
+      }
+    }
+  }
+
+  // ----------------------------- Overlays/Details ---------------------------
+  // Armor ring outlines (crisp)
+  drawRingOutline(R_OUT,   PAL.outline, 0.7);
+  drawRingOutline(R_SHELL2,PAL.outline, 0.55);
+  drawRingOutline(R_HULLI, PAL.outline, 0.55);
+  drawRingOutline(R_PLATE, PAL.outline, 0.55);
+  drawRingOutline(R_RIBO,  PAL.outline, 0.45);
+  drawRingOutline(R_RIBI,  PAL.outline, 0.45);
+  drawRingOutline(R_HAZ_O, PAL.outline, 0.45);
+  drawRingOutline(R_HAZ_I, PAL.outline, 0.45);
+  drawRingOutline(R_TUR,   PAL.outline, 0.50);
+  drawRingOutline(R_COLLO, PAL.outline, 0.45);
+  drawRingOutline(R_COLLI, PAL.outline, 0.45);
+  drawRingOutline(R_CORE,  PAL.outline, 0.60);
+
+  // Radial ribs (heavy)
+  drawArmorRibs(14, R_RIBI-1, R_OUT-1, 2, PAL.hull1, PAL.outline);
+
+  // Barrel (connected, 3px wide)
+  drawBarrel(CX, CY, barrelAngle, 30, 3, PAL.steel3, PAL.outline);
+
+  // Segment caps on the outer shell (beveled armor caps with bolts)
+  drawSegmentCaps(10, R_SHELL2+0.5, R_OUT-0.5, 4, t);
+
+  // Bolt rings & clusters (MORE BOLTY!)
+  // Outer seam bolt ring
+  drawBoltRing(R_SHELL2-1.5, 36, 2, 0.0, t);
+  // Plate seam bolt ring
+  drawBoltRing(R_PLATE+1.5,  48, 2, 0.04, t);
+  // Hazard brace studs
+  drawBoltRing(R_HAZ_O-0.5,  32, 1, 0.02, t, true);
+  // Turret base bolts
+  drawBoltRing(R_TUR-2.0,    18, 2, 0.0,  t);
+  // Collar micro bolts
+  drawBoltRing(R_COLLO-0.5,  24, 1, 0.0,  t);
+
+  // Bolt clusters on segment seams (two rings of small bolts at each seam)
+  drawBoltClustersOnSeams(12, R_PLATE+0.5, R_RIBO-0.5, 1, t);
+
+  // Warning LEDs
+  drawWarningLEDs(R_HAZ_I + 2, 10, PAL.redA, PAL.outline, tms);
+
+  if (showHitbox) drawHitbox();
+}
+
+/* ------------------------------- Primitives --------------------------------*/
+function drawRingOutline(radius, color, tol){
+  for (let y=0; y<H; y++){
+    for (let x=0; x<W; x++){
+      if (near(R[y*W+x], radius, tol)) p(x,y,color);
+    }
+  }
+}
+
+/* Barrel: 3-px line with edge outline */
+function drawBarrel(cx, cy, angle, length, width, colMain, colEdge){
+  const dx = Math.cos(angle), dy = Math.sin(angle);
+  const start = R_COLLO + 1;
+  for (let s = start; s <= length; s += 0.2){
+    const px = Math.round(cx + dx*s);
+    const py = Math.round(cy + dy*s);
+    const nx = -dy, ny = dx;
+    for (let w = -Math.floor(width/2); w <= Math.floor(width/2); w++){
+      const bx = Math.round(px + nx*w);
+      const by = Math.round(py + ny*w);
+      p(bx,by,colMain);
+      if (w === -Math.floor(width/2) || w === Math.floor(width/2)) p(bx,by,colEdge);
+    }
+  }
+  const tipx = Math.round(cx + dx*length);
+  const tipy = Math.round(cy + dy*length);
+  p(tipx, tipy, PAL.black);
+  p(Math.round(tipx + dx*1), Math.round(tipy + dy*1), PAL.steel3);
+}
+
+/* Armor ribs: N radial ribs between inner..outer with given half-width */
+function drawArmorRibs(N, rInner, rOuter, halfWidth, fill, edge){
+  for (let k=0; k<N; k++){
+    const a = (k/N) * Math.PI*2;
+    const ca = Math.cos(a), sa = Math.sin(a);
+    for (let r = rInner; r <= rOuter; r += 0.5){
+      const x0 = Math.round(CX + ca*r);
+      const y0 = Math.round(CY + sa*r);
+      for (let w = -halfWidth; w <= halfWidth; w++){
+        const x = Math.round(x0 + (-sa)*w);
+        const y = Math.round(y0 + ( ca)*w);
+        p(x,y,fill);
+        if (Math.abs(w)===halfWidth) p(x,y,edge);
+      }
+    }
+  }
+}
+
+/* Segment caps around outer shell: beveled trapezoids with edge bolts */
+function drawSegmentCaps(N, rIn, rOut, thickness, t){
+  for (let k=0; k<N; k++){
+    const baseA = (k/N) * Math.PI*2;
+    const span = Math.PI*2 / N * 0.7; // 70% of sector
+    for (let a = baseA - span/2; a <= baseA + span/2; a += 1/180){
+      const ca = Math.cos(a), sa = Math.sin(a);
+      for (let r = rIn; r <= rOut; r += 0.5){
+        const x = Math.round(CX + ca*r);
+        const y = Math.round(CY + sa*r);
+        // beveled shading by radial pos
+        const tR = smoothStep(rIn, rOut, r);
+        let c = mixHex(PAL.hull4, PAL.steel2, tR*0.35);
+        // grime
+        if (d2(x,y) && noise01(x,y) < 0.05) c = mixHex(c, PAL.steel0, 0.2);
+        p(x,y,c);
+      }
+    }
+    // edge outline and bolts along outer edge
+    const edgeA = baseA + (Math.sin(t*1.5 + k)*0.03); // tiny wobble for glints
+    const ca = Math.cos(edgeA), sa = Math.sin(edgeA);
+    for (let r = rIn; r <= rOut; r += 0.5){
+      const x = Math.round(CX + ca*r);
+      const y = Math.round(CY + sa*r);
+      p(x,y,PAL.outline);
+    }
+    // bolts at ends (two per cap)
+    const end1A = baseA - span/2, end2A = baseA + span/2;
+    placeBoltOnRadius(end1A, rOut-1, 2, t);
+    placeBoltOnRadius(end2A, rOut-1, 2, t);
+  }
+}
+
+/* Place a bolt at polar angle+radius */
+function placeBoltOnRadius(a, r, size, t){
+  const x = Math.round(CX + Math.cos(a)*r);
+  const y = Math.round(CY + Math.sin(a)*r);
+  drawBolt(x,y,size,t);
+}
+
+/* Bolt ring: N evenly spaced bolts at radius r; size=1..2; jitter=0..small */
+function drawBoltRing(r, N, size, jitter, t, square=false){
+  for (let k=0; k<N; k++){
+    const a = (k/N) * Math.PI*2;
+    const j = jitter ? ( (k&1) ? -jitter : jitter ) : 0;
+    const rr = r + j;
+    const x = Math.round(CX + Math.cos(a)*rr);
+    const y = Math.round(CY + Math.sin(a)*rr);
+    if (square) drawStud(x,y,size,t); else drawBolt(x,y,size,t);
+  }
+}
+
+/* Clusters on plate seams: two rings of small bolts bracketing seam angle */
+function drawBoltClustersOnSeams(seams, r1, r2, size, t){
+  for (let s=0; s<seams; s++){
+    const a = (s/seams) * Math.PI*2;
+    for (let rr = r1; rr <= r2; rr += 3.5){
+      const x = Math.round(CX + Math.cos(a)*rr);
+      const y = Math.round(CY + Math.sin(a)*rr);
+      drawBolt(x,y,size,t);
+      // offset second bolt slightly along tangential direction
+      const tx = Math.round(x + -Math.sin(a));
+      const ty = Math.round(y +  Math.cos(a));
+      drawBolt(tx,ty,size,t);
+    }
+  }
+}
+
+/* Stud (square head) for hazard braces */
+function drawStud(x,y,size,t){
+  for (let ix = -size; ix <= size; ix++){
+    for (let iy = -size; iy <= size; iy++){
+      p(x+ix, y+iy, PAL.steel2);
+    }
+  }
+  // outline
+  for (let ix = -size; ix <= size; ix++){
+    p(x+ix, y-size, PAL.outline);
+    p(x+ix, y+size, PAL.outline);
+  }
+  for (let iy = -size; iy <= size; iy++){
+    p(x-size, y+iy, PAL.outline);
+    p(x+size, y+iy, PAL.outline);
+  }
+  // tiny highlight
+  if (boltGlints) p(x-1, y-1, PAL.steel3);
+}
+
+/* Hex-ish bolt head: small beveled diamond with outline + highlight */
+function drawBolt(x,y,size,t){
+  // cross/diamond head
+  p(x, y, PAL.steel2);
+  p(x-1, y, PAL.steel1);
+  p(x+1, y, PAL.steel1);
+  p(x, y-1, PAL.steel1);
+  p(x, y+1, PAL.steel1);
+
+  if (size >= 2){
+    p(x-1, y-1, PAL.steel1);
+    p(x+1, y-1, PAL.steel1);
+    p(x-1, y+1, PAL.steel1);
+    p(x+1, y+1, PAL.steel1);
+  }
+
+  // outline ring
+  p(x-2, y, PAL.outline); p(x+2, y, PAL.outline);
+  p(x, y-2, PAL.outline); p(x, y+2, PAL.outline);
+  if (size >= 2){
+    p(x-2, y-1, PAL.outline); p(x-2, y+1, PAL.outline);
+    p(x+2, y-1, PAL.outline); p(x+2, y+1, PAL.outline);
+    p(x-1, y-2, PAL.outline); p(x+1, y-2, PAL.outline);
+    p(x-1, y+2, PAL.outline); p(x+1, y+2, PAL.outline);
+  }
+
+  // highlight + shadow (glint anim)
+  if (boltGlints){
+    const phase = (Math.sin(t*2.2 + (x*0.3 + y*0.5)) * 0.5 + 0.5);
+    if (phase > 0.8) p(x-1, y-1, PAL.steel3);
+  }
+  p(x+1, y+1, PAL.hull1);
+}
+
+/* Warning LEDs */
+function drawWarningLEDs(radius, n, colOn, edge, tms){
+  const ts = tms * 0.001;
+  for (let k=0; k<n; k++){
+    const a = (k/n) * Math.PI*2;
+    const pulse = 0.5 + 0.5 * Math.sin(ts * 3 + k * 0.6);
+    const on = pulse > 0.6;
+    const x = Math.round(CX + Math.cos(a)*radius);
+    const y = Math.round(CY + Math.sin(a)*radius);
+    p(x, y, on ? colOn : PAL.hull2);
+    if (on){
+      const gx = Math.round(CX + Math.cos(a) * (radius - 1));
+      const gy = Math.round(CY + Math.sin(a) * (radius - 1));
+      p(gx, gy, PAL.glowA);
+    }
+    p(x, y, edge);
+  }
+}
+
+/* Hitbox/anchor overlay */
+function drawHitbox(){
+  for (let dx=-2; dx<=2; dx++) p(CX+dx, CY, PAL.grid);
+  for (let dy=-2; dy<=2; dy++) p(CX, CY+dy, PAL.grid);
+  drawRingOutline(R_PLATE + 0.5, PAL.grid, 0.6);
+}
+
+/* ------------------------------- Ticker ----------------------------------- */
+function tick(t){ draw(t); requestAnimationFrame(tick); }
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>

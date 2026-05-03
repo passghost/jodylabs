@@ -1,0 +1,128 @@
+{
+  "foundAnyEnemies": true,
+  "enemiesCount": 169,
+  "container": "window.enemies",
+  "enemiesSample": [
+    {
+      "kind": "critter-1",
+      "x": 1608.9253058697534,
+      "y": 1268.9724770330524,
+      "hasTileC": true,
+      "tileC_w": 24,
+      "hasKitten": true,
+      "bodyC_w": 64,
+      "turC_w": 64,
+      "drawType": "function",
+      "spawnStack": null
+    },
+    {
+      "kind": "critter-2",
+      "x": 3492.1702531073283,
+      "y": 933.7341600911351,
+      "hasTileC": true,
+      "tileC_w": 24,
+      "hasKitten": true,
+      "bodyC_w": 64,
+      "turC_w": 64,
+      "drawType": "function",
+      "spawnStack": null
+    },
+    {
+      "kind": "critter-3",
+      "x": 2506.8422115400244,
+      "y": 1828.7540421687286,
+      "hasTileC": true,
+      "tileC_w": 24,
+      "hasKitten": true,
+      "bodyC_w": 64,
+      "turC_w": 64,
+      "drawType": "function",
+      "spawnStack": null
+    },
+    {
+      "kind": "critter-4",
+      "x": 3627.115210986986,
+      "y": 340.93025842985423,
+      "hasTileC": true,
+      "tileC_w": 24,
+      "hasKitten": true,
+      "bodyC_w": 64,
+      "turC_w": 64,
+      "drawType": "function",
+      "spawnStack": null
+    },
+    {
+      "kind": "critter-5",
+      "x": 2471.1568056975925,
+      "y": 308.4057684957592,
+      "hasTileC": true,
+      "tileC_w": 24,
+      "hasKitten": true,
+      "bodyC_w": 64,
+      "turC_w": 64,
+      "drawType": "function",
+      "spawnStack": null
+    },
+    {
+      "kind": "critter-6",
+      "x": 3986.9939249759814,
+      "y": 1146.8880847987543,
+      "hasTileC": true,
+      "tileC_w": 24,
+      "hasKitten": true,
+      "bodyC_w": 64,
+      "turC_w": 64,
+      "drawType": "function",
+      "spawnStack": null
+    },
+    {
+      "kind": "critter-7",
+      "x": 2677.031370734655,
+      "y": 858.4617716694918,
+      "hasTileC": true,
+      "tileC_w": 24,
+      "hasKitten": true,
+      "bodyC_w": 64,
+      "turC_w": 64,
+      "drawType": "function",
+      "spawnStack": null
+    },
+    {
+      "kind": "critter-8",
+      "x": 3092.258750365591,
+      "y": 1461.285975781099,
+      "hasTileC": true,
+      "tileC_w": 24,
+      "hasKitten": true,
+      "bodyC_w": 64,
+      "turC_w": 64,
+      "drawType": "function",
+      "spawnStack": null
+    },
+    {
+      "kind": "critter-9",
+      "x": 1166.7193030030633,
+      "y": 696.550052032182,
+      "hasTileC": true,
+      "tileC_w": 24,
+      "hasKitten": true,
+      "bodyC_w": 64,
+      "turC_w": 64,
+      "drawType": "function",
+      "spawnStack": null
+    },
+    {
+      "kind": "critter-10",
+      "x": 1205.557294136768,
+      "y": 1134.0770390493426,
+      "hasTileC": true,
+      "tileC_w": 24,
+      "hasKitten": true,
+      "bodyC_w": 64,
+      "turC_w": 64,
+      "drawType": "function",
+      "spawnStack": null
+    }
+  ],
+  "lastKitten": null
+}

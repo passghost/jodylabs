@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Pixel Treasure Chest — Overhead Opening</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    display: grid;
+    place-items: center;
+    background: #0f0f12;
+    color: #ddd;
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, sans-serif;
+  }
+  canvas {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    box-shadow: 0 20px 60px rgba(0,0,0,.6), inset 0 0 0 2px #000;
+    border-radius: 14px;
+  }
+  .hint {
+    position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%);
+    opacity: .7; font-size: 12px; letter-spacing: .02em;
+    user-select: none;
+  }
+</style>
+</head>
+<body>
+<canvas id="c" width="192" height="192" style="width:384px;height:384px;"></canvas>
+<div class="hint">Space: toggle pause · Click: open/close bias</div>
+<script>
+(() => {
+  const c = document.getElementById('c');
+  const ctx = c.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+
+  // Low-res "pixel" grid settings
+  const G = 64;          // logical pixels
+  const S = 3;           // scale to canvas
+  // Make sure canvas matches scale exactly
+  c.width  = G * S;
+  c.height = G * S;
+
+  // Colors (tuned for cozy pixel palette)
+  const COL = {
+    bg1: '#15161a',
+    bg2: '#0c0d10',
+    outline: '#2b1a11',
+    woodDk: '#6e3a18',
+    woodMd: '#8e4a22',
+    woodLt: '#b05b29',
+    metalLt: '#d5d6de',
+    metalMd: '#9aa0b7',
+    metalDk: '#5c6280',
+    hinge:  '#7e86a4',
+    felt:   '#2a1d16',
+    shadow: '#0a0a0c',
+    goldLt: '#ffd95a',
+    goldMd: '#e5b73b',
+    goldDk: '#b48322',
+    sparkle:'#ffffff'
+  };
+
+  // Helpers
+  const pix = (x,y,w,h, col) => {
+    ctx.fillStyle = col;
+    ctx.fillRect(Math.round(x)*S, Math.round(y)*S, Math.round(w)*S, Math.round(h)*S);
+  };
+
+  // Deterministic hash-ish for twinkles/coin scatter
+  const h01 = (n) => {
+    const s = Math.sin(n * 127.1) * 43758.5453;
+    return s - Math.floor(s);
+  };
+
+  // Chest geometry (centered)
+  const chest = {
+    w: 48,
+    h: 36,
+    inset: 4,     // inner lip thickness
+  };
+  chest.x = (G - chest.w) / 2;
+  chest.y = (G - chest.h) / 2 + 4;
+
+  // Draw tiled vignette background + ground shadow
+  function drawBackground(t) {
+    // Subtle dither
+    for (let y=0; y<G; y++) {
+      for (let x=0; x<G; x++) {
+        const n = (x*31 ^ y*17) & 3;
+        const col = n < 2 ? COL.bg1 : COL.bg2;
+        if (((x + y + (t*12|0)) & 3) === 0) { // tiny motion so it doesn't look dead
+          pix(x,y,1,1,col);
+        } else {
+          pix(x,y,1,1,col);
+        }
+      }
+    }
+    // Ground oval shadow
+    const sx = chest.x + chest.w/2 - 18, sy = chest.y + chest.h - 3;
+    for (let i=0;i<8;i++){
+      pix(sx+i, sy+i/2, 36-i*2, 1, COL.shadow);
+    }
+  }
+
+  // Coins pattern inside
+  function drawCoins(ix, iy, iw, ih, t, openness) {
+    // felt base
+    pix(ix, iy, iw, ih, COL.felt);
+    // scattered coins (denser as it opens)
+    const density = Math.max(0.35, openness) * 0.9; // fill factor
+    for (let y = iy+1; y < iy+ih-1; y += 2) {
+      for (let x = ix+1; x < ix+iw-1; x += 2) {
+        const k = h01(x*13.3 + y*7.7);
+        if (k < density) {
+          const tw = h01(x*5.1 + y*3.3 + Math.floor(t*6)) > 0.82 ? COL.goldLt :
+                     (k < 0.33 ? COL.goldDk : COL.goldMd);
+          pix(x, y, 1, 1, tw);
+        }
+      }
+    }
+    // bright stash highlight
+    const cx = ix + iw*0.55, cy = iy + ih*0.55;
+    for (let r=0;r<5;r++){
+      const col = r<2 ? COL.goldLt : COL.goldMd;
+      pix(cx-r, cy, r*2, 1, col);
+      if (r>1) { pix(cx-r, cy-1, r*2-2, 1, col); }
+    }
+  }
+
+  // Lid with metal bands; openness in [0..1]
+  function drawLid(topX, topY, topW, topH, openness) {
+    // Lid shrinks and slides "north" as it opens
+    const lift = Math.round(6 * openness);
+    const lidH = Math.max(1, Math.round(topH * (1 - openness*0.98)));
+    const lidY = topY - lift;
+    const lidX = topX;
+
+    // Lid base (wood)
+    pix(lidX, lidY, topW, lidH, COL.woodMd);
+    // shading bands
+    pix(lidX, lidY, topW, 1, COL.woodLt);
+    pix(lidX, lidY + lidH - 1, topW, 1, COL.woodDk);
+
+    // Metal bands across lid
+    const bandW = 2;
+    const gaps = 4;
+    for (let i=0; i<3; i++){
+      const bx = lidX + Math.round((i+1) * (topW/(3+1))) - 1;
+      pix(bx, lidY, bandW, lidH, COL.metalMd);
+      pix(bx, lidY, bandW, 1, COL.metalLt);
+      if (lidH > 2) pix(bx, lidY+lidH-1, bandW, 1, COL.metalDk);
+    }
+
+    // Front lip (small overlap/shadow)
+    if (openness < 0.98) {
+      pix(lidX, lidY + lidH, topW, 1, COL.shadow);
+    }
+
+    // Tiny lock plate hint at front-center when near closed
+    if (openness < 0.25) {
+      const lx = lidX + (topW>>1) - 1, ly = lidY + lidH - 2;
+      pix(lx, ly, 2, 2, COL.metalLt);
+      pix(lx, ly+2, 2, 1, COL.metalDk);
+    }
+  }
+
+  // Hinge bar behind top opening
+  function drawHinge(topX, topY, topW) {
+    pix(topX, topY-2, topW, 1, COL.hinge);
+    pix(topX, topY-1, topW, 1, COL.metalDk);
+  }
+
+  // Sparkles when open
+  function drawSparkles(t, openness) {
+    if (openness < 0.55) return;
+    const n = 10;
+    for (let i=0;i<n;i++){
+      const seed = i*19.19 + Math.floor(t*12);
+      const r1 = h01(seed), r2 = h01(seed+1.234);
+      const x = chest.x + 6 + r1 * (chest.w-12);
+      const y = chest.y - 2 - r2 * (10 + 8*openness);
+      // tiny cross sparkle
+      pix(x, y, 1, 1, COL.sparkle);
+      pix(x-1, y, 1, 1, COL.sparkle);
+      pix(x+1, y, 1, 1, COL.sparkle);
+      pix(x, y-1, 1, 1, COL.sparkle);
+      pix(x, y+1, 1, 1, COL.sparkle);
+    }
+  }
+
+  // Main chest draw
+  function drawChest(t, openness) {
+    // Outer outline
+    pix(chest.x-1, chest.y-1, chest.w+2, chest.h+2, COL.outline);
+    // Wood frame
+    pix(chest.x, chest.y, chest.w, chest.h, COL.woodMd);
+    // Bevel shading
+    pix(chest.x, chest.y, chest.w, 1, COL.woodLt);
+    pix(chest.x, chest.y + chest.h - 1, chest.w, 1, COL.woodDk);
+    pix(chest.x, chest.y, 1, chest.h, COL.woodDk);
+    pix(chest.x + chest.w - 1, chest.y, 1, chest.h, COL.woodLt);
+
+    // Inner top opening
+    const topX = chest.x + chest.inset;
+    const topY = chest.y + chest.inset + 1; // slight down for depth
+    const topW = chest.w - chest.inset*2;
+    const topH = chest.h - chest.inset*2 - 2;
+
+    // Inner metal lip
+    pix(topX-1, topY-1, topW+2, topH+2, COL.metalDk);
+    pix(topX,   topY,   topW,   topH,   COL.metalLt);
+
+    // Coins/interior under lid
+    drawCoins(topX+1, topY+1, topW-2, topH-2, t, openness);
+
+    // Hinge
+    drawHinge(topX, topY, topW);
+
+    // Lid on top
+    drawLid(topX, topY, topW, topH, openness);
+
+    // Front metal latch strip on body
+    const cx = chest.x + (chest.w>>1) - 1;
+    pix(cx, chest.y + chest.h - 8, 2, 6, COL.metalMd);
+    pix(cx, chest.y + chest.h - 8, 2, 1, COL.metalLt);
+    pix(cx, chest.y + chest.h - 3, 2, 1, COL.metalDk);
+
+    // Sparkles when open
+    drawSparkles(t, openness);
+  }
+
+  // Animation loop
+  let last = 0;
+  let t = 0;
+  let paused = false;
+  // Bias lets you keep it more often open/closed; click toggles
+  let bias = 0.0; // -0.6..+0.6 is reasonable
+
+  function loop(ts){
+    if (!last) last = ts;
+    const dt = Math.min(0.05, (ts - last) / 1000);
+    last = ts;
+    if (!paused) t += dt;
+
+    // openness oscillates between 0..1 (open/close). Bias skews it.
+    const s = Math.sin(t * 1.4);
+    let openness = (s + 1) * 0.5;         // 0..1
+    openness = Math.min(1, Math.max(0, openness + bias*0.45));
+
+    // Draw
+    drawBackground(t);
+    drawChest(t, openness);
+
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  // Controls
+  window.addEventListener('keydown', (e)=>{
+    if (e.code === 'Space') { paused = !paused; }
+    if (e.key === 'ArrowLeft') bias = Math.max(-0.6, bias - 0.05);
+    if (e.key === 'ArrowRight') bias = Math.min( 0.6, bias + 0.05);
+    if (e.key === '0') bias = 0;
+  });
+  window.addEventListener('click', ()=>{
+    // flip bias to favor the other state
+    bias = bias > 0 ? -0.45 : 0.45;
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Top-Down Apache Helicopter — Pixel Canvas</title>
+<style>
+  /* Cohesive single-file output, no external libs */
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: #0b0d10;
+    color: #e6eaef;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji","Segoe UI Emoji";
+  }
+  .wrap {
+    display: grid;
+    place-items: center;
+    height: 100%;
+    gap: 12px;
+  }
+  canvas {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    border: 2px solid #1f252d;
+    background: #0c0f13;
+    box-shadow: 0 0 0 2px #0c0f13, 0 0 24px rgba(0,0,0,.6) inset;
+    border-radius: 8px;
+  }
+  .hud {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    font-size: 12px;
+    opacity: .9;
+  }
+  .led {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #2a2f38;
+    box-shadow: 0 0 0 1px #0b0d10 inset;
+  }
+  .led.on { background: #74ff6a; box-shadow: 0 0 8px #74ff6a; }
+  .btn {
+    border: 1px solid #2a2f38;
+    background: #12161c;
+    color: #e6eaef;
+    padding: 4px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .btn:hover { background: #161b23; }
+  .small {
+    opacity: .8;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <!-- Native resolution is 128x128 pixels; drawn with a scale factor -->
+  <canvas id="pix" width="128" height="128"></canvas>
+  <div class="hud">
+    <div id="led" class="led on" aria-hidden="true"></div>
+    <button class="btn" id="toggle">Pause</button>
+    <span class="small">Top-down Apache • 6 frames • ~120ms/frame • Dithered shading • Rim light</span>
+  </div>
+</div>
+
+<script>
+/*
+  PIXEL SPEC IMPLEMENTATION (single-file, no deps)
+  Subject: Top-down black Apache-style attack helicopter
+  View: Top-down
+  Canvas: 128×128 (logical); scaled via CSS pixelated rendering
+  Palette: 10 colors (charcoal/steel ramp + rim lights + accents)
+  Style notes: chunky shading, rim light, strong silhouette, outlines, dithering
+  Motion: 6 frames (~120ms each): main rotor spin, tail rotor spin, subtle bob/tilt
+  Hitbox/anchor: pivot center; feet baseline approximated as skids bottom
+  Export: single-file HTML
+  Constraints: no external libs, cohesive element, no floating parts
+  Requirements: >= 200 lines, animated, high-definition gradient feel via ramps & dithers
+*/
+
+/* ---------- Palette (10) ---------- */
+const PALETTE = {
+  bg:    "#0c0f13",
+  out:   "#0a0b0d",   // outline deep
+  outHi: "#151a1f",   // inner outline
+  jet0:  "#0f1216",   // darkest panel
+  jet1:  "#151a1c",   // deep panel
+  jet2:  "#1b232b",   // mid panel
+  jet3:  "#2b3744",   // lighter panel
+  rim:   "#6cb3ff",   // cool rim light
+  warn:  "#ffd166",   // warning decal / tips
+  glass: "#7aa3c8"    // cockpit canopy tint
+};
+
+/* ---------- Canvas and helpers ---------- */
+const canvas = document.getElementById("pix");
+const ctx = canvas.getContext("2d", { alpha: false });
+const W = canvas.width, H = canvas.height;
+
+function clear() {
+  ctx.fillStyle = PALETTE.bg;
+  ctx.fillRect(0, 0, W, H);
+}
+
+/* Put a 1×1 pixel at integer coords */
+function px(x, y, color) {
+  if (x < 0 || y < 0 || x >= W || y >= H) return;
+  ctx.fillStyle = color;
+  ctx.fillRect(x|0, y|0, 1, 1);
+}
+
+/* Dithered rectangle using a simple checkerboard / Bayer-ish mask */
+function ditherRect(x, y, w, h, cA, cB, bias = 0) {
+  for (let j = 0; j < h; j++) {
+    for (let i = 0; i < w; i++) {
+      const mask = ((i + j + bias) & 1) === 0;
+      px(x + i, y + j, mask ? cA : cB);
+    }
+  }
+}
+
+/* Rounded fuselage fill using ellipse equation and inside shading */
+function fillEllipse(cx, cy, rx, ry, col) {
+  for (let y = -ry; y <= ry; y++) {
+    const nx = Math.floor(rx * Math.sqrt(Math.max(0, 1 - (y*y)/(ry*ry))));
+    for (let x = -nx; x <= nx; x++) {
+      px(cx + x, cy + y, col);
+    }
+  }
+}
+
+/* Outline an ellipse (single-pixel ring) */
+function strokeEllipse(cx, cy, rx, ry, col) {
+  for (let y = -ry; y <= ry; y++) {
+    const nx = Math.floor(rx * Math.sqrt(Math.max(0, 1 - (y*y)/(ry*ry))));
+    px(cx - nx, cy + y, col);
+    px(cx + nx, cy + y, col);
+  }
+  for (let x = -rx; x <= rx; x++) {
+    const ny = Math.floor(ry * Math.sqrt(Math.max(0, 1 - (x*x)/(rx*rx))));
+    px(cx + x, cy - ny, col);
+    px(cx + x, cy + ny, col);
+  }
+}
+
+/* Straight line (Bresenham) */
+function line(x0, y0, x1, y1, col) {
+  x0|=0; y0|=0; x1|=0; y1|=0;
+  let dx = Math.abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
+  let dy = -Math.abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
+  let err = dx + dy;
+  while (true) {
+    px(x0, y0, col);
+    if (x0 === x1 && y0 === y1) break;
+    const e2 = 2 * err;
+    if (e2 >= dy) { err += dy; x0 += sx; }
+    if (e2 <= dx) { err += dx; y0 += sy; }
+  }
+}
+
+/* Filled polygon using scanline (convex-ish small shapes) */
+function fillPoly(points, col) {
+  // points: [{x,y},...]
+  // Find bounds
+  let minY = Infinity, maxY = -Infinity;
+  for (const p of points) {
+    if (p.y < minY) minY = p.y;
+    if (p.y > maxY) maxY = p.y;
+  }
+  minY = Math.floor(minY); maxY = Math.ceil(maxY);
+
+  for (let y = minY; y <= maxY; y++) {
+    let xs = [];
+    for (let i = 0; i < points.length; i++) {
+      const a = points[i], b = points[(i + 1) % points.length];
+      if ((a.y <= y && b.y > y) || (b.y <= y && a.y > y)) {
+        const t = (y - a.y) / (b.y - a.y);
+        xs.push(a.x + t * (b.x - a.x));
+      }
+    }
+    xs.sort((m,n) => m - n);
+    for (let i = 0; i < xs.length; i += 2) {
+      const x0 = Math.floor(xs[i]), x1 = Math.ceil(xs[i+1]);
+      for (let x = x0; x <= x1; x++) px(x, y, col);
+    }
+  }
+}
+
+/* Soft banded highlight along one side (fake gradient) */
+function bandHighlight(x, y, w, h, colA, colB, vertical = true) {
+  if (vertical) {
+    for (let j = 0; j < h; j++) {
+      const t = j / (h - 1);
+      const col = (j % 2 === 0) ? colA : colB;
+      for (let i = 0; i < w; i++) px(x + i, y + j, col);
+    }
+  } else {
+    for (let i = 0; i < w; i++) {
+      const col = (i % 2 === 0) ? colA : colB;
+      for (let j = 0; j < h; j++) px(x + i, y + j, col);
+    }
+  }
+}
+
+/* ---------- Helicopter layout (top-down) ----------
+
+Reference mental model (not an exact scale model, stylized for pixel clarity):
+
+         ┌──────── tail boom ────────┐
+         v                            v
+      [tail rotor]———[boom]====[fuselage/canopy]====[stub wings+pods]
+             ^                  ^ main rotor hub ^
+  Skids bottom, slight perspective compression top-down.
+
+The whole craft is centered; main rotor mast at canvas center.
+*/
+
+const CENTER = { x: W >> 1, y: H >> 1 };
+
+/* Draw fuselage (body + canopy) with rim light and inner outline */
+function drawFuselage(cx, cy, bob) {
+  // Main body ellipse
+  const rx = 22, ry = 30;
+  fillEllipse(cx, cy + bob, rx, ry, PALETTE.jet2);
+  // Upper shading (top half darker)
+  ditherRect(cx - rx, cy - ry + bob, rx*2, Math.floor(ry*0.6), PALETTE.jet1, PALETTE.jet2, 1);
+  // Nose dark tip
+  fillEllipse(cx, cy - ry + 10 + bob, 8, 6, PALETTE.jet1);
+
+  // Inner outline for body
+  strokeEllipse(cx, cy + bob, rx, ry, PALETTE.outHi);
+  // Outer outline accent
+  strokeEllipse(cx, cy + bob, rx+1, ry+1, PALETTE.out);
+
+  // Cockpit canopy: slightly forward oval
+  fillEllipse(cx, cy - 6 + bob, 12, 8, PALETTE.glass);
+  ditherRect(cx - 12, cy - 14 + bob, 24, 4, PALETTE.glass, PALETTE.jet3, 0); // top glare
+  strokeEllipse(cx, cy - 6 + bob, 12, 8, PALETTE.outHi);
+
+  // Rim light line along right flank (starboard)
+  for (let y = -ry + 4; y <= ry - 6; y+=2) {
+    px(cx + Math.floor(rx*0.9), cy + y + bob, PALETTE.rim);
+  }
+
+  // Engine housings (left/right)
+  for (const s of [-1, 1]) {
+    fillEllipse(cx + s*16, cy - 2 + bob, 7, 5, PALETTE.jet3);
+    strokeEllipse(cx + s*16, cy - 2 + bob, 7, 5, PALETTE.outHi);
+    // intake hint
+    ditherRect(cx + s*10, cy - 6 + bob, 6, 3, PALETTE.jet1, PALETTE.jet2, s === -1 ? 0 : 1);
+  }
+
+  // Skids (bottom; keep attached — no floating parts)
+  const skidY = cy + ry - 6 + bob;
+  for (const s of [-1,1]) {
+    // struts
+    line(cx + s*8, cy + 8 + bob, cx + s*16, skidY-2, PALETTE.outHi);
+    // feet
+    line(cx + s*16 - 8, skidY, cx + s*16 + 8, skidY, PALETTE.out);
+    line(cx + s*16 - 8, skidY-1, cx + s*16 + 8, skidY-1, PALETTE.jet3);
+  }
+}
+
+/* Stub wings and weapon pods (sides) */
+function drawStubWings(cx, cy, bob) {
+  const wingY = cy + 2 + bob;
+  for (const s of [-1, 1]) {
+    // stub wing trapezoid
+    const wing = [
+      {x: cx + s*8,  y: wingY - 4},
+      {x: cx + s*26, y: wingY - 2},
+      {x: cx + s*26, y: wingY + 2},
+      {x: cx + s*8,  y: wingY + 4}
+    ];
+    fillPoly(wing, PALETTE.jet2);
+    // outline
+    for (let i = 0; i < wing.length; i++) {
+      const a = wing[i], b = wing[(i+1)%wing.length];
+      line(a.x, a.y, b.x, b.y, PALETTE.outHi);
+    }
+    // underwing dither shadow
+    ditherRect(Math.min(cx + s*8, cx + s*26), wingY + 3, Math.abs(18), 3, PALETTE.jet1, PALETTE.jet2, 0);
+
+    // weapon pod (tube-like)
+    const podX = cx + s*28, podY = wingY;
+    fillEllipse(podX, podY, 6, 4, PALETTE.jet3);
+    strokeEllipse(podX, podY, 6, 4, PALETTE.outHi);
+    // capped tip with warning paint
+    ditherRect(podX - (s>0?0:3), podY - 1, 3, 2, PALETTE.warn, PALETTE.jet3, 1);
+  }
+}
+
+/* Tail boom and stabilizers */
+function drawTail(cx, cy, bob) {
+  // Boom as a tapered polygon
+  const y = cy + bob;
+  const boom = [
+    {x: cx,   y: y + 2},
+    {x: cx,   y: y - 2},
+    {x: cx - 48, y: y - 1},
+    {x: cx - 48, y: y + 1}
+  ];
+  fillPoly(boom, PALETTE.jet2);
+  // outline top/bottom
+  line(cx, y+2, cx - 48, y+1, PALETTE.outHi);
+  line(cx, y-2, cx - 48, y-1, PALETTE.outHi);
+
+  // Tiny dorsal tail fin
+  const fin = [
+    {x: cx - 36, y: y - 6},
+    {x: cx - 28, y: y - 2},
+    {x: cx - 36, y: y - 2}
+  ];
+  fillPoly(fin, PALETTE.jet3);
+  for (let i=0;i<fin.length;i++){
+    const a=fin[i], b=fin[(i+1)%fin.length];
+    line(a.x,a.y,b.x,b.y,PALETTE.outHi);
+  }
+
+  // Horizontal stabilizers (slight up/down)
+  for (const s of [-1,1]) {
+    const stab = [
+      {x: cx - 26, y: y + s*2},
+      {x: cx - 34, y: y + s*6},
+      {x: cx - 40, y: y + s*6},
+      {x: cx - 32, y: y + s*2}
+    ];
+    fillPoly(stab, PALETTE.jet2);
+    for (let i=0;i<stab.length;i++){
+      const a=stab[i], b=stab[(i+1)%stab.length];
+      line(a.x,a.y,b.x,b.y,PALETTE.outHi);
+    }
+  }
+}
+
+/* Tail rotor disk (spinning blur) */
+function drawTailRotor(cx, cy, angle, bob) {
+  const hubX = cx - 48, hubY = cy + bob;
+  // hub
+  fillEllipse(hubX, hubY, 2, 2, PALETTE.jet3);
+  strokeEllipse(hubX, hubY, 2, 2, PALETTE.outHi);
+
+  // blurred spokes — four lobes rotated by angle
+  const len = 10;
+  for (let i = 0; i < 4; i++) {
+    const a = angle + i * (Math.PI / 2);
+    const x2 = hubX + Math.cos(a) * len;
+    const y2 = hubY + Math.sin(a) * len;
+    line(hubX, hubY, x2, y2, PALETTE.jet3);
+  }
+  // circular blur ring (light rim)
+  strokeEllipse(hubX, hubY, len, len, PALETTE.rim);
+}
+
+/* Main rotor: 4 blades spinning; slight motion blur through staggered lines */
+function drawMainRotor(cx, cy, angle, bob) {
+  const hubR = 3;
+  fillEllipse(cx, cy + bob, hubR, hubR, PALETTE.jet3);
+  strokeEllipse(cx, cy + bob, hubR, hubR, PALETTE.outHi);
+
+  // Blades
+  const bladeLen = 46, bladeHalf = 3;
+  const bladeCols = [PALETTE.jet3, PALETTE.jet2, PALETTE.jet1]; // layered blur
+  for (let layer = 0; layer < bladeCols.length; layer++) {
+    const a = angle - layer * 0.10; // slight offset for blur effect
+    for (let i = 0; i < 4; i++) {
+      const dir = a + i * (Math.PI / 2);
+      // construct a thin rectangle blade around direction
+      const dx = Math.cos(dir), dy = Math.sin(dir);
+      // perpendicular
+      const pxv = -dy, pyv = dx;
+      const tipX = cx + dx * bladeLen;
+      const tipY = cy + bob + dy * bladeLen;
+      const rootX = cx + dx * (hubR + 1);
+      const rootY = cy + bob + dy * (hubR + 1);
+      const poly = [
+        {x: rootX + pxv*bladeHalf, y: rootY + pyv*bladeHalf},
+        {x: tipX  + pxv*1,         y: tipY  + pyv*1},
+        {x: tipX  - pxv*1,         y: tipY  - pyv*1},
+        {x: rootX - pxv*bladeHalf, y: rootY - pyv*bladeHalf}
+      ];
+      fillPoly(poly, bladeCols[layer]);
+      // edge highlight at far tip
+      line(
+        tipX + pxv*1, tipY + pyv*1,
+        tipX - pxv*1, tipY - pyv*1,
+        PALETTE.rim
+      );
+    }
+  }
+}
+
+/* Nose sensors / gun turret hint (kept attached) */
+function drawNoseTurret(cx, cy, bob) {
+  const y = cy + bob + 16;
+  fillEllipse(cx, y, 5, 3, PALETTE.jet1);
+  strokeEllipse(cx, y, 5, 3, PALETTE.outHi);
+  // twin barrels suggestion
+  line(cx - 2, y + 4, cx - 2, y + 8, PALETTE.out);
+  line(cx + 2, y + 4, cx + 2, y + 8, PALETTE.out);
+}
+
+/* Small decals (hazard stripes), subtle so silhouette stays strong */
+function drawDecals(cx, cy, bob) {
+  // little hazard on left wing tip
+  for (let i = 0; i < 4; i++) {
+    px(cx + 28, cy + bob - 3 + i, (i % 2 === 0) ? PALETTE.warn : PALETTE.jet3);
+  }
+  // little hazard on right wing tip
+  for (let i = 0; i < 4; i++) {
+    px(cx - 28, cy + bob - 3 + i, (i % 2 === 0) ? PALETTE.warn : PALETTE.jet3);
+  }
+}
+
+/* Hitbox visualization (optional toggle if needed later) */
+let showHitbox = false;
+function drawHitbox(cx, cy) {
+  if (!showHitbox) return;
+  // approximate bounding box
+  const minX = cx - 56, maxX = cx + 56;
+  const minY = cy - 36, maxY = cy + 40;
+  for (let x = minX; x <= maxX; x++) {
+    px(x, minY, PALETTE.rim);
+    px(x, maxY, PALETTE.rim);
+  }
+  for (let y = minY; y <= maxY; y++) {
+    px(minX, y, PALETTE.rim);
+    px(maxX, y, PALETTE.rim);
+  }
+}
+
+/* ---------- Animation ---------- */
+let running = true;
+const led = document.getElementById("led");
+document.getElementById("toggle").addEventListener("click", () => {
+  running = !running;
+  led.classList.toggle("on", running);
+  document.getElementById("toggle").textContent = running ? "Pause" : "Play";
+  if (running) lastFrameTime = 0; // force immediate draw
+});
+
+let rotorAngle = 0;
+let tailAngle  = 0;
+const FRAME_COUNT = 6;
+let frameIndex = 0;
+let lastFrameTime = 0;
+const FRAME_MS = 120; // ~120ms per frame (≈8.3 FPS)
+
+/* subtle bobbing & micro-tilt pattern across 6 frames */
+const bobSeq = [0, 1, 2, 1, 0, -1];
+
+function drawFrame(t) {
+  if (!lastFrameTime) lastFrameTime = t;
+  const dt = t - lastFrameTime;
+
+  if (running && dt >= FRAME_MS) {
+    lastFrameTime = t;
+    frameIndex = (frameIndex + 1) % FRAME_COUNT;
+
+    // Spin rates (stylized)
+    rotorAngle += Math.PI / 6;   // main rotor step
+    tailAngle  += Math.PI / 3;   // tail rotor faster
+  }
+
+  // Render
+  const bob = bobSeq[frameIndex];
+
+  clear();
+
+  // Soft vignette background (radial-ish dither)
+  for (let r = 58; r >= 0; r -= 2) {
+    const col = (r % 4 === 0) ? PALETTE.bg : PALETTE.outHi;
+    strokeEllipse(CENTER.x, CENTER.y, r, Math.floor(r*0.8), col);
+  }
+
+  // Draw order: tail -> fuselage & wings -> rotors -> nose bits -> decals -> (optional) hitbox
+  drawTail(CENTER.x, CENTER.y, bob);
+  drawFuselage(CENTER.x, CENTER.y, bob);
+  drawStubWings(CENTER.x, CENTER.y, bob);
+  drawMainRotor(CENTER.x, CENTER.y, rotorAngle, bob);
+  drawTailRotor(CENTER.x, CENTER.y, tailAngle, bob);
+  drawNoseTurret(CENTER.x, CENTER.y, bob);
+  drawDecals(CENTER.x, CENTER.y, bob);
+  drawHitbox(CENTER.x, CENTER.y);
+
+  // Queue next paint
+  requestAnimationFrame(drawFrame);
+}
+
+requestAnimationFrame(drawFrame);
+
+/* ---------- Keyboard convenience (optional) ----------
+   H = toggle hitbox
+   Space = pause/play
+*/
+window.addEventListener("keydown", (e) => {
+  if (e.key === "h" || e.key === "H") {
+    showHitbox = !showHitbox;
+  } else if (e.code === "Space") {
+    e.preventDefault();
+    document.getElementById("toggle").click();
+  }
+});
+</script>
+</body>
+</html>

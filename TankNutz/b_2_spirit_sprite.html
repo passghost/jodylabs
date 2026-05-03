@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Pixel B-2 Spirit — 64×64, top-down</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root { color-scheme: dark; }
+  html, body {
+    height: 100%;
+    margin: 0;
+    background: #0f1013; /* page only; sprite itself is transparent */
+    display: grid;
+    place-items: center;
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  }
+  canvas {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.45);
+    border-radius: 10px;
+  }
+</style>
+</head>
+<body>
+<canvas id="view" width="256" height="256" aria-label="B-2 Spirit pixel sprite"></canvas>
+
+<script>
+(() => {
+  const scale = 4;
+  const spriteSize = 64;
+  const view = document.getElementById('view');
+  const vctx = view.getContext('2d');
+  vctx.imageSmoothingEnabled = false;
+
+  const off = document.createElement('canvas');
+  off.width = off.height = spriteSize;
+  const ctx = off.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+
+  const PAL = {
+    base:    '#2B2F33',
+    shadow:  '#1F2226',
+    hi:      '#4A4F57',
+    rim:     '#6F7682',
+    cockpit: '#111417',
+    inlet:   '#0D0F12',
+    navR:    '#C23A3A',
+    navG:    '#3AC259'
+  };
+
+  function poly(c, pts, fill) {
+    c.beginPath();
+    c.moveTo(pts[0][0]+0.5, pts[0][1]+0.5);
+    for (let i=1;i<pts.length;i++) c.lineTo(pts[i][0]+0.5, pts[i][1]+0.5);
+    c.closePath();
+    c.fillStyle = fill;
+    c.fill();
+  }
+
+  function pxLine(c, x1,y1,x2,y2, col, a=1) {
+    c.save();
+    c.globalAlpha = a;
+    c.strokeStyle = col;
+    c.lineWidth = 1;
+    c.beginPath();
+    c.moveTo(x1+0.5, y1+0.5);
+    c.lineTo(x2+0.5, y2+0.5);
+    c.stroke();
+    c.restore();
+  }
+
+  function getSilhouette() {
+    return [
+      [ 8, 30],
+      [16, 22],
+      [24, 17],
+      [32, 14],
+      [40, 17],
+      [48, 22],
+      [56, 30],
+      [48, 34],
+      [40, 38],
+      [32, 44],
+      [24, 38],
+      [16, 34]
+    ];
+  }
+
+  function drawFrame(f) {
+    ctx.clearRect(0,0,spriteSize,spriteSize);
+
+    const body = getSilhouette();
+    poly(ctx, body, PAL.base);
+
+    const bank = Math.sin((f/6)*Math.PI*2);
+    ctx.save();
+    ctx.globalAlpha = 0.8;
+    const sh = bank >= 0
+      ? [[56,30],[48,34],[40,38],[32,44],[24,38],[16,34],[32,44],[56,44]]
+      : [[8,30],[16,34],[24,38],[32,44],[40,38],[48,34],[32,44],[8,44]];
+    poly(ctx, sh, PAL.shadow);
+    ctx.restore();
+
+    ctx.save();
+    ctx.globalAlpha = 0.55 + Math.abs(bank)*0.25;
+    const rimLeft = [[8,30],[16,22],[24,17],[28,16],[20,22],[12,28]];
+    const rimRight= [[56,30],[48,22],[40,17],[36,16],[44,22],[52,28]];
+    poly(ctx, bank >= 0 ? rimLeft : rimRight, PAL.rim);
+    ctx.restore();
+
+    ctx.save();
+    ctx.globalAlpha = 0.35;
+    const band = [[22,20],[32,16],[42,20],[40,22],[32,19],[24,22]];
+    poly(ctx, band, PAL.hi);
+    ctx.restore();
+
+    ctx.fillStyle = PAL.inlet;
+    ctx.fillRect(26,18, 4,1);
+    ctx.fillRect(34,18, 4,1);
+
+    ctx.fillStyle = PAL.cockpit;
+    ctx.fillRect(31,20, 2,2);
+
+    pxLine(ctx, 32,22, 32,39, PAL.hi, 0.22);
+    pxLine(ctx, 24,30, 28,33, PAL.hi, 0.18);
+    pxLine(ctx, 40,30, 36,33, PAL.hi, 0.18);
+
+    const blink = (f % 6) < 3;
+    if (blink) {
+      ctx.fillStyle = PAL.navR;
+      ctx.fillRect(9,29, 1,1);
+      ctx.fillStyle = PAL.navG;
+      ctx.fillRect(54,29, 1,1);
+    }
+
+    vctx.clearRect(0,0,view.width,view.height);
+    vctx.drawImage(off, 0, 0, spriteSize, spriteSize, 0, 0, spriteSize*scale, spriteSize*scale);
+  }
+
+  let frame = 0, last = 0;
+  function tick(ts) {
+    if (!last || (ts - last) >= 120) {
+      drawFrame(frame);
+      frame = (frame + 1) % 6;
+      last = ts;
+    }
+    requestAnimationFrame(tick);
+  }
+  drawFrame(0);
+  requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>

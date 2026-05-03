@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pixel Spec — Centipede Tank (64×64, HTML-only)</title>
+<style>
+  /* ------------------------------------------------------------
+   PIXEL SPEC (filled)
+   Subject: “centipede tank”
+   View: 3/4 top-down
+   Canvas: 64×64
+   Palette (10 colors):
+     0  #0b0e12  (shadow)
+     1  #0a0b0f  (outline)
+     2  #556b7a  (armor base)
+     3  #3c4a56  (armor shade)
+     4  #8da7b5  (armor light)
+     5  #1d2126  (tread dark)
+     6  #2d333b  (tread mid)
+     7  #dbe7f3  (rim light)
+     8  #9ddf4f  (accent)
+     9  #f3c969  (hazard stripe)
+   Style notes: chunky shading, rim light, strong silhouette.
+   Motion: 6 frames @ 120ms (tread scroll, subtle body undulation, barrel micro‑recoil)
+   Hitbox/anchor: pivot center
+   Export: single‑file HTML only
+   Constraints: no external libs, cohesive single element, no floating parts
+   Format: .html
+  ------------------------------------------------------------ */
+  :root{
+    --bg:#0f1016;
+  }
+  html,body{height:100%}
+  body{
+    margin:0; display:grid; place-items:center; background:var(--bg);
+    color:#cfd6df; font:14px/1.2 ui-sans-serif, system-ui, Segoe UI, Roboto, Helvetica, Arial;
+  }
+  .wrap{ display:grid; gap:10px; place-items:center; }
+  canvas{
+    width:512px; /* 64 * 8 */
+    height:512px;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    outline:1px solid #1a1e25; border-radius:10px; background:transparent;
+  }
+  .spec{opacity:.75; text-align:center}
+  .spec b{opacity:.95}
+  .row{display:flex; gap:8px; align-items:center; justify-content:center}
+  .btn{appearance:none; border:1px solid #2a2f39; background:#151823; color:#cfd6df; padding:6px 10px; border-radius:8px; cursor:pointer}
+  .btn:active{transform:translateY(1px)}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <canvas id="pix" width="64" height="64" aria-label="Centipede tank sprite"></canvas>
+    <div class="row">
+      <button class="btn" id="pauseBtn" title="Pause/Play">⏸︎ Pause</button>
+      <button class="btn" id="stepBtn" title="Advance one frame">Step ▶︎</button>
+      <button class="btn" id="saveBtn" title="Save PNG">Save PNG</button>
+    </div>
+    <div class="spec">64×64 • 6 frames @ 120ms • 3/4 top‑down • pivot center</div>
+  </div>
+
+<script>
+(function(){
+  const cvs = document.getElementById('pix');
+  const ctx = cvs.getContext('2d', { alpha: true });
+  ctx.imageSmoothingEnabled = false;
+
+  // --- Palette (indexes for quicker fill) ---
+  const C = {
+    SHADOW: '#0b0e12',
+    OUT:    '#0a0b0f',
+    ARM:    '#556b7a',
+    ARM_D:  '#3c4a56',
+    ARM_L:  '#8da7b5',
+    TREAD:  '#1d2126',
+    TREAD_M:'#2d333b',
+    RIM:    '#dbe7f3',
+    ACC:    '#9ddf4f',
+    HAZ:    '#f3c969',
+  };
+
+  // Utility pixel ops
+  const p = (x,y,c)=>{ ctx.fillStyle=c; ctx.fillRect(x|0,y|0,1,1); };
+  const rect = (x,y,w,h,c)=>{ ctx.fillStyle=c; ctx.fillRect(x|0,y|0,w|0,h|0); };
+  const outlineRect = (x,y,w,h,fill,outline)=>{
+    ctx.fillStyle = outline; ctx.fillRect(x-1,y-1,w+2,h+2);
+    ctx.fillStyle = fill;    ctx.fillRect(x,y,w,h);
+  };
+
+  // Rounded-ish capsule segment draw (pixel style)
+  function segment(x, y, w, h, framePhase){
+    // Outer silhouette
+    outlineRect(x, y, w, h, C.ARM, C.OUT);
+
+    // Corner pixels to hint rounding
+    p(x, y, C.ARM_L); p(x+w-1, y, C.ARM_L);
+    p(x, y+h-1, C.ARM_D); p(x+w-1, y+h-1, C.ARM_D);
+
+    // Shading & rim light
+    // Top rim
+    for(let i=1;i<w-1;i++) p(x+i,y, C.RIM);
+    // Left shade
+    for(let j=1;j<h-1;j++) p(x+1, y+j, C.ARM_D);
+    // Bottom shade band
+    rect(x+1, y+h-2, w-2, 1, C.ARM_D);
+
+    // Hazard stripe (every other segment)
+    if ((framePhase.segIndex%2)===0){
+      for(let i=2;i<w-2;i+=4) p(x+i,y+Math.max(1,h-3), C.HAZ);
+    }
+
+    // Treads block (attached, 2px tall)
+    const ty = y + h; // directly attached so no floating parts
+    outlineRect(x, ty, w, 2, C.TREAD, C.OUT);
+    // Scroll pattern
+    const offset = framePhase.treadOffset & 1; // 0/1 shift
+    for(let i=0;i<w;i++){
+      if(((i+offset)&1)===0) p(x+i, ty+1, C.TREAD_M);
+    }
+  }
+
+  function head(x, y, w, h, framePhase){
+    // Head base (slightly bigger/armored)
+    outlineRect(x-1, y-1, w+2, h+2, C.ARM, C.OUT);
+    rect(x, y, w, h, C.ARM);
+    // Visor/eye
+    p(x+Math.floor(w*0.25), y+1, C.ACC);
+    p(x+Math.floor(w*0.25)+1, y+1, C.ACC);
+    // Rim light on top and left
+    for(let i=0;i<w;i++) p(x+i, y-1, C.RIM);
+    for(let j=0;j<h+1;j++) p(x-1, y-1+j, C.RIM);
+
+    // Small turret cap
+    const capW = Math.max(3, Math.floor(w*0.4));
+    const capX = x + Math.floor((w-capW)/2);
+    outlineRect(capX, y-2, capW, 2, C.ARM_L, C.OUT);
+
+    // Barrel (right-facing). Micro-recoil pattern across the 6-frame loop
+    const recoilPattern = [0,0,1,0,0,-1]; // pixels to add/subtract from nominal length
+    const baseLen = 6;
+    const len = baseLen + recoilPattern[framePhase.frame%6];
+    const bx = x + Math.floor(w/2) - 1; // attach point
+    const by = y - 1; // slight upward tilt for 3/4 view
+
+    // Connect stub to cap to ensure no floating
+    outlineRect(bx-1, by, 2, 2, C.ARM_L, C.OUT);
+
+    // Barrel shaft
+    for(let i=0;i<len;i++){
+      p(bx + i, by, C.ARM_L);
+      p(bx + i, by+1, C.ARM_L);
+      // tiny rim pixel on top
+      if(i%2===0) p(bx + i, by-1, C.RIM);
+    }
+    // Muzzle pixel
+    p(bx + len, by, C.OUT);
+    p(bx + len, by+1, C.OUT);
+  }
+
+  function groundShadow(cx, cy, w, h){
+    // Elliptical drop shadow under the whole unit
+    const rw = Math.floor(w*0.9), rh = Math.floor(h*0.35);
+    const sx = cx - Math.floor(rw/2), sy = cy - Math.floor(rh/2) + 8;
+    ctx.globalAlpha = 0.35; rect(sx, sy, rw, 1, C.SHADOW);
+    ctx.globalAlpha = 0.25; rect(sx, sy+1, rw, 1, C.SHADOW);
+    ctx.globalAlpha = 0.15; rect(sx, sy+2, rw, 1, C.SHADOW);
+    ctx.globalAlpha = 1.0;
+  }
+
+  // Frame state
+  let frame = 0;
+  let paused = false;
+
+  function draw(){
+    // Clear
+    ctx.clearRect(0,0,cvs.width,cvs.height);
+
+    // Pivot center
+    const cx = 32, cy = 36; // slightly below true center for mass
+
+    // Body plan
+    const SEG = 7;
+    const w = 9, h = 6; // segment size
+    const spacing = 7;  // overlap by 2px to keep a single cohesive silhouette
+
+    // Subtle undulation across segments (kept small to avoid gaps)
+    // and slight horizontal skew for 3/4 look
+    const treadOffset = frame % 2; // 2-phase scroll yields 6-frame loop with other motions
+
+    // Shadow sized for the full chain
+    groundShadow(cx, cy, SEG*spacing + 18, h+12);
+
+    for(let s=0; s<SEG; s++){
+      const phase = (frame + s*2) * (Math.PI/12);
+      const yOff = Math.round(Math.sin(phase) * 1); // max 1px to avoid separation
+      const xOff = Math.round(Math.cos(phase) * 0.5); // tiny skew
+
+      const sx = cx - Math.floor(SEG*spacing/2) + s*spacing + xOff;
+      const sy = cy + yOff - Math.floor(h/2);
+
+      const fp = { frame, segIndex:s, treadOffset: (treadOffset + s) % 2 };
+
+      if(s === SEG-1){
+        // Front head segment (a bit larger)
+        head(sx-1, sy-1, w+2, h+2, fp);
+      } else {
+        segment(sx, sy, w, h, fp);
+      }
+    }
+
+    // Unifying belly plate line to visually merge segments
+    // (drawn last across entire length)
+    const bellyY = cy + Math.floor(h/2) + 1;
+    for(let x = cx - Math.floor(SEG*spacing/2) - 1; x <= cx + Math.floor(SEG*spacing/2) + 6; x++){
+      if((x%3)===0) p(x, bellyY, C.ARM_D);
+    }
+  }
+
+  // Timing: 6 frames per loop, 120ms per frame
+  const STEP_MS = 120;
+  let acc = 0, last = performance.now();
+
+  function tick(now){
+    const dt = now - last; last = now; acc += dt;
+    while(acc >= STEP_MS){ acc -= STEP_MS; frame = (frame + 1) % 6; }
+    if(!paused) draw();
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+
+  // Controls
+  const pauseBtn = document.getElementById('pauseBtn');
+  const stepBtn = document.getElementById('stepBtn');
+  const saveBtn = document.getElementById('saveBtn');
+
+  pauseBtn.addEventListener('click', ()=>{
+    paused = !paused;
+    pauseBtn.textContent = paused ? '▶︎ Play' : '⏸︎ Pause';
+    if(!paused) draw();
+  });
+  stepBtn.addEventListener('click', ()=>{
+    paused = true; pauseBtn.textContent = '▶︎ Play';
+    frame = (frame + 1) % 6; draw();
+  });
+  saveBtn.addEventListener('click', ()=>{
+    const a = document.createElement('a');
+    a.href = cvs.toDataURL('image/png');
+    a.download = 'centipede-tank-64px.png';
+    a.click();
+  });
+
+  // Initial draw (static preview before first tick)
+  draw();
+})();
+</script>
+</body>
+</html>

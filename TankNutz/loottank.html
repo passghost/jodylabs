@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Gem-Encrusted Gold Tank — 128×64</title>
+<style>
+  html, body { height:100%; margin:0; background:#0d0f13; color:#cfd6e6; font-family:system-ui, sans-serif; }
+  .wrap { height:100%; display:grid; place-items:center; }
+  canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <!-- 128×64 logical grid, scaled 4× to 512×256; single cohesive element; no external libs -->
+  <canvas id="richTank" width="512" height="256" aria-label="Diamond emerald ruby encrusted gold tank from above"></canvas>
+</div>
+<script>
+(() => {
+  // ===== Setup =====
+  const CANVAS = document.getElementById('richTank');
+  const ctx = CANVAS.getContext('2d');
+  const SCALE = 4;
+  const W = 128, H = 64;
+
+  // Template-like animation defaults
+  const FRAMES = 6;
+  const FRAME_MS = 120;
+
+  ctx.imageSmoothingEnabled = false;
+  ctx.setTransform(SCALE, 0, 0, SCALE, 0, 0);
+
+  // ===== Palette =====
+  const C = {
+    // Tracks / steel
+    treadDark:  '#24282f',
+    treadMid:   '#3a3f48',
+    treadLite:  '#565f6d',
+    steelEdge:  '#1c2229',
+
+    // Gold hull (multiple shades for chunky shading)
+    goldDeep:   '#6b4d08',
+    goldDark:   '#8a640c',
+    goldMid:    '#b98d1a',
+    goldLite:   '#e8c24a',
+    goldEdge:   '#3a2a05',
+
+    // Gem tones
+    diamond1:   '#f8fbff',
+    diamond2:   '#bfe6ff',
+    emerald1:   '#28c76f',
+    emerald2:   '#0f8a4b',
+    ruby1:      '#ff2e3a',
+    ruby2:      '#b1131f',
+
+    // Accents / shadows
+    highlight:  '#fff6b7',
+    shadow:     'rgba(0,0,0,0.18)',
+    black:      '#000000'
+  };
+
+  // ===== Helpers =====
+  function px(x, y, color) { ctx.fillStyle = color; ctx.fillRect(x, y, 1, 1); }
+  function rect(x, y, w, h, color) { ctx.fillStyle = color; ctx.fillRect(x, y, w, h); }
+  function outlineRect(x, y, w, h, color) {
+    ctx.fillStyle = color;
+    ctx.fillRect(x, y, w, 1);
+    ctx.fillRect(x, y + h - 1, w, 1);
+    ctx.fillRect(x, y, 1, h);
+    ctx.fillRect(x + w - 1, y, 1, h);
+  }
+  function fillCircle(cx, cy, r, color) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(cx + 0.5, cy + 0.5, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  function circle(cx, cy, r, color) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1 / SCALE;
+    ctx.beginPath();
+    ctx.arc(cx + 0.5, cy + 0.5, r, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  // ===== Vertical track (left/right) =====
+  function drawTrackV(x, y, w, h, offset) {
+    rect(x, y, w, h, C.treadDark);
+    outlineRect(x, y, w, h, C.steelEdge);
+    rect(x + 1, y + 1, w - 2, h - 2, C.treadMid);
+
+    // Studs pattern that scrolls with offset
+    for (let i = 0; i < h - 2; i++) {
+      const phase = (i + offset) % 4;
+      if (phase === 0) {
+        px(x + Math.max(1, Math.floor(w / 4)), y + 1 + i, C.treadLite);
+        px(x + Math.min(w - 2, Math.floor((w * 3) / 4)), y + 1 + i, C.treadLite);
+      }
+    }
+    // Road wheels hints (connected underlay)
+    const rw = Math.max(2, Math.floor(w / 4));
+    for (let j = 0; j < 4; j++) {
+      fillCircle(x + Math.floor(w / 2), y + 6 + j * Math.floor(h / 5), rw, C.treadLite);
+    }
+  }
+
+  // ===== Gem sparkle util (cycles per frame; draws IN the hull so it's attached) =====
+  function gemAt(x, y, type, phase) {
+    // type: 'diamond' | 'emerald' | 'ruby'
+    if (type === 'diamond') {
+      px(x, y, phase ? C.diamond1 : C.diamond2);
+    } else if (type === 'emerald') {
+      px(x, y, phase ? C.emerald1 : C.emerald2);
+    } else {
+      px(x, y, phase ? C.ruby1 : C.ruby2);
+    }
+  }
+
+  // ===== Gold hull =====
+  function drawHull() {
+    // Base slab between tracks (very wide, chunky gold)
+    rect(24, 18, 80, 28, C.goldMid);
+    // Edges / bevel feel
+    rect(24, 18, 80, 3, C.goldLite);                 // top bevel
+    rect(24, 43, 80, 3, C.goldDark);                 // bottom bevel
+    rect(24, 21, 2, 23, C.goldDark);                 // left bevel
+    rect(102, 21, 2, 23, C.goldDark);                // right bevel
+    outlineRect(24, 18, 80, 28, C.goldEdge);
+
+    // Nose cap
+    rect(44, 14, 40, 6, C.goldMid);
+    rect(44, 14, 40, 2, C.goldLite);
+    outlineRect(44, 14, 40, 6, C.goldEdge);
+
+    // Rear plate
+    rect(40, 46, 48, 4, C.goldDark);
+    outlineRect(40, 46, 48, 4, C.goldEdge);
+
+    // Side sponsons (keep attached)
+    rect(18, 22, 6, 20, C.goldMid);
+    rect(104, 22, 6, 20, C.goldMid);
+    outlineRect(18, 22, 6, 20, C.goldEdge);
+    outlineRect(104, 22, 6, 20, C.goldEdge);
+  }
+
+  // ===== Gem inlays on hull edges (attached) =====
+  function inlayGems(frame) {
+    const ph = frame % 2; // twinkle
+    // Top edge
+    for (let x = 28; x <= 100; x += 6) gemAt(x, 19, 'diamond', (x / 6 + ph) % 2 === 0);
+    // Bottom edge
+    for (let x = 28; x <= 100; x += 6) gemAt(x, 44, 'emerald', (x / 6 + ph + 1) % 2 === 0);
+    // Nose
+    for (let x = 46; x <= 82; x += 6) gemAt(x, 15, 'ruby', (x / 6 + ph) % 2 === 0);
+    // Sponsons
+    for (let y = 24; y <= 40; y += 4) {
+      gemAt(20, y, 'emerald', (y / 4 + ph) % 2 === 0);
+      gemAt(108, y, 'ruby', (y / 4 + ph + 1) % 2 === 0);
+    }
+  }
+
+  // ===== Turret (rotates) =====
+  // Pivot point on hull deck
+  const PIVOT = { x: 64, y: 32 };
+
+  function drawTurret(frame, angle) {
+    ctx.save();
+    ctx.translate(PIVOT.x, PIVOT.y);
+    ctx.rotate(angle);
+
+    // Base collar (ensures connection; no floating parts)
+    fillCircle(0, 0, 10, C.goldDark);
+    circle(0, 0, 11, C.goldEdge);
+    rect(-4, -2, 8, 4, C.goldLite); // neck base
+
+    // Turret dome
+    fillCircle(0, -6, 12, C.goldMid);
+    fillCircle(-2, -8, 10, C.goldLite);
+    circle(0, -6, 12, C.goldEdge);
+
+    // Gem crown around dome (attached)
+    const ph = frame % 3;
+    const ring = [
+      {dx: -10, dy: -6, t: 'ruby'},
+      {dx: -5,  dy: -12, t: 'emerald'},
+      {dx:  0,  dy: -13, t: 'diamond'},
+      {dx:  5,  dy: -12, t: 'emerald'},
+      {dx: 10,  dy: -6,  t: 'ruby'}
+    ];
+    for (let i = 0; i < ring.length; i++) {
+      const g = ring[i];
+      gemAt(g.dx, g.dy, g.t, (i + ph) % 2 === 0);
+    }
+
+    // Barrel: thick gold barrel with gem tip (attached)
+    rect(10, -7, 20, 4, C.goldMid);
+    rect(10, -8, 20, 2, C.goldLite);
+    outlineRect(10, -8, 20, 6, C.goldEdge);
+
+    // Gem at muzzle
+    gemAt(30, -6, 'diamond', ph !== 1);
+    gemAt(29, -6, 'emerald', ph === 1);
+
+    // Secondary side barrel (ornate, attached)
+    rect(6, -1, 14, 2, C.goldDark);
+    gemAt(20, 0, 'ruby', ph === 0);
+
+    // Turret bolts / rivets
+    px(-3, -2, C.goldDeep); px(3, -2, C.goldDeep);
+    px(-3,  2, C.goldDeep); px(3,  2, C.goldDeep);
+
+    ctx.restore();
+  }
+
+  // ===== Main render loop =====
+  let last = 0, acc = 0, frame = 0;
+
+  function render() {
+    ctx.clearRect(0, 0, W, H);
+
+    // Ground shadow (soft, under whole tank)
+    ctx.globalAlpha = 0.14;
+    fillCircle(64, 48, 28, C.black);
+    ctx.globalAlpha = 1.0;
+
+    // Tracks (far apart for wide stance)
+    const tOffset = frame;
+    drawTrackV(12, 10, 16, 44, tOffset);   // left track
+    drawTrackV(100, 10, 16, 44, tOffset);  // right track
+
+    // Hull + gems
+    drawHull();
+    inlayGems(frame);
+
+    // Turret rotation
+    const angle = (frame / FRAMES) * Math.PI * 2;
+    drawTurret(frame, angle);
+  }
+
+  function loop(ts) {
+    if (!last) last = ts;
+    const dt = ts - last; last = ts; acc += dt;
+    while (acc >= FRAME_MS) { frame = (frame + 1) % FRAMES; acc -= FRAME_MS; }
+    render();
+    requestAnimationFrame(loop);
+  }
+
+  render();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

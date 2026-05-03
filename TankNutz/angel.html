@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Pixel — White Hooded Angel w/ White+Gold Cross (64×64, 6f@120ms)</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+  :root { --scale: 8; }
+  * { box-sizing: border-box; }
+  html, body {
+    height: 100%; margin: 0;
+    background:#0f0f12; color:#cfd3da;
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+  }
+  .wrap{
+    min-height:100%; display:grid; place-items:center; padding:16px;
+  }
+  canvas{
+    width: calc(64px * var(--scale));
+    height: calc(64px * var(--scale));
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    border-radius: 12px;
+    box-shadow: 0 20px 60px #0008, inset 0 0 0 1px #ffffff10;
+    background: transparent;
+  }
+  .label{
+    margin-top:10px; opacity:.6; font-size:12px; text-align:center;
+    user-select:none;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <canvas id="c" width="64" height="64" aria-label="White hooded angel pixel sprite"></canvas>
+  <div class="label">Subject: White hooded robed angel with white &amp; gold cross • View: 3/4 (front) • Canvas: 64×64 • Style: chunky shading, rim light • Motion: 6 frames @120ms • Anchor: feet baseline (bottom center)</div>
+</div>
+
+<script>
+/*
+PIXEL SPEC (fulfilled)
+- Subject: White hooded robed angel with white & gold cross
+- View: 3/4 (front)
+- Canvas: 64×64
+- Palette: 8 colors (white, off-white, shadow grey, outline, bright gold, dark gold, halo warm, blue cast)
+- Style notes: chunky shading, rim light, strong silhouette
+- Motion: 6 frames, 120ms (halo pulse, gentle wing flutter, robe sway, cross glint)
+- Hitbox/anchor: feet baseline at (cx, 49) [not drawn]
+- Export: single-file HTML only
+- Constraints: no external libs, cohesive single element, no floating parts (halo is connected via a single pixel “nimbus post” to hood)
+*/
+
+const W = 64, H = 64, frames = 6, frameMs = 120;
+const cvs = document.getElementById('c');
+const ctx = cvs.getContext('2d');
+
+// Palette
+const P = {
+  outline:   '#1f2430',
+  white:     '#ffffff',
+  robe:      '#e9eef5',
+  shadow:    '#c8d0df',
+  gold:      '#ffd76a',
+  goldDark:  '#b99026',
+  halo:      '#f8f0b4',
+  blue:      '#9eb3ff'
+};
+
+// Helpers
+function px(x, y, col){
+  if(x<0||x>=W||y<0||y>=H) return;
+  ctx.fillStyle = col;
+  ctx.fillRect(x, y, 1, 1);
+}
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+function lerp(a,b,t){ return a + (b-a)*t; }
+function map(y, y0, y1, a, b){
+  const t = clamp((y - y0) / (y1 - y0), 0, 1);
+  return lerp(a,b,t);
+}
+
+// Body half-width by row (chunky silhouette)
+function bodyHalf(y){
+  // Head/hood: 10..18 (shifted down)
+  if(y >= 10 && y < 18) return Math.round(map(y, 10, 18, 3, 5));
+  // Shoulders: 18..24
+  if(y >= 18 && y < 24) return Math.round(map(y, 18, 24, 8, 10));
+  // Torso taper: 24..40
+  if(y >= 24 && y < 40) return Math.round(map(y, 24, 40, 10, 8));
+  // Lower robe taper: 40..50
+  if(y >= 40 && y < 50) return Math.round(map(y, 40, 50, 8, 6));
+  // Hem: 50..53
+  if(y >= 50 && y <= 53) return Math.round(map(y, 50, 53, 6, 4));
+  return 0;
+}
+
+// Wing length by row (plus animation)
+function wingBaseLen(y){
+  // Rise: 18..26, Spread: 26..36, Fall: 36..48
+  if(y >= 18 && y < 26) return Math.round(map(y, 18, 26, 2, 10));
+  if(y >= 26 && y < 36) return Math.round(map(y, 26, 36, 10, 12));
+  if(y >= 36 && y < 48) return Math.round(map(y, 36, 48, 12, 4));
+  return 0;
+}
+
+function drawHalo(cx, cy, r, pulsePhase){
+  // Slight pulse by toggling thickness
+  const thick = (pulsePhase === 2 || pulsePhase === 5) ? 2 : 1;
+  for(let y = cy - r; y <= cy + r; y++){
+    const dy = y - cy;
+    const sq = r*r - dy*dy;
+    if(sq < 0) continue;
+    let dx = Math.round(Math.sqrt(sq));
+    for(let t = 0; t < thick; t++){
+      px(cx - dx + t, y, P.gold);
+      px(cx + dx - t, y, P.gold);
+      // subtle glossy highlight on upper-left arc
+      if (y <= cy && t === 0 && (y - cy) % 3 === 0) {
+        px(cx - dx, y, P.white);
+      }
+    }
+  }
+  // Connect halo to hood (nimbus post)
+  px(cx, cy + r + 1, P.goldDark);
+}
+
+function drawFrame(f){
+  ctx.clearRect(0,0,W,H);
+
+  // Animation parameters
+  const phase = (f % frames) / frames * Math.PI * 2;
+  const swayX   = Math.round(Math.sin(phase) * 1);
+  const wingAmp = Math.round(Math.sin(phase) * 2);
+  const haloNod = -Math.round(Math.cos(phase) * 1);
+  const cx = 32 + swayX;
+
+  // HALO (lowered)
+  const haloCY = 11 + haloNod;
+  drawHalo(cx, haloCY, 9, f);
+
+  // HOOD (10..18)
+  for(let y=10; y<18; y++){
+    const half = bodyHalf(y);
+    const L = cx - half, R = cx + half;
+    px(L-1, y, P.outline); px(R+1, y, P.outline);
+    for(let x=L; x<=R; x++){
+      let c = P.robe;
+      if (x - L <= 1) c = P.shadow;
+      if (R - x <= 1) c = P.white;
+      px(x, y, c);
+    }
+    if (y>=13 && y<=16){
+      px(cx-1, y, P.blue);
+      px(cx,   y, P.blue);
+      px(cx+1, y, P.blue);
+    }
+  }
+
+  // WINGS + ROBE (18..53)
+  for(let y=18; y<=53; y++){
+    const half = bodyHalf(y);
+    if(half<=0) continue;
+    const L = cx - half, R = cx + half;
+
+    if (y>=18 && y<48){
+      let wl = wingBaseLen(y) + wingAmp + ((y%3===0)?1:0);
+      wl = Math.max(0, wl);
+      const oL = L - wl - 1;
+      for(let x=oL; x<=L-2; x++){
+        let c = P.robe;
+        if (x===oL) c = P.outline;
+        if ((y%5===0) && x>=oL+1 && x<=oL+2) c = P.white;
+        if (L - x <= 2) c = P.shadow;
+        px(x, y, c);
+      }
+      const oR = R + wl + 1;
+      for(let x=R+2; x<=oR; x++){
+        let c = P.robe;
+        if (x===oR) c = P.outline;
+        if ((y%5===0) && x<=oR-1 && x>=oR-2) c = P.white;
+        if (x - R <= 2) c = P.shadow;
+        px(x, y, c);
+      }
+    }
+
+    px(L-1, y, P.outline); px(R+1, y, P.outline);
+    for(let x=L; x<=R; x++){
+      let c = P.robe;
+      if (x - L <= 1) c = P.shadow;
+      if (R - x <= 1) c = P.white;
+      px(x, y, c);
+    }
+  }
+
+  for(let x=cx-4; x<=cx+4; x++){
+    px(x, 54, P.outline);
+    if (x===cx-4 || x===cx+4) px(x, 53, P.outline);
+  }
+
+  const crossTop=22, crossMid=30, crossBot=46;
+  for(let y=crossTop; y<=crossBot; y++){
+    px(cx,   y, P.gold);
+    px(cx+1, y, P.goldDark);
+    if (y%7===0) px(cx+1, y, P.white);
+  }
+
+  for(let x=cx-6; x<=cx+6; x++){
+    px(x, crossMid, P.gold);
+    if ((x-cx)%3===0) px(x, crossMid-1, P.white);
+    if ((x-cx)%4===0) px(x, crossMid+1, P.goldDark);
+  }
+
+  if (f===2 || f===5){
+    px(cx+2, crossMid-1, P.white);
+    px(cx+3, crossMid,   P.white);
+  }
+}
+
+let f = 0;
+drawFrame(f);
+setInterval(()=>{ f = (f+1)%frames; drawFrame(f); }, frameMs);
+</script>
+</body>
+</html>
