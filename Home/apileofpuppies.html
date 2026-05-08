@@ -250,9 +250,10 @@
     .ad-worlds {
       position: relative;
       display: grid;
-      grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
-      gap: clamp(18px, 2vw, 28px);
-      align-items: start;
+      grid-template-columns: repeat(2, auto);
+      justify-content: center;
+      gap: clamp(22px, 2.5vw, 36px);
+      align-items: center;
       min-height: min(72vh, 760px);
       margin-top: -12px;
       padding-bottom: 18px;
@@ -260,7 +261,11 @@
 
     .portal {
       position: relative;
-      min-height: 720px;
+      width: min(40vw, 1008px);
+      aspect-ratio: 1 / 1;
+      margin: 0 auto;
+      align-self: center;
+      min-height: 0;
       border-radius: 34px;
       overflow: hidden;
       transform-style: preserve-3d;
@@ -1181,7 +1186,8 @@
       }
 
       .portal {
-        min-height: 620px;
+        width: min(70vw, 1008px);
+        aspect-ratio: 1 / 1;
       }
     }
 
