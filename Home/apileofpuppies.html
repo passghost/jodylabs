@@ -1239,9 +1239,25 @@
         transform: none !important;
       }
     }
+    #grass-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      pointer-events: none;
+      background: #030108;
+    }
+
+    .page-content {
+      position: relative;
+      z-index: 1;
+    }
   </style>
 </head>
 <body>
+  <canvas id="grass-canvas"></canvas>
+  <div class="page-content">
   <div class="status-badge" title="IGGMMORPG is currently online">
     <span class="status-badge__label">IGGMMORPG: online</span>
     <span class="status-badge__dot" aria-hidden="true"></span>
@@ -1379,8 +1395,247 @@
       <span id="status-toggle-label">IGGMMORPG status pending</span>
     </div>
   </aside>
+  </div>
 
   <script>
+    const canvas = document.getElementById('grass-canvas');
+    const ctx = canvas.getContext('2d', { alpha: false });
+
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+    let time = 0;
+
+    const interactionRadius = 120;
+    let mouse = { x: -1000, y: -1000, vx: 0, vy: 0 };
+    let lastMouse = { x: -1000, y: -1000 };
+    let isMouseDown = false;
+
+    let grid = [];
+    let sparks = [];
+    const spacing = 18;
+
+    function resizeGrass() {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = width;
+      canvas.height = height;
+      initFlora();
+    }
+
+    window.addEventListener('resize', resizeGrass);
+
+    function updateMouse(x, y) {
+      lastMouse.x = mouse.x;
+      lastMouse.y = mouse.y;
+      mouse.x = x;
+      mouse.y = y;
+      mouse.vx = mouse.x - lastMouse.x;
+      mouse.vy = mouse.y - lastMouse.y;
+    }
+
+    window.addEventListener('mousemove', (e) => updateMouse(e.clientX, e.clientY));
+    window.addEventListener('touchmove', (e) => updateMouse(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
+    window.addEventListener('mouseout', () => { mouse.x = -1000; mouse.y = -1000; });
+    window.addEventListener('touchend', () => { mouse.x = -1000; mouse.y = -1000; });
+
+    function triggerShockwave(x, y) {
+      grid.forEach((f) => {
+        let dx = f.x - x;
+        let dy = f.y - y;
+        let dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 350) {
+          let force = Math.pow((350 - dist) / 350, 2) * 80;
+          f.vx += (dx / dist) * force;
+          f.vy += (dy / dist) * force;
+          f.energy = 1.5;
+        }
+      });
+    }
+
+    window.addEventListener('mousedown', (e) => triggerShockwave(e.clientX, e.clientY));
+    window.addEventListener('touchstart', (e) => triggerShockwave(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
+
+    class Spark {
+      constructor(x, y, vx, vy, hue) {
+        this.x = x;
+        this.y = y;
+        this.vx = vx * 0.8 + (Math.random() - 0.5) * 8;
+        this.vy = vy * 0.8 + (Math.random() - 0.5) * 8;
+        this.hue = hue;
+        this.life = 1;
+        this.decay = Math.random() * 0.015 + 0.005;
+        this.size = Math.random() * 3 + 1.5;
+      }
+
+      update(windX, windY) {
+        this.vx += windX * 0.15;
+        this.vy += windY * 0.15;
+        this.vx *= 0.95;
+        this.vy *= 0.95;
+        this.x += this.vx;
+        this.y += this.vy;
+        this.life -= this.decay;
+      }
+
+      draw(ctx) {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size * Math.max(0, this.life), 0, Math.PI * 2);
+        ctx.fillStyle = `hsla(${this.hue + 20}, 100%, 70%, ${this.life})`;
+        ctx.fill();
+      }
+    }
+
+    class FloraNode {
+      constructor(x, y) {
+        this.x = x + (Math.random() - 0.5) * spacing;
+        this.y = y + (Math.random() - 0.5) * spacing;
+        this.tipX = this.x;
+        this.tipY = this.y;
+        this.vx = 0;
+        this.vy = 0;
+        this.length = Math.random() * 25 + 10;
+        this.baseStiffness = Math.random() * 0.04 + 0.02;
+        this.damping = 0.88;
+        this.energy = 0;
+        this.hueOffset = Math.random() * 40;
+        this.baseHue = 0;
+        this.maxOrbSize = Math.random() * 3 + 1.5;
+        this.orbSize = this.maxOrbSize;
+        this.hasOrb = Math.random() > 0.2;
+      }
+
+      update(windX, windY, t) {
+        let forceX = windX;
+        let forceY = windY;
+        let dx = this.x - mouse.x;
+        let dy = this.y - mouse.y;
+        let dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < interactionRadius) {
+          let pushStrength = (interactionRadius - dist) / interactionRadius;
+          forceX += (dx * 0.2 + mouse.vx * 1.5) * pushStrength;
+          forceY += (dy * 0.2 + mouse.vy * 1.5) * pushStrength;
+          this.energy += 0.1;
+          if (this.energy > 1) this.energy = 1;
+        }
+
+        this.vx += forceX;
+        this.vy += forceY;
+
+        let currentStiffness = this.baseStiffness + (this.energy * 0.05);
+        let springX = (this.x - this.tipX) * currentStiffness;
+        let springY = (this.y - this.tipY) * currentStiffness;
+
+        this.vx += springX;
+        this.vy += springY;
+        this.vx *= this.damping;
+        this.vy *= this.damping;
+        this.tipX += this.vx;
+        this.tipY += this.vy;
+
+        let currentLen = Math.sqrt(Math.pow(this.tipX - this.x, 2) + Math.pow(this.tipY - this.y, 2));
+        let dynamicLength = this.length + (this.energy * 15);
+        if (currentLen > dynamicLength) {
+          let ratio = dynamicLength / currentLen;
+          this.tipX = this.x + (this.tipX - this.x) * ratio;
+          this.tipY = this.y + (this.tipY - this.y) * ratio;
+        }
+
+        let speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+        if (this.hasOrb && speed > 15 && sparks.length < 1500) {
+          sparks.push(new Spark(this.tipX, this.tipY, this.vx, this.vy, this.baseHue));
+          this.hasOrb = false;
+          this.orbSize = 0;
+        }
+
+        if (!this.hasOrb) {
+          if (Math.random() < 0.005) {
+            this.hasOrb = true;
+          }
+        } else if (this.orbSize < this.maxOrbSize) {
+          this.orbSize += 0.05;
+        }
+
+        this.energy *= 0.94;
+        this.baseHue = (this.x * 0.04 + this.y * 0.04 + t * 40 + this.hueOffset) % 360;
+      }
+
+      drawStem(ctx) {
+        let dx = this.tipX - this.x;
+        let dy = this.tipY - this.y;
+        let bendRatio = Math.min(1, Math.sqrt(dx * dx + dy * dy) / this.length);
+        let sat = 60 + this.energy * 40;
+        let lit = 10 + (bendRatio * 25) + (this.energy * 40);
+
+        ctx.strokeStyle = `hsl(${this.baseHue}, ${sat}%, ${lit}%)`;
+        ctx.lineWidth = 1.5 + this.energy * 2;
+        ctx.beginPath();
+        ctx.moveTo(this.x, this.y);
+        ctx.lineTo(this.tipX, this.tipY);
+        ctx.stroke();
+      }
+
+      drawOrb(ctx) {
+        if (!this.hasOrb) return;
+        let glow = this.energy * 3;
+        ctx.beginPath();
+        ctx.arc(this.tipX, this.tipY, this.orbSize + glow, 0, Math.PI * 2);
+        ctx.fillStyle = `hsl(${this.baseHue + 30}, 100%, ${50 + this.energy * 30}%)`;
+        ctx.fill();
+      }
+    }
+
+    function initFlora() {
+      grid = [];
+      sparks = [];
+      for (let x = -spacing; x < width + spacing; x += spacing) {
+        for (let y = -spacing; y < height + spacing; y += spacing) {
+          grid.push(new FloraNode(x, y));
+        }
+      }
+    }
+
+    function animateGrass() {
+      time += 0.015;
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.fillStyle = '#030108';
+      ctx.fillRect(0, 0, width, height);
+      ctx.lineCap = 'round';
+
+      for (let i = 0; i < grid.length; i++) {
+        let f = grid[i];
+        let windX = Math.sin(f.x * 0.003 + time * 1.1) * Math.cos(f.y * 0.002 - time * 0.8) * 4;
+        let windY = Math.sin(f.y * 0.004 - time * 1.3) * Math.cos(f.x * 0.003 + time * 0.9) * 4;
+        windX += Math.sin(time) * 1.5;
+        windY += Math.cos(time * 0.8) * 1.5;
+        f.update(windX, windY, time);
+        f.drawStem(ctx);
+      }
+
+      ctx.globalCompositeOperation = 'lighter';
+      for (let i = 0; i < grid.length; i++) {
+        grid[i].drawOrb(ctx);
+      }
+
+      for (let i = sparks.length - 1; i >= 0; i--) {
+        let s = sparks[i];
+        let wx = Math.sin(s.x * 0.003 + time) * 4 + Math.sin(time) * 1.5;
+        let wy = Math.sin(s.y * 0.004 - time) * 4 + Math.cos(time * 0.8) * 1.5;
+        s.update(wx, wy);
+        s.draw(ctx);
+        if (s.life <= 0) {
+          sparks.splice(i, 1);
+        }
+      }
+
+      mouse.vx = 0;
+      mouse.vy = 0;
+      requestAnimationFrame(animateGrass);
+    }
+
+    resizeGrass();
+    animateGrass();
+
     const portals = Array.from(document.querySelectorAll('.portal'));
     const miniHubDock = document.getElementById('mini-hub-dock');
     const miniHubLauncher = document.getElementById('mini-hub-launcher');
